@@ -34,6 +34,8 @@
 #define VM_FAULT_EP_SLOT 1
 #define VM_CSPACE_SLOT 2
 
+#define IRQ_MESSAGE_LABEL 0xCAFE
+
 #define MODE_USER       0x10
 #define MODE_FIQ        0x11
 #define MODE_IRQ        0x12
@@ -257,15 +259,15 @@ vm_create(const char* name, int priority,
     assert(!err);
 
     /* Create an IRQ server for this VM */
-    err = irq_sys_init(vmm_vspace, vka, simple,
-                       badged_vmm_endpoint, IRQ_MESSAGE_LABEL,
-                       256, &vm->irq_sys);
+    err = irq_server_new(vmm_vspace, vka, simple_get_cnode(simple), priority,
+                         simple_get_irq_ctrl(simple), badged_vmm_endpoint,
+                         IRQ_MESSAGE_LABEL, 256, &vm->irq_server);
     assert(!err);
 
     /* Create TCB */
     err = vka_alloc_tcb(vka, &vm->tcb);
     assert(!err);
-    err = seL4_TCB_Configure(vm_get_tcb(vm), VM_FAULT_EP_SLOT, priority,
+    err = seL4_TCB_Configure(vm_get_tcb(vm), VM_FAULT_EP_SLOT, priority - 1,
                              vm->cspace.cptr, cspace_root_data,
                              vm->pd.cptr, null_cap_data, 0, seL4_CapNull);
     assert(!err);
@@ -368,7 +370,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     }
     break;
     case IRQ_MESSAGE_LABEL:
-        irq_sys_handle_irq_msg(vm->irq_sys);
+        irq_server_handle_irq_ipc(vm->irq_server);
         break;
     case SEL4_VGIC_MAINTENANCE_LABEL: {
         int idx;

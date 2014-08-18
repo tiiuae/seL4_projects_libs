@@ -8,156 +8,74 @@
  * @TAG(NICTA_BSD)
  */
 
-
 #include "irq_server.h"
+
+#if (defined CONFIG_LIB_SEL4_VKA && defined CONFIG_LIB_SEL4_VSPACE)
 
 #include <sel4utils/thread.h>
 #include <vka/capops.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define IRQ_THREAD_PRIORITY  200
+
+//#define DEBUG_IRQ_SERVER
+
+#ifdef DEBUG_IRQ_SERVER
+#define DIRQSERVER(...) printf("IRQ server: " __VA_ARGS__)
+#else
+#define DIRQSERVER(...) do{ }while(0)
+#endif
+
 #define NIRQS_PER_NODE        20
 
-struct irq_sys_node {
-    struct irq irqs[NIRQS_PER_NODE];
-    sel4utils_thread_t thread;
-    vka_object_t aep;
-    seL4_CPtr delivery_sep;
-    seL4_Word label;
-    /* Chain */
-    struct irq_sys_node* next;
-};
+/*************************
+ *** Generic functions ***
+ *************************/
 
-struct irq_sys {
-    struct irq_sys_node* head;
-    seL4_CPtr delivery_ep;
-    seL4_Word label;
-    int max_irqs;
-    vspace_t* vspace;
-    vka_t* vka;
-    simple_t* simple;
-};
-
-
-void ack_irq(struct irq* irq)
+void
+irq_data_ack_irq(struct irq_data* irq)
 {
     assert(irq);
     assert(irq->cap);
     seL4_IRQHandler_Ack(irq->cap);
 }
 
+/***********************
+ *** IRQ server node ***
+ ***********************/
 
+struct irq_server_node {
+/// Information about the IRQ that is assigned to each badge bit
+    struct irq_data irqs[NIRQS_PER_NODE];
+/// The async endpoint that IRQs arrive on
+    seL4_CPtr aep;
+/// A mask for the badge. All set bits within the badge are treated as reserved.
+    seL4_Word badge_mask;
+};
 
+/* Executes the registered callback for incoming IRQS */
 static void
-irq_sys_handle_irq(struct irq_sys_node* n, uint32_t badge)
+irq_server_node_handle_irq(struct irq_server_node *n, uint32_t badge)
 {
-    struct irq* irqs = n->irqs;
+    struct irq_data* irqs;
+    irqs = n->irqs;
+    /* Mask out reserved bits */
+    badge = badge & n->badge_mask;
+    /* For each bit, call the registered handler */
     while (badge) {
         int irq_idx;
-        struct irq* irq;
+        struct irq_data* irq;
         irq_idx = __builtin_ctz(badge);
-        badge &= ~(1U << irq_idx);
         irq = &irqs[irq_idx];
+        DIRQSERVER("Received IRQ %d, badge 0x%x, index %d\n", irq->irq, badge, irq_idx);
         irq->cb(irq);
+        badge &= ~(1U << irq_idx);
     }
 }
 
-void
-irq_sys_handle_irq_msg(irq_sys_t irq_sys)
-{
-    uint32_t badge;
-    uint32_t node_ptr;
-
-    (void)irq_sys;
-    badge = seL4_GetMR(0);
-    node_ptr = seL4_GetMR(1);
-    assert(node_ptr);
-
-    irq_sys_handle_irq((struct irq_sys_node*)node_ptr, badge);
-}
-
-struct irq*
-find_pirq(irq_sys_t irq_sys, int pirq) {
-    struct irq_sys_node* n;
-    int i;
-    for (n = irq_sys->head; n != NULL; n = n->next) {
-        for (i = 0; i < NIRQS_PER_NODE; i++) {
-            if (n->irqs[i].pirq == pirq) {
-                return &n->irqs[i];
-            }
-        }
-    }
-    return NULL;
-}
-
-struct irq*
-find_virq(irq_sys_t irq_sys, int virq) {
-    struct irq_sys_node* n;
-    int i;
-    for (n = irq_sys->head; n != NULL; n = n->next) {
-        for (i = 0; i < NIRQS_PER_NODE; i++) {
-            if (n->irqs[i].virq == virq) {
-                return &n->irqs[i];
-            }
-        }
-    }
-    return NULL;
-}
-
-static void
-_irq_thread_entry(struct irq_sys_node* n)
-{
-    seL4_CPtr sep;
-    seL4_CPtr aep;
-    uint32_t node_ptr;
-    seL4_Word label;
-
-    sep = n->delivery_sep;
-    aep = n->aep.cptr;
-    node_ptr = (uint32_t)n;
-    label = n->label;
-
-    while (1) {
-        seL4_MessageInfo_t info;
-        seL4_Word badge;
-
-        info = seL4_Wait(aep, &badge);
-        info = seL4_MessageInfo_new(label, 0, 0, 2);
-        seL4_SendWithMRs(sep, info, &badge, &node_ptr, NULL, NULL);
-    }
-}
-
-static struct irq_sys_node*
-irq_node_new(vspace_t* vspace, vka_t* vka, simple_t* simple,
-             seL4_Word label, seL4_CPtr sep) {
-    struct irq_sys_node* n;
-    seL4_CPtr cnode;
-    int err;
-
-    cnode = simple_get_cnode(simple);
-
-    /* Allocate memory for the structure */
-    n = (struct irq_sys_node*)malloc(sizeof(*n));
-    memset(n, 0, sizeof(*n));
-    n->delivery_sep = sep;
-    n->label = label;
-    /* Create an endpoint to listen on */
-    err = vka_alloc_async_endpoint(vka, &n->aep);
-    assert(!err);
-    /* Create the IRQ thread */
-    err = sel4utils_configure_thread(vka, vspace, seL4_CapNull,
-                                     IRQ_THREAD_PRIORITY, cnode, seL4_NilData,
-                                     &n->thread);
-    assert(!err);
-    err = sel4utils_start_thread(&n->thread, (void*)_irq_thread_entry, n, NULL, 1);
-    assert(!err);
-    return n;
-}
-
-
+/* Binds and IRQ to an endpoint */
 static seL4_CPtr
-irq_bind(int irq, seL4_CPtr aep_cap, int idx, vka_t* vka, simple_t* simple)
+irq_bind(irq_t irq, seL4_CPtr aep_cap, int idx, vka_t* vka, seL4_CPtr irq_ctrl_cap)
 {
     seL4_CPtr irq_cap, baep_cap;
     cspacepath_t irq_path, aep_path, baep_path;
@@ -171,14 +89,16 @@ irq_bind(int irq, seL4_CPtr aep_cap, int idx, vka_t* vka, simple_t* simple)
         return seL4_CapNull;
     }
     vka_cspace_make_path(vka, irq_cap, &irq_path);
-    err = simple_get_IRQ_control(simple, irq, irq_path);
+    err = seL4_IRQControl_Get(seL4_CapIRQControl, irq, irq_path.root,
+                              irq_path.capPtr, irq_path.capDepth);
     if (err != seL4_NoError) {
         printf("Failed to get cap to irq_number %u\n", irq);
         assert(0);
         vka_cspace_free(vka, irq_cap);
         return seL4_CapNull;
     }
-    /* Badge the endpoint */
+    /* Badge the provided endpoint. The bit position of the badge tells us the array
+     * index of the associated IRQ data. */
     err = vka_cspace_alloc(vka, &baep_cap);
     if (err != 0) {
         printf("Failed to allocate cslot for irq\n");
@@ -187,13 +107,12 @@ irq_bind(int irq, seL4_CPtr aep_cap, int idx, vka_t* vka, simple_t* simple)
     }
     vka_cspace_make_path(vka, aep_cap, &aep_path);
     vka_cspace_make_path(vka, baep_cap, &baep_path);
-    badge = seL4_CapData_Badge_new(1U << idx);
+    badge = seL4_CapData_Badge_new(BIT(idx));
     err = vka_cnode_mint(&baep_path, &aep_path, seL4_AllRights, badge);
     assert(!err);
     if (err != seL4_NoError) {
         vka_cspace_free(vka, irq_cap);
         vka_cspace_free(vka, baep_cap);
-        assert(0);
         return seL4_CapNull;
     }
     /* bind the IRQ cap to our badged endpoint */
@@ -202,108 +121,247 @@ irq_bind(int irq, seL4_CPtr aep_cap, int idx, vka_t* vka, simple_t* simple)
         printf("seL4_IRQHandler_SetEndpoint failed with err %d\n", err);
         vka_cspace_free(vka, irq_cap);
         vka_cspace_free(vka, baep_cap);
-        assert(0);
         return seL4_CapNull;
     }
-    /* Finally ACK any pending IRQ */
+    /* Finally ACK any pending IRQ and enable the IRQ */
     seL4_IRQHandler_Ack(irq_cap);
+
+    DIRQSERVER("Regestered IRQ %d with badge 0x%x\n", irq, BIT(idx));
     return irq_cap;
 }
 
-static int
-irq_sys_node_register_irq(struct irq_sys_node* n, struct irq irq,
-                          vka_t* vka, simple_t* simple)
-{
-    struct irq* irqs;
+/* Registers an IRQ callback and enabled the IRQ */
+struct irq_data*
+irq_server_node_register_irq(irq_server_node_t n, irq_t irq, irq_handler_fn cb,
+                             void* token, vka_t* vka, seL4_CPtr cspace,
+                             seL4_CPtr irq_ctrl_cap) {
+    struct irq_data* irqs;
     int i;
     irqs = n->irqs;
     for (i = 0; i < NIRQS_PER_NODE; i++) {
-        if (irqs[i].cap == seL4_CapNull) {
-            irq.cap = irq_bind(irq.pirq, n->aep.cptr, i, vka, simple);
-            irqs[i] = irq;
-            return 0;
+        /* If a cap has not been registered and the bit in the mask is not set */
+        if (irqs[i].cap == seL4_CapNull && !(n->badge_mask & BIT(i))) {
+            irqs[i].cap = irq_bind(irq, n->aep, i, vka, irq_ctrl_cap);
+            if (irqs[i].cap == seL4_CapNull) {
+                return NULL;
+            }
+            irqs[i].irq = irq;
+            irqs[i].cb = cb;
+            irqs[i].token = token;
+            return &irqs[i];
         }
     }
-    return -1;
+    return NULL;
 }
 
-int
-vmm_register_irq(irq_sys_t irq_sys, int pirq, int virq,
-                 irq_handler_fn cb, void* priv)
+/* Creates a new IRQ server node which contains Thread data and registered IRQ data. */
+struct irq_server_node*
+irq_server_node_new(seL4_CPtr aep, seL4_Word badge_mask) {
+    struct irq_server_node *n;
+    n = (irq_server_node_t)malloc(sizeof(*n));
+    if (n) {
+        n->aep = aep;
+        n->badge_mask = badge_mask;
+        memset(n->irqs, 0, sizeof(n->irqs));
+    }
+    return n;
+}
+
+/*************************
+ *** IRQ server thread ***
+ *************************/
+
+struct irq_server_thread {
+/// IRQ data which this thread is responsible for
+    struct irq_server_node *node;
+/// A synchronous endpoint to deliver IRQ messages to.
+    seL4_CPtr delivery_sep;
+/// The label that should be assigned to outgoing synchronous messages.
+    seL4_Word label;
+/// Thread data
+    sel4utils_thread_t thread;
+/// Asynchronous endpoint object data
+    vka_object_t aep;
+/// Linked list chain
+    struct irq_server_thread* next;
+};
+
+/* IRQ handler thread. Wait on an async EP for IRQs. When one arrives, send a
+ * synchronous message to the registered endpoint. If no synchronous endpoint was
+ * registered, call the appropriate handler function directly (must be thread safe) */
+static void
+_irq_thread_entry(struct irq_server_thread* st)
 {
-    struct irq_sys_node* n;
-    struct irq irq;
+    seL4_CPtr sep;
+    seL4_CPtr aep;
+    uint32_t node_ptr;
+    seL4_Word label;
 
-    irq.pirq = pirq;
-    irq.virq = virq;
-    irq.cb = cb;
-    irq.priv = priv;
+    sep = st->delivery_sep;
+    aep = st->node->aep;
+    node_ptr = (uint32_t)st->node;
+    label = st->label;
 
-    /* See if we can tack onto a node */
-    for (n = irq_sys->head; n != NULL; n = n->next) {
-        int err;
-        err = irq_sys_node_register_irq(n, irq, irq_sys->vka, irq_sys->simple);
-        if (!err) {
-            return err;
+    while (1) {
+        seL4_MessageInfo_t info;
+        seL4_Word badge;
+
+        info = seL4_Wait(aep, &badge);
+        DIRQSERVER("IRQ on AEP with badge 0x%x\n", badge);
+        assert(badge != 0);
+        if (sep != seL4_CapNull) {
+            /* Synchronous endpoint registered. Send IPC */
+            info = seL4_MessageInfo_new(label, 0, 0, 2);
+            seL4_SendWithMRs(sep, info, &badge, &node_ptr, NULL, NULL);
+        } else {
+            /* No synchronous endpoint. Call the handler directly */
+            irq_server_node_handle_irq(st->node, badge);
+        }
+    }
+}
+
+/* Creates a new thread for an IRQ server */
+struct irq_server_thread*
+irq_server_thread_new(vspace_t* vspace, vka_t* vka, seL4_CPtr cspace, seL4_Word priority,
+                      seL4_CPtr irq_ctrl, seL4_Word label, seL4_CPtr sep) {
+    struct irq_server_thread* st;
+    int err;
+
+    /* Allocate memory for the structure */
+    st = (struct irq_server_thread*)malloc(sizeof(*st));
+    if (st == NULL) {
+        return NULL;
+    }
+    st->node = irq_server_node_new(0, ~(1U << NIRQS_PER_NODE));
+    if (st->node == NULL) {
+        free(st);
+        return NULL;
+    }
+
+    /* Initialise structure */
+    st->delivery_sep = sep;
+    st->label = label;
+    st->next = NULL;
+    /* Create an endpoint to listen on */
+    err = vka_alloc_async_endpoint(vka, &st->aep);
+    assert(!err);
+    st->node->aep = st->aep.cptr;
+    /* Create the IRQ thread */
+    err = sel4utils_configure_thread(vka, vspace, seL4_CapNull, priority,
+                                     cspace, seL4_NilData, &st->thread);
+    assert(!err);
+    /* Start the thread */
+    err = sel4utils_start_thread(&st->thread, (void*)_irq_thread_entry, st, NULL, 1);
+    assert(!err);
+    return st;
+}
+
+
+/******************
+ *** IRQ server ***
+ ******************/
+
+struct irq_server {
+    seL4_CPtr delivery_ep;
+    seL4_Word label;
+    int max_irqs;
+    vspace_t* vspace;
+    seL4_CPtr cspace;
+    vka_t* vka;
+    seL4_Word thread_priority;
+    seL4_CPtr irq_ctrl_cap;
+    struct irq_server_thread* server_threads;
+};
+
+/* Handle an incoming IPC from a server node */
+void
+irq_server_handle_irq_ipc(irq_server_t irq_server)
+{
+    uint32_t badge;
+    uint32_t node_ptr;
+
+    (void)irq_server;
+    badge = seL4_GetMR(0);
+    node_ptr = seL4_GetMR(1);
+    assert(node_ptr);
+
+    irq_server_node_handle_irq((struct irq_server_node*)node_ptr, badge);
+}
+
+/* Register for a function to be called when an IRQ arrives */
+struct irq_data*
+irq_server_register_irq(irq_server_t irq_server, irq_t irq,
+                        irq_handler_fn cb, void* token) {
+    struct irq_server_thread* st;
+    struct irq_data* irq_data;
+
+    /* Try to assign the IRQ to an existing node */
+    for (st = irq_server->server_threads; st != NULL; st = st->next) {
+        irq_data = irq_server_node_register_irq(st->node, irq, cb, token,
+                                                irq_server->vka, irq_server->cspace,
+                                                irq_server->irq_ctrl_cap);
+        if (irq_data) {
+            return irq_data;
         }
     }
     /* Try to create a new node */
-    if (n == NULL && irq_sys->max_irqs < 0) {
-        int err;
+    if (st == NULL && irq_server->max_irqs < 0) {
         /* Create the node */
-        n = irq_node_new(irq_sys->vspace, irq_sys->vka, irq_sys->simple,
-                         irq_sys->label, irq_sys->delivery_ep);
-        assert(n);
-        n->next = irq_sys->head;
-        irq_sys->head = n;
-        err = irq_sys_node_register_irq(n, irq, irq_sys->vka, irq_sys->simple);
-        assert(!err);
-        if (!err) {
-            return err;
+        st = irq_server_thread_new(irq_server->vspace, irq_server->vka, irq_server->cspace,
+                                   irq_server->thread_priority, irq_server->irq_ctrl_cap,
+                                   irq_server->label, irq_server->delivery_ep);
+        assert(st);
+        st->next = irq_server->server_threads;
+        irq_server->server_threads = st;
+        irq_data = irq_server_node_register_irq(st->node, irq, cb, token,
+                                                irq_server->vka, irq_server->cspace,
+                                                irq_server->irq_ctrl_cap);
+        if (irq_data) {
+            return irq_data;
         }
     }
     /* Give up */
-    return -1;
+    return NULL;
 }
 
-
-
+/* Create a new IRQ server */
 int
-irq_sys_init(vspace_t* vspace, vka_t* vka, simple_t* simple,
-             seL4_CPtr sync_ep, seL4_Word label,
-             int nirqs, irq_sys_t *ret_irq_sys)
+irq_server_new(vspace_t* vspace, vka_t* vka, seL4_CPtr cspace, seL4_Word priority,
+               seL4_CPtr irq_ctrl, seL4_CPtr sync_ep, seL4_Word label,
+               int nirqs, irq_server_t *ret_irq_server)
 {
-    struct irq_sys* irq_sys;
+    struct irq_server* irq_server;
 
-    irq_sys = (struct irq_sys*)malloc(sizeof(*irq_sys));
-    if (irq_sys == NULL) {
+    /* Structure allcoation and initialisation */
+    irq_server = (struct irq_server*)malloc(sizeof(*irq_server));
+    if (irq_server == NULL) {
         return -1;
     }
+    irq_server->delivery_ep = sync_ep;
+    irq_server->label = label;
+    irq_server->max_irqs = nirqs;
+    irq_server->vspace = vspace;
+    irq_server->cspace = cspace;
+    irq_server->vka = vka;
+    irq_server->thread_priority = priority;
+    irq_server->server_threads = NULL;
 
-    irq_sys->delivery_ep = sync_ep;
-    irq_sys->label = label;
-    irq_sys->max_irqs = nirqs;
-    irq_sys->head = NULL;
-    irq_sys->vka = vka;
-    irq_sys->simple = simple;
-    irq_sys->vspace = vspace;
-
+    /* If a fixed number of IRQs are requested, create and start the server threads */
     if (nirqs > -1) {
+        struct irq_server_thread** server_thread;
+        int n_nodes;
         int i;
-        int nodes;
-        struct irq_sys_node** node;
-        node = &irq_sys->head;
-        nodes = (nirqs + NIRQS_PER_NODE - 1) / NIRQS_PER_NODE;
-        for (i = 0; i < nodes; i++) {
-            *node = irq_node_new(vspace, vka, simple, irq_sys->label,
-                                 irq_sys->delivery_ep);
-            node = &(*node)->next;
+        server_thread = &irq_server->server_threads;
+        n_nodes = (nirqs + NIRQS_PER_NODE - 1) / NIRQS_PER_NODE;
+        for (i = 0; i < n_nodes; i++) {
+            *server_thread = irq_server_thread_new(vspace, vka, cspace, irq_ctrl,
+                                                   priority, label, sync_ep);
+            server_thread = &(*server_thread)->next;
         }
     }
 
-    *ret_irq_sys = irq_sys;
+    *ret_irq_server = irq_server;
     return 0;
 }
 
-
-
+#endif /* (defined CONFIG_LIB_SEL4_VKA && defined CONFIG_LIB_SEL4_VSPACE) */

@@ -33,7 +33,7 @@ struct vm {
     simple_t *simple;
     vspace_t *vmm_vspace;
     ps_io_ops_t* io_ops;
-    struct irq_sys* irq_sys;
+    struct irq_server* irq_server;
     /* VM objects */
     vspace_t vm_vspace;
     sel4utils_alloc_data_t data;

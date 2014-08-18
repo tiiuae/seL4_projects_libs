@@ -34,7 +34,7 @@ extern const struct device dev_irq_combiner;
  * @param[in] r       resources for allocation
  * @return            0 on succes
  */
-int vmm_register_combiner_irq(irq_sys_t irq_sys, int group, int index,
+int vmm_register_combiner_irq(irq_server_t irq_server, int group, int index,
                               combiner_irq_handler_fn cb, void* priv);
 
 /**
