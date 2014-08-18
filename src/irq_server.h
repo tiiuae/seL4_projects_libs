@@ -56,9 +56,9 @@ typedef struct irq_server_node* irq_server_node_t;
 /**
  * Create a new IRQ server node.
  * @param[in] aep        An async endpoint that can be used for binding IRQ notification
- * @param[in] badge_mask A mask for the available badge. Bits in the mask are considered
- *                       reserved and will not be used for IRQ identification. This
- *                       does, however, reduce the number of IRQs that this node can
+ * @param[in] badge_mask A mask for the available badge. Bits NOT set in the mask are
+ *                       considered reserved and will not be used for IRQ identification.
+ *                       This does, however, reduce the number of IRQs that this node can
  *                       manage. One may choose to reserve badge bits for the
  *                       identification of other notifications to the same endpoint.
  * @return               A handle to the created IRQ server node, or NULL on failure.

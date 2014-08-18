@@ -126,7 +126,7 @@ irq_bind(irq_t irq, seL4_CPtr aep_cap, int idx, vka_t* vka, seL4_CPtr irq_ctrl_c
     /* Finally ACK any pending IRQ and enable the IRQ */
     seL4_IRQHandler_Ack(irq_cap);
 
-    DIRQSERVER("Regestered IRQ %d with badge 0x%x\n", irq, BIT(idx));
+    DIRQSERVER("Regestered IRQ %d with badge 0x%lx\n", irq, BIT(idx));
     return irq_cap;
 }
 
@@ -138,11 +138,13 @@ irq_server_node_register_irq(irq_server_node_t n, irq_t irq, irq_handler_fn cb,
     struct irq_data* irqs;
     int i;
     irqs = n->irqs;
+
     for (i = 0; i < NIRQS_PER_NODE; i++) {
         /* If a cap has not been registered and the bit in the mask is not set */
-        if (irqs[i].cap == seL4_CapNull && !(n->badge_mask & BIT(i))) {
+        if (irqs[i].cap == seL4_CapNull && (n->badge_mask & BIT(i))) {
             irqs[i].cap = irq_bind(irq, n->aep, i, vka, irq_ctrl_cap);
             if (irqs[i].cap == seL4_CapNull) {
+                DIRQSERVER("Failed to bind IRQ\n");
                 return NULL;
             }
             irqs[i].irq = irq;
@@ -201,13 +203,12 @@ _irq_thread_entry(struct irq_server_thread* st)
     aep = st->node->aep;
     node_ptr = (uint32_t)st->node;
     label = st->label;
+    DIRQSERVER("thread started. Waiting on endpoint %d\n", aep);
 
     while (1) {
         seL4_MessageInfo_t info;
         seL4_Word badge;
-
         info = seL4_Wait(aep, &badge);
-        DIRQSERVER("IRQ on AEP with badge 0x%x\n", badge);
         assert(badge != 0);
         if (sep != seL4_CapNull) {
             /* Synchronous endpoint registered. Send IPC */
@@ -232,7 +233,7 @@ irq_server_thread_new(vspace_t* vspace, vka_t* vka, seL4_CPtr cspace, seL4_Word 
     if (st == NULL) {
         return NULL;
     }
-    st->node = irq_server_node_new(0, ~(1U << NIRQS_PER_NODE));
+    st->node = irq_server_node_new(0, (1U << NIRQS_PER_NODE) - 1);
     if (st->node == NULL) {
         free(st);
         return NULL;
@@ -307,6 +308,7 @@ irq_server_register_irq(irq_server_t irq_server, irq_t irq,
     /* Try to create a new node */
     if (st == NULL && irq_server->max_irqs < 0) {
         /* Create the node */
+        DIRQSERVER("Spawning new IRQ server thread\n");
         st = irq_server_thread_new(irq_server->vspace, irq_server->vka, irq_server->cspace,
                                    irq_server->thread_priority, irq_server->irq_ctrl_cap,
                                    irq_server->label, irq_server->delivery_ep);
@@ -321,6 +323,7 @@ irq_server_register_irq(irq_server_t irq_server, irq_t irq,
         }
     }
     /* Give up */
+    DIRQSERVER("Failed to register for IRQ %d\n", irq);
     return NULL;
 }
 
@@ -354,8 +357,8 @@ irq_server_new(vspace_t* vspace, vka_t* vka, seL4_CPtr cspace, seL4_Word priorit
         server_thread = &irq_server->server_threads;
         n_nodes = (nirqs + NIRQS_PER_NODE - 1) / NIRQS_PER_NODE;
         for (i = 0; i < n_nodes; i++) {
-            *server_thread = irq_server_thread_new(vspace, vka, cspace, irq_ctrl,
-                                                   priority, label, sync_ep);
+            *server_thread = irq_server_thread_new(vspace, vka, cspace, priority,
+                                                   irq_ctrl, label, sync_ep);
             server_thread = &(*server_thread)->next;
         }
     }
