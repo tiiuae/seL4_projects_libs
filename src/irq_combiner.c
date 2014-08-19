@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "irq_server.h"
+#include <platsupport/irq_combiner.h>
 
 //#define DEBUG_COMBINER
 
@@ -46,7 +47,7 @@ struct irq_group_data {
 };
 
 struct combiner_data {
-    volatile struct irq_combiner_map* regs;
+    irq_combiner_t pcombiner;
     struct irq_group_data* data[32];
     irq_server_t irq_server;
 };
@@ -57,7 +58,7 @@ struct virq_combiner {
     struct irq_combiner_map* vregs;
 };
 
-struct combiner_data _combiner = { .regs = NULL };
+struct combiner_data _combiner;
 
 
 static void
@@ -73,10 +74,10 @@ combiner_irq_handler(struct irq_data* irq)
 
     /* Decode group and index */
     g = irq->irq - 32;
-    imsr = combiner->regs->g[g / 8].masked_status;
-    i = __builtin_ctz((imsr >> (g & 0x3) * 8) & 0xff);
+    imsr = irq_combiner_group_pending(&combiner->pcombiner, g);
+    i = __builtin_ctz(imsr);
     /* Disable the IRQ */
-    combiner->regs->g[g / 8].enable_clr = (g & 0x3) * 8 + i;
+    irq_combiner_enable_irq(&combiner->pcombiner, COMBINER_IRQ(g, i));
     irq_data_ack_irq(irq);
 
     /* Allocate a combiner IRQ structure */
@@ -105,7 +106,7 @@ combiner_irq_ack(struct combiner_irq* cirq)
     g = cirq->group;
     i = cirq->index;
     /* Re-enable the IRQ */
-    combiner->regs->g[g / 8].enable_set = (g & 0x3) * 8 + i;
+    irq_combiner_enable_irq(&combiner->pcombiner, COMBINER_IRQ(g, i));
     free(cirq);
 }
 
@@ -147,7 +148,7 @@ vmm_register_combiner_irq(irq_server_t irq_server, int group, int idx,
     combiner->data[group][idx].priv = priv;
 
     /* Enable the irq */
-    combiner->regs->g[group / 8].enable_set = (group & 0x3) * 8 + idx;
+    irq_combiner_enable_irq(&combiner->pcombiner, COMBINER_IRQ(group, idx));
     return 0;
 }
 
@@ -236,16 +237,12 @@ vm_install_vcombiner(vm_t* vm)
     struct virq_combiner* vcombiner;
     void* addr;
     int err;
-    if (_combiner.regs == NULL) {
-        _combiner.regs = map_device(vm->vmm_vspace, vm->vka, vm->simple,
-                                    IRQ_COMBINER_PADDR, 0, seL4_AllRights);
-        assert(_combiner.regs);
-        if (!_combiner.regs) {
-            return -1;
-        }
-        _combiner.irq_server = vm->irq_server;
-    }
 
+    err = irq_combiner_init(IRQ_COMBINER0, vm->io_ops, &_combiner.pcombiner);
+    if (err) {
+        return -1;
+    }
+    _combiner.irq_server = vm->irq_server;
 
     /* Distributor */
     combiner = dev_irq_combiner;
