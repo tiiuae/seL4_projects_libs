@@ -115,7 +115,7 @@ _mem_compact(dma_mem_t m){
 static void 
 print_dma_mem(dma_mem_t m, const char* prefix){
     dprintf("%s{p0x%08x, v0x%08x, s0x%x %s}\n", prefix, 
-            dma_paddr(m), (uintptr_t)_vaddr(m), _mem_size(m), 
+            (uint32_t)dma_paddr(m), (uint32_t)dma_vaddr(m), _mem_size(m), 
             _is_free(m)? "FREE":"USED");
 }
 
