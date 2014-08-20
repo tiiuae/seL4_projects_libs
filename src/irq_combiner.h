@@ -12,7 +12,7 @@
 #define IRQ_COMBINER_H
 
 #include "vm.h"
-#include "irq_server.h"
+#include <sel4utils/irq_server.h>
 
 struct combiner_irq {
     int group;

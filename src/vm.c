@@ -24,7 +24,7 @@
 #include "devices/arm/vgic.h"
 
 #include "devices.h"
-#include "irq_server.h"
+#include <sel4utils/irq_server.h>
 
 //#define DEBUG_VM
 //#define DEBUG_RAM_FAULTS

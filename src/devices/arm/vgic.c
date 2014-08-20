@@ -19,7 +19,7 @@
 
 #include "../../devices.h"
 #include "../../vm.h"
-#include "../../irq_server.h"
+#include <sel4utils/irq_server.h>
 
 //#define DEBUG_IRQ
 //#define DEBUG_DIST

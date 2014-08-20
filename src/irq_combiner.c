@@ -12,7 +12,6 @@
 #include "devices.h"
 #include <stdlib.h>
 #include <string.h>
-#include "irq_server.h"
 #include <platsupport/irq_combiner.h>
 
 //#define DEBUG_COMBINER
