@@ -46,7 +46,6 @@ copy_out_page(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src,
     tmp_dst = vspace_map_pages(src_vspace, &frame.cptr, NULL, seL4_AllRights,
                                1, 12, 1);
     assert(tmp_dst);
-    printf("cap: 0x%x\n", frame.cptr);
     if (!tmp_dst) {
         return 1;
     }
