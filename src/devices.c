@@ -54,20 +54,20 @@ map_device(vspace_t *vspace, vka_t* vka, simple_t* simple, uintptr_t paddr,
     }
     /* Map the device */
     if (vaddr) {
-        reservation_t* res;
+        reservation_t res;
         res = vspace_reserve_range_at(vspace, vaddr, 0x1000, rights, 0);
-        assert(res);
-        if (!res) {
+        assert(res.res);
+        if (!res.res) {
             printf("Failed to reserve vspace\n");
             vka_cspace_free(vka, frame.capPtr);
             return NULL;
         }
         /* Map in the page */
-        err = vspace_map_pages_at_vaddr(vspace, &frame.capPtr, vaddr,
+        err = vspace_map_pages_at_vaddr(vspace, &frame.capPtr, NULL, vaddr,
                                         1, 12, res);
         vspace_free_reservation(vspace, res);
     } else {
-        vaddr = vspace_map_pages(vspace, &frame.capPtr, rights, 1, 12, 0);
+        vaddr = vspace_map_pages(vspace, &frame.capPtr, NULL, rights, 1, 12, 0);
         err = (vaddr == 0);
     }
     assert(!err);
@@ -92,7 +92,7 @@ map_emulated_device(vm_t* vm, const struct device *d)
     cspacepath_t vm_frame, vmm_frame;
     vspace_t *vm_vspace, *vmm_vspace;
     void* vm_addr, *vmm_addr;
-    reservation_t* res;
+    reservation_t res;
     vka_object_t frame;
     vka_t* vka;
     size_t size;
@@ -129,14 +129,14 @@ map_emulated_device(vm_t* vm, const struct device *d)
     /* Map the frame to the VM */
     DMAP("Mapping emulated device ipa0x%x\n", (uint32_t)vm_addr);
     res = vspace_reserve_range_at(vm_vspace, vm_addr, size, seL4_CanRead, 0);
-    assert(res);
-    if (!res) {
+    assert(res.res);
+    if (!res.res) {
         vka_cspace_free(vka, vm_frame.capPtr);
         vka_cspace_free(vka, vmm_frame.capPtr);
         vka_free_object(vka, &frame);
         return NULL;
     }
-    err = vspace_map_pages_at_vaddr(vm_vspace, &vm_frame.capPtr, vm_addr,
+    err = vspace_map_pages_at_vaddr(vm_vspace, &vm_frame.capPtr, NULL, vm_addr,
                                     1, 12, res);
     vspace_free_reservation(vm_vspace, res);
     assert(!err);
@@ -147,7 +147,7 @@ map_emulated_device(vm_t* vm, const struct device *d)
         vka_free_object(vka, &frame);
         return NULL;
     }
-    vmm_addr = vspace_map_pages(vmm_vspace, &vmm_frame.capPtr, seL4_AllRights,
+    vmm_addr = vspace_map_pages(vmm_vspace, &vmm_frame.capPtr, NULL, seL4_AllRights,
                                 1, 12, 0);
     assert(vmm_addr);
     if (vmm_addr == NULL) {
@@ -161,7 +161,7 @@ void*
 map_ram(vspace_t *vspace, vka_t* vka, uintptr_t vaddr)
 {
     vka_object_t frame;
-    reservation_t* res;
+    reservation_t res;
     void* addr;
     int err;
 
@@ -169,8 +169,8 @@ map_ram(vspace_t *vspace, vka_t* vka, uintptr_t vaddr)
 
     /* reserve vspace */
     res = vspace_reserve_range_at(vspace, addr, 0x1000, seL4_AllRights, 1);
-    if (!res) {
-        assert(res);
+    if (!res.res) {
+        assert(res.res);
         return NULL;
     }
     /* Create a frame */
@@ -181,7 +181,7 @@ map_ram(vspace_t *vspace, vka_t* vka, uintptr_t vaddr)
         return NULL;
     }
     /* Map in the frame */
-    err = vspace_map_pages_at_vaddr(vspace, &frame.cptr, addr, 1, 12, res);
+    err = vspace_map_pages_at_vaddr(vspace, &frame.cptr, NULL, addr, 1, 12, res);
     vspace_free_reservation(vspace, res);
     assert(!err);
     if (err) {

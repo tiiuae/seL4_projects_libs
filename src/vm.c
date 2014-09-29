@@ -404,7 +404,7 @@ vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
 {
     vspace_t *vm_vspace, *vmm_vspace;
     void* vm_addr, *vmm_addr, *buf;
-    reservation_t* res;
+    reservation_t res;
     vka_t* vka;
     vka_object_t frame;
     size_t size;
@@ -432,7 +432,7 @@ vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
         return -1;
     }
     /* Map the frame to the VMM */
-    vmm_addr = vspace_map_pages(vmm_vspace, &frame.cptr, seL4_AllRights, 1, 12, 0);
+    vmm_addr = vspace_map_pages(vmm_vspace, &frame.cptr, NULL, seL4_AllRights, 1, 12, 0);
     assert(vmm_addr);
 
     /* Copy in the atags */
@@ -447,14 +447,14 @@ vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
     memset(buf, 0, 8);
 
     /* Unmap the page and map it into the VM */
-    vspace_free_pages(vmm_vspace, vmm_addr, 1, 12);
+    vspace_unmap_pages(vmm_vspace, vmm_addr, 1, 12, NULL);
     res = vspace_reserve_range_at(vm_vspace, vm_addr, 0x1000, seL4_AllRights, 0);
-    assert(res);
-    if (!res) {
+    assert(res.res);
+    if (!res.res) {
         vka_free_object(vka, &frame);
         return -1;
     }
-    err = vspace_map_pages_at_vaddr(vm_vspace, &frame.cptr, vm_addr, 1, 12, res);
+    err = vspace_map_pages_at_vaddr(vm_vspace, &frame.cptr, NULL, vm_addr, 1, 12, res);
     vspace_free_reservation(vm_vspace, res);
     assert(!err);
     if (err) {

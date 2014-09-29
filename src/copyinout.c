@@ -28,12 +28,12 @@ static int
 copy_out_page(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src, void* dst, int size)
 {
     vka_object_t frame;
-    reservation_t* res;
+    reservation_t res;
     void* tmp_dst;
     int err;
 
     assert(size <= PAGE_SIZE);
-    dprintf("copy out page 0x%x->0x%x (0%x bytes)\n", (uint32_t)src, (uint32_t)dst, size);
+    dprintf("copy out page 0x%x->0x%x (0x%x bytes)\n", (uint32_t)src, (uint32_t)dst, size);
 
     /* Create a frame */
     err = vka_alloc_frame(vka, 12, &frame);
@@ -42,27 +42,28 @@ copy_out_page(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src,
         return -1;
     }
 
-    /* Map in and copy */
-    tmp_dst = vspace_map_pages(src_vspace, &frame.cptr, seL4_AllRights,
+    /* Copy the data to the frame */
+    tmp_dst = vspace_map_pages(src_vspace, &frame.cptr, NULL, seL4_AllRights,
                                1, 12, 1);
     assert(tmp_dst);
+    printf("cap: 0x%x\n", frame.cptr);
     if (!tmp_dst) {
         return 1;
     }
     memcpy(tmp_dst + ((uintptr_t)dst & 0xfff), src, size);
-    vspace_unmap_pages(src_vspace, tmp_dst, 1, 12);
+    vspace_unmap_pages(src_vspace, tmp_dst, 1, 12, NULL);
     /* Map the frame to the dest vspace */
     res = vspace_reserve_range_at(dst_vspace, dst, 0x1000, seL4_AllRights, 1);
-    if (!res) {
-        assert(res);
+    if (!res.res) {
+        assert(res.res);
         return -1;
     }
-    err = vspace_map_pages_at_vaddr(dst_vspace, &frame.cptr, dst, 1, 12, res);
+    err = vspace_map_pages_at_vaddr(dst_vspace, &frame.cptr, NULL, dst, 1, 12, res);
     vspace_free_reservation(dst_vspace, res);
-    assert(!err);
     if (err) {
-        printf("Failed to provide memory\n");
+        printf("Failed to provide memory (%d)\n", err);
         vka_free_object(vka, &frame);
+        assert(!err);
         return err;
     }
     /* Done */
