@@ -18,12 +18,14 @@
 
 
 /* GPIO */
-#ifdef PLAT_EXYNOS5410
+#if defined PLAT_EXYNOS5410   /* Odroid-XU */
 #define GPIO_LEFT_PADDR       0x14000000
-#define GPIO_RIGHT_PADDR      0x13400000
+#elif defined PLAT_EXYNOS5250 /* Arndale */
+#define GPIO_LEFT_PADDR       0x11400000
 #else
 #error UNKNOWN SoC
 #endif
+#define GPIO_RIGHT_PADDR      0x13400000
 
 /* DMA */
 #define NS_MDMA1_PADDR        0x11C10000
