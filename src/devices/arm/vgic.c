@@ -25,13 +25,13 @@
 //#define DEBUG_DIST
 
 #ifdef DEBUG_IRQ
-#define DIRQ(...) printf(__VA_ARGS__)
+#define DIRQ(...) do{ printf("VDIST: "); printf(__VA_ARGS__); }while(0)
 #else
 #define DIRQ(...) do{}while(0)
 #endif
 
 #ifdef DEBUG_DIST
-#define DDIST(...) printf(__VA_ARGS__)
+#define DDIST(...) do{ printf("VDIST: "); printf(__VA_ARGS__); }while(0)
 #else
 #define DDIST(...) do{}while(0)
 #endif
@@ -299,7 +299,13 @@ int handle_vgic_maintenance(vm_t* vm, int idx)
     if (lr[idx]) {
         struct lr_of** lrof_ptr;
         set_pending(gic_dist, lr[idx]->irq, false);
-        irq_data_ack_irq(lr[idx]);
+        /* The VM might be ACKing the IRQ after disabling it, but before
+         * clearing local pending bits of the device. In this case, we
+         * cannot ACK the IRQ with the kernel yet as it may cause spurious
+         * IRQ deliveries to the guest. */
+        if (is_enabled(gic_dist, lr[idx]->irq)) {
+            irq_data_ack_irq(lr[idx]);
+        }
         lr[idx] = NULL;
         lrof_ptr = &vgic_device_get_vgic(d)->lr_overflow;
         if (*lrof_ptr) {
@@ -395,8 +401,8 @@ vgic_dist_enable_irq(struct device* d, vm_t* vm, irq_t irq)
     DDIST("enabling irq %d\n", irq);
     set_enable(gic_dist, irq, true);
     irq_data = virq_find_irq_data(vgic, irq);
-    /* Register the IRQ if it does not exist */
     if (!irq_data) {
+        /* Register the IRQ if it does not exist */
         struct irq_data* irq_data;
         int err;
         irq_data = irq_server_register_irq(vm->irq_server, irq, &vgic_dist_irq_handler, vm);
@@ -408,12 +414,14 @@ vgic_dist_enable_irq(struct device* d, vm_t* vm, irq_t irq)
         if (err) {
             return -1;
         }
+    } else {
+        /* If the IRQ is registered, ACK it so that new IRQs will come through */
+        irq_data_ack_irq(irq_data);
     }
     /* If it is already pending, trigger the IRQ */
     if (is_pending(gic_dist, irq)) {
         int err;
         err = vgic_vcpu_inject_irq(d, vm, irq_data);
-        assert(!err);
         return err;
     }
     return 0;
@@ -446,6 +454,7 @@ vgic_dist_set_pending_irq(struct device* d, vm_t* vm, irq_t irq)
     /* If it is enables, inject the IRQ */
     if (irq_data && gic_dist->enable && is_enabled(gic_dist, irq)) {
         int err;
+        DDIST("Injecting IRQ %d\n", irq);
         err = vgic_vcpu_inject_irq(d, vm, irq_data);
         assert(!err);
         return err;
@@ -470,6 +479,7 @@ vgic_dist_irq_handler(struct irq_data* irq)
     vm_t* vm;
     irq_t virq;
 
+    DIRQ("VM received IRQ %d\n", irq->irq);
     vm = irq_get_priv(irq);
     vgic_device = vm_find_device_by_id(vm, DEV_VGIC_DIST);
     vgic = vgic_device_get_vgic(vgic_device);
