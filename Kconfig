@@ -12,6 +12,11 @@ config LIB_SEL4_ARM_VMM
     bool "VMM library for ARM"
     default y
     depends on LIB_UTILS
+    depends on LIB_SEL4_UTILS
+    depends on LIB_SEL4_VKA
+    depends on LIB_SEL4_VSPACE
+    depends on LIB_SEL4_SIMPLE
+    depends on LIB_PLATSUPPORT
     depends on ARM_HYPERVISOR_SUPPORT
     help
         Build a VMM support library for the seL4 hypervisor
