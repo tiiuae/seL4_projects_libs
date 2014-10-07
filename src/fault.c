@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 //#define DEBUG_FAULTS
+//#define DEBUG_ERRATA
 
 #ifdef DEBUG_FAULTS
 #define DFAULT(...) printf(__VA_ARGS__)
@@ -25,11 +26,89 @@
 #define DFAULT(...) do{}while(0)
 #endif
 
+#ifdef DEBUG_ERRATA
+#define DERRATA(...) printf(__VA_ARGS__)
+#else
+#define DERRATA(...) printf(__VA_ARGS__)
+#endif
+
+#ifdef PLAT_EXYNOS5250
+#define HAS_ERRATA766422() 1
+#else
+#define HAS_ERRATA766422() 0
+#endif
 
 #define COLOR_ERROR "\033[1;31m"
 #define COLOR_NORMAL "\033[0m"
 
-uint32_t* decode_rt(int reg, seL4_UserContext* c)
+#define CPSR_THUMB         BIT(5)
+
+#define HSR_INST32         BIT(25)
+#define HSR_SYNDROME_VALID BIT(24)
+#define HSR_SYNDROME_RT(x) (((x) >> 16) & 0xf)
+
+static int
+fetch_fault_instruction(fault_t* fault, uint32_t* ret)
+{
+    int size = ((fault->fsr) & HSR_INST32) ? 4 : 2;
+    *ret = 0;
+    /* Fetch the ret */
+    if (vm_copyin(fault->vm, ret, fault->ip, size) < 0) {
+        return -1;
+    }
+    /* Swap half words for a 32 bit ret */
+    if (size == 4) {
+        *ret = ((*ret & 0xffff)) << 16 | ((*ret >> 16) & 0xffff);
+    }
+    return 0;
+}
+
+static int
+errata766422_get_rt(fault_t* f, uint32_t hsr)
+{
+    uint32_t instruction;
+    int err;
+    err = fetch_fault_instruction(f, &instruction);
+    if (err) {
+        return err;
+    }
+    if (hsr & HSR_INST32) {
+        DERRATA("Errata766422 @ 0x%08x (0x%08x)\n", f->regs.pc, instruction);
+        if ((instruction & 0xff700000) == 0xf8400000) {
+            return (instruction >> 12) & 0xf;
+        } else if ((instruction & 0xfff00000) == 0xf8800000) {
+            return (instruction >> 12) & 0xf;
+        } else if ((instruction & 0xfff00000) == 0xf0000000) {
+            return (instruction >> 12) & 0xf;
+        } else if ((instruction & 0x0e500000) == 0x06400000) {
+            return (instruction >> 12) & 0xf;
+        } else {
+            printf("Unable to decode instruction 0x%08x\n", instruction);
+            return -1;
+        }
+    } else {
+        printf("Errata766422 @ 0x%08x (0x%04x)\n", f->regs.pc, instruction);
+        /* 16 bit instructions */
+        if ((instruction & 0xf800) == 0x6000) {
+            return (instruction >> 0) & 0x7;
+        } else if ((instruction & 0xf800) == 0x9000) {
+            return (instruction >> 8) & 0x7;
+        } else if ((instruction & 0xf800) == 0x5000) {
+            return (instruction >> 0) & 0x7;
+        } else if ((instruction & 0xfe00) == 0x5400) {
+            return (instruction >> 0) & 0x7;
+        } else if ((instruction & 0xf800) == 0x7000) {
+            return (instruction >> 0) & 0x7;
+        } else {
+            printf("Unable to decode instruction 0x%04x\n", instruction);
+            return -1;
+        }
+    }
+}
+
+
+uint32_t*
+decode_rt(int reg, seL4_UserContext* c)
 {
     switch (reg) {
     case  0:
@@ -115,9 +194,17 @@ new_fault(fault_t* fault)
     /* Pull in data if we can */
     fault->data = 0xdeadbeef;
     if (fault_is_data(fault) && fault_is_write(fault)) {
-        if (fault->fsr & (1U << 24)) {
+        if (fault->fsr & HSR_SYNDROME_VALID) {
             int rt;
-            rt = (fault->fsr >> 16) & 0xf;
+            if (HAS_ERRATA766422() && (fault->regs.cpsr & CPSR_THUMB)) {
+                rt = errata766422_get_rt(fault, fault->fsr);
+                if (rt < 0) {
+                    assert(!"Could not decode RT");
+                    return -1;
+                }
+            } else {
+                rt = HSR_SYNDROME_RT(fault->fsr);
+            }
             fault->data = *decode_rt(rt, &fault->regs);
         }
     }

@@ -35,7 +35,7 @@ struct fault {
 
 /// The IPA address of the fault
     uint32_t addr;
-/// The VA of the instruction which caused the fault
+/// The IPA of the instruction which caused the fault
     uint32_t ip;
 /// The data which was to be written, or the data to return to the VM
     uint32_t data;
