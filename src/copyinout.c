@@ -13,15 +13,26 @@
 #include <string.h>
 
 #include <elf/elf.h>
+#include <vka/capops.h>
+
 
 #define PAGE_SIZE (1U << 12)
 
 //#define DEBUG_COPYOUT
+//#define DEBUG_COPYIN
+
 #ifdef DEBUG_COPYOUT
-#define dprintf(...) printf("copyout: " __VA_ARGS__)
+#define DCOPYOUT(...) printf("copyout: " __VA_ARGS__)
 #else
-#define dprintf(...) do{}while(0)
+#define DCOPYOUT(...) do{}while(0)
 #endif
+
+#ifdef DEBUG_COPYIN
+#define DCOPYIN(...) printf("copyout: " __VA_ARGS__)
+#else
+#define DCOPYIN(...) do{}while(0)
+#endif
+
 
 
 static int
@@ -33,7 +44,7 @@ copy_out_page(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src,
     int err;
 
     assert(size <= PAGE_SIZE);
-    dprintf("copy out page 0x%x->0x%x (0x%x bytes)\n", (uint32_t)src, (uint32_t)dst, size);
+    DCOPYOUT("copy out page 0x%x->0x%x (0x%x bytes)\n", (uint32_t)src, (uint32_t)dst, size);
 
     /* Create a frame */
     err = vka_alloc_frame(vka, 12, &frame);
@@ -72,7 +83,7 @@ copy_out_page(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src,
 static int
 copy_out(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src, uintptr_t dest, size_t size)
 {
-    dprintf("copy out 0x%x->0x%x (0%x bytes)\n", (uint32_t)src, (uint32_t)dest, size);
+    DCOPYOUT("copy out 0x%x->0x%x (0x%x bytes)\n", (uint32_t)src, (uint32_t)dest, size);
     while (size) {
         int seg_size;
         int err;
@@ -95,7 +106,6 @@ vm_copyout(vm_t* vm, void* data, uintptr_t address, size_t size)
 {
     return copy_out(vm_get_vspace(vm), vm->vmm_vspace, vm->vka, data, address, size);
 }
-
 
 void*
 vm_copyout_elf(vm_t* vm, void* elf_file)
@@ -127,5 +137,80 @@ vm_copyout_elf(vm_t* vm, void* elf_file)
         }
     }
     return (void*)entry;
+}
+
+
+static int
+copy_in_page(vspace_t *vmm_vspace, vspace_t *vm_vspace, vka_t* vka, void* dest, void* src, int size)
+{
+    seL4_CPtr cap, vmm_cap;
+    cspacepath_t cap_path, vmm_cap_path;
+    void* tmp_src;
+    int err;
+
+    assert(size <= PAGE_SIZE);
+    DCOPYIN("copy in page 0x%x->0x%x (0x%x bytes)\n", (uint32_t)src, (uint32_t)dest, size);
+
+    /* Find the VM frame */
+    cap = vspace_get_cap(vm_vspace, src);
+    if (cap == seL4_CapNull) {
+        return 1;
+    }
+    vka_cspace_make_path(vka, cap, &cap_path);
+
+    /* Copy the cap so that we can map it into the VMM */
+    err = vka_cspace_alloc_path(vka, &vmm_cap_path);
+    vmm_cap = vmm_cap_path.capPtr;
+    if (err) {
+        return 1;
+    }
+    err = vka_cnode_copy(&vmm_cap_path, &cap_path, seL4_AllRights);
+    if (err) {
+        vka_cspace_free(vka, vmm_cap);
+        return 1;
+    }
+    /* Map it into the VMM vspace */
+    tmp_src = vspace_map_pages(vmm_vspace, &vmm_cap, NULL, seL4_AllRights, 1, 12, 1);
+    assert(tmp_src);
+    if (tmp_src == NULL) {
+        assert(!"Failed to map frame for copyin\n");
+        vka_cspace_free(vka, vmm_cap);
+        return 1;
+    }
+
+    /* Copy the data from the frame */
+    memcpy(dest, tmp_src + ((uintptr_t)src & 0xfff), size);
+
+    /* Clean up */
+    vspace_unmap_pages(vmm_vspace, tmp_src, 1, 12, NULL);
+
+    /* Done */
+    return err;
+}
+
+static int
+copy_in(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* dest, uintptr_t src, size_t size)
+{
+    DCOPYIN("copy in 0x%x->0x%x (0x%x bytes)\n", (uint32_t)src, (uint32_t)dest, size);
+    while (size) {
+        int seg_size;
+        int err;
+        seg_size = (size < PAGE_SIZE) ? size : PAGE_SIZE;
+        err = copy_in_page(dst_vspace, src_vspace, vka, dest, (void*)src, seg_size);
+        assert(!err);
+        if (err) {
+            return err;
+        }
+        dest += seg_size;
+        src += seg_size;
+        size -= seg_size;
+    }
+    return 0;
+}
+
+int
+vm_copyin(vm_t* vm, void* data, uintptr_t address, size_t size)
+{
+    return copy_in(vm->vmm_vspace, vm_get_vspace(vm), vm->vka, data, address, size);
 }
 

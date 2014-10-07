@@ -78,6 +78,16 @@ int vm_create(const char* name, int priority,
               vm_t* vm);
 
 /**
+ * Copy data in from the VM.
+ * @param[in] vm      A handle to the VM that the data should be read from
+ * @param[in] data    The address of the data to load to
+ * @param[in] address The VM IPA address that the data should be read at
+ * @param[in] size    The number of bytes of data to read
+ * @return            0 on success
+ */
+int vm_copyin(vm_t* vm, void* data, uintptr_t address, size_t size);
+
+/**
  * Copy data out to the VM.
  * @param[in] vm      A handle to the VM that the data should be loaded into
  * @param[in] data    The address of the data to load
