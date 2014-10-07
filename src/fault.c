@@ -82,6 +82,8 @@ errata766422_get_rt(fault_t* f, uint32_t hsr)
             return (instruction >> 12) & 0xf;
         } else if ((instruction & 0x0e500000) == 0x06400000) {
             return (instruction >> 12) & 0xf;
+        } else if ((instruction & 0xfff00000) == 0xf8000000) {
+            return (instruction >> 12) & 0xf;
         } else {
             printf("Unable to decode instruction 0x%08x\n", instruction);
             return -1;
@@ -199,6 +201,7 @@ new_fault(fault_t* fault)
             if (HAS_ERRATA766422() && (fault->regs.cpsr & CPSR_THUMB)) {
                 rt = errata766422_get_rt(fault, fault->fsr);
                 if (rt < 0) {
+                    print_fault(fault);
                     assert(!"Could not decode RT");
                     return -1;
                 }
