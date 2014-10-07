@@ -29,7 +29,7 @@
 #ifdef DEBUG_ERRATA
 #define DERRATA(...) printf(__VA_ARGS__)
 #else
-#define DERRATA(...) printf(__VA_ARGS__)
+#define DERRATA(...) do{}while(0)
 #endif
 
 #ifdef PLAT_EXYNOS5250
@@ -87,7 +87,7 @@ errata766422_get_rt(fault_t* f, uint32_t hsr)
             return -1;
         }
     } else {
-        printf("Errata766422 @ 0x%08x (0x%04x)\n", f->regs.pc, instruction);
+        DERRATA("Errata766422 @ 0x%08x (0x%04x)\n", f->regs.pc, instruction);
         /* 16 bit instructions */
         if ((instruction & 0xf800) == 0x6000) {
             return (instruction >> 0) & 0x7;
