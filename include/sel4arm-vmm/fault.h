@@ -167,6 +167,7 @@ static inline uint32_t fault_get_addr_word(fault_t* f)
     return f->addr & ~(0x3U);
 }
 
+#include <stdio.h>
 
 static inline void fault_print_data(fault_t* fault)
 {
