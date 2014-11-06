@@ -267,7 +267,7 @@ vm_create(const char* name, int priority,
 
     /* Create an IRQ server for this VM */
     err = irq_server_new(vmm_vspace, vka, simple_get_cnode(simple), priority,
-                         simple_get_irq_ctrl(simple), badged_vmm_endpoint,
+                         simple, badged_vmm_endpoint,
                          IRQ_MESSAGE_LABEL, 256, &vm->irq_server);
     assert(!err);
 
