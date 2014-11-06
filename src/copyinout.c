@@ -103,7 +103,9 @@ copy_out_page(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src,
     memcpy(tmp_dst + offset, src, copy_size);
 
     /* Clean up */
-    vspace_unmap_pages(src_vspace, tmp_dst, 1, bits, VSPACE_FREE);
+    vspace_unmap_pages(src_vspace, tmp_dst, 1, bits, NULL);
+    vka_cnode_delete(&dup_cap_path);
+    vka_cspace_free(vka, dup_cap);
 
     DCOPYOUT("copied out page 0x%x->0x%x (0x%x bytes)\n", (uint32_t)src, (uint32_t)dst, copy_size);
 
