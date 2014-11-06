@@ -29,6 +29,7 @@
 //#define DEBUG_VM
 //#define DEBUG_RAM_FAULTS
 //#define DEBUG_DEV_FAULTS
+//#define DEBUG_STRACE
 
 #define VM_CSPACE_SIZE 4
 #define VM_FAULT_EP_SLOT 1
@@ -91,8 +92,14 @@
 #define DDEVFAULT(...) do{}while(0)
 #endif
 
+#ifdef DEBUG_STRACE
+#define DSTRACE(...) printf(__VA_ARGS__)
+#else
+#define DSTRACE(...) do{}while(0)
+#endif
+
 #ifdef DEBUG_VM
-#define DVM(lvl, ...) do{ printf(__VA_ARGS__);}while(0)
+#define DVM(...) do{ printf(__VA_ARGS__);}while(0)
 #else
 #define DVM(...) do{}while(0)
 #endif
@@ -319,6 +326,87 @@ vm_stop(vm_t* vm)
     return seL4_TCB_Suspend(vm_get_tcb(vm));
 }
 
+
+static void
+sys_pa_to_ipa(vm_t* vm, seL4_UserContext* regs)
+{
+    uint32_t pa;
+    pa = regs->r0;
+    DSTRACE("PA translation syscall from [%s]: 0x%08x->?\n", vm->name, pa);
+    regs->r0 = pa;
+}
+
+
+static void
+sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
+{
+    seL4_ARM_Page_GetAddress_t ret;
+    uint32_t ipa;
+    seL4_CPtr cap;
+    ipa = regs->r0;
+    cap = vspace_get_cap(vm_get_vspace(vm), (void*)ipa);
+    if (cap == seL4_CapNull) {
+        void* mapped_address;
+        mapped_address = map_vm_ram(vm, ipa);
+        if (mapped_address == NULL) {
+            printf("Could not map address for IPA translation\n");
+            return;
+        }
+        cap = vspace_get_cap(vm_get_vspace(vm), (void*)ipa);
+        assert(cap != seL4_CapNull);
+    }
+
+    ret = seL4_ARM_Page_GetAddress(cap);
+    assert(!ret.error);
+    DSTRACE("IPA translation syscall from [%s]: 0x%08x->0x%08x\n",
+           vm->name, ipa, ret.paddr);
+    regs->r0 = ret.paddr;
+}
+
+static void
+sys_nop(vm_t* vm, seL4_UserContext* regs)
+{
+    DSTRACE("NOP syscall from [%s]\n", vm->name);
+}
+
+static int
+handle_syscall(vm_t* vm, seL4_Word length)
+{
+    seL4_Word syscall, ip;
+    seL4_UserContext regs;
+    seL4_CPtr tcb;
+    int err;
+
+    syscall = seL4_GetMR(EXCEPT_IPC_SYS_MR_SYSCALL),
+    ip = seL4_GetMR(EXCEPT_IPC_SYS_MR_PC);
+
+    tcb = vm_get_tcb(vm);
+    err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
+    assert(!err);
+    regs.pc += 4;
+
+    DSTRACE("Syscall %d from [%s]\n", syscall, vm->name);
+    switch (syscall) {
+    case 65:
+        sys_pa_to_ipa(vm, &regs);
+        break;
+
+    case 66:
+        sys_ipa_to_pa(vm, &regs);
+        break;
+    case 67:
+        sys_nop(vm, &regs);
+        break;
+    default:
+        printf("%sBad syscall from [%s]: scno "DFMT" at PC: 0x"XFMT"%s\n",
+               COLOR_ERROR, vm->name, syscall, ip, COLOR_NORMAL);
+        return -1;
+    }
+    err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
+    assert(!err);
+    return 0;
+}
+
 int
 vm_event(vm_t* vm, seL4_MessageInfo_t tag)
 {
@@ -343,14 +431,15 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     break;
 
     case SEL4_EXCEPT_IPC_LABEL: {
-        seL4_Word syscall, ip;
+        int err;
         assert(length == SEL4_EXCEPT_IPC_LENGTH);
-
-        syscall = seL4_GetMR(EXCEPT_IPC_SYS_MR_SYSCALL),
-        ip = seL4_GetMR(EXCEPT_IPC_SYS_MR_PC),
-
-        printf("%sBad syscall from [%s]: scno "DFMT" at PC: 0x"XFMT"%s\n",
-               COLOR_ERROR, vm->name, syscall, ip, COLOR_NORMAL);
+        err = handle_syscall(vm, length);
+        assert(!err);
+        if (!err) {
+            seL4_MessageInfo_t reply;
+            reply = seL4_MessageInfo_new(0, 0, 0, 0);
+            seL4_Reply(reply);
+        }
     }
     break;
 
@@ -439,7 +528,7 @@ vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
     buf = vmm_addr + (addr & 0xfff);
     for (atag_cur = atags; atag_cur != NULL; atag_cur = atag_cur->next) {
         int tag_size = atags_size_bytes(atag_cur);
-        DVM("ATAG copy 0x%x<-0x%x %d\n", buf, atag_cur->hdr, tag_size);
+        DVM("ATAG copy 0x%x<-0x%x %d\n", (uint32_t)buf, (uint32_t)atag_cur->hdr, tag_size);
         memcpy(buf, atag_cur->hdr, tag_size);
         buf += tag_size;
     }
