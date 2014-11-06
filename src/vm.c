@@ -244,7 +244,7 @@ vm_create(const char* name, int priority,
     /* Create a vspace */
     err = vka_alloc_page_directory(vka, &vm->pd);
     assert(!err);
-    err = seL4_ARM_ASIDPool_Assign(seL4_CapInitThreadASIDPool, vm->pd.cptr);
+    err = simple_ASIDPool_assign(simple, vm->pd.cptr);
     assert(err == seL4_NoError);
     err = sel4utils_get_vspace(vmm_vspace, &vm->vm_vspace, &vm->data, vka, vm->pd.cptr,
                                &vm_object_allocation_cb, (void*)vm);
