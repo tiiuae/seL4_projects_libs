@@ -62,6 +62,7 @@ copy_out_page(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src,
             return -1;
         }
         err = vspace_map_pages_at_vaddr(dst_vspace, &frame.cptr, NULL, dst, 1, bits, res);
+        vspace_free_reservation(dst_vspace, res);
         if (err) {
             return -1;
         }
