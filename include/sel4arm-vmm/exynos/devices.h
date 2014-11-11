@@ -21,7 +21,10 @@ int vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size);
 int vm_install_vgic(vm_t* vm);
 int vm_install_vcombiner(vm_t* vm);
 
-int vm_install_vpower(vm_t* vm);
+typedef int (*vm_power_cb)(vm_t* vm, void* token);
+int vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
+                      vm_power_cb reboot_cb, void* reboot_token);
+
 int vm_install_vsysreg(vm_t* vm);
 
 extern const struct device dev_vmct_timer;

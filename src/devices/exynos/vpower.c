@@ -27,6 +27,10 @@
 
 struct power_priv {
     vm_t *vm;
+    vm_power_cb shutdown_cb;
+    void* shutdown_token;
+    vm_power_cb reboot_cb;
+    void* reboot_token;
     void* regs[5];
 };
 
@@ -55,10 +59,17 @@ handle_vpower_fault(struct device* d, vm_t* vm, fault_t* fault)
              fault->data);
 
     } else {
-        if (bank == PWR_SWRST_OFFSET && reg_offset == PWR_SWRST_OFFSET) {
+        if (bank == PWR_SWRST_BANK && reg_offset == PWR_SWRST_OFFSET) {
             if (fault->data) {
                 /* Software reset */
                 DPWR("[%s] Software reset\n", d->name);
+                if (power_data->reboot_cb) {
+                    int err;
+                    err = power_data->reboot_cb(vm, power_data->reboot_token);
+                    if (err) {
+                        return err;
+                    }
+                }
             }
         } else {
             DPWR("[%s] pc0x%x| w0x%x:0x%x\n", d->name,
@@ -81,7 +92,8 @@ const struct device dev_valive = {
 };
 
 int
-vm_install_vpower(vm_t* vm)
+vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
+                  vm_power_cb reboot_cb, void* reboot_token)
 {
     struct power_priv *power_data;
     struct device d;
@@ -100,6 +112,10 @@ vm_install_vpower(vm_t* vm)
     }
     memset(power_data, 0, sizeof(*power_data));
     power_data->vm = vm;
+    power_data->shutdown_cb = shutdown_cb;
+    power_data->shutdown_token = shutdown_token;
+    power_data->reboot_cb = reboot_cb;
+    power_data->reboot_token = reboot_token;
 
     for (i = 0; i < d.size >> 12; i++) {
         power_data->regs[i] = map_device(vmm_vspace, vm->vka, vm->simple,
