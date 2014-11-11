@@ -88,23 +88,11 @@ const struct device dev_gpio_left = {
     .priv = NULL
 };
 
-
-
-
 const struct device dev_ps_gpio_right = {
     .devid = DEV_CUSTOM,
     .name = "gpio_right",
     .pstart = GPIO_RIGHT_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
-const struct device dev_ps_alive = {
-    .devid = DEV_CUSTOM,
-    .name = "alive",
-    .pstart = ALIVE_PADDR,
-    .size = 0x5000,
     .handle_page_fault = NULL,
     .priv = NULL
 };
@@ -176,15 +164,6 @@ const struct device dev_ps_chip_id = {
     .devid = DEV_CUSTOM,
     .name = "chipid",
     .pstart = CHIP_ID_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
-const struct device dev_ps_sysreg = {
-    .devid = DEV_CUSTOM,
-    .name = "sysreg",
-    .pstart = SYSREG_PADDR,
     .size = 0x1000,
     .handle_page_fault = NULL,
     .priv = NULL

@@ -359,7 +359,7 @@ sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
     ret = seL4_ARM_Page_GetAddress(cap);
     assert(!ret.error);
     DSTRACE("IPA translation syscall from [%s]: 0x%08x->0x%08x\n",
-           vm->name, ipa, ret.paddr);
+            vm->name, ipa, ret.paddr);
     regs->r0 = ret.paddr;
 }
 

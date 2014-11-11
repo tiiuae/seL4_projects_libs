@@ -21,6 +21,8 @@ int vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size);
 int vm_install_vgic(vm_t* vm);
 int vm_install_vcombiner(vm_t* vm);
 
+int vm_install_vpower(vm_t* vm);
+int vm_install_vsysreg(vm_t* vm);
 
 extern const struct device dev_vmct_timer;
 int vm_install_vmct(vm_t* vm);
