@@ -79,33 +79,6 @@ const struct device dev_usb2_ctrl = {
     .priv = NULL
 };
 
-const struct device dev_gpio_left = {
-    .devid = DEV_CUSTOM,
-    .name = "gpio.left",
-    .pstart = GPIO_LEFT_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
-const struct device dev_ps_gpio_right = {
-    .devid = DEV_CUSTOM,
-    .name = "gpio_right",
-    .pstart = GPIO_RIGHT_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
-const struct device dev_ps_cmu_top = {
-    .devid = DEV_CUSTOM,
-    .name = "CMU_TOP",
-    .pstart = CMU_TOP_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
 const struct device dev_ps_cmu_core = {
     .devid = DEV_CUSTOM,
     .name = "CMU_CORE",

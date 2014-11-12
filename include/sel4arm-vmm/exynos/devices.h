@@ -26,6 +26,9 @@ int vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
                       vm_power_cb reboot_cb, void* reboot_token);
 
 int vm_install_vsysreg(vm_t* vm);
+int vm_install_vcmu_top(vm_t* vm);
+int vm_install_vgpio_left(vm_t* vm);
+int vm_install_vgpio_right(vm_t* vm);
 
 extern const struct device dev_vmct_timer;
 int vm_install_vmct(vm_t* vm);
@@ -53,9 +56,9 @@ extern const struct device dev_usb2_ohci;
 extern const struct device dev_usb2_ehci;
 extern const struct device dev_usb2_ctrl;
 extern const struct device dev_gpio_left;
-extern const struct device dev_ps_gpio_right;
+extern const struct device dev_gpio_right;
 extern const struct device dev_ps_alive;
-extern const struct device dev_ps_cmu_top;
+extern const struct device dev_cmu_top;
 extern const struct device dev_ps_cmu_core;
 extern const struct device dev_ps_chip_id;
 extern const struct device dev_ps_cmu_cpu;
