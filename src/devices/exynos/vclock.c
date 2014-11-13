@@ -43,18 +43,31 @@ handle_vcmu_top_fault(struct device* d, vm_t* vm, fault_t* fault)
     reg = (volatile uint32_t*)(cmu_top_data->regs + offset);
     if (fault_is_read(fault)) {
         fault->data = *reg;
-        DCLOCK("[%s] pc0x%x| r0x%x:0x%x\n", d->name,
-               fault->regs.pc,
-               fault->addr,
-               fault->data);
+//        DCLOCK("[%s] pc0x%x| r0x%x:0x%x\n", d->name,
+//               fault->regs.pc,
+//               fault->addr,
+//               fault->data);
 
     } else {
-        DCLOCK("[%s] pc0x%x| w0x%x:0x%x\n", d->name,
-               fault->regs.pc,
-               fault->addr,
-               fault->data);
-        *reg = fault_emulate(fault, *reg);
+//        DCLOCK("[%s] pc0x%x| w0x%x:0x%x\n", d->name,
+//               fault->regs.pc,
+//               fault->addr,
+//               fault->data);
+	uint32_t val;
+        val = fault_emulate(fault, *reg);
+	switch (offset) {
+		case 0x950:
+			val |= 0xA;
+			break;
+		case 0x350:
+			val |= 0x1010;
+			break;
+		default:
+			break;
+	}
+	*reg = val;
     }
+
     return advance_fault(fault);
 }
 

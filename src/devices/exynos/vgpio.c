@@ -14,7 +14,7 @@
 #include "../../devices.h"
 #include "../../vm.h"
 
-#define GPIO_DEBUG
+//#define GPIO_DEBUG
 
 #ifdef GPIO_DEBUG
 #define DGPIO(...) printf(__VA_ARGS__)
