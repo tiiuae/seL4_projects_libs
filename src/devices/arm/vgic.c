@@ -406,7 +406,7 @@ vgic_dist_enable_irq(struct device* d, vm_t* vm, irq_t irq)
         struct irq_data* irq_data;
         int err;
         irq_data = irq_server_register_irq(vm->irq_server, irq, &vgic_dist_irq_handler, vm);
-        assert(irq_data);
+        //assert(irq_data);
         if (!irq_data) {
             return -1;
         }
