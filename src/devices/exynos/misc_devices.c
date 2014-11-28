@@ -79,60 +79,6 @@ const struct device dev_usb2_ctrl = {
     .priv = NULL
 };
 
-const struct device dev_ps_cmu_core = {
-    .devid = DEV_CUSTOM,
-    .name = "CMU_CORE",
-    .pstart = CMU_CORE_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
-const struct device dev_ps_cmu_cpu = {
-    .devid = DEV_CUSTOM,
-    .name = "CMU_CPU",
-    .pstart = CMU_CPU_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
-const struct device dev_ps_cmu_cdrex = {
-    .devid = DEV_CUSTOM,
-    .name = "CMU_CDREX",
-    .pstart = CMU_CDREX_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
-const struct device dev_ps_cmu_mem = {
-    .devid = DEV_CUSTOM,
-    .name = "CMU_MEM",
-    .pstart = CMU_MEM_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
-const struct device dev_ps_cmu_isp = {
-    .devid = DEV_CUSTOM,
-    .name = "CMU_ISP",
-    .pstart = CMU_ISP_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
-const struct device dev_ps_cmu_acp = {
-    .devid = DEV_CUSTOM,
-    .name = "CMU_ACP",
-    .pstart = CMU_ACP_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = NULL,
-    .priv = NULL
-};
-
 const struct device dev_ps_chip_id = {
     .devid = DEV_CUSTOM,
     .name = "chipid",
