@@ -191,7 +191,7 @@ const struct device dev_cmu_top = {
     .name = "CMU_TOP",
     .pstart = CMU_TOP_PADDR,
     .size = 0x1000,
-    .handle_page_fault = &handle_vcmu_top_fault,
+    .handle_page_fault = NULL,
     .priv = NULL
 };
 
