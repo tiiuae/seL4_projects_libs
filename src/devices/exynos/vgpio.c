@@ -98,6 +98,13 @@ handle_vgpio_fault(struct device* d, vm_t* vm, fault_t* fault, int bank)
     struct gpio_device* gpio_device = (struct gpio_device*)d->priv;
     volatile uint32_t *reg;
     int offset;
+    if (gpio_device->regs[bank] == NULL) {
+        /* We could not map the device. Lets return SBZ */
+        if (fault_is_read(fault)) {
+            fault->data = 0;
+        }
+        return advance_fault(fault);
+    }
 
     /* Gather fault information */
     offset = fault->addr - d->pstart;
@@ -202,10 +209,14 @@ vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac, enum vacdev_action 
             gpio_device->regs[i] = map_device(vmm_vspace, vm->vka, vm->simple,
                                               dev.pstart, 0, seL4_AllRights);
             /* Ignore failues. We will check regs for NULL on access */
-            err = vm_add_device(vm, &dev);
-            assert(!err);
-            if (err) {
-                return NULL;
+            if (gpio_device->regs[i] != NULL) {
+                err = vm_add_device(vm, &dev);
+                assert(!err);
+                if (err) {
+                    return NULL;
+                }
+            } else {
+                LOG_INFO("Failed to provide device region 0x%08x->0x%08x", dev.pstart, dev.pstart + dev.size);
             }
         }
     }
