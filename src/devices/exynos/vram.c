@@ -16,7 +16,7 @@ handle_ram_fault(struct device* d, vm_t* vm, fault_t* fault)
 {
     void* addr;
 
-    addr = map_ram(vm_get_vspace(vm), vm->vka, fault->addr);
+    addr = map_vm_ram(vm, fault->addr);
     if (addr == NULL) {
         print_fault(fault);
         abandon_fault(fault);

@@ -101,6 +101,8 @@ errata766422_get_rt(fault_t* f, uint32_t hsr)
             return (instruction >> 0) & 0x7;
         } else if ((instruction & 0xf800) == 0x7000) {
             return (instruction >> 0) & 0x7;
+        } else if ((instruction & 0xf800) == 0x8000) {
+            return (instruction >> 0) & 0x7;
         } else {
             printf("Unable to decode instruction 0x%04x\n", instruction);
             return -1;

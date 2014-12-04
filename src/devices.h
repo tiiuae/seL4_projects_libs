@@ -39,7 +39,7 @@ void* map_vm_device(vm_t* vm, uintptr_t pa, uintptr_t va, seL4_CapRights rights)
 
 /**
  * Map RAM with full access rights
- * @param[in] vspace  The vspace to map the device to
+ * @param[in] vspace  The vspace to map the RAM to
  * @param[in] vka     Allocator to use for kernel object creation
  * @param[in] va      The VA (or IPA) to map to, or 0 to let the system choose
  * @return            The virtual address of the mapping
