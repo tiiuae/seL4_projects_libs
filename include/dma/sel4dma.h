@@ -35,12 +35,12 @@ struct dma_mem_descriptor {
     uintptr_t vaddr;
     /// The physical address of the memory.
     uintptr_t paddr;
-    /** Boolian representation of the cacheability of the frames in this 
+    /** Boolian representation of the cacheability of the frames in this
         descriptor. */
     int       cached;
     /// The size of each frame (2^frame_size_bits bytes)
     int       size_bits;
-    /// The capability to this frame 
+    /// The capability to this frame
     seL4_CPtr cap;
     /// This field is unused and may be used by the application.
     void*     cookie;
@@ -48,13 +48,13 @@ struct dma_mem_descriptor {
 
 /**
  * A callback for providing DMA memory to the allocator.
- * @param[in]  min_size the minimum size for the allocation 
+ * @param[in]  min_size the minimum size for the allocation
  * @param[in]  cached   0 if the requested memory should not be cached.
- * @param[out] dma_desc On return, this structure should be filled with a 
+ * @param[out] dma_desc On return, this structure should be filled with a
  *                      description of the memory that has been provided.
  * @return              0 on success
  */
-typedef int (*dma_morecore_fn)(size_t min_size, int cached, 
+typedef int (*dma_morecore_fn)(size_t min_size, int cached,
                                struct dma_mem_descriptor* dma_desc);
 
 /**

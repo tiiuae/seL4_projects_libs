@@ -33,7 +33,7 @@ typedef uintptr_t paddr_t;
  * maintenance operations may affect (corrupt) adjacent buffers. This is due
  * to cach line size limits and software flushing granularity (perhaps the OS
  * interface limits us to perform maintenance operations on a per page basis).
- * 
+ *
  * These flags will generally lead to multiple memory pools where each request
  * will be allocated from the appropriate pool.
  */
@@ -95,10 +95,10 @@ void dma_cleaninvalidate(dma_mem_t dma_mem, vaddr_t vstart, vaddr_t vend);
  * Allocate DMA memory.
  * @param[in]  allocator The DMA allocator instance to use for the allocation.
  * @param[in]  size      The allocation size.
- * @param[in]  align     The minimum alignment (in bytes) of the allocated 
+ * @param[in]  align     The minimum alignment (in bytes) of the allocated
  *                       region.
  * @param[in]  flags     The allocation properties of the request.
- * @param[out] dma_mem   If the call is successful and dma_mem is not NULL, 
+ * @param[out] dma_mem   If the call is successful and dma_mem is not NULL,
  *                       dma_mem will contain a handle to the allocated memory.
  * @return               The virtual address of the allocated DMA memory, NULL
  *                       on failure.
@@ -121,7 +121,7 @@ void dma_free(dma_mem_t dma_mem);
 
 
 /**
- * Retrieve the DMA memory handle from a given physical address. 
+ * Retrieve the DMA memory handle from a given physical address.
  * The performance of this operation is likely to be poor, but it may be useful
  * for rapid prototyping or debugging.
  * @param[in] allocator The allocator managing the memory.
