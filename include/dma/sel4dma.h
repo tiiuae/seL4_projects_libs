@@ -19,6 +19,7 @@
 #define _DMA_SEL4DMA_H_
 
 #include <dma/dma.h>
+#include <platsupport/io.h>
 
 /* Hack for use without seL4 */
 #ifndef __LIBSEL4_SEL4_H
@@ -64,6 +65,19 @@ typedef int (*dma_morecore_fn)(size_t min_size, int cached,
  * @return             A reference to a new DMA allocator instance.
  */
 struct dma_allocator* dma_allocator_init(dma_morecore_fn morecore);
+
+/**
+ * Initialises a new DMA allocator for use with io_ops.
+ * @param[in]  morecore A function to use when the allocator requires more DMA
+ *                      memory. NULL if the allocator should not request more
+ *                      memory.
+ * @param[in]  cache_op Operations to use for cleaning/invalidating the cache
+ * @param[out] dma_man  libplatsupport DMA manager structure to populate
+ * @return              0 on success
+ */
+int dma_dmaman_init(dma_morecore_fn morecore, ps_dma_cache_op_fn_t cache_ops,
+                    ps_dma_man_t *dma_man);
+
 
 /**
  * Explicitly provides memory to the DMA allocator.

@@ -10,7 +10,7 @@
 
 /* Author: alex.kroh@nicta.com.au */
 
-#include "sel4dma.h"
+#include <dma/sel4dma.h>
 #include "services.h"
 #include <assert.h>
 #include <stdio.h>
@@ -439,4 +439,81 @@ dma_cleaninvalidate(dma_mem_t m, vaddr_t vstart, vaddr_t vend){
     (void)vstart;
     (void)vend;
 }
+
+/******** libplatsupport adapter ********/
+
+static void*
+dma_dma_alloc(void *cookie, size_t size, int align, int cached, ps_mem_flags_t flags){
+    struct dma_allocator* dalloc;
+    vaddr_t vaddr;
+    enum dma_flags dma_flags;
+    assert(cookie);
+    dalloc = (struct dma_allocator*)cookie;
+
+    if(cached){
+        dma_flags = DMAF_COHERENT;
+    }else{
+        switch(flags){
+        case PS_MEM_NORMAL:
+            dma_flags = DMAF_HRW;
+            break;
+        case PS_MEM_HR:
+            dma_flags = DMAF_HR;
+            break;
+        case PS_MEM_HW:
+            dma_flags = DMAF_HW;
+            break;
+        default:
+            dma_flags = DMAF_COHERENT;
+        }
+    }
+
+    vaddr = dma_alloc(dalloc, size, align, dma_flags, NULL);
+    return vaddr;
+}
+
+static void
+dma_dma_free(void *cookie, void *addr, size_t size){
+    struct dma_allocator* dalloc;
+    assert(cookie);
+    dalloc = (struct dma_allocator*)cookie;
+    dma_free(dma_vlookup(dalloc, addr));
+}
+
+
+static uintptr_t
+dma_dma_pin(void *cookie, void *addr, size_t size){
+    struct dma_allocator* dalloc;
+    assert(cookie);
+    /* DMA memory is pinned when allocated */
+    dalloc = (struct dma_allocator*)cookie;
+    return dma_paddr(dma_vlookup(dalloc, addr));
+}
+
+static void
+dma_dma_unpin(void *cookie UNUSED, void *addr UNUSED, size_t size UNUSED){
+    /* DMA memory is unpinned when freed */
+}
+
+
+int
+dma_dmaman_init(dma_morecore_fn morecore, ps_dma_cache_op_fn_t cache_ops,
+                    ps_dma_man_t *dma_man){
+    struct dma_allocator* dalloc;
+    assert(dma_man);
+
+    dalloc = dma_allocator_init(morecore);
+    if(dalloc != NULL){
+        dma_man->cookie = dalloc;
+        dma_man->dma_cache_op_fn = cache_ops;
+        dma_man->dma_alloc_fn = &dma_dma_alloc;
+        dma_man->dma_free_fn = &dma_dma_free;
+        dma_man->dma_pin_fn = &dma_dma_pin;
+        dma_man->dma_unpin_fn = &dma_dma_unpin;
+        return 0;
+    }else{
+        return -1;
+    }
+}
+
 
