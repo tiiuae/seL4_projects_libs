@@ -48,7 +48,6 @@ struct irq_group_data {
 struct combiner_data {
     irq_combiner_t pcombiner;
     struct irq_group_data* data[32];
-    irq_server_t irq_server;
 };
 
 /* For virtualisation */
@@ -59,25 +58,24 @@ struct virq_combiner {
 
 struct combiner_data _combiner;
 
+static inline struct virq_combiner* vcombiner_priv_get_vcombiner(void* priv) {
+    return (struct virq_combiner*)priv;
+}
 
-static void
-combiner_irq_handler(struct irq_data* irq)
+void
+vm_combiner_irq_handler(vm_t* vm, int irq)
 {
-    struct combiner_data* combiner;
+    struct combiner_data* combiner = &_combiner;
     struct combiner_irq* cirq;
     uint32_t imsr;
     int i, g;
 
-    assert(irq->token);
-    combiner = (struct combiner_data*)irq->token;
-
     /* Decode group and index */
-    g = irq->irq - 32;
+    g = irq - 32;
     imsr = irq_combiner_group_pending(&combiner->pcombiner, g);
     i = __builtin_ctz(imsr);
     /* Disable the IRQ */
     irq_combiner_enable_irq(&combiner->pcombiner, COMBINER_IRQ(g, i));
-    irq_data_ack_irq(irq);
 
     /* Allocate a combiner IRQ structure */
     cirq = (struct combiner_irq*)malloc(sizeof(*cirq));
@@ -111,8 +109,7 @@ combiner_irq_ack(struct combiner_irq* cirq)
 
 
 int
-vmm_register_combiner_irq(irq_server_t irq_server, int group, int idx,
-                          combiner_irq_handler_fn cb, void* priv)
+vmm_register_combiner_irq(int group, int idx, combiner_irq_handler_fn cb, void* priv)
 {
     struct combiner_data* combiner = &_combiner;
     assert(0 <= group && group < 32);
@@ -120,9 +117,7 @@ vmm_register_combiner_irq(irq_server_t irq_server, int group, int idx,
 
     /* If no IRQ's for this group yet, setup the group */
     if (combiner->data[group] == NULL) {
-        struct irq_data* irq_data;
         void *addr;
-        irq_t pirq;
 
         addr = malloc(sizeof(struct irq_group_data) * 8);
         assert(addr);
@@ -133,13 +128,7 @@ vmm_register_combiner_irq(irq_server_t irq_server, int group, int idx,
         memset(addr, 0, sizeof(struct irq_group_data) * 8);
         combiner->data[group] = (struct irq_group_data*)addr;
 
-        pirq = group + 32;
-        DCOMBINER("Registered IRQ %d\n", pirq);
-        irq_data = irq_server_register_irq(irq_server, pirq, &combiner_irq_handler, combiner);
-        assert(irq_data);
-        if (!irq_data) {
-            return -1;
-        }
+        DCOMBINER("Registered combiner IRQ (%d, %d)\n", group, idx);
     }
 
     /* Register the callback */
@@ -149,10 +138,6 @@ vmm_register_combiner_irq(irq_server_t irq_server, int group, int idx,
     /* Enable the irq */
     irq_combiner_enable_irq(&combiner->pcombiner, COMBINER_IRQ(group, idx));
     return 0;
-}
-
-static inline struct virq_combiner* vcombiner_priv_get_vcombiner(void* priv) {
-    return (struct virq_combiner*)priv;
 }
 
 static int
@@ -219,11 +204,9 @@ vcombiner_fault(struct device* d, vm_t* vm, fault_t* fault)
 
 
 const struct device dev_irq_combiner = {
-    .devid = DEV_MCT_TIMER,
+    .devid = DEV_IRQ_COMBINER,
     .name = "irq.combiner",
-
     .pstart = IRQ_COMBINER_PADDR,
-
     .size = 0x1000,
     .handle_page_fault = vcombiner_fault,
     .priv = NULL
@@ -241,7 +224,6 @@ vm_install_vcombiner(vm_t* vm)
     if (err) {
         return -1;
     }
-    _combiner.irq_server = vm->irq_server;
 
     /* Distributor */
     combiner = dev_irq_combiner;

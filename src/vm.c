@@ -24,7 +24,6 @@
 #include "devices/arm/vgic.h"
 
 #include "devices.h"
-#include <sel4utils/irq_server.h>
 
 //#define DEBUG_VM
 //#define DEBUG_RAM_FAULTS
@@ -34,8 +33,6 @@
 #define VM_CSPACE_SIZE 4
 #define VM_FAULT_EP_SLOT 1
 #define VM_CSPACE_SLOT 2
-
-#define IRQ_MESSAGE_LABEL 0xCAFE
 
 #define MODE_USER       0x10
 #define MODE_FIQ        0x11
@@ -216,7 +213,6 @@ vm_create(const char* name, int priority,
 
     seL4_CapData_t null_cap_data = {{0}};
     seL4_CapData_t cspace_root_data;
-    seL4_CPtr badged_vmm_endpoint;
     cspacepath_t src, dst;
 
     int err;
@@ -256,19 +252,12 @@ vm_create(const char* name, int priority,
     assert(!err);
     err = vka_cnode_mint(&dst, &src, seL4_AllRights, seL4_CapData_Badge_new(vm_badge));
     assert(!err);
-    badged_vmm_endpoint = dst.capPtr;
     /* Copy it to the cspace of the VM for fault IPC */
     src = dst;
     dst.root = vm->cspace.cptr;
     dst.capPtr = VM_FAULT_EP_SLOT;
     dst.capDepth = VM_CSPACE_SIZE;
     err = vka_cnode_copy(&dst, &src, seL4_AllRights);
-    assert(!err);
-
-    /* Create an IRQ server for this VM */
-    err = irq_server_new(vmm_vspace, vka, simple_get_cnode(simple), priority,
-                         simple, badged_vmm_endpoint,
-                         IRQ_MESSAGE_LABEL, 256, &vm->irq_server);
     assert(!err);
 
     /* Create TCB */
@@ -458,9 +447,6 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         }
     }
     break;
-    case IRQ_MESSAGE_LABEL:
-        irq_server_handle_irq_ipc(vm->irq_server);
-        break;
     case SEL4_VGIC_MAINTENANCE_LABEL: {
         int idx;
         int err;
@@ -558,6 +544,7 @@ vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
 int
 vm_add_device(vm_t* vm, const struct device* d)
 {
+    assert(d != NULL);
     if (vm->ndevices < MAX_DEVICES_PER_VM) {
         vm->devices[vm->ndevices++] = *d;
         return 0;
