@@ -681,20 +681,17 @@ int
 vm_inject_IRQ(virq_handle_t virq)
 {
     struct device* vgic_device;
-    struct vgic* vgic;
     vm_t* vm;
-    int err;
     assert(virq);
     vm = virq->vm;
+
+    DIRQ("VM received IRQ %d\n", virq->virq);
+
     /* Grab a handle to the VGIC */
     vgic_device = vm_find_device_by_id(vm, DEV_VGIC_DIST);
     if (vgic_device == NULL) {
         return -1;
     }
-    vgic = vgic_device_get_vgic(vgic_device);
-
-    DIRQ("VM received IRQ %d\n", virq->virq);
-    vgic_device = vm_find_device_by_id(vm, DEV_VGIC_DIST);
 
     vgic_dist_set_pending_irq(vgic_device, vm, virq->virq);
 
