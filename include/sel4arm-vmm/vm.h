@@ -169,6 +169,17 @@ virq_handle_t vm_virq_new(vm_t* vm, int virq, void (*ack)(void*), void* token);
  */
 int vm_inject_IRQ(virq_handle_t virq);
 
+/**
+ * Install a service into the VM
+ * Effectively a cap copy into the CNode of the VM. This allows the VM to
+ * make a seL4 call
+ * @param[in] vm       The VM to install the service into
+ * @param[in] service  A capability for VM
+ * @param[in] index    The index at which to install the cap
+ * @param[in] badge    The badge to assign to the cap.
+ * @return             0 on success
+ */
+int vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t badge);
 
 
 #endif /* SEL4ARM_VMM_VM_H */
