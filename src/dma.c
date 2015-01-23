@@ -10,10 +10,10 @@
 
 /* Author: alex.kroh@nicta.com.au */
 
-#include <dma/sel4dma.h>
-#include "services.h"
+#include <dma/dma.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 //#define DMA_DEBUG
 #ifdef DMA_DEBUG
@@ -25,8 +25,18 @@
 #define dprintf(...) do{}while(0)
 #endif
 
-/* What if we do not have seL4? */
-#define seL4_CPtr uint32_t
+#if defined(PLAT_IMX6) || defined(IMX6)
+#define DMA_MINALIGN_BYTES 32
+#elif defined(PLAT_EXYNOS4)
+#define DMA_MINALIGN_BYTES 32
+#elif defined(PLAT_EXYNOS5)
+#define DMA_MINALIGN_BYTES 32
+#else
+#warning Unknown platform. DMA alignment defaulting to 32 bytes.
+#endif
+
+#define _malloc malloc
+#define _free   free
 
 /* dma_mem_t flag bit that signals that the memory is in use */
 #define DMFLAG_ALLOCATED 1
@@ -38,7 +48,7 @@ struct dma_memd_node {
     /* Number of frames in this region */
     int nframes;
     /* Caps to the underlying frames */
-    seL4_CPtr *caps;
+    void** alloc_cookies;
     /* Head of linked list of regions */
     dma_mem_t dma_mem_head;
     /* Chain */
@@ -177,13 +187,13 @@ do_dma_provide_mem(struct dma_allocator* allocator,
     n->dma_mem_head = m;
     n->next = allocator->head;
     n->nframes = 1;
-    n->caps = (seL4_CPtr*)_malloc(sizeof(*n->caps) * n->nframes);
-    if (n->caps == NULL) {
+    n->alloc_cookies = _malloc(sizeof(*n->alloc_cookies) * n->nframes);
+    if (n->alloc_cookies == NULL) {
         _free(n);
         _free(m);
         return NULL;
     }
-    n->caps[0] = dma_desc->cap;
+    n->alloc_cookies[0] = dma_desc->alloc_cookie;
     /* Add the node to the allocator */
     allocator->head = n;
 
@@ -343,11 +353,11 @@ dma_reclaim_mem(struct dma_allocator* allocator,
             *dma_desc = n->desc;
             /* Currently there is not support for compacted nodes */
             assert(n->nframes == 1);
-            dma_desc->cap = n->caps[0];
+            dma_desc->alloc_cookie = n->alloc_cookies[0];
             /* Remove the node and free memory */
             *nptr = n->next;
             _free(m);
-            _free(n->caps);
+            _free(n->alloc_cookies);
             _free(n);
             return 0;
         }
