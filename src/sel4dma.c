@@ -236,8 +236,8 @@ dma_memd_alloc(struct dma_memd_node* n, size_t size, int align)
                 mem_align = 0;
             }
             mem_size = _mem_size(m) - mem_align;
-
-            if (mem_size >= size) {
+            /* Check for overflow in subtraction and check our size */
+            if (_mem_size(m) > mem_align && mem_size >= size) {
                 m->offset += mem_align;
                 /* Split off the free memory if possible */
                 if (mem_size > size) {
