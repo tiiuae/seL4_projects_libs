@@ -15,10 +15,6 @@
 #include <sel4arm-vmm/vm.h>
 
 extern const struct device dev_vram;
-int vm_install_ram_default(vm_t *vm);
-int vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size);
-
-int vm_install_vgic(vm_t* vm);
 
 /**
  * vm_combiner_irq_handler should be called when an IRQ combiner IRQ occurs.
