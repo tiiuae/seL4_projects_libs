@@ -232,7 +232,7 @@ vm_create(const char* name, int priority,
                                &vm_object_allocation_cb, (void*)vm);
     assert(!err);
 
-    /* Badge the endpoint for the IRQ server */
+    /* Badge the endpoint */
     vka_cspace_make_path(vka, vmm_endpoint, &src);
     err = vka_cspace_alloc_path(vka, &dst);
     assert(!err);

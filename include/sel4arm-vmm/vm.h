@@ -40,7 +40,6 @@ struct vm {
     vka_object_t tcb;
     vka_object_t pd;
     vka_object_t vcpu;
-    seL4_CPtr fault_ep;
     /* Installed devices */
     struct device devices[MAX_DEVICES_PER_VM];
     int ndevices;

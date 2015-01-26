@@ -55,6 +55,16 @@ void* map_ram(vspace_t *vspace, vka_t* vka, uintptr_t vaddr);
 void* map_vm_ram(vm_t* vm, uintptr_t va);
 
 /**
+ * Map a shared page between VM and VMM. The page will not be mapped cacheable
+ * to force coherency with VM policy.
+ * @param[in] vm     The VM to map the page into
+ * @param[in] ipa    The VM IPA that the page should be mapped to
+ * @param[in] rights The Access permissions of the mapping for the VM
+ * @return           The VMM virtual address off the mapping
+ */
+void* map_shared_page(vm_t* vm, uintptr_t ipa, seL4_CapRights rights);
+
+/**
  * Map a device ready for emulation
  * The device frame will not actually be mapped, read only RAM will be mapped
  * instead. Additionally, the frame will also be mapped into the VMM with
