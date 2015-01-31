@@ -30,13 +30,21 @@
 #include <string.h>
 
 //#define DEBUG_ROOTHUB
-
+//#define DEBUG_VUSB
 
 #ifdef DEBUG_ROOTHUB
-#define DROOTHUB(...) printf("VMM root hub:" __VA_ARGS__)
+#define DROOTHUB(...) printf("VMM USB root hub:" __VA_ARGS__)
 #else
 #define DROOTHUB(...) do{}while(0)
 #endif
+
+#ifdef DEBUG_VUSB
+#define DVUSB(...) printf("VMM USB:" __VA_ARGS__)
+#else
+#define DVUSB(...) do{}while(0)
+#endif
+
+
 
 /* TODO read from HCD */
 #define VUSB_NPORTS 3
@@ -144,7 +152,7 @@ sel4urb_to_xact(struct sel4urb* surb, struct xact* xact)
     assert(nxact <= 2);
     assert(nxact > 0);
     if (surb->urb_status != SURBSTS_ACTIVE) {
-        printf("Notification but no packet!\n");
+        DVUSB("Notification but no packet!\n");
         return -1;
     }
     /* Fill translate surb to xact */
@@ -254,11 +262,6 @@ static void
 vusb_inject_irq(vusb_device_t* vusb)
 {
     if (vusb->int_pending == 0) {
-        if (vusb->virq == NULL) {
-            printf("Somethings wrong...\n");
-            return;
-        }
-        assert(vusb->virq);
         vm_inject_IRQ(vusb->virq);
         vusb->int_pending = 1;
     }
@@ -283,7 +286,7 @@ vusb_complete_cb(void* token, enum usb_xact_status stat, int rbytes)
     struct usb_token* t = (struct usb_token*)token;
     vusb_device_t* vusb = t->vusb;
     struct sel4urb* surb = t->surb;
-    printf("VMM> INT packet callback\n");
+    DVUSB("packet completion callback\n");
     switch (stat) {
     case XACTSTAT_SUCCESS:
         surb->urb_bytes_remaining = rbytes;
@@ -316,13 +319,13 @@ vm_vusb_notify(vusb_device_t* vusb)
         if (u->urb_status != SURBSTS_PENDING) {
             continue;
         }
-        printf("VMM) %d ACTIVE\n", i);
+        DVUSB("descriptor %d ACTIVE\n", i);
         u->urb_status = SURBSTS_ACTIVE;
 
         speed = urb_get_speed(u);
         nxact = sel4urb_to_xact(u, xact);
         if (nxact < 0) {
-            printf("urb error\n");
+            DVUSB("descriptor error\n");
             assert(0);
             return;
         }
@@ -359,7 +362,6 @@ vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
     /* Map registers */
     vusb->data_regs = map_shared_page(vm, pbase, seL4_AllRights);
     if (vusb->data_regs == NULL) {
-        /* TODO clean up ctrl_regs mapping */
         free(vusb);
         return NULL;
     }
