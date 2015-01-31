@@ -38,7 +38,13 @@
 #define DROOTHUB(...) do{}while(0)
 #endif
 
+/* TODO read from HCD */
 #define VUSB_NPORTS 3
+
+#define MAX_ACTIVE_URB   10
+#define SURBSTS_PENDING  (1 << 0)
+#define SURBSTS_ACTIVE   (1 << 1)
+#define SURBSTS_COMPLETE (1 << 2)
 
 struct sel4urbt {
     uintptr_t paddr;
@@ -57,12 +63,13 @@ struct sel4urb {
     uint16_t rate_ms;
     uint16_t nxact;
     void*    token;
-    uint32_t urb_status;
+    uint16_t urb_status;
+    uint16_t urb_bytes_remaining;
     struct sel4urbt desc[2];
 } __attribute__ ((packed));
 
 typedef struct usb_data_regs {
-    struct sel4urb sel4urb[10];
+    struct sel4urb sel4urb[MAX_ACTIVE_URB];
 } usb_data_regs_t;
 
 typedef struct usb_ctrl_regs {
@@ -85,6 +92,7 @@ struct vusb_device {
     struct xact int_xact;
     usb_data_regs_t* data_regs;
     usb_ctrl_regs_t* ctrl_regs;
+    int int_pending;
 };
 
 
@@ -135,7 +143,7 @@ sel4urb_to_xact(struct sel4urb* surb, struct xact* xact)
     nxact = surb->nxact;
     assert(nxact <= 2);
     assert(nxact > 0);
-    if (surb->urb_status != (1U << 31)) {
+    if (surb->urb_status != SURBSTS_ACTIVE) {
         printf("Notification but no packet!\n");
         return -1;
     }
@@ -238,15 +246,59 @@ const struct device dev_vusb = {
 static void
 vusb_ack(void* token)
 {
-    /* TODO */
+    vusb_device_t* vusb = token;
+    vusb->int_pending = 0;
+}
+
+static void
+vusb_inject_irq(vusb_device_t* vusb)
+{
+    if (vusb->int_pending == 0) {
+        if (vusb->virq == NULL) {
+            printf("Somethings wrong...\n");
+            return;
+        }
+        assert(vusb->virq);
+        vm_inject_IRQ(vusb->virq);
+        vusb->int_pending = 1;
+    }
 }
 
 /* Callback for root hub status changes */
 static int
-usb_sts_change(void* token, enum usb_xact_status stat)
+usb_sts_change(void* token, enum usb_xact_status stat, int rbytes)
 {
     /* TODO */
     return 1;
+}
+
+struct usb_token {
+    vusb_device_t* vusb;
+    struct sel4urb* surb;
+};
+
+static int
+vusb_complete_cb(void* token, enum usb_xact_status stat, int rbytes)
+{
+    struct usb_token* t = (struct usb_token*)token;
+    vusb_device_t* vusb = t->vusb;
+    struct sel4urb* surb = t->surb;
+    printf("VMM> INT packet callback\n");
+    switch (stat) {
+    case XACTSTAT_SUCCESS:
+        surb->urb_bytes_remaining = rbytes;
+        break;
+    case XACTSTAT_PENDING:
+    case XACTSTAT_CANCELLED:
+    case XACTSTAT_ERROR:
+    case XACTSTAT_HOSTERROR:
+    default:
+        surb->urb_bytes_remaining = -1;
+    }
+    surb->urb_status = SURBSTS_COMPLETE;
+    vusb_inject_irq(vusb);
+    free(t);
+    return 0;
 }
 
 void
@@ -257,23 +309,35 @@ vm_vusb_notify(vusb_device_t* vusb)
     enum usb_speed speed;
     int len;
     int nxact;
-    u = vusb->data_regs->sel4urb;
-    if (u->rate_ms) {
-        printf("Currently ignoring INT packets...\n");
-        return;
+    int i;
+    for (i = 0; i < MAX_ACTIVE_URB; i++) {
+        struct usb_token* t;
+        u = &vusb->data_regs->sel4urb[i];
+        if (u->urb_status != SURBSTS_PENDING) {
+            continue;
+        }
+        printf("VMM) %d ACTIVE\n", i);
+        u->urb_status = SURBSTS_ACTIVE;
+
+        speed = urb_get_speed(u);
+        nxact = sel4urb_to_xact(u, xact);
+        if (nxact < 0) {
+            printf("urb error\n");
+            assert(0);
+            return;
+        }
+
+        t = malloc(sizeof(*t));
+        t->vusb = vusb;
+        t->surb = u;
+        len = usb_hcd_schedule(vusb->hcd, u->addr, u->hub_addr, u->hub_port, speed, u->ep, u->max_pkt,
+                               u->rate_ms, xact, nxact, &vusb_complete_cb, t);
+        if (len < 0) {
+            u->urb_bytes_remaining = len;
+            u->urb_status = SURBSTS_COMPLETE;
+            vusb_inject_irq(vusb);
+        }
     }
-    speed = urb_get_speed(u);
-    nxact = sel4urb_to_xact(u, xact);
-    if (nxact < 0) {
-        printf("urb error\n");
-        assert(0);
-        return;
-    }
-    len = usb_hcd_schedule(vusb->hcd, u->addr, u->hub_addr, u->hub_port, speed, u->ep, u->max_pkt,
-                           u->rate_ms, xact, nxact, NULL, NULL);
-    printf("VMM) usb complete with len %d\n", len);
-    u->urb_status = len;
-    vm_inject_IRQ(vusb->virq);
 }
 
 vusb_device_t*
@@ -308,9 +372,10 @@ vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
     vusb->ctrl_regs->nPorts = VUSB_NPORTS;
     vusb->ctrl_regs->req_reply = 0;
     vusb->ctrl_regs->status = 0;
+    vusb->int_pending = 0;
 
     /* Initialise virtual IRQ */
-    vusb->virq = vm_virq_new(vm, virq, &vusb_ack, NULL);
+    vusb->virq = vm_virq_new(vm, virq, &vusb_ack, vusb);
     if (vusb->virq == NULL) {
         return NULL;
     }
