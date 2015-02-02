@@ -49,7 +49,7 @@
 /* TODO read from HCD */
 #define VUSB_NPORTS 3
 
-#define MAX_ACTIVE_URB   10
+#define MAX_ACTIVE_URB   (0x1000 / sizeof(struct sel4urb))
 #define SURBSTS_PENDING  (1 << 0)
 #define SURBSTS_ACTIVE   (1 << 1)
 #define SURBSTS_COMPLETE (1 << 2)
