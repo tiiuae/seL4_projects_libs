@@ -349,7 +349,6 @@ int handle_vgic_maintenance(vm_t* vm, int idx)
         int err;
         lrof = *lrof_ptr;
         *lrof_ptr = lrof->next;
-        assert(acked_irq != lrof->virq_data->virq);
         err = vgic_vcpu_inject_irq(d, vm, lrof->virq_data);
         assert(!err);
         free(lrof);
