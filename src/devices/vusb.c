@@ -83,6 +83,8 @@ typedef struct usb_data_regs {
 typedef struct usb_ctrl_regs {
     uint32_t status;
     uint32_t req_reply;
+    uint32_t intr;
+    uint32_t notify;
     uint32_t nPorts;
     struct usbreq req;
 } usb_ctrl_regs_t;
@@ -238,7 +240,14 @@ handle_vusb_fault(struct device* d, vm_t* vm, fault_t* fault)
         if (reg == &ctrl_regs->status) {
             /* start a transfer */
             root_hub_ctrl_start(vusb->hcd, ctrl_regs);
+        } else if (reg == &ctrl_regs->intr) {
+            /* Clear the interrupt pending flag */
+            *reg = fault_emulate(fault, *reg);
+        } else if (reg == &ctrl_regs->notify) {
+            /* Manual notification */
+            vm_vusb_notify(vusb);
         } else if ((void*)reg >= (void*)&ctrl_regs->req) {
+            /* Fill out the root hub USB request */
             *reg = fault_emulate(fault, *reg);
         }
     }
@@ -259,15 +268,21 @@ static void
 vusb_ack(void* token)
 {
     vusb_device_t* vusb = token;
-    vusb->int_pending = 0;
+    if (vusb->ctrl_regs->intr) {
+        /* Another IRQ occured */
+        vm_inject_IRQ(vusb->virq);
+    } else {
+        vusb->int_pending = 0;
+    }
 }
 
 static void
 vusb_inject_irq(vusb_device_t* vusb)
 {
+    vusb->ctrl_regs->intr = 1;
     if (vusb->int_pending == 0) {
-        vm_inject_IRQ(vusb->virq);
         vusb->int_pending = 1;
+        vm_inject_IRQ(vusb->virq);
     }
 }
 
@@ -374,6 +389,7 @@ vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
     vusb->ctrl_regs->nPorts = VUSB_NPORTS;
     vusb->ctrl_regs->req_reply = 0;
     vusb->ctrl_regs->status = 0;
+    vusb->ctrl_regs->intr = 0;
     vusb->int_pending = 0;
 
     /* Initialise virtual IRQ */
