@@ -26,6 +26,100 @@
 #endif
 
 
+static int
+generic_map_page(vka_t* vka, vspace_t* vmm_vspace, vspace_t* vm_vspace,
+                 uintptr_t ipa, size_t size, seL4_CapRights vm_rights,
+                 int cached, void** vmm_vaddr)
+{
+    vka_object_t frame_obj;
+    cspacepath_t frame[2];
+    int err;
+
+    /* No vspace supplied, We have already succeeded */
+    if (vmm_vspace == NULL && vm_vspace == NULL) {
+        return 0;
+    }
+    assert(size == 0x1000);
+
+    /* Create a frame */
+    err = vka_alloc_frame(vka, 12, &frame_obj);
+    assert(!err);
+    if (err) {
+        return -1;
+    }
+
+    /* Copy the cap if required */
+    if (vm_vspace && vmm_vspace) {
+        vka_cspace_make_path(vka, frame_obj.cptr, &frame[0]);
+        err = vka_cspace_alloc_path(vka, &frame[1]);
+        assert(!err);
+        if (err) {
+            vka_free_object(vka, &frame_obj);
+            return -1;
+        }
+        err = vka_cnode_copy(&frame[1], &frame[0], seL4_AllRights);
+        assert(!err);
+        if (err) {
+            vka_cspace_free(vka, frame[1].capPtr);
+            vka_free_object(vka, &frame_obj);
+            return -1;
+        }
+    } else {
+        frame[1] = frame[0];
+    }
+
+    /* Map into the vspace of the VM, or copy the cap to the VMM slot */
+    if (vm_vspace != NULL) {
+        seL4_CPtr cap = frame[0].capPtr;
+        void* addr = (void*)ipa;
+        reservation_t res;
+        /* Map the frame to the VM */
+        res = vspace_reserve_range_at(vm_vspace, addr, size, vm_rights, cached);
+        assert(res.res);
+        if (!res.res) {
+            vka_cspace_free(vka, cap);
+            if (vm_vspace && vmm_vspace) {
+                vka_cspace_free(vka, frame[1].capPtr);
+            }
+            vka_free_object(vka, &frame_obj);
+            return -1;
+        }
+        err = vspace_map_pages_at_vaddr(vm_vspace, &cap, NULL, addr, 1, 12, res);
+        vspace_free_reservation(vm_vspace, res);
+        assert(!err);
+        if (err) {
+            printf("Failed to provide memory\n");
+            vka_cspace_free(vka, cap);
+            if (vm_vspace && vmm_vspace) {
+                vka_cspace_free(vka, frame[1].capPtr);
+            }
+            vka_free_object(vka, &frame_obj);
+            return -1;
+        }
+    }
+
+    /* Map into the vspace of the VMM, or do nothing */
+    if (vmm_vspace != NULL) {
+        void *addr;
+        seL4_CapRights rights = seL4_AllRights;
+        seL4_CPtr cap = frame[1].capPtr;
+        addr = vspace_map_pages(vmm_vspace, &cap, NULL, rights, 1, 12, cached);
+        if (addr == NULL) {
+            printf("Failed to provide memory\n");
+            if (vm_vspace) {
+                vspace_unmap_pages(vm_vspace, (void*)ipa, 1, 12, vka);
+                vka_cspace_free(vka, frame[1].capPtr);
+            }
+            vka_free_object(vka, &frame_obj);
+            return -1;
+        }
+        *vmm_vaddr = addr;
+    }
+
+    return 0;
+}
+
+
 void*
 map_device(vspace_t *vspace, vka_t* vka, simple_t* simple, uintptr_t paddr,
            uintptr_t _vaddr, seL4_CapRights rights)
@@ -196,6 +290,15 @@ void*
 map_vm_ram(vm_t* vm, uintptr_t vaddr)
 {
     return map_ram(vm_get_vspace(vm), vm->vka, vaddr);
+}
+
+void*
+map_shared_page(vm_t* vm, uintptr_t ipa, seL4_CapRights rights)
+{
+    void* addr = NULL;
+    int ret;
+    ret = generic_map_page(vm->vka, vm->vmm_vspace, &vm->vm_vspace, ipa, BIT(12), rights, 0, &addr);
+    return ret ? NULL : addr;
 }
 
 int

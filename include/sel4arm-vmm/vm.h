@@ -33,7 +33,6 @@ struct vm {
     simple_t *simple;
     vspace_t *vmm_vspace;
     ps_io_ops_t* io_ops;
-    struct irq_server* irq_server;
     /* VM objects */
     vspace_t vm_vspace;
     sel4utils_alloc_data_t data;
@@ -41,7 +40,6 @@ struct vm {
     vka_object_t tcb;
     vka_object_t pd;
     vka_object_t vcpu;
-    seL4_CPtr fault_ep;
     /* Installed devices */
     struct device devices[MAX_DEVICES_PER_VM];
     int ndevices;
@@ -52,6 +50,8 @@ struct vm {
     fault_t fault;
 };
 typedef struct vm vm_t;
+
+typedef struct virq_handle* virq_handle_t;
 
 /**
  * Create a virtual machine
@@ -146,15 +146,39 @@ int vm_start(vm_t* vm);
 int vm_stop(vm_t* vm);
 
 /**
- * Loop waiting for a VM event
- * @param vm   A handle to the VM that triggered the event
- * @param tag  The tag of the incomming message
+ * Handle a VM event
+ * @param[in] vm   A handle to the VM that triggered the event
+ * @param[in] tag  The tag of the incomming message
  * @return     0 on success, otherwise, the VM should be shut down
  */
 int vm_event(vm_t* vm, seL4_MessageInfo_t tag);
 
+/**
+ * Register or replace a virtual IRQ definition
+ * @param[in] virq  The IRQ number to inject
+ * @param[in] ack   A function to call when the VM ACKs the IRQ
+ * @param[in] token A token to pass, unmodified, to the ACK callback function
+ */
+virq_handle_t vm_virq_new(vm_t* vm, int virq, void (*ack)(void*), void* token);
 
+/**
+ * Inject an IRQ into a VM
+ * @param[in] virq  A handle to the virtual IRQ
+ * @return          0 on success
+ */
+int vm_inject_IRQ(virq_handle_t virq);
 
+/**
+ * Install a service into the VM
+ * Effectively a cap copy into the CNode of the VM. This allows the VM to
+ * make a seL4 call
+ * @param[in] vm       The VM to install the service into
+ * @param[in] service  A capability for VM
+ * @param[in] index    The index at which to install the cap
+ * @param[in] badge    The badge to assign to the cap.
+ * @return             0 on success
+ */
+int vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t badge);
 
 
 #endif /* SEL4ARM_VMM_VM_H */

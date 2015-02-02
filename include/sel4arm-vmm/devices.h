@@ -26,6 +26,7 @@ enum devid {
     DEV_VGIC_DIST,
     DEV_VGIC_CPU,
     DEV_VGIC_VCPU,
+    DEV_IRQ_COMBINER,
     DEV_PWM_TIMER,
     DEV_WDT_TIMER,
     DEV_MCT_TIMER,

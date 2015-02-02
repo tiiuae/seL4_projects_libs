@@ -224,7 +224,7 @@ copy_in_page(vspace_t *vmm_vspace, vspace_t *vm_vspace, vka_t* vka, void* dest, 
     memcpy(dest, tmp_src + offset, copy_size);
 
     /* Clean up */
-    vspace_unmap_pages(vmm_vspace, tmp_src, 1, 12, VSPACE_FREE);
+    vspace_unmap_pages(vmm_vspace, tmp_src, 1, bits, VSPACE_FREE);
 
     DCOPYIN("copy in page 0x%x->0x%x (0x%x bytes)\n", (uint32_t)src, (uint32_t)dest, copy_size);
     /* Done */

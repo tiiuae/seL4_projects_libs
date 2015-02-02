@@ -282,10 +282,17 @@ int advance_fault(fault_t* fault)
 
 uint32_t fault_emulate(fault_t* f, uint32_t o)
 {
-    uint32_t n, m;
+    uint32_t n, m, s;
+    s = (f->addr & 0x3) * 8;
     m = fault_get_data_mask(f);
     n = f->data;
-    return (o & ~m) | (n & m);
+    if (fault_is_read(f)) {
+        /* Read data must be shifted to lsb */
+        return (o & ~(m >> s)) | ((n & m) >> s);
+    } else {
+        /* Data to write must be shifted left to compensate for alignment */
+        return (o & ~m) | ((n << s) & m);
+    }
 }
 
 
