@@ -100,6 +100,10 @@ struct vusb_device {
     struct xact int_xact;
     usb_data_regs_t* data_regs;
     usb_ctrl_regs_t* ctrl_regs;
+    struct xact_token {
+        struct vusb_device* vusb;
+        int idx;
+    } token[MAX_ACTIVE_URB];
     int int_pending;
 };
 
@@ -275,18 +279,15 @@ usb_sts_change(void* token, enum usb_xact_status stat, int rbytes)
     return 1;
 }
 
-struct usb_token {
-    vusb_device_t* vusb;
-    struct sel4urb* surb;
-};
-
 static int
 vusb_complete_cb(void* token, enum usb_xact_status stat, int rbytes)
 {
-    struct usb_token* t = (struct usb_token*)token;
+    struct xact_token* t = (struct xact_token*)token;
     vusb_device_t* vusb = t->vusb;
-    struct sel4urb* surb = t->surb;
-    DVUSB("packet completion callback\n");
+    int surb_idx = t->idx;
+    struct sel4urb* surb = &vusb->data_regs->sel4urb[surb_idx];
+
+    DVUSB("packet completion callback %d\n", surb_idx);
     switch (stat) {
     case XACTSTAT_SUCCESS:
         surb->urb_bytes_remaining = rbytes;
@@ -300,7 +301,7 @@ vusb_complete_cb(void* token, enum usb_xact_status stat, int rbytes)
     }
     surb->urb_status = SURBSTS_COMPLETE;
     vusb_inject_irq(vusb);
-    free(t);
+
     return 0;
 }
 
@@ -314,7 +315,7 @@ vm_vusb_notify(vusb_device_t* vusb)
     int nxact;
     int i;
     for (i = 0; i < MAX_ACTIVE_URB; i++) {
-        struct usb_token* t;
+        struct xact_token* t;
         u = &vusb->data_regs->sel4urb[i];
         if (u->urb_status != SURBSTS_PENDING) {
             continue;
@@ -329,10 +330,9 @@ vm_vusb_notify(vusb_device_t* vusb)
             assert(0);
             return;
         }
-
-        t = malloc(sizeof(*t));
+        t = &vusb->token[i];
         t->vusb = vusb;
-        t->surb = u;
+        t->idx = i;
         len = usb_hcd_schedule(vusb->hcd, u->addr, u->hub_addr, u->hub_port, speed, u->ep, u->max_pkt,
                                u->rate_ms, xact, nxact, &vusb_complete_cb, t);
         if (len < 0) {
