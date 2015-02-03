@@ -24,18 +24,15 @@
 #include "devices/arm/vgic.h"
 
 #include "devices.h"
-#include <sel4utils/irq_server.h>
 
 //#define DEBUG_VM
 //#define DEBUG_RAM_FAULTS
 //#define DEBUG_DEV_FAULTS
 //#define DEBUG_STRACE
 
-#define VM_CSPACE_SIZE 4
-#define VM_FAULT_EP_SLOT 1
-#define VM_CSPACE_SLOT 2
-
-#define IRQ_MESSAGE_LABEL 0xCAFE
+#define VM_CSPACE_SIZE_BITS    4
+#define VM_FAULT_EP_SLOT       1
+#define VM_CSPACE_SLOT         2
 
 #define MODE_USER       0x10
 #define MODE_FIQ        0x11
@@ -47,9 +44,7 @@
 #define MODE_UNDEFINED  0x1b
 #define MODE_SYSTEM     0x1f
 
-#define COLOR_ERROR "\033[1;31m"
-#define COLOR_NORMAL "\033[0m"
-
+#define CERROR    "\033[1;31m"
 #define CNORMAL   "\033[0m"
 
 #define CFRED     "\033[31m"
@@ -67,18 +62,6 @@
 #define CBMAGENTA "\033[45m"
 #define CBCYAN    "\033[46m"
 #define CBWHITE   "\033[47m"
-
-
-/* The maximum number of fragments in our virtual memory allocator. */
-#define VMEM_MAX_FRAGMENTS 1000
-
-/* The virtual address of the start of the virtual memory pool. */
-#define VMEM_POOL_START 0x40000000
-
-/* The size of the virtual memory pool allocated by the allocator. */
-#define VMEM_POOL_SIZE 0x10000000
-
-
 
 #ifdef DEBUG_RAM_FAULTS
 #define DRAMFAULT(...) printf(__VA_ARGS__)
@@ -183,7 +166,7 @@ static int handle_exception(vm_t* vm, seL4_Word ip)
     seL4_CPtr tcb = vm_get_tcb(vm);
     int err;
     printf("%sInvalid instruction from [%s] at PC: 0x"XFMT"%s\n",
-           COLOR_ERROR, vm->name, seL4_GetMR(0), COLOR_NORMAL);
+           CERROR, vm->name, seL4_GetMR(0), CNORMAL);
     err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
     print_ctx_regs(&regs);
@@ -216,7 +199,6 @@ vm_create(const char* name, int priority,
 
     seL4_CapData_t null_cap_data = {{0}};
     seL4_CapData_t cspace_root_data;
-    seL4_CPtr badged_vmm_endpoint;
     cspacepath_t src, dst;
 
     int err;
@@ -231,13 +213,13 @@ vm_create(const char* name, int priority,
     vm->io_ops = io_ops;
 
     /* Create a cspace */
-    err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE, &vm->cspace);
+    err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE_BITS, &vm->cspace);
     assert(!err);
     vka_cspace_make_path(vka, vm->cspace.cptr, &src);
-    cspace_root_data = seL4_CapData_Guard_new(0, 32 - VM_CSPACE_SIZE);
+    cspace_root_data = seL4_CapData_Guard_new(0, 32 - VM_CSPACE_SIZE_BITS);
     dst.root = vm->cspace.cptr;
     dst.capPtr = VM_CSPACE_SLOT;
-    dst.capDepth = VM_CSPACE_SIZE;
+    dst.capDepth = VM_CSPACE_SIZE_BITS;
     err = vka_cnode_mint(&dst, &src, seL4_AllRights, cspace_root_data);
     assert(!err);
 
@@ -250,25 +232,18 @@ vm_create(const char* name, int priority,
                                &vm_object_allocation_cb, (void*)vm);
     assert(!err);
 
-    /* Badge the endpoint for the IRQ server */
+    /* Badge the endpoint */
     vka_cspace_make_path(vka, vmm_endpoint, &src);
     err = vka_cspace_alloc_path(vka, &dst);
     assert(!err);
     err = vka_cnode_mint(&dst, &src, seL4_AllRights, seL4_CapData_Badge_new(vm_badge));
     assert(!err);
-    badged_vmm_endpoint = dst.capPtr;
     /* Copy it to the cspace of the VM for fault IPC */
     src = dst;
     dst.root = vm->cspace.cptr;
     dst.capPtr = VM_FAULT_EP_SLOT;
-    dst.capDepth = VM_CSPACE_SIZE;
+    dst.capDepth = VM_CSPACE_SIZE_BITS;
     err = vka_cnode_copy(&dst, &src, seL4_AllRights);
-    assert(!err);
-
-    /* Create an IRQ server for this VM */
-    err = irq_server_new(vmm_vspace, vka, simple_get_cnode(simple), priority,
-                         simple, badged_vmm_endpoint,
-                         IRQ_MESSAGE_LABEL, 256, &vm->irq_server);
     assert(!err);
 
     /* Create TCB */
@@ -399,7 +374,7 @@ handle_syscall(vm_t* vm, seL4_Word length)
         break;
     default:
         printf("%sBad syscall from [%s]: scno "DFMT" at PC: 0x"XFMT"%s\n",
-               COLOR_ERROR, vm->name, syscall, ip, COLOR_NORMAL);
+               CERROR, vm->name, syscall, ip, CNORMAL);
         return -1;
     }
     err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
@@ -458,9 +433,6 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         }
     }
     break;
-    case IRQ_MESSAGE_LABEL:
-        irq_server_handle_irq_ipc(vm->irq_server);
-        break;
     case SEL4_VGIC_MAINTENANCE_LABEL: {
         int idx;
         int err;
@@ -558,6 +530,7 @@ vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
 int
 vm_add_device(vm_t* vm, const struct device* d)
 {
+    assert(d != NULL);
     if (vm->ndevices < MAX_DEVICES_PER_VM) {
         vm->devices[vm->ndevices++] = *d;
         return 0;
@@ -602,3 +575,19 @@ vspace_t* vm_get_vspace(vm_t* vm)
 {
     return &vm->vm_vspace;
 }
+
+int
+vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t b)
+{
+    cspacepath_t src, dst;
+    seL4_CapData_t badge;
+    int err;
+    badge = seL4_CapData_Badge_new(b);
+    vka_cspace_make_path(vm->vka, service, &src);
+    dst.root = vm->cspace.cptr;
+    dst.capPtr = index;
+    dst.capDepth = VM_CSPACE_SIZE_BITS;
+    err =  vka_cnode_mint(&dst, &src, seL4_AllRights, badge);
+    return err;
+}
+

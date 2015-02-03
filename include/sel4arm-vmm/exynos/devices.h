@@ -15,11 +15,14 @@
 #include <sel4arm-vmm/vm.h>
 
 extern const struct device dev_vram;
-int vm_install_ram_default(vm_t *vm);
-int vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size);
 
-int vm_install_vgic(vm_t* vm);
+/**
+ * vm_combiner_irq_handler should be called when an IRQ combiner IRQ occurs.
+ * The caller is responsible for acknowledging the IRQ once this function
+ * returns
+ */
 int vm_install_vcombiner(vm_t* vm);
+void vm_combiner_irq_handler(vm_t* vm, int irq);
 
 typedef int (*vm_power_cb)(vm_t* vm, void* token);
 int vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
