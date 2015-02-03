@@ -176,10 +176,22 @@ sel4urb_to_xact(struct sel4urb* surb, struct xact* xact)
     } else {
         /* Terminate with ACK */
         memset(&xact[nxact], 0, sizeof(*xact));
-        if (xact[nxact - 1].type == PID_IN) {
-            xact[nxact].type = PID_OUT;
+        if (xact[0].type == PID_SETUP) {
+            if (xact[nxact - 1].type == PID_IN) {
+                /* Send ACK */
+                xact[nxact].type = PID_OUT;
+            } else {
+                /* Read ACK */
+                xact[nxact].type = PID_IN;
+            }
         } else {
-            xact[nxact].type = PID_IN;
+            /* Empty packet for data toggle */
+            if (xact[0].type == PID_OUT) {
+                xact[nxact].type = xact[nxact - 1].type;
+                return nxact + 1;
+            } else {
+                return nxact;
+            }
         }
         return nxact + 1;
     }
