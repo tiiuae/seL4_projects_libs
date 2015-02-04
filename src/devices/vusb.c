@@ -45,10 +45,6 @@
 #endif
 
 
-
-/* TODO read from HCD */
-#define VUSB_NPORTS 3
-
 #define MAX_ACTIVE_URB   (0x1000 / sizeof(struct sel4urb))
 #define SURBSTS_PENDING  (1 << 0)
 #define SURBSTS_ACTIVE   (1 << 1)
@@ -400,7 +396,7 @@ vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
         return NULL;
     }
     /* Initialise virtual registers */
-    vusb->ctrl_regs->nPorts = VUSB_NPORTS;
+    vusb->ctrl_regs->nPorts = usb_hcd_count_ports(hcd);
     vusb->ctrl_regs->req_reply = 0;
     vusb->ctrl_regs->status = 0;
     vusb->ctrl_regs->intr = 0;
