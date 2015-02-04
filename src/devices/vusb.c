@@ -100,6 +100,7 @@ struct vusb_device {
     virq_handle_t virq;
     usb_host_t* hcd;
     struct xact int_xact;
+    uint32_t rh_port_status;
     usb_data_regs_t* data_regs;
     usb_ctrl_regs_t* ctrl_regs;
     struct xact_token {
@@ -302,7 +303,8 @@ vusb_inject_irq(vusb_device_t* vusb)
 static int
 usb_sts_change(void* token, enum usb_xact_status stat, int rbytes)
 {
-    /* TODO */
+    vusb_device_t* vusb = (vusb_device_t*)token;
+    vusb->ctrl_regs->status = *(uint32_t*)vusb->int_xact.vaddr;
     return 1;
 }
 
@@ -430,7 +432,7 @@ vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
     vusb->int_xact.type = PID_INT;
     vusb->int_xact.len = (vusb->ctrl_regs->nPorts + 7) / 8;
     vusb->int_xact.paddr = 0xdeadbeef;
-    vusb->int_xact.vaddr = (void*)&vusb->ctrl_regs->status;
+    vusb->int_xact.vaddr = (void*)&vusb->rh_port_status;
     err = usb_hcd_schedule(vusb->hcd, 1, -1, 0, 0, 1, 2, 10 /* ms */,
                            &vusb->int_xact, 1, usb_sts_change, vusb);
     if (err) {
