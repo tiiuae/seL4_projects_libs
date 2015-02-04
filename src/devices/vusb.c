@@ -81,6 +81,7 @@ typedef struct usb_ctrl_regs {
     uint32_t req_reply;
     uint32_t intr;
     uint32_t notify;
+    uint32_t cancel_transaction;
     uint32_t nPorts;
     struct usbreq req;
 } usb_ctrl_regs_t;
@@ -228,6 +229,14 @@ static int root_hub_ctrl_start(usb_host_t* hcd, usb_ctrl_regs_t* ctrl)
     return len;
 }
 
+static void
+vm_vusb_cancel(vusb_device_t* vusb, uint32_t surb_idx)
+{
+    if (surb_idx < MAX_ACTIVE_URB) {
+        usb_hcd_cancel(vusb->hcd, &vusb->token[surb_idx]);
+    }
+}
+
 static int
 handle_vusb_fault(struct device* d, vm_t* vm, fault_t* fault)
 {
@@ -255,6 +264,9 @@ handle_vusb_fault(struct device* d, vm_t* vm, fault_t* fault)
         } else if (reg == &ctrl_regs->notify) {
             /* Manual notification */
             vm_vusb_notify(vusb);
+        } else if (reg == &ctrl_regs->notify) {
+            /* Manual notification */
+            vm_vusb_cancel(vusb, fault->data);
         } else if ((void*)reg >= (void*)&ctrl_regs->req) {
             /* Fill out the root hub USB request */
             *reg = fault_emulate(fault, *reg);
