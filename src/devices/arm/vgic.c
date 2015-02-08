@@ -323,7 +323,6 @@ vgic_vcpu_inject_irq(struct device* d, vm_t *vm, struct virq_handle *irq)
 int handle_vgic_maintenance(vm_t* vm, int idx)
 {
     /* STATE d) */
-    int acked_irq = 0;
     struct device* d;
     struct gic_dist_map* gic_dist;
     struct virq_handle** lr;
@@ -338,7 +337,6 @@ int handle_vgic_maintenance(vm_t* vm, int idx)
     /* Clear pending */
     DIRQ("Maintenance IRQ %d\n", lr[idx]->virq);
     set_pending(gic_dist, lr[idx]->virq, false);
-    acked_irq = lr[idx]->virq;
     virq_ack(lr[idx]);
 
     /* Check the overflow list for pending IRQs */
