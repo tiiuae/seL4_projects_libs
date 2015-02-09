@@ -29,8 +29,8 @@
 
 #include <string.h>
 
-//#define DEBUG_ROOTHUB
 //#define DEBUG_VUSB
+//#define DEBUG_ROOTHUB
 
 #ifdef DEBUG_ROOTHUB
 #define DROOTHUB(...) printf("VMM USB root hub:" __VA_ARGS__)
@@ -66,6 +66,7 @@ struct sel4urb {
     uint16_t max_pkt;
     uint16_t rate_ms;
     uint16_t nxact;
+    uint32_t dt;
     void*    token;
     uint16_t urb_status;
     uint16_t urb_bytes_remaining;
@@ -170,29 +171,13 @@ sel4urb_to_xact(struct sel4urb* surb, struct xact* xact)
     if (surb->rate_ms) {
         xact[0].type = PID_INT;
         assert(nxact == 1);
-        return nxact;
-    } else {
-        /* Terminate with ACK */
-        memset(&xact[nxact], 0, sizeof(*xact));
-        if (xact[0].type == PID_SETUP) {
-            if (xact[nxact - 1].type == PID_IN) {
-                /* Send ACK */
-                xact[nxact].type = PID_OUT;
-            } else {
-                /* Read ACK */
-                xact[nxact].type = PID_IN;
-            }
-        } else {
-            /* Empty packet for data toggle */
-            if (xact[0].type == PID_OUT) {
-                xact[nxact].type = xact[nxact - 1].type;
-                return nxact + 1;
-            } else {
-                return nxact;
-            }
-        }
-        return nxact + 1;
+    } else if (xact[0].type == PID_SETUP && nxact == 1) {
+        /* Read in ACK */
+        xact[nxact].type = PID_IN;
+        xact[nxact].len = 0;
+        nxact++;
     }
+    return nxact;
 }
 
 static int
@@ -224,7 +209,7 @@ static int root_hub_ctrl_start(usb_host_t* hcd, usb_ctrl_regs_t* ctrl)
     if (err) {
         return -1;
     }
-    len = usb_hcd_schedule(hcd, 1, -1, 0, 0, 0, 64, 0, xact, 2, NULL, NULL);
+    len = usb_hcd_schedule(hcd, 1, -1, 0, 0, 0, 64, 0, 0, xact, 2, NULL, NULL);
     DROOTHUB("usb ctrl complete len %d\n", len);
     return len;
 }
@@ -264,9 +249,10 @@ handle_vusb_fault(struct device* d, vm_t* vm, fault_t* fault)
         } else if (reg == &ctrl_regs->notify) {
             /* Manual notification */
             vm_vusb_notify(vusb);
-        } else if (reg == &ctrl_regs->notify) {
+        } else if (reg == &ctrl_regs->cancel_transaction) {
             /* Manual notification */
-            vm_vusb_cancel(vusb, fault->data);
+            //vm_vusb_cancel(vusb, fault->data);
+            printf("Skipping URQ cancellation\n");
         } else if ((void*)reg >= (void*)&ctrl_regs->req) {
             /* Fill out the root hub USB request */
             *reg = fault_emulate(fault, *reg);
@@ -370,8 +356,9 @@ vm_vusb_notify(vusb_device_t* vusb)
         t = &vusb->token[i];
         t->vusb = vusb;
         t->idx = i;
-        len = usb_hcd_schedule(vusb->hcd, u->addr, u->hub_addr, u->hub_port, speed, u->ep, u->max_pkt,
-                               u->rate_ms, xact, nxact, &vusb_complete_cb, t);
+        len = usb_hcd_schedule(vusb->hcd, u->addr, u->hub_addr, u->hub_port,
+                               speed, u->ep, u->max_pkt, u->rate_ms, u->dt,
+                               xact, nxact, &vusb_complete_cb, t);
         if (len < 0) {
             u->urb_bytes_remaining = len;
             u->urb_status = SURBSTS_COMPLETE;
@@ -409,6 +396,7 @@ vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
     }
     /* Initialise virtual registers */
     vusb->ctrl_regs->nPorts = usb_hcd_count_ports(hcd);
+    assert(vusb->ctrl_regs->nPorts);
     vusb->ctrl_regs->req_reply = 0;
     vusb->ctrl_regs->status = 0;
     vusb->ctrl_regs->intr = 0;
@@ -442,7 +430,7 @@ vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
     vusb->int_xact.paddr = 0xdeadbeef;
     vusb->int_xact.vaddr = (void*)&vusb->rh_port_status;
     err = usb_hcd_schedule(vusb->hcd, 1, -1, 0, 0, 1, 2, 10 /* ms */,
-                           &vusb->int_xact, 1, usb_sts_change, vusb);
+                           0, &vusb->int_xact, 1, usb_sts_change, vusb);
     if (err) {
         assert(!err);
         return NULL;
