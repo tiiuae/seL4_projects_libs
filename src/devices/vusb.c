@@ -251,8 +251,7 @@ handle_vusb_fault(struct device* d, vm_t* vm, fault_t* fault)
             vm_vusb_notify(vusb);
         } else if (reg == &ctrl_regs->cancel_transaction) {
             /* Manual notification */
-            //vm_vusb_cancel(vusb, fault->data);
-            printf("Skipping URQ cancellation\n");
+            vm_vusb_cancel(vusb, fault->data);
         } else if ((void*)reg >= (void*)&ctrl_regs->req) {
             /* Fill out the root hub USB request */
             *reg = fault_emulate(fault, *reg);
@@ -315,8 +314,11 @@ vusb_complete_cb(void* token, enum usb_xact_status stat, int rbytes)
     case XACTSTAT_SUCCESS:
         surb->urb_bytes_remaining = rbytes;
         break;
-    case XACTSTAT_PENDING:
     case XACTSTAT_CANCELLED:
+        surb->urb_bytes_remaining = rbytes;
+        vusb_inject_irq(vusb);
+        return 0;
+    case XACTSTAT_PENDING:
     case XACTSTAT_ERROR:
     case XACTSTAT_HOSTERROR:
     default:
