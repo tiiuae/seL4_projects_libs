@@ -59,7 +59,7 @@ handle_vsysreg_fault(struct device* d, vm_t* vm, fault_t* fault)
     return advance_fault(fault);
 }
 
-const struct device dev_vsysreg = {
+const struct device dev_sysreg = {
     .devid = DEV_CUSTOM,
     .name = "sysreg",
     .pstart = SYSREG_PADDR,
@@ -76,7 +76,7 @@ vm_install_vsysreg(vm_t* vm)
     vspace_t* vmm_vspace;
     int err;
 
-    d = dev_vsysreg;
+    d = dev_sysreg;
     vmm_vspace = vm->vmm_vspace;
 
     /* Initialise the virtual device */

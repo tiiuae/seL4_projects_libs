@@ -336,15 +336,17 @@ handle_listening_fault(struct device* d, vm_t* vm,
 {
     volatile uint32_t *reg;
     int offset;
+    void** map;
 
     assert(d->priv);
+    map = (void**)d->priv;
     offset = fault->addr - d->pstart;
 
-    reg = (volatile uint32_t*)(d->priv + offset);
+    reg = (volatile uint32_t*)(map[offset >> 12] + (offset & MASK(12)));
 
-    printf("Listener: <%s> ", d->name);
+    printf("[Listener/%s] ", d->name);
     if (fault_is_read(fault)) {
-        printf("read");
+        printf("read ");
         fault->data = *reg;
     } else {
         printf("write");
@@ -361,19 +363,24 @@ int
 vm_install_listening_device(vm_t* vm, const struct device* dev_listening)
 {
     struct device d;
+    int pages;
+    int i;
+    void** map;
     int err;
-    assert(dev_listening->size == 0x1000);
+    pages = dev_listening->size >> 12;
     d = *dev_listening;
     d.handle_page_fault = handle_listening_fault;
-    /* Map locally */
-    d.priv = map_device(vm->vmm_vspace, vm->vka, vm->simple,
-                        d.pstart, 0, seL4_AllRights);
-    assert(d.priv);
-    if (!d.priv) {
+    /* Build device memory map */
+    map = (void**)malloc(sizeof(void*) * pages);
+    if (map == NULL) {
         return -1;
     }
+    d.priv = map;
+    for (i = 0; i < pages; i++) {
+        map[i] = map_device(vm->vmm_vspace, vm->vka, vm->simple,
+                            d.pstart + (i << 12), 0, seL4_AllRights);
+    }
     err = vm_add_device(vm, &d);
-    assert(!err);
     return err;
 }
 

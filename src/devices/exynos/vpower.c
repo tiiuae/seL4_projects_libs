@@ -82,7 +82,7 @@ handle_vpower_fault(struct device* d, vm_t* vm, fault_t* fault)
     return advance_fault(fault);
 }
 
-const struct device dev_valive = {
+const struct device dev_alive = {
     .devid = DEV_CUSTOM,
     .name = "alive",
     .pstart = ALIVE_PADDR,
@@ -101,7 +101,7 @@ vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
     int err;
     int i;
 
-    d = dev_valive;
+    d = dev_alive;
     vmm_vspace = vm->vmm_vspace;
 
     /* Initialise the virtual device */
