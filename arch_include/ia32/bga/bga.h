@@ -20,13 +20,6 @@
 /* Opaque pointer as a handle to the device. */
 typedef struct bga *bga_p;
 
-/* Initialise the driver. Returns 0 on success.
- *  io_port_capability - An IO port capability with permission to read and
- *      write the relevant IO ports for the BGA (0x1ce and 0x1cf).
- *  fb_vaddr - The starting address of where the user has mapped in the frame
- *      buffer of the BGA.
- */
-
 /* Initialise the driver. Returns NULL on failure.
  *  framebuffer - A pointer to the device frame mapped into your address space.
  *  ioport_write - Callback for writing to an IO port.
@@ -65,11 +58,6 @@ int bga_set_mode(bga_p device, unsigned int width, unsigned int height,
  * XXX: This function has not been tested with BPPs other than 24.
  */
 int bga_set_pixel(bga_p device, unsigned int x, unsigned int y, char *value);
-
-    /* With raw access enabled you can directly read from and write to the
-     * frame buffer. Note that you will need to know the frame buffer
-     * dimensions and current configuration to write to it correctly.
-     */
 
 /* Get a pointer to the frame buffer. You can output to the screen by directly
  * writing into this buffer. To do this correctly you will have to consult the
