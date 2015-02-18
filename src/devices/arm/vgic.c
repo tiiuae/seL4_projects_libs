@@ -11,12 +11,14 @@
 
 /*
  * This component controls and maintains the GIC for the VM.
+ * IRQs must be registered at init time with vm_virq_new(...)
+ * This function creates and registers an IRQ data structure which will be used for IRQ maintenance
  * b) ENABLING: When the VM enables the IRQ, it checks the pending flag for the VM.
  *   - If the IRQ is not pending, we either
  *        1) have not received an IRQ so it is still enabled in seL4
  *        2) have received an IRQ, but ignored it because the VM had disabled it.
- *     In either case, we simply ACK the IRQ with seL4 and accept the fact that we may be ACKing an
- *     IRQ that is not yet active anyway.
+ *     In either case, we simply ACK the IRQ with seL4. In case 1), the IRQ will come straight through,
+       in case 2), we have ACKed an IRQ that was not yet pending anyway.
  *   - If the IRQ is already pending, we can assume that the VM has yet to ACK the IRQ and take no further
  *     action.
  *   Transitions: b->c
@@ -28,10 +30,10 @@
  *   Transitions: (enabled)? c->d :  c->b
  * d) When the VM acknowledges the IRQ, an exception is raised and delivered to the VMM. When the VMM
  *    receives the exception, it clears the pending flag and acks the IRQ with seL4, leading back to state c)
- *   Transition: d->c
+ *    Transition: d->c
  * g) When/if the VM disables the IRQ, we may still have an IRQ resident in the GIC. We allow
  *    this IRQ to be delivered to the VM, but subsequent IRQs will not be delivered as seen by state c)
- *   Transitions g->c
+ *    Transitions g->c
  *
  *   NOTE: There is a big assumption that the VM will not manually manipulate our pending flags and
  *         destroy our state. The affects of this will be an IRQ that is never acknowledged and hence,
@@ -52,12 +54,6 @@
 
 //#define DEBUG_IRQ
 //#define DEBUG_DIST
-
-#if 1
-#define dprintf(...) do{}while(0)
-#else
-#define dprintf(...) printf(__VA_ARGS__)
-#endif
 
 #ifdef DEBUG_IRQ
 #define DIRQ(...) do{ printf("VDIST: "); printf(__VA_ARGS__); }while(0)
@@ -285,7 +281,6 @@ vgic_vcpu_inject_irq(struct device* d, vm_t *vm, struct virq_handle *irq)
 
     seL4_CPtr vcpu;
     vcpu = vm->vcpu.cptr;
-    dprintf("InjVIRQ %d\n", irq->irq);
     for (i = 0; i < 64; i++) {
         if (vgic->irq[i] == NULL) {
             break;
@@ -306,7 +301,6 @@ vgic_vcpu_inject_irq(struct device* d, vm_t *vm, struct virq_handle *irq)
             lrof_ptr = &(*lrof_ptr)->next;
         }
         list_size++;
-        dprintf("pushlrof %d s %d\n", irq->irq, list_size);
         lrof = (struct lr_of*)malloc(sizeof(*lrof));
         assert(lrof);
         if (lrof == NULL) {
@@ -437,6 +431,8 @@ vgic_dist_enable_irq(struct device* d, vm_t* vm, int irq)
         if (not_pending(gic_dist, virq_data->virq)) {
             virq_ack(virq_data);
         }
+    } else {
+        DDIST("enabled irq %d has no handle", irq);
     }
     return 0;
 }
@@ -572,7 +568,6 @@ handle_vgic_dist_fault(struct device* d, vm_t* vm, fault_t* fault)
                 irq = __builtin_ctz(fault->data);
                 fault->data &= ~(1U << irq);
                 irq += (offset - 0x200) * 8;
-                printf("Manually set pending\n");
                 vgic_dist_set_pending_irq(d, vm, irq);
             }
             return ignore_fault(fault);
@@ -587,7 +582,6 @@ handle_vgic_dist_fault(struct device* d, vm_t* vm, fault_t* fault)
                 irq = __builtin_ctz(fault->data);
                 fault->data &= ~(1U << irq);
                 irq += (offset - 0x280) * 8;
-                printf("pending clear!\n");
                 vgic_dist_clr_pending_irq(d, vm, irq);
             }
             return ignore_fault(fault);
@@ -598,7 +592,7 @@ handle_vgic_dist_fault(struct device* d, vm_t* vm, fault_t* fault)
 
         case ACTION_UNKNOWN:
         default:
-            dprintf("Unknown action on offset 0x%x\n", offset);
+            DDIST("Unknown action on offset 0x%x\n", offset);
             return ignore_fault(fault);
         }
     }
