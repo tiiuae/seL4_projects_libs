@@ -46,30 +46,46 @@
 
 
 #define MAX_ACTIVE_URB   (0x1000 / sizeof(struct sel4urb))
-#define SURBSTS_PENDING  (1 << 0)
-#define SURBSTS_ACTIVE   (1 << 1)
-#define SURBSTS_COMPLETE (1 << 2)
+
+#define SURBT_PARAM_GET_TYPE(param) (((param) >> 30) & 0x3)
+#define SURBT_PARAM_GET_SIZE(param) (((param) >>  0) & 0x0fffffff)
+#define SURBT_PARAM_TYPE(type)      ((type) << 30)
+#define SURBT_PARAM_SIZE(size)      ((size) << 0)
+
+#define SURB_EPADDR_STATE_INVALID   (0 << 28)
+#define SURB_EPADDR_STATE_PENDING   (1 << 28)
+#define SURB_EPADDR_STATE_ACTIVE    (2 << 28)
+#define SURB_EPADDR_STATE_COMPLETE  (4 << 28)
+#define SURB_EPADDR_STATE_SUCCESS   (SURB_EPADDR_STATE_COMPLETE | (0 << 28))
+#define SURB_EPADDR_STATE_ERROR     (SURB_EPADDR_STATE_COMPLETE | (1 << 28))
+#define SURB_EPADDR_STATE_CANCELLED (SURB_EPADDR_STATE_COMPLETE | (2 << 28))
+#define SURB_EPADDR_STATE_MASK      (SURB_EPADDR_STATE_COMPLETE | (3 << 28))
+#define SURB_EPADDR_GET_STATE(x)    ((x) & SURB_EPADDR_STATE_MASK)
+#define SURB_EPADDR_GET_ADDR(x)     (((x) >>  0) & 0x7f)
+#define SURB_EPADDR_GET_HUB_ADDR(x) (((x) >>  7) & 0x7f)
+#define SURB_EPADDR_GET_HUB_PORT(x) (((x) >> 14) & 0x7f)
+#define SURB_EPADDR_GET_EP(x)       (((x) >> 21) & 0x0f)
+#define SURB_EPADDR_GET_SPEED(x)    (((x) >> 25) & 0x03)
+#define SURB_EPADDR_GET_DT(x)       (((x) >> 27) & 0x01)
+#define SURB_EPADDR_ADDR(x)         ((x) <<  0)
+#define SURB_EPADDR_HUB_ADDR(x)     ((x) <<  7)
+#define SURB_EPADDR_HUB_PORT(x)     ((x) << 14)
+#define SURB_EPADDR_EP(x)           ((x) << 21)
+#define SURB_EPADDR_SPEED(x)        ((x) << 25)
+#define SURB_EPADDR_DT              (1 << 27)
 
 struct sel4urbt {
     uintptr_t paddr;
-    int size;
-    int type;
-    int res;
+    uint32_t param;
 } __attribute__ ((packed));
 
 struct sel4urb {
-    uint8_t addr;
-    uint8_t hub_addr;
-    uint8_t hub_port;
-    uint8_t speed;
-    uint16_t ep;
+    uint32_t epaddr;
+    void*    token;
     uint16_t max_pkt;
     uint16_t rate_ms;
-    uint16_t nxact;
-    uint32_t dt;
-    void*    token;
-    uint16_t urb_status;
     uint16_t urb_bytes_remaining;
+    uint16_t nxact;
     struct sel4urbt desc[2];
 } __attribute__ ((packed));
 
@@ -109,39 +125,39 @@ struct vusb_device {
 };
 
 
-static inline vusb_device_t* device_to_vusb_dev_data(struct device* d)
+static inline vusb_device_t*
+device_to_vusb_dev_data(struct device* d)
 {
     return (vusb_device_t*)d->priv;
 }
 
-static enum usb_speed
-urb_get_speed(struct sel4urb* u)
+static inline void
+surb_epaddr_change_state(struct sel4urb *u, uint32_t s)
 {
-    switch (u->speed) {
-    case 3:
-        return USBSPEED_HIGH;
-    default:
-        return USBSPEED_HIGH;
-    }
+    uint32_t e;
+    e = u->epaddr;
+    e &= ~SURB_EPADDR_STATE_MASK;
+    e |= s;
+    u->epaddr = e;
 }
 
 static int
 desc_to_xact(struct sel4urbt* desc, struct xact* xact)
 {
-    switch (desc->type) {
-    case -1:
-        xact->type = PID_SETUP;
-        break;
+    switch (SURBT_PARAM_GET_TYPE(desc->param)) {
     case 0:
         xact->type = PID_IN;
         break;
     case 1:
         xact->type = PID_OUT;
         break;
+    case 2:
+        xact->type = PID_SETUP;
+        break;
     default:
         return -1;
     }
-    xact->len = desc->size;
+    xact->len = SURBT_PARAM_GET_SIZE(desc->param);
     xact->paddr = desc->paddr;
     xact->vaddr = (void*)0xdeadbeef;
     return 0;
@@ -156,10 +172,7 @@ sel4urb_to_xact(struct sel4urb* surb, struct xact* xact)
     nxact = surb->nxact;
     assert(nxact <= 2);
     assert(nxact > 0);
-    if (surb->urb_status != SURBSTS_ACTIVE) {
-        DVUSB("Notification but no packet!\n");
-        return -1;
-    }
+    assert(SURB_EPADDR_GET_STATE(surb->epaddr) == SURB_EPADDR_STATE_PENDING);
     /* Fill translate surb to xact */
     for (i = 0; i < nxact; i++) {
         err = desc_to_xact(&surb->desc[i], &xact[i]);
@@ -308,23 +321,26 @@ vusb_complete_cb(void* token, enum usb_xact_status stat, int rbytes)
     vusb_device_t* vusb = t->vusb;
     int surb_idx = t->idx;
     struct sel4urb* surb = &vusb->data_regs->sel4urb[surb_idx];
+    uint32_t status;
 
     DVUSB("packet completion callback %d\n", surb_idx);
+    surb->urb_bytes_remaining = rbytes;
     switch (stat) {
     case XACTSTAT_SUCCESS:
-        surb->urb_bytes_remaining = rbytes;
+        status = SURB_EPADDR_STATE_COMPLETE;
         break;
     case XACTSTAT_CANCELLED:
-        surb->urb_bytes_remaining = rbytes;
-        vusb_inject_irq(vusb);
-        return 0;
-    case XACTSTAT_PENDING:
+        status = SURB_EPADDR_STATE_CANCELLED;
+        break;
     case XACTSTAT_ERROR:
+        status = SURB_EPADDR_STATE_ERROR;
+        break;
+    case XACTSTAT_PENDING:
     case XACTSTAT_HOSTERROR:
     default:
-        surb->urb_bytes_remaining = -1;
+        status = SURB_EPADDR_STATE_ERROR;
     }
-    surb->urb_status = SURBSTS_COMPLETE;
+    surb_epaddr_change_state(surb, status);
     vusb_inject_irq(vusb);
 
     return 0;
@@ -342,13 +358,20 @@ vm_vusb_notify(vusb_device_t* vusb)
     for (i = 0; i < MAX_ACTIVE_URB; i++) {
         struct xact_token* t;
         u = &vusb->data_regs->sel4urb[i];
-        if (u->urb_status != SURBSTS_PENDING) {
+        if (SURB_EPADDR_GET_STATE(u->epaddr) != SURB_EPADDR_STATE_PENDING) {
             continue;
         }
         DVUSB("descriptor %d ACTIVE\n", i);
-        u->urb_status = SURBSTS_ACTIVE;
 
-        speed = urb_get_speed(u);
+        switch (SURB_EPADDR_GET_SPEED(u->epaddr)) {
+        case 3:
+            speed = USBSPEED_HIGH;
+            break;
+        default:
+            printf("Unknown USB speed %d\n", SURB_EPADDR_GET_SPEED(u->epaddr));
+            speed = USBSPEED_HIGH;
+        }
+
         nxact = sel4urb_to_xact(u, xact);
         if (nxact < 0) {
             DVUSB("descriptor error\n");
@@ -358,13 +381,18 @@ vm_vusb_notify(vusb_device_t* vusb)
         t = &vusb->token[i];
         t->vusb = vusb;
         t->idx = i;
-        len = usb_hcd_schedule(vusb->hcd, u->addr, u->hub_addr, u->hub_port,
-                               speed, u->ep, u->max_pkt, u->rate_ms, u->dt,
+        len = usb_hcd_schedule(vusb->hcd, SURB_EPADDR_GET_ADDR(u->epaddr),
+                               SURB_EPADDR_GET_HUB_ADDR(u->epaddr),
+                               SURB_EPADDR_GET_HUB_PORT(u->epaddr),
+                               speed, SURB_EPADDR_GET_EP(u->epaddr),
+                               u->max_pkt, u->rate_ms,
+                               SURB_EPADDR_GET_DT(u->epaddr),
                                xact, nxact, &vusb_complete_cb, t);
         if (len < 0) {
-            u->urb_bytes_remaining = len;
-            u->urb_status = SURBSTS_COMPLETE;
+            surb_epaddr_change_state(u, SURB_EPADDR_STATE_ERROR);
             vusb_inject_irq(vusb);
+        } else {
+            surb_epaddr_change_state(u, SURB_EPADDR_STATE_ACTIVE);
         }
     }
 }
