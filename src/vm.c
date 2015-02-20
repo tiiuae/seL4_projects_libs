@@ -451,6 +451,13 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         }
     }
     break;
+    case SEL4_VCPU_FAULT_LABEL: {
+        uint32_t hsr;
+        assert(length == SEL4_VCPU_FAULT_LENGTH);
+        hsr = seL4_GetMR(EXCEPT_IPC_SYS_MR_R0);
+        printf("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vm->name, hsr);
+        return -1;
+    }
     default:
         /* What? Why are we here? What just happened? */
         printf("Unknown fault from [%s]: label=0x%x length=0x%x\n",
