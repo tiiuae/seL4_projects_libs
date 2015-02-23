@@ -14,6 +14,13 @@
 #include "../../devices.h"
 #include "../../vm.h"
 
+#define EMMC_DBADDR        0x88
+#define EMMC_DSCADDR       0x94
+#define EMMC_BUFADDR       0x98
+
+//#define SDHC_DS_ADDR       0x00
+//#define SDHC_ADMA_SYS_ADDR 0x58
+
 struct sdhc_priv {
     struct dma *dma_list;
     vm_t *vm;
@@ -39,7 +46,13 @@ handle_sdhc_fault(struct device* d, vm_t* vm, fault_t* fault)
                    fault->regs.pc,
                    fault->addr,
                    fault->data);
-
+#if 0
+    } else if(offset == DSCADDR || offset == BUFADDR || offset == SDMMC_DBADDR){
+        printf("[%s] access violation pc0x%x| w0x%x:0x%x\n", d->name,
+               fault->regs.pc,
+               fault->addr,
+               fault->data);
+#endif
     } else {
         printf("[%s] pc0x%x| w0x%x:0x%x\n", d->name,
                fault->regs.pc,
@@ -51,7 +64,7 @@ handle_sdhc_fault(struct device* d, vm_t* vm, fault_t* fault)
 }
 
 
-const struct device dev_ps_msh0 = {
+const struct device dev_msh0 = {
     .devid = DEV_CUSTOM,
     .name = "MSH0",
     .pstart = MSH0_PADDR,
@@ -60,7 +73,7 @@ const struct device dev_ps_msh0 = {
     .priv = NULL
 };
 
-const struct device dev_ps_msh2 = {
+const struct device dev_msh2 = {
     .devid = DEV_CUSTOM,
     .name = "MSH2",
     .pstart = MSH2_PADDR,
@@ -70,7 +83,7 @@ const struct device dev_ps_msh2 = {
 };
 
 static int
-vm_install_sdhc(vm_t* vm, int idx)
+vm_install_nodma_sdhc(vm_t* vm, int idx)
 {
     struct sdhc_priv *sdhc_data;
     struct device d;
@@ -78,10 +91,10 @@ vm_install_sdhc(vm_t* vm, int idx)
     int err;
     switch (idx) {
     case 0:
-        d = dev_ps_msh0;
+        d = dev_msh0;
         break;
     case 2:
-        d = dev_ps_msh2;
+        d = dev_msh2;
         break;
     default:
         assert(0);
@@ -115,12 +128,12 @@ vm_install_sdhc(vm_t* vm, int idx)
     return 0;
 }
 
-int vm_install_sdhc0(vm_t* vm)
+int vm_install_nodma_sdhc0(vm_t* vm)
 {
-    return vm_install_sdhc(vm, 0);
+    return vm_install_nodma_sdhc(vm, 0);
 }
 
-int vm_install_sdhc2(vm_t* vm)
+int vm_install_nodma_sdhc2(vm_t* vm)
 {
-    return vm_install_sdhc(vm, 2);
+    return vm_install_nodma_sdhc(vm, 2);
 }

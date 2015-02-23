@@ -36,10 +36,10 @@ int vm_install_vgpio_right(vm_t* vm);
 extern const struct device dev_vmct_timer;
 int vm_install_vmct(vm_t* vm);
 
-const struct device dev_ps_msh0;
-const struct device dev_ps_msh2;
-int vm_install_sdhc0(vm_t *vm);
-int vm_install_sdhc2(vm_t *vm);
+const struct device dev_msh0;
+const struct device dev_msh2;
+int vm_install_nodma_sdhc0(vm_t *vm);
+int vm_install_nodma_sdhc2(vm_t *vm);
 
 #define dev_vconsole dev_uart2
 extern const struct device dev_uart0;
