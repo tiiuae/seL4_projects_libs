@@ -54,7 +54,7 @@ extern const struct device dev_uart3;
  * @param[in] d   A description of the UART device
  * @return        0 on success
  */
-int vm_install_ac_uart(vm_t* vm, struct device* d);
+int vm_install_ac_uart(vm_t* vm, const struct device* d);
 
 /**
  * Installs the default console device. Characters written to the

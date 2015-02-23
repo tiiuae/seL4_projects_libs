@@ -209,7 +209,7 @@ int vm_install_vconsole(vm_t* vm)
 
 
 int
-vm_install_ac_uart(vm_t* vm, struct device* d)
+vm_install_ac_uart(vm_t* vm, const struct device* d)
 {
     int err;
     int mask_size = UART_SIZE;
