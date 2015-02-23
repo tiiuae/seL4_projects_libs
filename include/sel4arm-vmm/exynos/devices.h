@@ -47,8 +47,23 @@ extern const struct device dev_uart1;
 extern const struct device dev_uart2;
 extern const struct device dev_uart3;
 
+/**
+ * Installs a UART device which provides access to FIFO and IRQ
+ * control registers, but prevents access to configuration registers
+ * @param[in] vm  The vm in which to install the device
+ * @param[in] d   A description of the UART device
+ * @return        0 on success
+ */
+int vm_install_ac_uart(vm_t* vm, struct device* d);
+
+/**
+ * Installs the default console device. Characters written to the
+ * console are buffered until end of line. The output data will
+ * be printed with a background colour to identify the VM
+ * @param[in] vm The VM in which to install the vconsole device
+ * @return       0 on success
+ */
 int vm_install_vconsole(vm_t* vm);
-void flush_vconsole_device(struct device* d);
 
 extern const struct device dev_acp;
 extern const struct device dev_i2c1;

@@ -59,7 +59,7 @@ static void vuart_reset(struct device* d)
     memcpy(vuart_priv_get_regs(d), reset_data, sizeof(reset_data));
 }
 
-void
+static void
 flush_vconsole_device(struct device* d)
 {
     struct vuart_priv *vuart_data;
@@ -207,3 +207,33 @@ int vm_install_vconsole(vm_t* vm)
     return 0;
 }
 
+
+int
+vm_install_ac_uart(vm_t* vm, struct device* d)
+{
+    int err;
+    int mask_size = UART_SIZE;
+    uint32_t* mask = (uint32_t*)malloc(mask_size);
+    err = vm_install_generic_ac_device(vm, d, mask, mask_size, VACDEV_MASK_ONLY);
+    if (err) {
+        free(mask);
+        return -1;
+    } else {
+        mask[ULCON    / 4] = 0x0;
+        mask[UCON     / 4] = 0x0;
+        mask[UFCON    / 4] = 0x0;
+        mask[UMCON    / 4] = 0x0;
+        mask[UTRSTAT  / 4] = 0x0;
+        mask[UERSTAT  / 4] = 0x0;
+        mask[UFSTAT   / 4] = 0x0;
+        mask[UMSTAT   / 4] = 0x0;
+        mask[UTXH     / 4] = 0xffffffff;
+        mask[URXH     / 4] = 0xffffffff;
+        mask[UBRDIV   / 4] = 0x0;
+        mask[UFRACVAL / 4] = 0x0;
+        mask[UINTP    / 4] = 0xffffffff;
+        mask[UINTSP   / 4] = 0xffffffff;
+        mask[UINTM    / 4] = 0xffffffff;
+        return 0;
+    }
+}
