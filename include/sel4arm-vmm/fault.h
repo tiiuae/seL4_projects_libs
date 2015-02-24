@@ -17,6 +17,7 @@
 typedef struct vm vm_t;
 
 enum fault_width {
+    WIDTH_DOUBLEWORD,
     WIDTH_WORD,
     WIDTH_HALFWORD,
     WIDTH_BYTE
@@ -43,6 +44,12 @@ struct fault {
     uint32_t fsr;
 /// 'true' if the fault was a prefetch fault rather than a data fault
     bool is_prefetch;
+/// For multiple str/ldr and 32 bit access, the fault is handled in stages
+    int stage;
+/// If the instruction requires fetching, cache it here
+    uint32_t instruction;
+/// The width of the fault
+    enum fault_width width;
 };
 typedef struct fault fault_t;
 
@@ -123,6 +130,11 @@ uint32_t fault_emulate(fault_t* fault, uint32_t data);
  ***  Helpers ***
  ****************/
 
+static inline int fault_handled(fault_t* fault)
+{
+    return fault->stage == 0;
+}
+
 static inline int fsr_is_WnR(uint32_t fsr)
 {
     return (fsr & (1U << 6));
@@ -158,7 +170,10 @@ static inline int fault_is_16bit_instruction(fault_t* f)
     return !fault_is_32bit_instruction(f);
 }
 
-enum fault_width fault_get_width(fault_t* f);
+static inline enum fault_width fault_get_width(fault_t* f)
+{
+    return f->width;
+}
 
 uint32_t fault_get_data_mask(fault_t* f);
 

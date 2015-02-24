@@ -41,11 +41,14 @@
 #define COLOR_ERROR "\033[1;31m"
 #define COLOR_NORMAL "\033[0m"
 
-#define CPSR_THUMB         BIT(5)
+#define CPSR_THUMB                 BIT(5)
+#define CPSR_IS_THUMB(x)           ((x) & CPSR_THUMB)
 
-#define HSR_INST32         BIT(25)
-#define HSR_SYNDROME_VALID BIT(24)
-#define HSR_SYNDROME_RT(x) (((x) >> 16) & 0xf)
+#define HSR_INST32                 BIT(25)
+#define HSR_SYNDROME_VALID         BIT(24)
+#define HSR_IS_SYNDROME_VALID(hsr) ((hsr) & HSR_SYNDROME_VALID)
+#define HSR_SYNDROME_RT(x)         (((x) >> 16) & 0xf)
+#define HSR_SYNDROME_WIDTH(x)      (((x) >> 22) & 0x3)
 
 static int
 fetch_fault_instruction(fault_t* fault, uint32_t* ret)
@@ -164,6 +167,56 @@ fault_init(vm_t* vm, fault_t* fault)
     return err;
 }
 
+static int
+decode_fault(fault_t* f)
+{
+    /* only one stage by default */
+    f->stage = 1;
+    /* If it is a data fault, prepare the fault details */
+    if (fault_is_data(f)) {
+        /* Read or write, we need to find the width */
+        if (HSR_IS_SYNDROME_VALID(f->fsr)) {
+            switch (HSR_SYNDROME_WIDTH(f->fsr)) {
+            case 0:
+                f->width = WIDTH_BYTE;
+                break;
+            case 1:
+                f->width = WIDTH_HALFWORD;
+                break;
+            case 2:
+                f->width = WIDTH_WORD;
+                break;
+            default:
+                print_fault(f);
+                assert(0);
+                return 0;
+            }
+        }
+        if (fault_is_write(f)) {
+            /* If it is a write fault, we fill the data register */
+            if (HSR_IS_SYNDROME_VALID(f->fsr)) {
+                int rt;
+                /* Stores in thumb mode may trigger errata */
+                if (HAS_ERRATA766422() && CPSR_IS_THUMB(f->regs.cpsr)) {
+                    rt = errata766422_get_rt(f, f->fsr);
+                    if (rt < 0) {
+                        print_fault(f);
+                        assert(!"Could not decode RT");
+                        return -1;
+                    }
+                } else {
+                    rt = HSR_SYNDROME_RT(f->fsr);
+                }
+                f->data = *decode_rt(rt, &f->regs);
+            }
+        } else {
+            /* If it is a read fault, just ensure we know the width */
+            assert(HSR_IS_SYNDROME_VALID(f->fsr));
+        }
+    }
+    return 0;
+}
+
 int
 new_fault(fault_t* fault)
 {
@@ -187,33 +240,21 @@ new_fault(fault_t* fault)
     fault->ip = ip;
     fault->addr = addr;
     fault->fsr = fsr;
+    fault->instruction = 0;
+    fault->data = 0xdeadbeef;
     /* Gather additional information */
     assert(fault->reply_cap.capPtr);
     err = vka_cnode_saveCaller(&fault->reply_cap);
     assert(!err);
+
     err = seL4_TCB_ReadRegisters(tcb, false, 0,
                                  sizeof(fault->regs) / sizeof(fault->regs.pc),
                                  &fault->regs);
     assert(!err);
-    /* Pull in data if we can */
-    fault->data = 0xdeadbeef;
-    if (fault_is_data(fault) && fault_is_write(fault)) {
-        if (fault->fsr & HSR_SYNDROME_VALID) {
-            int rt;
-            if (HAS_ERRATA766422() && (fault->regs.cpsr & CPSR_THUMB)) {
-                rt = errata766422_get_rt(fault, fault->fsr);
-                if (rt < 0) {
-                    print_fault(fault);
-                    assert(!"Could not decode RT");
-                    return -1;
-                }
-            } else {
-                rt = HSR_SYNDROME_RT(fault->fsr);
-            }
-            fault->data = *decode_rt(rt, &fault->regs);
-        }
-    }
-    return 0;
+
+    err = decode_fault(fault);
+    assert(!err);
+    return err;
 }
 
 int abandon_fault(fault_t* fault)
@@ -227,6 +268,7 @@ int abandon_fault(fault_t* fault)
 
 int restart_fault(fault_t* fault)
 {
+    fault->stage = 0;
     /* Send the reply */
     seL4_MessageInfo_t reply;
     reply = seL4_MessageInfo_new(0, 0, 0, 0);
@@ -277,7 +319,13 @@ int advance_fault(fault_t* fault)
     }
     DFAULT("%s: Emulate fault @ 0x%x from PC 0x%x\n",
            fault->vm->name, fault->addr, fault->ip);
-    return ignore_fault(fault);
+    /* If this is the final stage of the fault, return to user */
+    fault->stage--;
+    if (fault->stage) {
+        return 0;
+    } else {
+        return ignore_fault(fault);
+    }
 }
 
 uint32_t fault_emulate(fault_t* f, uint32_t o)
@@ -361,21 +409,6 @@ uint32_t fault_get_data_mask(fault_t* f)
     }
     mask <<= (addr & 0x3) * 8;
     return mask;
-}
-
-enum fault_width fault_get_width(fault_t* f)
-{
-    switch ((f->fsr >> 22) & 0x3) {
-    case 0:
-        return WIDTH_BYTE;
-    case 1:
-        return WIDTH_HALFWORD;
-    case 2:
-        return WIDTH_WORD;
-    default:
-        assert(0);
-        return 0;
-    }
 }
 
 

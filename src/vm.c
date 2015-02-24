@@ -398,10 +398,12 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         fault = &vm->fault;
         err = new_fault(fault);
         assert(!err);
-        err = handle_page_fault(vm, fault);
-        if (err) {
-            return -1;
-        }
+        do {
+            err = handle_page_fault(vm, fault);
+            if (err) {
+                return -1;
+            }
+        } while (!fault_handled(fault));
     }
     break;
 
