@@ -171,6 +171,8 @@ vm_install_nodma_sdhc(vm_t* vm, int idx)
         assert(sdhc_data->regs);
         return -1;
     }
+    map_vm_device(vm, d.pstart, d.pstart, seL4_CanRead);
+
     d.priv = sdhc_data;
     err = vm_add_device(vm, &d);
     assert(!err);
