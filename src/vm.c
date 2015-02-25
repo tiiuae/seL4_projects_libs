@@ -452,12 +452,28 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     }
     break;
     case SEL4_VCPU_FAULT_LABEL: {
+        seL4_MessageInfo_t reply;
+        seL4_UserContext regs;
+        seL4_CPtr tcb;
         uint32_t hsr;
+        int err;
         assert(length == SEL4_VCPU_FAULT_LENGTH);
         hsr = seL4_GetMR(EXCEPT_IPC_SYS_MR_R0);
         printf("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vm->name, hsr);
-        return -1;
+        /* Increment the PC and ignore the fault */
+        tcb = vm_get_tcb(vm);
+        err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
+        assert(!err);
+        regs.pc += 4;
+        err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
+        assert(!err);
+
+        print_ctx_regs(&regs);
+
+        reply = seL4_MessageInfo_new(0, 0, 0, 0);
+        seL4_Reply(reply);
     }
+    break;
     default:
         /* What? Why are we here? What just happened? */
         printf("Unknown fault from [%s]: label=0x%x length=0x%x\n",
