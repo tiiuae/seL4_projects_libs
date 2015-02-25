@@ -35,6 +35,8 @@ struct fault {
     seL4_UserContext regs;
 
 /// The IPA address of the fault
+    uint32_t base_addr;
+/// The IPA address of the fault at the current stage
     uint32_t addr;
 /// The IPA of the instruction which caused the fault
     uint32_t ip;
