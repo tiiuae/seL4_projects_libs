@@ -84,6 +84,7 @@ copy_out_page(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src,
     dup_cap = dup_cap_path.capPtr;
     err = vka_cnode_copy(&dup_cap_path, &cap_path, seL4_AllRights);
     if (err) {
+        vka_cspace_free(vka, dup_cap);
         return -1;
     }
 
@@ -91,6 +92,8 @@ copy_out_page(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src,
     tmp_dst = vspace_map_pages(src_vspace, &dup_cap, NULL, seL4_AllRights, 1, bits, 1);
     assert(tmp_dst);
     if (!tmp_dst) {
+        vka_cnode_delete(&dup_cap_path);
+        vka_cspace_free(vka, dup_cap);
         return -1;
     }
 
@@ -103,7 +106,7 @@ copy_out_page(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t* vka, void* src,
     memcpy(tmp_dst + offset, src, copy_size);
 
     /* Clean up */
-    vspace_unmap_pages(src_vspace, tmp_dst, 1, bits, NULL);
+    vspace_unmap_pages(src_vspace, tmp_dst, 1, bits, VSPACE_PRESERVE);
     vka_cnode_delete(&dup_cap_path);
     vka_cspace_free(vka, dup_cap);
 
@@ -183,7 +186,6 @@ copy_in_page(vspace_t *vmm_vspace, vspace_t *vm_vspace, vka_t* vka, void* dest, 
     int bits;
     int err;
 
-
     /* Find the VM frame */
     cap = vspace_get_cap(vm_vspace, src);
     if (cap == seL4_CapNull) {
@@ -199,11 +201,13 @@ copy_in_page(vspace_t *vmm_vspace, vspace_t *vm_vspace, vka_t* vka, void* dest, 
     err = vka_cspace_alloc_path(vka, &vmm_cap_path);
     vmm_cap = vmm_cap_path.capPtr;
     if (err) {
+        printf("Failed to allocate slot for copyin\n");
         return -1;
     }
     err = vka_cnode_copy(&vmm_cap_path, &cap_path, seL4_AllRights);
     if (err) {
         vka_cspace_free(vka, vmm_cap);
+        printf("Failed to copy frame cap for copyin\n");
         return -1;
     }
     /* Map it into the VMM vspace */
@@ -211,7 +215,9 @@ copy_in_page(vspace_t *vmm_vspace, vspace_t *vm_vspace, vka_t* vka, void* dest, 
     assert(tmp_src);
     if (tmp_src == NULL) {
         assert(!"Failed to map frame for copyin\n");
+        vka_cnode_delete(&vmm_cap_path);
         vka_cspace_free(vka, vmm_cap);
+        printf("Failed to map frame cap for copyin\n");
         return -1;
     }
 
@@ -224,7 +230,9 @@ copy_in_page(vspace_t *vmm_vspace, vspace_t *vm_vspace, vka_t* vka, void* dest, 
     memcpy(dest, tmp_src + offset, copy_size);
 
     /* Clean up */
-    vspace_unmap_pages(vmm_vspace, tmp_src, 1, bits, VSPACE_FREE);
+    vspace_unmap_pages(vmm_vspace, tmp_src, 1, bits, VSPACE_PRESERVE);
+    vka_cnode_delete(&vmm_cap_path);
+    vka_cspace_free(vka, vmm_cap);
 
     DCOPYIN("copy in page 0x%x->0x%x (0x%x bytes)\n", (uint32_t)src, (uint32_t)dest, copy_size);
     /* Done */
