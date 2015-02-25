@@ -8,23 +8,39 @@
  * @TAG(NICTA_BSD)
  */
 
+/*
+ * DesignWare eMMC
+ */
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "../../devices.h"
 #include "../../vm.h"
 
-#define EMMC_DBADDR        0x88
-#define EMMC_DSCADDR       0x94
-#define EMMC_BUFADDR       0x98
-
+#define DWEMMC_DBADDR_OFFSET    0x088
+#define DWEMMC_DSCADDR_OFFSET   0x094
+#define DWEMMC_BUFADDR_OFFSET   0x098
+#define DWEMMC_BLASH_OFFSET     0x200
+#define DWEMMC_DATA_OFFSET      0x100
+#define DWEMMC_DATA_240A_OFFSET 0x200
 //#define SDHC_DS_ADDR       0x00
 //#define SDHC_ADMA_SYS_ADDR 0x58
 
+
+#if 0
+#define dprintf(...) printf(__VA_ARGS__)
+#else
+#define dprintf(...) do { } while(0)
+#endif
+
 struct sdhc_priv {
-    struct dma *dma_list;
+/// The VM associated with this device
     vm_t *vm;
+/// Physical registers of the SDHC
     void* regs;
+/// Residual for 64 bit atomic access to FIFO
+    uint32_t a64;
 };
 
 static int
@@ -40,25 +56,62 @@ handle_sdhc_fault(struct device* d, vm_t* vm, fault_t* fault)
     /* Handle the fault */
     reg = (volatile uint32_t*)(sdhc_data->regs + offset);
     if (fault_is_read(fault)) {
-        fault->data = *reg;
-        if (offset != 0x44)
-            printf("[%s] pc0x%x| r0x%x:0x%x\n", d->name,
-                   fault->regs.pc,
-                   fault->addr,
-                   fault->data);
+        if (fault_get_width(fault) == WIDTH_DOUBLEWORD) {
+            if (offset & 0x4) {
+                /* Unaligned access: report residual */
+                fault->data = sdhc_data->a64;
+            } else {
+                /* Aligned access: Read in and store residual */
+                uint64_t v;
+                v = *(volatile uint64_t*)reg;
+                fault->data = v;
+                sdhc_data->a64 = v >> 32;
+            }
+        } else {
+            assert(fault_get_width(fault) == WIDTH_WORD);
+            fault->data = *reg;
+        }
+        dprintf("[%s] pc0x%x| r0x%x:0x%x\n", d->name,
+                fault->regs.pc,
+                fault->addr,
+                fault->data);
+
+
 #if 0
-    } else if(offset == DSCADDR || offset == BUFADDR || offset == SDMMC_DBADDR){
+        if (offset != 0x44)
+            dprintf("[%s] pc0x%x| r0x%x:0x%x\n", d->name,
+                    fault->regs.pc,
+                    fault->addr,
+                    fault->data);
+    } else if (offset == DSCADDR || offset == BUFADDR || offset == SDMMC_DBADDR) {
         printf("[%s] access violation pc0x%x| w0x%x:0x%x\n", d->name,
                fault->regs.pc,
                fault->addr,
                fault->data);
 #endif
     } else {
-        printf("[%s] pc0x%x| w0x%x:0x%x\n", d->name,
-               fault->regs.pc,
-               fault->addr,
-               fault->data);
-        *reg = fault_emulate(fault, *reg);
+        switch (offset) {
+        case 666:
+        default:
+            if (fault_get_width(fault) == WIDTH_DOUBLEWORD) {
+                if (offset & 0x4) {
+                    /* Unaligned acces: store data and residual */
+                    uint64_t v;
+                    v = ((uint64_t)fault->data << 32) | sdhc_data->a64;
+                    *(volatile uint64_t*)reg = v;
+                } else {
+                    /* Aligned access: record residual */
+                    sdhc_data->a64 = fault->data;
+                }
+            } else {
+                assert(fault_get_width(fault) == WIDTH_WORD);
+                *reg = fault->data;
+            }
+        }
+        dprintf("[%s] pc0x%x| w0x%x:0x%x\n", d->name,
+                fault->regs.pc,
+                fault->addr,
+                fault->data);
     }
     return advance_fault(fault);
 }
