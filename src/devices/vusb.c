@@ -81,7 +81,6 @@ struct sel4urbt {
 
 struct sel4urb {
     uint32_t epaddr;
-    void*    token;
     uint16_t max_pkt;
     uint16_t rate_ms;
     uint16_t urb_bytes_remaining;
