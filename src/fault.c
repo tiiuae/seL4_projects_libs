@@ -33,9 +33,10 @@
 #endif
 
 #ifdef PLAT_EXYNOS5250
-#define HAS_ERRATA766422() 1
+/* Stores in thumb mode trigger this errata */
+#define HAS_ERRATA766422(f) ( fault_is_write(f) && CPSR_IS_THUMB(fault_get_ctx(f)->cpsr))
 #else
-#define HAS_ERRATA766422() 0
+#define HAS_ERRATA766422(f) 0
 #endif
 
 #define COLOR_ERROR "\033[1;31m"
@@ -49,6 +50,12 @@
 #define HSR_IS_SYNDROME_VALID(hsr) ((hsr) & HSR_SYNDROME_VALID)
 #define HSR_SYNDROME_RT(x)         (((x) >> 16) & 0xf)
 #define HSR_SYNDROME_WIDTH(x)      (((x) >> 22) & 0x3)
+
+#define CONTENT_REGS               BIT(0)
+#define CONTENT_DATA               BIT(1)
+#define CONTENT_INST               BIT(2)
+#define CONTENT_WIDTH              BIT(3)
+#define CONTENT_STAGE              BIT(4)
 
 /**
  * Data structure representating a fault
@@ -79,57 +86,10 @@ struct fault {
     uint32_t instruction;
 /// The width of the fault
     enum fault_width width;
+/// The active content within the fault structure to allow lazy loading
+    int content;
 };
 typedef struct fault fault_t;
-
-/*************************
- *** Getters / Setters ***
- *************************/
-
-uint32_t
-fault_get_data(fault_t* f)
-{
-    return f->data;
-}
-
-void
-fault_set_data(fault_t* f, uint32_t data)
-{
-    f->data = data;
-}
-
-uint32_t
-fault_get_address(fault_t* f)
-{
-    return f->addr;
-}
-
-uint32_t
-fault_get_fsr(fault_t* f)
-{
-    return f->fsr;
-}
-
-seL4_UserContext*
-fault_get_ctx(fault_t *f)
-{
-    return &f->regs;
-}
-
-int fault_handled(fault_t* f)
-{
-    return f->stage == 0;
-}
-
-int fault_is_prefetch(fault_t* f)
-{
-    return f->is_prefetch;
-}
-
-enum fault_width fault_get_width(fault_t* f)
-{
-    return f->width;
-}
 
 /*************************
  *** Primary functions ***
@@ -148,146 +108,146 @@ thumb_is_32bit_instruction(uint32_t instruction)
 }
 
 static int
-fetch_fault_instruction(fault_t* f)
+maybe_fetch_fault_instruction(fault_t* f)
 {
-    uint32_t inst = 0;
-    /* Fetch the instruction */
-    if (vm_copyin(f->vm, &inst, f->ip, 4) < 0) {
-        return -1;
-    }
-    /* Fixup the instruction */
-    if (CPSR_IS_THUMB(f->regs.cpsr)) {
-        if (thumb_is_32bit_instruction(inst)) {
+    if ((f->content & CONTENT_INST) == 0) {
+        uint32_t inst = 0;
+        /* Fetch the instruction */
+        if (vm_copyin(f->vm, &inst, f->ip, 4) < 0) {
+            return -1;
+        }
+        /* Fixup the instruction */
+        if (CPSR_IS_THUMB(fault_get_ctx(f)->cpsr)) {
+            if (thumb_is_32bit_instruction(inst)) {
+                f->fsr |= HSR_INST32;
+            }
+            if (HSR_IS_INST32(f->fsr)) {
+                /* Swap half words for a 32 bit instruction */
+                inst = ((inst & 0xffff)) << 16 | ((inst >> 16) & 0xffff);
+            } else {
+                /* Mask instruction for 16 bit instruction */
+                inst &= 0xffff;
+            }
+        } else {
+            /* All ARM instructions are 32 bit so force the HSR flag to be set */
             f->fsr |= HSR_INST32;
         }
-        if (HSR_IS_INST32(f->fsr)) {
-            /* Swap half words for a 32 bit instruction */
-            inst = ((inst & 0xffff)) << 16 | ((inst >> 16) & 0xffff);
-        } else {
-            /* Mask instruction for 16 bit instruction */
-            inst &= 0xffff;
-        }
-    } else {
-        /* All ARM instructions are 32 bit so force the HSR flag to be set */
-        f->fsr |= HSR_INST32;
+        f->instruction = inst;
+        f->content |= CONTENT_INST;
     }
-    f->instruction = inst;
     return 0;
 }
 
 static int
 errata766422_get_rt(fault_t* f, uint32_t hsr)
 {
-    uint32_t instruction;
+    uint32_t inst;
     int err;
-    err = fetch_fault_instruction(f);
-    instruction = f->instruction;
+    err = maybe_fetch_fault_instruction(f);
+    inst = f->instruction;
     if (err) {
         return err;
     }
     if (HSR_IS_INST32(hsr)) {
-        DERRATA("Errata766422 @ 0x%08x (0x%08x)\n", f->regs.pc, instruction);
-        if ((instruction & 0xff700000) == 0xf8400000) {
-            return (instruction >> 12) & 0xf;
-        } else if ((instruction & 0xfff00000) == 0xf8800000) {
-            return (instruction >> 12) & 0xf;
-        } else if ((instruction & 0xfff00000) == 0xf0000000) {
-            return (instruction >> 12) & 0xf;
-        } else if ((instruction & 0x0e500000) == 0x06400000) {
-            return (instruction >> 12) & 0xf;
-        } else if ((instruction & 0xfff00000) == 0xf8000000) {
-            return (instruction >> 12) & 0xf;
+        DERRATA("Errata766422 @ 0x%08x (0x%08x)\n", fault_get_ctx(f)->pc, inst);
+        if ((inst & 0xff700000) == 0xf8400000) {
+            return (inst >> 12) & 0xf;
+        } else if ((inst & 0xfff00000) == 0xf8800000) {
+            return (inst >> 12) & 0xf;
+        } else if ((inst & 0xfff00000) == 0xf0000000) {
+            return (inst >> 12) & 0xf;
+        } else if ((inst & 0x0e500000) == 0x06400000) {
+            return (inst >> 12) & 0xf;
+        } else if ((inst & 0xfff00000) == 0xf8000000) {
+            return (inst >> 12) & 0xf;
         } else {
-            printf("Unable to decode instruction 0x%08x\n", instruction);
+            printf("Unable to decode inst 0x%08x\n", inst);
             return -1;
         }
     } else {
-        DERRATA("Errata766422 @ 0x%08x (0x%04x)\n", f->regs.pc, instruction);
-        /* 16 bit instructions */
-        if ((instruction & 0xf800) == 0x6000) {
-            return (instruction >> 0) & 0x7;
-        } else if ((instruction & 0xf800) == 0x9000) {
-            return (instruction >> 8) & 0x7;
-        } else if ((instruction & 0xf800) == 0x5000) {
-            return (instruction >> 0) & 0x7;
-        } else if ((instruction & 0xfe00) == 0x5400) {
-            return (instruction >> 0) & 0x7;
-        } else if ((instruction & 0xf800) == 0x7000) {
-            return (instruction >> 0) & 0x7;
-        } else if ((instruction & 0xf800) == 0x8000) {
-            return (instruction >> 0) & 0x7;
+        DERRATA("Errata766422 @ 0x%08x (0x%04x)\n", fault_get_ctx(f)->pc, inst);
+        /* 16 bit insts */
+        if ((inst & 0xf800) == 0x6000) {
+            return (inst >> 0) & 0x7;
+        } else if ((inst & 0xf800) == 0x9000) {
+            return (inst >> 8) & 0x7;
+        } else if ((inst & 0xf800) == 0x5000) {
+            return (inst >> 0) & 0x7;
+        } else if ((inst & 0xfe00) == 0x5400) {
+            return (inst >> 0) & 0x7;
+        } else if ((inst & 0xf800) == 0x7000) {
+            return (inst >> 0) & 0x7;
+        } else if ((inst & 0xf800) == 0x8000) {
+            return (inst >> 0) & 0x7;
         } else {
-            printf("Unable to decode instruction 0x%04x\n", instruction);
+            printf("Unable to decode inst 0x%04x\n", inst);
             return -1;
         }
     }
 }
 
 static int
-decode_instruction(fault_t* f, int in_init)
+decode_instruction(fault_t* f)
 {
-    uint32_t instruction;
-    if (in_init && fetch_fault_instruction(f)) {
-        return -1;
-    }
-    instruction = f->instruction;
-    if (CPSR_IS_THUMB(f->regs.cpsr)) {
+    uint32_t inst;
+    maybe_fetch_fault_instruction(f);
+    inst = f->instruction;
+    if (CPSR_IS_THUMB(fault_get_ctx(f)->cpsr)) {
         if (HSR_IS_INST32(f->fsr)) {
-            /* 32 BIT THUMB instructions */
-            if ((instruction & 0xff700000) == 0xf8400000) {
-                return (instruction >> 12) & 0xf;
-            } else if ((instruction & 0xfff00000) == 0xf8800000) {
-                return (instruction >> 12) & 0xf;
-            } else if ((instruction & 0xfff00000) == 0xf0000000) {
-                return (instruction >> 12) & 0xf;
-            } else if ((instruction & 0x0e500000) == 0x06400000) {
-                return (instruction >> 12) & 0xf;
-            } else if ((instruction & 0xfff00000) == 0xf8000000) {
-                return (instruction >> 12) & 0xf;
-            } else if ((instruction & 0xfe400000) == 0xe8400000) { /* LDRD/STRD */
+            /* 32 BIT THUMB insts */
+            if ((inst & 0xff700000) == 0xf8400000) {
+                return (inst >> 12) & 0xf;
+            } else if ((inst & 0xfff00000) == 0xf8800000) {
+                return (inst >> 12) & 0xf;
+            } else if ((inst & 0xfff00000) == 0xf0000000) {
+                return (inst >> 12) & 0xf;
+            } else if ((inst & 0x0e500000) == 0x06400000) {
+                return (inst >> 12) & 0xf;
+            } else if ((inst & 0xfff00000) == 0xf8000000) {
+                return (inst >> 12) & 0xf;
+            } else if ((inst & 0xfe400000) == 0xe8400000) { /* LDRD/STRD */
                 int rt;
-                if (in_init) {
+                if ((f->content & CONTENT_STAGE) == 0) {
                     f->stage = 2;
                     f->width = WIDTH_DOUBLEWORD;
+                    f->content |= CONTENT_WIDTH | CONTENT_STAGE;
                 }
                 f->addr = f->base_addr + ((2 - f->stage) * sizeof(uint32_t));
-                rt = ((instruction >> 12) & 0xf) + (2 - f->stage);
+                rt = ((inst >> 12) & 0xf) + (2 - f->stage);
                 return rt;
             } else {
-                printf("Unable to decode THUMB32 instruction 0x%08x\n", instruction);
+                printf("Unable to decode THUMB32 inst 0x%08x\n", inst);
                 print_fault(f);
                 return -1;
             }
         } else {
-            /* 16 bit THUMB instructions */
-            if ((instruction & 0xf800) == 0x6000) {
-                return (instruction >> 0) & 0x7;
-            } else if ((instruction & 0xf800) == 0x9000) {
-                return (instruction >> 8) & 0x7;
-            } else if ((instruction & 0xf800) == 0x5000) {
-                return (instruction >> 0) & 0x7;
-            } else if ((instruction & 0xfe00) == 0x5400) {
-                return (instruction >> 0) & 0x7;
-            } else if ((instruction & 0xf800) == 0x7000) {
-                return (instruction >> 0) & 0x7;
-            } else if ((instruction & 0xf800) == 0x8000) {
-                return (instruction >> 0) & 0x7;
+            /* 16 bit THUMB insts */
+            if ((inst & 0xf800) == 0x6000) {
+                return (inst >> 0) & 0x7;
+            } else if ((inst & 0xf800) == 0x9000) {
+                return (inst >> 8) & 0x7;
+            } else if ((inst & 0xf800) == 0x5000) {
+                return (inst >> 0) & 0x7;
+            } else if ((inst & 0xfe00) == 0x5400) {
+                return (inst >> 0) & 0x7;
+            } else if ((inst & 0xf800) == 0x7000) {
+                return (inst >> 0) & 0x7;
+            } else if ((inst & 0xf800) == 0x8000) {
+                return (inst >> 0) & 0x7;
             } else {
-                printf("Unable to decode THUMB16 instruction 0x%04x\n", instruction);
+                printf("Unable to decode THUMB16 inst 0x%04x\n", inst);
                 print_fault(f);
                 return -1;
             }
         }
     } else {
-        printf("32 bit ARM instructions not decoded\n");
+        printf("32 bit ARM insts not decoded\n");
         print_fault(f);
         return -1;
     }
 }
 
-
-
-uint32_t*
+static uint32_t*
 decode_rt(int reg, seL4_UserContext* c)
 {
     switch (reg) {
@@ -329,6 +289,23 @@ decode_rt(int reg, seL4_UserContext* c)
     }
 };
 
+static int
+get_rt(fault_t *f)
+{
+    int rt;
+    if (HSR_IS_SYNDROME_VALID(f->fsr)) {
+        if (HAS_ERRATA766422(f)) {
+            rt = errata766422_get_rt(f, f->fsr);
+        } else {
+            rt = HSR_SYNDROME_RT(f->fsr);
+        }
+    } else {
+        rt = decode_instruction(f);
+    }
+    assert(rt >= 0);
+    return rt;
+}
+
 fault_t*
 fault_init(vm_t* vm)
 {
@@ -347,69 +324,15 @@ fault_init(vm_t* vm)
     return fault;
 }
 
-static int
-decode_fault(fault_t* f)
-{
-    /* Defaults */
-    f->addr = f->base_addr;
-    f->stage = 1;
-    /* If it is a data fault, prepare the fault details */
-    if (fault_is_data(f)) {
-        /* Read or write, we need to find the width */
-        if (HSR_IS_SYNDROME_VALID(f->fsr)) {
-            switch (HSR_SYNDROME_WIDTH(f->fsr)) {
-            case 0:
-                f->width = WIDTH_BYTE;
-                break;
-            case 1:
-                f->width = WIDTH_HALFWORD;
-                break;
-            case 2:
-                f->width = WIDTH_WORD;
-                break;
-            default:
-                print_fault(f);
-                assert(0);
-                return 0;
-            }
-        }
-        if (fault_is_write(f)) {
-            /* If it is a write fault, we fill the data field if the fault */
-            int rt;
-            if (HSR_IS_SYNDROME_VALID(f->fsr)) {
-                rt = HSR_SYNDROME_RT(f->fsr);
-                /* Stores in thumb mode may trigger errata */
-                if (HAS_ERRATA766422() && CPSR_IS_THUMB(f->regs.cpsr)) {
-                    rt = errata766422_get_rt(f, f->fsr);
-                }
-            } else {
-                rt = decode_instruction(f, 1);
-            }
-            assert(rt >= 0);
-            f->data = *decode_rt(rt, &f->regs);
-        } else {
-            /* If it is a read fault, just ensure we know the width for now */
-            if (!HSR_IS_SYNDROME_VALID(f->fsr)) {
-                int rt;
-                rt = decode_instruction(f, 1);
-                assert(rt >= 0);
-            }
-        }
-    }
-    return 0;
-}
-
 int
 new_fault(fault_t* fault)
 {
     uint32_t is_prefetch, ip, addr, fsr;
-    seL4_CPtr tcb;
     int err;
     vm_t *vm;
 
     vm = fault->vm;
     assert(vm);
-    tcb = vm_get_tcb(vm);
 
     /* First store message registers on the stack to free our message regs */
     is_prefetch = seL4_GetMR(SEL4_PFIPC_PREFETCH_FAULT);
@@ -420,22 +343,34 @@ new_fault(fault_t* fault)
     /* Create the fault object */
     fault->is_prefetch = is_prefetch;
     fault->ip = ip;
-    fault->base_addr = addr;
+    fault->base_addr = fault->addr = addr;
     fault->fsr = fsr;
     fault->instruction = 0;
-    fault->data = 0xdeadbeef;
+    fault->data = 0;
+    fault->width = -1;
+    if (fault_is_data(fault)) {
+        if (fault_is_read(fault)) {
+            /* No need to load data */
+            fault->content = CONTENT_DATA;
+        } else {
+            fault->content = 0;
+        }
+        if (HSR_IS_SYNDROME_VALID(fault->fsr)) {
+            fault->stage = 1;
+            fault->content |= CONTENT_STAGE;
+        } else {
+            fault->stage = -1;
+        }
+    } else {
+        /* No need to load width or data */
+        fault->content = CONTENT_DATA | CONTENT_WIDTH;
+    }
+
     /* Gather additional information */
     assert(fault->reply_cap.capPtr);
     err = vka_cnode_saveCaller(&fault->reply_cap);
     assert(!err);
 
-    err = seL4_TCB_ReadRegisters(tcb, false, 0,
-                                 sizeof(fault->regs) / sizeof(fault->regs.pc),
-                                 &fault->regs);
-    assert(!err);
-
-    err = decode_fault(fault);
-    assert(!err);
     return err;
 }
 
@@ -463,16 +398,14 @@ int restart_fault(fault_t* fault)
 
 int ignore_fault(fault_t* fault)
 {
-    seL4_UserContext * regs;
-    seL4_CPtr tcb;
+    seL4_UserContext *regs;
     int err;
 
-    regs = &fault->regs;
+    regs = fault_get_ctx(fault);
     /* Advance the PC */
     regs->pc += fault_is_32bit_instruction(fault) ? 4 : 2;
     /* Write back CPU registers */
-    tcb = vm_get_tcb(fault->vm);
-    err = seL4_TCB_WriteRegisters(tcb, false, 0,
+    err = seL4_TCB_WriteRegisters(vm_get_tcb(fault->vm), false, 0,
                                   sizeof(*regs) / sizeof(regs->pc), regs);
     assert(!err);
     if (err) {
@@ -485,18 +418,10 @@ int ignore_fault(fault_t* fault)
 
 int advance_fault(fault_t* fault)
 {
-    seL4_UserContext * regs;
-    regs = &fault->regs;
     /* If data was to be read, load it into the user context */
     if (fault_is_data(fault) && fault_is_read(fault)) {
-        int rt;
         uint32_t* reg;
-        if (!HSR_IS_SYNDROME_VALID(fault->fsr)) {
-            rt = decode_instruction(fault, 0);
-        } else {
-            rt = HSR_SYNDROME_RT(fault->fsr);
-        }
-        reg = decode_rt(rt, regs);
+        reg = decode_rt(get_rt(fault), fault_get_ctx(fault));
         *reg = fault_emulate(fault, *reg);
     }
     DFAULT("%s: Emulate fault @ 0x%x from PC 0x%x\n",
@@ -504,14 +429,8 @@ int advance_fault(fault_t* fault)
     /* If this is the final stage of the fault, return to user */
     fault->stage--;
     if (fault->stage) {
-        /* For multi stage instructions, we know that the HSR is invalide.
-         * Decode the instruction again with the new stage set to update
-         * address and data.
-         */
-        int rt;
-        rt = decode_instruction(fault, 0);
-        assert(rt >= 0);
-        fault->data = *decode_rt(rt, &fault->regs);
+        /* Data becomes invalid */
+        fault->content &= ~CONTENT_DATA;
         return 0;
     } else {
         return ignore_fault(fault);
@@ -523,7 +442,7 @@ uint32_t fault_emulate(fault_t* f, uint32_t o)
     uint32_t n, m, s;
     s = (f->addr & 0x3) * 8;
     m = fault_get_data_mask(f);
-    n = f->data;
+    n = fault_get_data(f);
     if (fault_is_read(f)) {
         /* Read data must be shifted to lsb */
         return (o & ~(m >> s)) | ((n & m) >> s);
@@ -532,7 +451,6 @@ uint32_t fault_emulate(fault_t* f, uint32_t o)
         return (o & ~m) | ((n << s) & m);
     }
 }
-
 
 void print_ctx_regs(seL4_UserContext * regs)
 {
@@ -570,7 +488,7 @@ void print_fault(fault_t* fault)
            fault->addr,
            fault->fsr);
     printf("Context:\n");
-    print_ctx_regs(&fault->regs);
+    print_ctx_regs(fault_get_ctx(fault));
     printf(COLOR_NORMAL);
     printf("--------\n");
 }
@@ -600,6 +518,91 @@ uint32_t fault_get_data_mask(fault_t* f)
     }
     mask <<= (addr & 0x3) * 8;
     return mask;
+}
+
+/*************************
+ *** Getters / Setters ***
+ *************************/
+
+uint32_t
+fault_get_data(fault_t* f)
+{
+    if ((f->content & CONTENT_DATA) == 0) {
+        fault_set_data(f, *decode_rt(get_rt(f), fault_get_ctx(f)));
+    }
+    return f->data;
+}
+
+void
+fault_set_data(fault_t* f, uint32_t data)
+{
+    f->data = data;
+    f->content |= CONTENT_DATA;
+}
+
+uint32_t
+fault_get_address(fault_t* f)
+{
+    return f->addr;
+}
+
+uint32_t
+fault_get_fsr(fault_t* f)
+{
+    return f->fsr;
+}
+
+seL4_UserContext*
+fault_get_ctx(fault_t *f)
+{
+    if ((f->content & CONTENT_REGS) == 0) {
+        int err;
+        err = seL4_TCB_ReadRegisters(vm_get_tcb(f->vm), false, 0,
+                                     sizeof(f->regs) / sizeof(f->regs.pc),
+                                     &f->regs);
+        assert(!err);
+        f->content |= CONTENT_REGS;
+    }
+    return &f->regs;
+}
+
+int fault_handled(fault_t* f)
+{
+    return f->stage == 0;
+}
+
+int fault_is_prefetch(fault_t* f)
+{
+    return f->is_prefetch;
+}
+
+enum fault_width fault_get_width(fault_t* f)
+{
+    if ((f->content & CONTENT_WIDTH) == 0) {
+        if (HSR_IS_SYNDROME_VALID(f->fsr)) {
+            switch (HSR_SYNDROME_WIDTH(f->fsr)) {
+            case 0:
+                f->width = WIDTH_BYTE;
+                break;
+            case 1:
+                f->width = WIDTH_HALFWORD;
+                break;
+            case 2:
+                f->width = WIDTH_WORD;
+                break;
+            default:
+                print_fault(f);
+                assert(0);
+                return 0;
+            }
+            f->content |= CONTENT_WIDTH;
+        } else {
+            int rt;
+            rt = decode_instruction(f);
+            assert(rt >= 0);
+        }
+    }
+    return f->width;
 }
 
 
