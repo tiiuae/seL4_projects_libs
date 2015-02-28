@@ -108,29 +108,29 @@ handle_vuart_fault(struct device* d, vm_t* vm, fault_t* fault)
     uint32_t mask;
 
     /* Gather fault information */
-    offset = fault->addr - d->pstart;
+    offset = fault_get_address(fault) - d->pstart;
     reg = (uint32_t*)(vuart_priv_get_regs(d) + offset);
     mask = fault_get_data_mask(fault);
     /* Handle the fault */
     if (offset < 0 || UART_SIZE <= offset) {
         /* Out of range, treat as SBZ */
-        fault->data = 0;
+        fault_set_data(fault, 0);
         return ignore_fault(fault);
 
     } else if (fault_is_read(fault)) {
         /* Blindly read out data */
-        fault->data = *reg;
+        fault_set_data(fault, *reg);
         return advance_fault(fault);
 
     } else { /* if(fault_is_write(fault))*/
         /* Blindly write to the device */
         uint32_t v;
         v = *reg & ~mask;
-        v |= fault->data & mask;
+        v |= fault_get_data(fault) & mask;
         *reg = v;
         /* If it was the TX buffer, we send to the local stdout */
         if (offset == UTXH) {
-            vuart_putchar(d, fault->data);
+            vuart_putchar(d, fault_get_data(fault));
         }
         return advance_fault(fault);
     }

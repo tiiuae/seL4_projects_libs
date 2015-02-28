@@ -51,7 +51,7 @@ handle_sdhc_fault(struct device* d, vm_t* vm, fault_t* fault)
     int offset;
 
     /* Gather fault information */
-    offset = fault->addr - d->pstart;
+    offset = fault_get_address(fault) - d->pstart;
     reg = (uint32_t*)(sdhc_data->regs + offset);
     /* Handle the fault */
     reg = (volatile uint32_t*)(sdhc_data->regs + offset);
@@ -59,23 +59,20 @@ handle_sdhc_fault(struct device* d, vm_t* vm, fault_t* fault)
         if (fault_get_width(fault) == WIDTH_DOUBLEWORD) {
             if (offset & 0x4) {
                 /* Unaligned access: report residual */
-                fault->data = sdhc_data->a64;
+                fault_set_data(fault, sdhc_data->a64);
             } else {
                 /* Aligned access: Read in and store residual */
                 uint64_t v;
                 v = *(volatile uint64_t*)reg;
-                fault->data = v;
+                fault_set_data(fault, v);
                 sdhc_data->a64 = v >> 32;
             }
         } else {
             assert(fault_get_width(fault) == WIDTH_WORD);
-            fault->data = *reg;
+            fault_set_data(fault, *reg);
         }
-        dprintf("[%s] pc0x%x| r0x%x:0x%x\n", d->name,
-                fault->regs.pc,
-                fault->addr,
-                fault->data);
-
+        dprintf("[%s] pc0x%x| r0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
+                fault_get_address(fault), fault_get_data(fault));
 
 #if 0
         if (offset != 0x44)
@@ -97,21 +94,20 @@ handle_sdhc_fault(struct device* d, vm_t* vm, fault_t* fault)
                 if (offset & 0x4) {
                     /* Unaligned acces: store data and residual */
                     uint64_t v;
-                    v = ((uint64_t)fault->data << 32) | sdhc_data->a64;
+                    v = ((uint64_t)fault_get_data(fault) << 32) | sdhc_data->a64;
                     *(volatile uint64_t*)reg = v;
                 } else {
                     /* Aligned access: record residual */
-                    sdhc_data->a64 = fault->data;
+                    sdhc_data->a64 = fault_get_data(fault);
                 }
             } else {
                 assert(fault_get_width(fault) == WIDTH_WORD);
-                *reg = fault->data;
+                *reg = fault_get_data(fault);
             }
         }
-        dprintf("[%s] pc0x%x| w0x%x:0x%x\n", d->name,
-                fault->regs.pc,
-                fault->addr,
-                fault->data);
+
+        dprintf("[%s] pc0x%x| w0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
+                fault_get_address(fault), fault_get_data(fault));
     }
     return advance_fault(fault);
 }

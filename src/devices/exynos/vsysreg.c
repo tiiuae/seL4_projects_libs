@@ -38,22 +38,17 @@ handle_vsysreg_fault(struct device* d, vm_t* vm, fault_t* fault)
     int offset;
 
     /* Gather fault information */
-    offset = fault->addr - d->pstart;
+    offset = fault_get_address(fault) - d->pstart;
     reg = (uint32_t*)(sysreg_data->regs + offset);
     /* Handle the fault */
     reg = (volatile uint32_t*)(sysreg_data->regs + offset);
     if (fault_is_read(fault)) {
-        fault->data = *reg;
-        DSYSREG("[%s] pc0x%x| r0x%x:0x%x\n", d->name,
-                fault->regs.pc,
-                fault->addr,
-                fault->data);
-
+        fault_set_data(fault, *reg);
+        DSYSREG("[%s] pc0x%x| r0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
+                fault_get_address(fault), fault_get_data(fault));
     } else {
-        DSYSREG("[%s] pc0x%x| w0x%x:0x%x\n", d->name,
-                fault->regs.pc,
-                fault->addr,
-                fault->data);
+        DSYSREG("[%s] pc0x%x| w0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
+                fault_get_address(fault), fault_get_data(fault));
         *reg = fault_emulate(fault, *reg);
     }
     return advance_fault(fault);

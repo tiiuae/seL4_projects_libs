@@ -47,7 +47,7 @@ struct vm {
     void *entry_point;
     struct vm_onode* onode_head;
     /* Fault structure */
-    fault_t fault;
+    fault_t *fault;
 };
 typedef struct vm vm_t;
 

@@ -39,11 +39,11 @@ handle_gac_fault(struct device* d, vm_t* vm, fault_t* fault)
     int offset;
 
     /* Gather fault information */
-    offset = fault->addr - d->pstart;
+    offset = fault_get_address(fault) - d->pstart;
     reg = (volatile uint32_t*)(gac_device_priv->regs + offset);
 
     if (fault_is_read(fault)) {
-        fault->data = *reg;
+        fault_set_data(fault, *reg);
     } else if (offset < gac_device_priv->mask_size) {
         uint32_t mask, result;
         assert((offset & MASK(2)) == 0);
@@ -57,7 +57,8 @@ handle_gac_fault(struct device* d, vm_t* vm, fault_t* fault)
             case VACDEV_REPORT_AND_MASK:
             case VACDEV_REPORT_ONLY:
                 printf("[ac/%s] pc 0x%08x | access violation: bits 0x%08x @ 0x%08x\n",
-                       d->name, fault->regs.pc, (result ^ *reg) & ~mask, fault->addr);
+                       d->name, fault_get_ctx(fault)->pc, (result ^ *reg) & ~mask,
+                       fault_get_address(fault));
             default:
                 break;
             }

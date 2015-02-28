@@ -115,21 +115,21 @@ handle_page_fault(vm_t* vm, fault_t* fault)
 {
     struct device* d;
     /* See if the device is already in our address space */
-    d = vm_find_device_by_ipa(vm, fault->addr);
+    d = vm_find_device_by_ipa(vm, fault_get_address(fault));
     if (d != NULL) {
         if (d->devid == DEV_RAM) {
             DRAMFAULT("[%s] %s fault @ 0x%x from 0x%x\n", d->name,
-                      (fault_is_read(fault)) ? "read" : "write", fault->addr,
-                      fault->regs.pc);
+                      (fault_is_read(fault)) ? "read" : "write",
+                      fault_get_address(fault), fault_get_ctx(fault)->pc);
         } else {
             DDEVFAULT("[%s] %s fault @ 0x%x from 0x%x\n", d->name,
-                      (fault_is_read(fault)) ? "read" : "write", fault->addr,
-                      fault->regs.pc);
+                      (fault_is_read(fault)) ? "read" : "write",
+                      fault_get_address(fault), fault_get_ctx(fault)->pc);
         }
         return d->handle_page_fault(d, vm, fault);
     } else {
 #ifdef CONFIG_ONDEMAND_DEVICE_INSTALL
-        uintptr_t addr = fault->addr & ~0xfff;
+        uintptr_t addr = fault_get_address(fault) & ~0xfff;
         void* mapped;
         switch (addr) {
         case 0:
@@ -140,14 +140,14 @@ handle_page_fault(vm_t* vm, fault_t* fault)
             mapped = map_vm_device(vm, addr, addr, seL4_AllRights);
             if (mapped) {
                 DVM("WARNING: Blindly mapped device @ 0x%x for PC 0x%x\n",
-                    (uint32_t)addr, fault->regs.pc);
+                    fault_get_address(fault), fault_get_ctx(fault)->pc);
                 restart_fault(fault);
                 return 0;
             }
             mapped = map_vm_ram(vm, addr);
             if (mapped) {
                 DVM("WARNING: Mapped RAM for device @ 0x%x for PC 0%x\n",
-                    (uint32_t)addr, fault->regs.pc);
+                    fault_get_address(fault), fault_get_ctx(fault)->pc);
                 restart_fault(fault);
                 return 0;
             }
@@ -261,8 +261,8 @@ vm_create(const char* name, int priority,
     assert(!err);
 
     /* Initialise fault system */
-    err = fault_init(vm, &vm->fault);
-    assert(!err);
+    vm->fault = fault_init(vm);
+    assert(vm->fault);
 
     return err;
 }
@@ -395,7 +395,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     case SEL4_PFIPC_LABEL: {
         int err;
         fault_t* fault;
-        fault = &vm->fault;
+        fault = vm->fault;
         err = new_fault(fault);
         assert(!err);
         do {

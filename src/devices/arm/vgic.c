@@ -495,7 +495,7 @@ handle_vgic_dist_fault(struct device* d, vm_t* vm, fault_t* fault)
 
     gic_dist = vgic_priv_get_dist(d);
     mask = fault_get_data_mask(fault);
-    offset = fault->addr - d->pstart;
+    offset = fault_get_address(fault) - d->pstart;
 
     reg = (uint32_t*)( (uintptr_t)gic_dist + offset );
     act = gic_dist_get_action(offset);
@@ -508,9 +508,10 @@ handle_vgic_dist_fault(struct device* d, vm_t* vm, fault_t* fault)
 
         /* Read fault */
     } else if (fault_is_read(fault)) {
-        fault->data = *reg;
+        fault_set_data(fault, *reg);
         return advance_fault(fault);
     } else {
+        uint32_t data;
         switch (act) {
         case ACTION_READONLY:
             return ignore_fault(fault);
@@ -521,9 +522,10 @@ handle_vgic_dist_fault(struct device* d, vm_t* vm, fault_t* fault)
 
         case ACTION_ENABLE:
             *reg = fault_emulate(fault, *reg);
-            if (fault->data == 1) {
+            data = fault_get_data(fault);
+            if (data == 1) {
                 vgic_dist_enable(d, vm);
-            } else if (fault->data == 0) {
+            } else if (data == 0) {
                 vgic_dist_disable(d, vm);
             } else {
                 assert(!"Unknown enable register encoding\n");
@@ -531,56 +533,60 @@ handle_vgic_dist_fault(struct device* d, vm_t* vm, fault_t* fault)
             return advance_fault(fault);
 
         case ACTION_ENABLE_SET:
+            data = fault_get_data(fault);
             /* Mask the data to write */
-            fault->data &= mask;
+            data &= mask;
             /* Mask bits that are already set */
-            fault->data &= ~(*reg);
-            while (fault->data) {
+            data &= ~(*reg);
+            while (data) {
                 int irq;
-                irq = __builtin_ctz(fault->data);
-                fault->data &= ~(1U << irq);
+                irq = CTZ(data);
+                data &= ~(1U << irq);
                 irq += (offset - 0x100) * 8;
                 vgic_dist_enable_irq(d, vm, irq);
             }
             return ignore_fault(fault);
 
         case ACTION_ENABLE_CLR:
+            data = fault_get_data(fault);
             /* Mask the data to write */
-            fault->data &= mask;
+            data &= mask;
             /* Mask bits that are already clear */
-            fault->data &= *reg;
-            while (fault->data) {
+            data &= *reg;
+            while (data) {
                 int irq;
-                irq = __builtin_ctz(fault->data);
-                fault->data &= ~(1U << irq);
+                irq = CTZ(data);
+                data &= ~(1U << irq);
                 irq += (offset - 0x180) * 8;
                 vgic_dist_disable_irq(d, vm, irq);
             }
             return ignore_fault(fault);
 
         case ACTION_PENDING_SET:
+            data = fault_get_data(fault);
             /* Mask the data to write */
-            fault->data &= mask;
+            data &= mask;
             /* Mask bits that are already set */
-            fault->data &= ~(*reg);
-            while (fault->data) {
+            data &= ~(*reg);
+            while (data) {
                 int irq;
-                irq = __builtin_ctz(fault->data);
-                fault->data &= ~(1U << irq);
+                irq = CTZ(data);
+                data &= ~(1U << irq);
                 irq += (offset - 0x200) * 8;
                 vgic_dist_set_pending_irq(d, vm, irq);
             }
             return ignore_fault(fault);
 
         case ACTION_PENDING_CLR:
+            data = fault_get_data(fault);
             /* Mask the data to write */
-            fault->data &= mask;
+            data &= mask;
             /* Mask bits that are already clear */
-            fault->data &= *reg;
-            while (fault->data) {
+            data &= *reg;
+            while (data) {
                 int irq;
-                irq = __builtin_ctz(fault->data);
-                fault->data &= ~(1U << irq);
+                irq = CTZ(data);
+                data &= ~(1U << irq);
                 irq += (offset - 0x280) * 8;
                 vgic_dist_clr_pending_irq(d, vm, irq);
             }

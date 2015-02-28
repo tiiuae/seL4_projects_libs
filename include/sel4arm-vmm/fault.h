@@ -15,6 +15,7 @@
 #include <vka/cspacepath_t.h>
 
 typedef struct vm vm_t;
+typedef struct fault fault_t;
 
 enum fault_width {
     WIDTH_DOUBLEWORD,
@@ -23,48 +24,15 @@ enum fault_width {
     WIDTH_BYTE
 };
 
-/**
- * Data structure representating a fault
- */
-struct fault {
-/// The VM associated with the fault
-    vm_t *vm;
-/// Reply capability to the faulting TCB
-    cspacepath_t reply_cap;
-/// VM registers at the time of the fault
-    seL4_UserContext regs;
-
-/// The IPA address of the fault
-    uint32_t base_addr;
-/// The IPA address of the fault at the current stage
-    uint32_t addr;
-/// The IPA of the instruction which caused the fault
-    uint32_t ip;
-/// The data which was to be written, or the data to return to the VM
-    uint32_t data;
-/// Fault status register (IL and ISS fields of HSR cp15 register)
-    uint32_t fsr;
-/// 'true' if the fault was a prefetch fault rather than a data fault
-    bool is_prefetch;
-/// For multiple str/ldr and 32 bit access, the fault is handled in stages
-    int stage;
-/// If the instruction requires fetching, cache it here
-    uint32_t instruction;
-/// The width of the fault
-    enum fault_width width;
-};
-typedef struct fault fault_t;
-
 
 /**
  * Initialise a fault structure.
  * The structure will be bound to a VM and a reply cap slot
  * will be reserved.
  * @param[in] vm    The VM that the fault structure should be bound to
- * @param[in] fault A Fault structure to initialise
- * @return          0 on success
+ * @return          An initialised fault structure handle or NULL on failure
  */
-int fault_init(vm_t* vm, fault_t* fault);
+fault_t* fault_init(vm_t* vm);
 
 /**
  * Populate an initialised fault structure with fault data obtained from
@@ -128,43 +96,87 @@ int advance_fault(fault_t* fault);
  */
 uint32_t fault_emulate(fault_t* fault, uint32_t data);
 
+/**
+ * Determine if a fault has been handled. This is useful for multi-stage faults
+ * @param[in] fault  A handle to the fault
+ * @return           0 if the fault has not yet been handled, otherwise, further
+ *                   action is required
+ */
+int fault_handled(fault_t* fault);
+
+/**
+ * Retrieve the data that the faulting thread is trying to write or the data
+ * that will be returned to the thread in case of a read fault.
+ * The fault must be a data fault.
+ * @param[in] fault  A handle to the fault
+ * @return           If it is a read fault, returns the data that will be returned
+ *                   to the thread when the fault is advanced. Otherwise, returns
+ *                   the data that the thread was attempting to write.
+ */
+uint32_t fault_get_data(fault_t* fault);
+
+/**
+ * Set the data that will be returned to the thread when the fault is advanced.
+ * The fault must be a data fault.
+ * @param[in] fault  A handle to the fault
+ * @param[in] data   The data to return to the thread.
+ */
+void fault_set_data(fault_t* fault, uint32_t data);
+
+/**
+ * Retrieve a mask for the data within the aligned word that the fault is
+ * attempting to access
+ * @param[in] fault  A handle to the fault
+ * @return           A mask for the data within the aligned word that the fault is
+ *                   attempting to access
+ */
+uint32_t fault_get_data_mask(fault_t* fault);
+
+/**
+ * Get the faulting address
+ * @param[in] fault  A handle to the fault
+ * @return           The address that the faulting thread was attempting to access
+ */
+uint32_t fault_get_address(fault_t* fault);
+
+/**
+ * Get the access width of the fault
+ * The fault must be a data fault.
+ * @param[in] fault  A handle to the fault
+ * @return           The access width of the fault
+ */
+enum fault_width fault_get_width(fault_t* f);
+
+/**
+ * Get the context of a fault
+ * @param[in] fault  A handle to the fault
+ * @return           A handle to the fault context
+ */
+seL4_UserContext *fault_get_ctx(fault_t *fault);
+
+/**
+ * Get the fault status register of a fault
+ * @param[in] fault  A handle to the fault
+ * @return           the ARM HSR register associated with this fault. The EC
+ *                   field will be masked out.
+ */
+uint32_t fault_get_fsr(fault_t *fault);
+
+/**
+ * Determine if a fault is a data or prefetch fault
+ * @param[in] fault  A handle to the fault
+ * @return           0 if the fault is a data fault, otherwise, it is a prefetch
+ *                   fault
+ */
+int fault_is_prefetch(fault_t* fault);
+
 /****************
  ***  Helpers ***
  ****************/
 
-static inline int fault_handled(fault_t* fault)
-{
-    return fault->stage == 0;
-}
-
-static inline int fsr_is_WnR(uint32_t fsr)
-{
-    return (fsr & (1U << 6));
-}
-
-static inline int fault_is_read(fault_t* f)
-{
-    return !fsr_is_WnR(f->fsr);
-}
-
-static inline int fault_is_write(fault_t* f)
-{
-    return fsr_is_WnR(f->fsr);
-}
-
-static inline int fault_is_prefetch(fault_t* f)
-{
-    return f->is_prefetch;
-}
-
-static inline int fault_is_data(fault_t* f)
-{
-    return !f->is_prefetch;
-}
-
 static inline int fault_is_32bit_instruction(fault_t* f)
 {
-    return f->fsr & (1U << 25);
+    return fault_get_fsr(f) & (1U << 25);
 }
 
 static inline int fault_is_16bit_instruction(fault_t* f)
@@ -172,16 +184,24 @@ static inline int fault_is_16bit_instruction(fault_t* f)
     return !fault_is_32bit_instruction(f);
 }
 
-static inline enum fault_width fault_get_width(fault_t* f)
+static inline int fault_is_data(fault_t* f)
 {
-    return f->width;
+    return !fault_is_prefetch(f);
 }
 
-uint32_t fault_get_data_mask(fault_t* f);
+static inline int fault_is_write(fault_t* f)
+{
+    return (fault_get_fsr(f) & (1U << 6));
+}
+
+static inline int fault_is_read(fault_t* f)
+{
+    return !fault_is_write(f);
+}
 
 static inline uint32_t fault_get_addr_word(fault_t* f)
 {
-    return f->addr & ~(0x3U);
+    return fault_get_address(f) & ~(0x3U);
 }
 
 #include <stdio.h>
@@ -189,7 +209,7 @@ static inline uint32_t fault_get_addr_word(fault_t* f)
 static inline void fault_print_data(fault_t* fault)
 {
     uint32_t data;
-    data = fault->data & fault_get_data_mask(fault);
+    data = fault_get_data(fault) & fault_get_data_mask(fault);
     switch (fault_get_width(fault)) {
     case WIDTH_WORD:
         printf("0x%08x", data);

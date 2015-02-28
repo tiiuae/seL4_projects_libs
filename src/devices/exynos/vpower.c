@@ -47,7 +47,7 @@ handle_vpower_fault(struct device* d, vm_t* vm, fault_t* fault)
     int bank;
 
     /* Gather fault information */
-    vm_offset = fault->addr - d->pstart;
+    vm_offset = fault_get_address(fault) - d->pstart;
     bank = vm_offset >> 12;
     offset = vm_offset & MASK(12);
     reg_offset = offset & ~MASK(2);
@@ -55,12 +55,12 @@ handle_vpower_fault(struct device* d, vm_t* vm, fault_t* fault)
     /* Handle the fault */
     reg = (volatile uint32_t*)(power_data->regs[bank] + offset);
     if (fault_is_read(fault)) {
-        fault->data = *reg;
-        DPWR("[%s] pc0x%x| r0x%x:0x%x\n", d->name, fault->regs.pc, fault->addr,
-             fault->data);
+        fault_set_data(fault, *reg);
+        DPWR("[%s] pc0x%x| r0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
+             fault_get_address(fault), fault_get_data(fault));
     } else {
         if (bank == PWR_SWRST_BANK && reg_offset == PWR_SWRST_OFFSET) {
-            if (fault->data) {
+            if (fault_get_data(fault)) {
                 /* Software reset */
                 DPWR("[%s] Software reset\n", d->name);
                 if (power_data->reboot_cb) {
@@ -90,7 +90,8 @@ handle_vpower_fault(struct device* d, vm_t* vm, fault_t* fault)
 
         } else {
             DPWR("[%s] pc 0x%x| access violation writing 0x%x to 0x%x\n",
-                 d->name, fault->regs.pc, fault->data, fault->addr);
+                 d->name, fault_get_ctx(fault)->pc, fault_get_data(fault),
+                 fault_get_address(fault));
         }
     }
     return advance_fault(fault);

@@ -8,7 +8,7 @@
  * @TAG(NICTA_BSD)
  */
 
-#include "fault.h"
+#include <sel4arm-vmm/fault.h>
 #include "vm.h"
 
 #include <sel4/sel4.h>
@@ -50,6 +50,90 @@
 #define HSR_SYNDROME_RT(x)         (((x) >> 16) & 0xf)
 #define HSR_SYNDROME_WIDTH(x)      (((x) >> 22) & 0x3)
 
+/**
+ * Data structure representating a fault
+ */
+struct fault {
+/// The VM associated with the fault
+    vm_t *vm;
+/// Reply capability to the faulting TCB
+    cspacepath_t reply_cap;
+/// VM registers at the time of the fault
+    seL4_UserContext regs;
+
+/// The IPA address of the fault
+    uint32_t base_addr;
+/// The IPA address of the fault at the current stage
+    uint32_t addr;
+/// The IPA of the instruction which caused the fault
+    uint32_t ip;
+/// The data which was to be written, or the data to return to the VM
+    uint32_t data;
+/// Fault status register (IL and ISS fields of HSR cp15 register)
+    uint32_t fsr;
+/// 'true' if the fault was a prefetch fault rather than a data fault
+    bool is_prefetch;
+/// For multiple str/ldr and 32 bit access, the fault is handled in stages
+    int stage;
+/// If the instruction requires fetching, cache it here
+    uint32_t instruction;
+/// The width of the fault
+    enum fault_width width;
+};
+typedef struct fault fault_t;
+
+/*************************
+ *** Getters / Setters ***
+ *************************/
+
+uint32_t
+fault_get_data(fault_t* f)
+{
+    return f->data;
+}
+
+void
+fault_set_data(fault_t* f, uint32_t data)
+{
+    f->data = data;
+}
+
+uint32_t
+fault_get_address(fault_t* f)
+{
+    return f->addr;
+}
+
+uint32_t
+fault_get_fsr(fault_t* f)
+{
+    return f->fsr;
+}
+
+seL4_UserContext*
+fault_get_ctx(fault_t *f)
+{
+    return &f->regs;
+}
+
+int fault_handled(fault_t* f)
+{
+    return f->stage == 0;
+}
+
+int fault_is_prefetch(fault_t* f)
+{
+    return f->is_prefetch;
+}
+
+enum fault_width fault_get_width(fault_t* f)
+{
+    return f->width;
+}
+
+/*************************
+ *** Primary functions ***
+ *************************/
 static inline int
 thumb_is_32bit_instruction(uint32_t instruction)
 {
@@ -245,15 +329,22 @@ decode_rt(int reg, seL4_UserContext* c)
     }
 };
 
-int
-fault_init(vm_t* vm, fault_t* fault)
+fault_t*
+fault_init(vm_t* vm)
 {
+    fault_t *fault;
     int err;
-    fault->vm = vm;
-    /* Reserve a slot for saving reply caps */
-    err = vka_cspace_alloc_path(vm->vka, &fault->reply_cap);
-    assert(!err);
-    return err;
+    fault = (fault_t*)malloc(sizeof(*fault));
+    if (fault != NULL) {
+        fault->vm = vm;
+        /* Reserve a slot for saving reply caps */
+        err = vka_cspace_alloc_path(vm->vka, &fault->reply_cap);
+        if (err) {
+            free(fault);
+            fault = NULL;
+        }
+    }
+    return fault;
 }
 
 static int

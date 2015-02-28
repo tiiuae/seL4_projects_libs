@@ -58,7 +58,7 @@ handle_vmct_fault(struct device* d, vm_t* vm, fault_t* fault)
     mct_priv = vmct_get_priv(d->priv);
 
     /* Gather fault information */
-    offset = fault->addr - d->pstart;
+    offset = fault_get_address(fault) - d->pstart;
     mask = fault_get_data_mask(fault);
     /* Handle the fault */
     if (offset < 0x300) {
@@ -72,24 +72,24 @@ handle_vmct_fault(struct device* d, vm_t* vm, fault_t* fault)
                 /* Count registers */
                 *cnt_wstat |= (1 << (offset - 0x100) / 4);
             } else if (offset == 0x110) {
-                *cnt_wstat &= ~(fault->data & mask);
+                *cnt_wstat &= ~(fault_get_data(fault) & mask);
             } else if (offset >= 0x200 && offset < 0x244) {
                 /* compare registers */
                 *wstat |= (1 << (offset - 0x200) / 4);
             } else if (offset == 0x24C) {
                 /* Write status */
-                *wstat &= ~(fault->data & mask);
+                *wstat &= ~(fault_get_data(fault) & mask);
             } else {
                 DMCT("global MCT fault on unknown offset 0x%x\n", offset);
             }
         } else {
             /* read fault */
             if (offset == 0x110) {
-                fault->data = *cnt_wstat;
+                fault_set_data(fault, *cnt_wstat);
             } else if (offset == 0x24C) {
-                fault->data = *wstat;
+                fault_set_data(fault, *wstat);
             } else {
-                fault->data = 0;
+                fault_set_data(fault, 0);
             }
         }
     } else {
@@ -107,16 +107,16 @@ handle_vmct_fault(struct device* d, vm_t* vm, fault_t* fault)
             } else if (loffset == 0x34) { /* int_en */
                 /* Do nothing */
             } else if (loffset == 0x40) { /* wstat */
-                *wstat &= ~(fault->data & mask);
+                *wstat &= ~(fault_get_data(fault) & mask);
             } else {
                 DMCT("local MCT fault on unknown offset 0x%x\n", offset);
             }
         } else {
             /* read fault */
             if (loffset == 0x40) {
-                fault->data = *wstat;
+                fault_set_data(fault, *wstat);
             } else {
-                fault->data = 0;
+                fault_set_data(fault, 0);
             }
         }
     }

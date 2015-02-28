@@ -152,7 +152,7 @@ vcombiner_fault(struct device* d, vm_t* vm, fault_t* fault)
     assert(d->priv);
     vcombiner = vcombiner_priv_get_vcombiner(d->priv);
     mask = fault_get_data_mask(fault);
-    offset = fault->addr - d->pstart;
+    offset = fault_get_address(fault) - d->pstart;
     reg = (uint32_t*)( (uintptr_t)vcombiner->vregs + offset );
     gidx = offset / sizeof(struct combiner_gmap);
     assert(offset >= 0 && offset < sizeof(*vcombiner->vregs));
@@ -160,29 +160,32 @@ vcombiner_fault(struct device* d, vm_t* vm, fault_t* fault)
     if (offset == 0x100) {
         DCOMBINER("Fault on group pending register\n");
     } else if (offset < 0x80) {
+        uint32_t data;
         int group, index;
         (void)group;
         (void)index;
         switch (offset / 4 % 4) {
         case 0:
-            fault->data &= mask;
-            fault->data &= ~(*reg);
-            while (fault->data) {
+            data = fault_get_data(fault);
+            data &= mask;
+            data &= ~(*reg);
+            while (data) {
                 int i;
-                i = __builtin_ctz(fault->data);
-                fault->data &= ~(1U << i);
+                i = CTZ(data);
+                data &= ~(1U << i);
                 group = gidx * 4 + i / 8;
                 index = i % 8;
                 DCOMBINER("enable IRQ %d.%d (%d)\n", group, index, group + 32);
             }
             return ignore_fault(fault);
         case 1:
-            fault->data &= mask;
-            fault->data &= *reg;
-            while (fault->data) {
+            data = fault_get_data(fault);
+            data &= mask;
+            data &= *reg;
+            while (data) {
                 int i;
-                i = __builtin_ctz(fault->data);
-                fault->data &= ~(1U << i);
+                i = CTZ(data);
+                data &= ~(1U << i);
                 group = gidx * 4 + i / 8;
                 index = i % 8;
                 DCOMBINER("disable IRQ %d.%d (%d)\n", group, index, group + 32);

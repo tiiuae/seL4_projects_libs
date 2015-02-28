@@ -101,23 +101,25 @@ handle_vgpio_fault(struct device* d, vm_t* vm, fault_t* fault, int bank)
     if (gpio_device->regs[bank] == NULL) {
         /* We could not map the device. Lets return SBZ */
         if (fault_is_read(fault)) {
-            fault->data = 0;
+            fault_set_data(fault, 0);
         }
         return advance_fault(fault);
     }
 
     /* Gather fault information */
-    offset = fault->addr - d->pstart;
+    offset = fault_get_address(fault) - d->pstart;
     reg = (volatile uint32_t*)(gpio_device->regs[bank] + offset);
     if (fault_is_read(fault)) {
-        fault->data = *reg;
+        fault_set_data(fault, *reg);
         DGPIO("[%s] pc 0x%08x | r 0x%08x:0x%08x\n", gpio_devices[bank]->name,
-              fault->regs.pc, fault->addr, fault->data);
+              fault_get_ctx(fault)->pc, fault_get_address(fault),
+              fault_get_data(fault));
     } else {
         uint32_t mask;
         uint32_t change;
         DGPIO("[%s] pc 0x%08x | w 0x%08x:0x%08x\n", gpio_devices[bank]->name,
-              fault->regs.pc, fault->addr, fault->data);
+              fault_get_ctx(fault)->pc, fault_get_address(fault),
+              fault_get_data(fault));
         if ((offset >= 0x700 && offset < 0xC00) || offset >= 0xE00) {
             /* Not implemented */
             mask = 0xFFFFFFFF;
@@ -159,8 +161,9 @@ handle_vgpio_fault(struct device* d, vm_t* vm, fault_t* fault, int bank)
                 change = (change & mask) | (*reg & ~mask);
             case VACDEV_REPORT_ONLY:
                 /* Fallthrough */
-                printf("[%s] pc 0x%08x| w @ 0x%08x: 0x%08x -> 0x%08x\n", gpio_devices[bank]->name,
-                       fault->regs.pc, fault->addr, *reg, change);
+                printf("[%s] pc 0x%08x| w @ 0x%08x: 0x%08x -> 0x%08x\n",
+                       gpio_devices[bank]->name, fault_get_ctx(fault)->pc,
+                       fault_get_address(fault), *reg, change);
                 break;
             default:
                 break;

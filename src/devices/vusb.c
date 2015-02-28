@@ -243,13 +243,13 @@ handle_vusb_fault(struct device* d, vm_t* vm, fault_t* fault)
     int offset;
 
     assert(d->priv);
-    offset = fault->addr - d->pstart - 0x1000;
+    offset = fault_get_address(fault) - d->pstart - 0x1000;
     vusb = device_to_vusb_dev_data(d);
     ctrl_regs = vusb->ctrl_regs;
     reg = (uint32_t*)((void*)ctrl_regs + (offset & ~0x3));
     if (fault_is_read(fault)) {
         if (reg != &ctrl_regs->status) {
-            fault->data = *reg;
+            fault_set_data(fault, *reg);
         }
     } else {
         if (reg == &ctrl_regs->status) {
@@ -263,7 +263,7 @@ handle_vusb_fault(struct device* d, vm_t* vm, fault_t* fault)
             vm_vusb_notify(vusb);
         } else if (reg == &ctrl_regs->cancel_transaction) {
             /* Manual notification */
-            vm_vusb_cancel(vusb, fault->data);
+            vm_vusb_cancel(vusb, fault_get_data(fault));
         } else if ((void*)reg >= (void*)&ctrl_regs->req) {
             /* Fill out the root hub USB request */
             *reg = fault_emulate(fault, *reg);

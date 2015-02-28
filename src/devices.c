@@ -10,11 +10,11 @@
 
 #include <sel4utils/mapping.h>
 #include "vm.h"
-#include "fault.h"
 #include <stdlib.h>
 
 #include <sel4arm-vmm/devices.h>
 #include <sel4arm-vmm/exynos/devices.h>
+#include <sel4arm-vmm/fault.h>
 #include <vka/capops.h>
 
 //#define DEBUG_MAPPINGS
@@ -340,21 +340,22 @@ handle_listening_fault(struct device* d, vm_t* vm,
 
     assert(d->priv);
     map = (void**)d->priv;
-    offset = fault->addr - d->pstart;
+    offset = fault_get_address(fault) - d->pstart;
 
     reg = (volatile uint32_t*)(map[offset >> 12] + (offset & MASK(12)));
 
     printf("[Listener/%s] ", d->name);
     if (fault_is_read(fault)) {
         printf("read ");
-        fault->data = *reg;
+        fault_set_data(fault, *reg);
     } else {
         printf("write");
         *reg = fault_emulate(fault, *reg);
     }
     printf(" ");
     fault_print_data(fault);
-    printf(" address 0x%08x @ pc 0x%08x\n", fault->addr, fault->regs.pc);
+    printf(" address 0x%08x @ pc 0x%08x\n", fault_get_address(fault),
+           fault_get_ctx(fault)->pc);
     return advance_fault(fault);
 }
 
@@ -392,19 +393,17 @@ handle_listening_ram_fault(struct device* d, vm_t* vm, fault_t* fault)
     int offset;
 
     assert(d->priv);
-    offset = fault->addr - d->pstart;
+    offset = fault_get_address(fault) - d->pstart;
 
     reg = (volatile uint32_t*)(d->priv + offset);
 
     if (fault_is_read(fault)) {
-        fault->data = *reg;
-        printf("Listener pc0x%x| r0x%x:0x%x\n", fault->regs.pc,
-               fault->addr,
-               fault->data);
+        fault_set_data(fault, *reg);
+        printf("Listener pc0x%x| r0x%x:0x%x\n", fault_get_ctx(fault)->pc,
+               fault_get_address(fault), fault_get_data(fault));
     } else {
-        printf("Listener pc0x%x| w0x%x:0x%x\n", fault->regs.pc,
-               fault->addr,
-               fault->data);
+        printf("Listener pc0x%x| w0x%x:0x%x\n", fault_get_ctx(fault)->pc,
+               fault_get_address(fault), fault_get_data(fault));
         *reg = fault_emulate(fault, *reg);
     }
     return advance_fault(fault);
