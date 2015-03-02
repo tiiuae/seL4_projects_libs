@@ -34,6 +34,9 @@
 #define VM_FAULT_EP_SLOT       1
 #define VM_CSPACE_SLOT         2
 
+#define HSR_WFI         0x05e00000
+#define HSR_WFE         0x05e00001
+
 #define MODE_USER       0x10
 #define MODE_FIQ        0x11
 #define MODE_IRQ        0x12
@@ -461,19 +464,26 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         int err;
         assert(length == SEL4_VCPU_FAULT_LENGTH);
         hsr = seL4_GetMR(EXCEPT_IPC_SYS_MR_R0);
-        printf("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vm->name, hsr);
         /* Increment the PC and ignore the fault */
         tcb = vm_get_tcb(vm);
-        err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
+        err = seL4_TCB_ReadRegisters(tcb, false, 0,
+                                     sizeof(regs) / sizeof(regs.pc), &regs);
         assert(!err);
-        regs.pc += 4;
-        err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
-        assert(!err);
-
-        print_ctx_regs(&regs);
-
-        reply = seL4_MessageInfo_new(0, 0, 0, 0);
-        seL4_Reply(reply);
+        switch(hsr){
+        case HSR_WFI:
+        case HSR_WFE:
+            regs.pc += (regs.cpsr & BIT(5))? 2 : 4;
+            err = seL4_TCB_WriteRegisters(tcb, false, 0,
+                                          sizeof(regs) / sizeof(regs.pc), &regs);
+            assert(!err);
+            reply = seL4_MessageInfo_new(0, 0, 0, 0);
+            seL4_Reply(reply);
+            return 0;
+        default:
+            printf("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vm->name, hsr);
+            print_ctx_regs(&regs);
+            return -1;
+        }
     }
     break;
     default:
