@@ -469,10 +469,10 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         err = seL4_TCB_ReadRegisters(tcb, false, 0,
                                      sizeof(regs) / sizeof(regs.pc), &regs);
         assert(!err);
-        switch(hsr){
+        switch (hsr) {
         case HSR_WFI:
         case HSR_WFE:
-            regs.pc += (regs.cpsr & BIT(5))? 2 : 4;
+            regs.pc += (regs.cpsr & BIT(5)) ? 2 : 4;
             err = seL4_TCB_WriteRegisters(tcb, false, 0,
                                           sizeof(regs) / sizeof(regs.pc), &regs);
             assert(!err);
