@@ -21,12 +21,6 @@
 #define DWEMMC_DBADDR_OFFSET    0x088
 #define DWEMMC_DSCADDR_OFFSET   0x094
 #define DWEMMC_BUFADDR_OFFSET   0x098
-#define DWEMMC_BLASH_OFFSET     0x200
-#define DWEMMC_DATA_OFFSET      0x100
-#define DWEMMC_DATA_240A_OFFSET 0x200
-//#define SDHC_DS_ADDR       0x00
-//#define SDHC_ADMA_SYS_ADDR 0x58
-
 
 #if 0
 #define dprintf(...) printf(__VA_ARGS__)
@@ -73,22 +67,13 @@ handle_sdhc_fault(struct device* d, vm_t* vm, fault_t* fault)
         }
         dprintf("[%s] pc0x%x| r0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
                 fault_get_address(fault), fault_get_data(fault));
-
-#if 0
-        if (offset != 0x44)
-            dprintf("[%s] pc0x%x| r0x%x:0x%x\n", d->name,
-                    fault->regs.pc,
-                    fault->addr,
-                    fault->data);
-    } else if (offset == DSCADDR || offset == BUFADDR || offset == SDMMC_DBADDR) {
-        printf("[%s] access violation pc0x%x| w0x%x:0x%x\n", d->name,
-               fault->regs.pc,
-               fault->addr,
-               fault->data);
-#endif
     } else {
-        switch (offset) {
-        case 666:
+        switch (offset & ~0x3) {
+        case DWEMMC_DBADDR_OFFSET:
+        case DWEMMC_DSCADDR_OFFSET:
+        case DWEMMC_BUFADDR_OFFSET:
+            printf("[%s] Restricting DMA access offset 0x%x\n", d->name, offset);
+            break;
         default:
             if (fault_get_width(fault) == WIDTH_DOUBLEWORD) {
                 if (offset & 0x4) {
