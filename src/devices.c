@@ -320,7 +320,6 @@ vm_install_passthrough_device(vm_t* vm, const struct device* device)
 //            err = vm_install_vmct(vm);
             return -1;
         }
-        assert(addr);
         if (!addr) {
             return -1;
         }
