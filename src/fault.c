@@ -192,18 +192,33 @@ decode_instruction(fault_t* f)
     uint32_t inst;
     maybe_fetch_fault_instruction(f);
     inst = f->instruction;
+    /* Single stage by default */
+    f->stage = 1;
+    f->content |= CONTENT_STAGE;
+    /* Decode */
     if (CPSR_IS_THUMB(fault_get_ctx(f)->cpsr)) {
-        if (HSR_IS_INST32(f->fsr)) {
+        if (thumb_is_32bit_instruction(inst)) {
+            f->fsr |= BIT(25); /* 32 bit instruction */
             /* 32 BIT THUMB insts */
             if ((inst & 0xff700000) == 0xf8400000) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 12) & 0xf;
             } else if ((inst & 0xfff00000) == 0xf8800000) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 12) & 0xf;
             } else if ((inst & 0xfff00000) == 0xf0000000) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 12) & 0xf;
             } else if ((inst & 0x0e500000) == 0x06400000) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 12) & 0xf;
             } else if ((inst & 0xfff00000) == 0xf8000000) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 12) & 0xf;
             } else if ((inst & 0xfe400000) == 0xe8400000) { /* LDRD/STRD */
                 int rt;
@@ -223,16 +238,28 @@ decode_instruction(fault_t* f)
         } else {
             /* 16 bit THUMB insts */
             if ((inst & 0xf800) == 0x6000) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 0) & 0x7;
             } else if ((inst & 0xf800) == 0x9000) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 8) & 0x7;
             } else if ((inst & 0xf800) == 0x5000) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 0) & 0x7;
             } else if ((inst & 0xfe00) == 0x5400) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 0) & 0x7;
             } else if ((inst & 0xf800) == 0x7000) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 0) & 0x7;
             } else if ((inst & 0xf800) == 0x8000) {
+                print_fault(f);
+                assert(!"No data width");
                 return (inst >> 0) & 0x7;
             } else {
                 printf("Unable to decode THUMB16 inst 0x%04x\n", inst);
@@ -427,6 +454,7 @@ int advance_fault(fault_t* fault)
     DFAULT("%s: Emulate fault @ 0x%x from PC 0x%x\n",
            fault->vm->name, fault->addr, fault->ip);
     /* If this is the final stage of the fault, return to user */
+    assert(fault->stage > 0);
     fault->stage--;
     if (fault->stage) {
         /* Data becomes invalid */
@@ -574,6 +602,15 @@ int fault_handled(fault_t* f)
 int fault_is_prefetch(fault_t* f)
 {
     return f->is_prefetch;
+}
+
+int fault_is_32bit_instruction(fault_t* f)
+{
+    if (!HSR_IS_SYNDROME_VALID(f->fsr)) {
+        /* (maybe) Trigger a decode to update the fsr. */
+        fault_get_width(f);
+    }
+    return fault_get_fsr(f) & BIT(25);
 }
 
 enum fault_width fault_get_width(fault_t* f)

@@ -170,14 +170,16 @@ uint32_t fault_get_fsr(fault_t *fault);
  */
 int fault_is_prefetch(fault_t* fault);
 
+/**
+ * Determine if a fault was caused by a 32 bit instruction
+ * @param[in] fault  A handle to the fault
+ * @return           0 if it is a 16 bit instruction, otherwise, it is 32bit
+ */
+int fault_is_32bit_instruction(fault_t* f);
+
 /****************
  ***  Helpers ***
  ****************/
-
-static inline int fault_is_32bit_instruction(fault_t* f)
-{
-    return fault_get_fsr(f) & (1U << 25);
-}
 
 static inline int fault_is_16bit_instruction(fault_t* f)
 {
