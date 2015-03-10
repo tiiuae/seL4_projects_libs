@@ -183,9 +183,25 @@ sel4urb_to_xact(struct sel4urb* surb, struct xact* xact)
     if (surb->rate_ms) {
         xact[0].type = PID_INT;
         assert(nxact == 1);
-    } else if (xact[0].type == PID_SETUP && nxact == 1) {
-        /* Read in ACK */
-        xact[nxact].type = PID_IN;
+    } else if (xact[0].type == PID_SETUP) {
+        if (nxact == 1) {
+            /* Read in ACK */
+            xact[nxact].type = PID_IN;
+            xact[nxact].len = 0;
+            nxact++;
+        } else if (xact[nxact - 1].type == PID_IN) {
+            xact[nxact].type = PID_OUT;
+            xact[nxact].len = 0;
+            nxact++;
+        } else if (xact[nxact - 1].type == PID_OUT) {
+            xact[nxact].type = PID_IN;
+            xact[nxact].len = 0;
+            nxact++;
+        } else {
+            assert(0);
+        }
+    } else if (xact[0].type == PID_OUT && (xact[0].len % surb->max_pkt == 0)) {
+        xact[nxact].type = PID_OUT;
         xact[nxact].len = 0;
         nxact++;
     }
@@ -369,6 +385,7 @@ vm_vusb_notify(vusb_device_t* vusb)
         default:
             printf("Unknown USB speed %d\n", SURB_EPADDR_GET_SPEED(u->epaddr));
             speed = USBSPEED_HIGH;
+            assert(0);
         }
 
         nxact = sel4urb_to_xact(u, xact);
