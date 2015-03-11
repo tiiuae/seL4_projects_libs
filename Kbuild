@@ -9,6 +9,6 @@
 #
 
 libs-$(CONFIG_LIB_SEL4_DMA) += libsel4dma
-libsel4dma: libsel4 $(libc) common
+libsel4dma: libsel4 libplatsupport $(libc) common
 
 
