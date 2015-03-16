@@ -180,5 +180,19 @@ int vm_inject_IRQ(virq_handle_t virq);
  */
 int vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t badge);
 
+/**
+ * Given a guest intermiate physical address, find the actual physical address
+ * of the mapping.
+ * @param[in] vm       The VM in question
+ * @param[in] ipa      The guest physical address in question
+ * @param[in] size     The size of the request
+ * @return             The physical address which corresponds to the provided
+ *                     guest physical address or 0 on error. An error will occur
+ *                     If a valid mapping is not present, or if the mapping does
+ *                     not provide a contiguous region of the requested size.
+ */
+uintptr_t vm_ipa_to_pa(vm_t* vm, uintptr_t ipa, size_t size);
 
 #endif /* SEL4ARM_VMM_VM_H */
+
+

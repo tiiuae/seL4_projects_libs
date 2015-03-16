@@ -140,8 +140,18 @@ surb_epaddr_change_state(struct sel4urb *u, uint32_t s)
     u->epaddr = e;
 }
 
+static void
+vusb_inject_irq(vusb_device_t* vusb)
+{
+    vusb->ctrl_regs->intr = 1;
+    if (vusb->int_pending == 0) {
+        vusb->int_pending = 1;
+        vm_inject_IRQ(vusb->virq);
+    }
+}
+
 static int
-desc_to_xact(struct sel4urbt* desc, struct xact* xact)
+desc_to_xact(vm_t* vm, struct sel4urbt* desc, struct xact* xact)
 {
     switch (SURBT_PARAM_GET_TYPE(desc->param)) {
     case 0:
@@ -157,13 +167,13 @@ desc_to_xact(struct sel4urbt* desc, struct xact* xact)
         return -1;
     }
     xact->len = SURBT_PARAM_GET_SIZE(desc->param);
-    xact->paddr = desc->paddr;
+    xact->paddr = vm_ipa_to_pa(vm, desc->paddr, xact->len);
     xact->vaddr = (void*)0xdeadbeef;
-    return 0;
+    return xact->paddr == 0;
 }
 
 static int
-sel4urb_to_xact(struct sel4urb* surb, struct xact* xact)
+sel4urb_to_xact(vm_t* vm, struct sel4urb* surb, struct xact* xact)
 {
     int nxact;
     int err;
@@ -174,8 +184,9 @@ sel4urb_to_xact(struct sel4urb* surb, struct xact* xact)
     assert(SURB_EPADDR_GET_STATE(surb->epaddr) == SURB_EPADDR_STATE_PENDING);
     /* Fill translate surb to xact */
     for (i = 0; i < nxact; i++) {
-        err = desc_to_xact(&surb->desc[i], &xact[i]);
+        err = desc_to_xact(vm, &surb->desc[i], &xact[i]);
         if (err) {
+            printf("Invalid USB descriptor\n");
             return -1;
         }
     }
@@ -310,16 +321,6 @@ vusb_ack(void* token)
     }
 }
 
-static void
-vusb_inject_irq(vusb_device_t* vusb)
-{
-    vusb->ctrl_regs->intr = 1;
-    if (vusb->int_pending == 0) {
-        vusb->int_pending = 1;
-        vm_inject_IRQ(vusb->virq);
-    }
-}
-
 /* Callback for root hub status changes */
 static int
 usb_sts_change(void* token, enum usb_xact_status stat, int rbytes)
@@ -388,10 +389,11 @@ vm_vusb_notify(vusb_device_t* vusb)
             assert(0);
         }
 
-        nxact = sel4urb_to_xact(u, xact);
+        nxact = sel4urb_to_xact(vusb->vm, u, xact);
         if (nxact < 0) {
             DVUSB("descriptor error\n");
-            assert(0);
+            surb_epaddr_change_state(u, SURB_EPADDR_STATE_ERROR);
+            vusb_inject_irq(vusb);
             return;
         }
         t = &vusb->token[i];
