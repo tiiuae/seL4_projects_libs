@@ -56,6 +56,8 @@ struct vm {
     /* Installed vchan connections */
     camkes_vchan_con_t **vchan_cons;
     unsigned int vchan_num_cons;
+    int (*lock)(void);
+    int (*unlock)(void);
 };
 typedef struct vm vm_t;
 

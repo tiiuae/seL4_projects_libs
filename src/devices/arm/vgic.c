@@ -682,6 +682,8 @@ vm_inject_IRQ(virq_handle_t virq)
     assert(virq);
     vm = virq->vm;
 
+    vm->lock();
+
     DIRQ("VM received IRQ %d\n", virq->virq);
 
     /* Grab a handle to the VGIC */
@@ -691,6 +693,8 @@ vm_inject_IRQ(virq_handle_t virq)
     }
 
     vgic_dist_set_pending_irq(vgic_device, vm, virq->virq);
+
+    vm->unlock();
 
     return 0;
 }
