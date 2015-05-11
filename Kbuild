@@ -11,7 +11,7 @@
 libs-$(CONFIG_LIB_SEL4_ARM_VMM) += libsel4arm-vmm
 
 libsel4arm-vmm: common $(libc) libutils libsel4utils libsel4vka libsel4vspace
-libsel4arm-vmm: libsel4simple libplatsupport 
+libsel4arm-vmm: libsel4simple libplatsupport libsel4vchan
 
 ifeq ($(CONFIG_LIB_USB),y)
 libsel4arm-vmm: libusbdrivers

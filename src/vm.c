@@ -117,6 +117,7 @@ static int
 handle_page_fault(vm_t* vm, fault_t* fault)
 {
     struct device* d;
+
     /* See if the device is already in our address space */
     d = vm_find_device_by_ipa(vm, fault_get_address(fault));
     if (d != NULL) {
@@ -214,6 +215,9 @@ vm_create(const char* name, int priority,
     vm->simple = simple;
     vm->vmm_vspace = vmm_vspace;
     vm->io_ops = io_ops;
+
+    vm->vchan_num_cons = 0;
+    vm->vchan_cons = NULL;
 
     /* Create a cspace */
     err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE_BITS, &vm->cspace);
@@ -368,7 +372,6 @@ handle_syscall(vm_t* vm, seL4_Word length)
     case 65:
         sys_pa_to_ipa(vm, &regs);
         break;
-
     case 66:
         sys_ipa_to_pa(vm, &regs);
         break;

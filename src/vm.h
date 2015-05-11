@@ -28,7 +28,6 @@ const char* choose_colour(vm_t* vm);
 struct device* vm_find_device_by_id(vm_t* vm, enum devid id);
 struct device* vm_find_device_by_ipa(vm_t* vm, uintptr_t ipa);
 
-
 static inline seL4_CPtr vm_get_tcb(vm_t* vm)
 {
     return vm->tcb.cptr;

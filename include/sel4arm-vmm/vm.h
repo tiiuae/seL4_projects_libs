@@ -22,6 +22,10 @@
 #include <sel4arm-vmm/devices.h>
 #include <sel4arm-vmm/fault.h>
 
+#include <sel4arm-vmm/vchan_vm_component.h>
+#include <sel4vchan/vchan_component.h>
+
+
 #define MAX_DEVICES_PER_VM 50
 
 struct vm {
@@ -48,6 +52,10 @@ struct vm {
     struct vm_onode* onode_head;
     /* Fault structure */
     fault_t *fault;
+
+    /* Installed vchan connections */
+    camkes_vchan_con_t **vchan_cons;
+    unsigned int vchan_num_cons;
 };
 typedef struct vm vm_t;
 
