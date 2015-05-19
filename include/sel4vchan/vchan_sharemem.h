@@ -24,6 +24,7 @@
 
 typedef struct vchan_buf {
     int owner;
+    int used;
     char sync_data[VCHAN_BUF_SIZE];
     int filled;
     int read_pos, write_pos;

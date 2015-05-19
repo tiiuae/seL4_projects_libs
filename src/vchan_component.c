@@ -8,6 +8,8 @@
  * @TAG(NICTA_GPL)
  */
 
+#define __NEED_off_t
+
 #include <sel4vchan/vmm_manager.h>
 #include <sel4vchan/vchan_component.h>
 #include <sel4vchan/vchan_sharemem.h>
@@ -56,7 +58,6 @@ libvchan_t *libvchan_client_init(int domain, int port) {
     Create a new client/server instance
 */
 libvchan_t *vchan_init(int domain, int port, int server) {
-
     libvchan_t *new_connection = malloc(sizeof(libvchan_t));
     if(new_connection == NULL) {
         return NULL;
@@ -97,12 +98,10 @@ vchan_buf_t *get_vchan_buf(vchan_ctrl_t *args, camkes_vchan_con_t *c, int action
     intptr_t buf_pos = c->get_buf(*args, action);
     /* Check that a buffer was retrieved */
     if(buf_pos == 0) {
-        // LOG_ERROR("Bad pos recieved\n");
         return NULL;
     }
 
     if(c->data_buf == NULL) {
-        // LOG_ERROR("Mangled vchan connection: null data buffer\n");
         return NULL;
     }
 
@@ -132,7 +131,6 @@ vchan_buf_t *get_vchan_ctrl_databuf(libvchan_t *ctrl, int action) {
      This function is intended for non Init components, Init components have a different method
 */
 int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int stream, int action) {
-    void *src, *dest;
     int *update;
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, action);
     if(b == NULL) {
@@ -206,24 +204,23 @@ int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int str
         size -= remain;
     }
 
+    void *dbuf = &b->sync_data;
+
     if(action == VCHAN_SEND) {
         /*
             src = address given by function caller
             dest = vchan dataport
         */
-        src = data;
-        dest = &b->sync_data;
-        memcpy(dest + start, src, size);
+        memcpy(dbuf + start, data, size);
+        memcpy(dbuf, data + size, remain);
     } else {
         /*
             src = vchan dataport
             dest = address given by function caller
         */
-        src = &b->sync_data;
-        dest = data;
-        memcpy(dest, src + start, size);
+        memcpy(data, ((void *) dbuf) + start, size);
+        memcpy(data + size, dbuf, remain);
     }
-    memcpy(dest, src, remain);
     __sync_synchronize();
 
     /*
@@ -244,10 +241,11 @@ int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int str
 int libvchan_wait(libvchan_t *ctrl) {
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
     assert(b != NULL);
-
     size_t filled = abs(b->read_pos - b->write_pos);
+
     while(filled == 0) {
         ctrl->con->wait();
+        b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
         filled = abs(b->read_pos - b->write_pos);
     }
 
@@ -290,5 +288,6 @@ int libvchan_buffer_space(libvchan_t *ctrl) {
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_SEND);
     assert(b != NULL);
     size_t filled = abs(b->read_pos - b->write_pos);
+
     return VCHAN_BUF_SIZE - filled;
 }
