@@ -22,6 +22,9 @@ static int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, 
     Currently, the number of vchan connection interfaces allowed is hardcoded to 1 per component
 */
 libvchan_t *link_vchan_comp(libvchan_t *ctrl, camkes_vchan_con_t *vchan_com) {
+    if(ctrl == NULL)
+        return NULL;
+
     int res;
     ctrl->con = vchan_com;
     /* Perform vchan component initialisation */
@@ -148,11 +151,11 @@ int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int str
         Amount of bytes in buffer is given by the difference between read_pos and write_pos
             if write_pos > read_pos, there is data yet to be read
     */
-    size_t filled = abs(b->read_pos - b->write_pos);
+    size_t filled = abs(b->write_pos - b->read_pos);
     if(action == VCHAN_SEND) {
         while(filled == VCHAN_BUF_SIZE) {
             ctrl->con->wait();
-            filled = abs(b->read_pos - b->write_pos);
+            filled = abs(b->write_pos - b->read_pos);
         }
 
         if(stream) {
@@ -165,7 +168,7 @@ int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int str
     } else {
         while(filled == 0) {
             ctrl->con->wait();
-            filled = abs(b->read_pos - b->write_pos);
+            filled = abs(b->write_pos - b->read_pos);
         }
 
         if(stream) {
@@ -241,12 +244,12 @@ int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int str
 int libvchan_wait(libvchan_t *ctrl) {
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
     assert(b != NULL);
-    size_t filled = abs(b->read_pos - b->write_pos);
+    size_t filled = abs(b->write_pos - b->read_pos);
 
     while(filled == 0) {
         ctrl->con->wait();
         b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
-        filled = abs(b->read_pos - b->write_pos);
+        filled = abs(b->write_pos - b->read_pos);
     }
 
     return 0;
@@ -273,7 +276,7 @@ int libvchan_is_open(libvchan_t *ctrl) {
 int libvchan_data_ready(libvchan_t *ctrl) {
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
     assert(b != NULL);
-    size_t filled = abs(b->read_pos - b->write_pos);
+    size_t filled = abs(b->write_pos - b->read_pos);
     if(filled) {
         return 1;
     }
@@ -287,7 +290,7 @@ int libvchan_data_ready(libvchan_t *ctrl) {
 int libvchan_buffer_space(libvchan_t *ctrl) {
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_SEND);
     assert(b != NULL);
-    size_t filled = abs(b->read_pos - b->write_pos);
+    size_t filled = abs(b->write_pos - b->read_pos);
 
     return VCHAN_BUF_SIZE - filled;
 }
