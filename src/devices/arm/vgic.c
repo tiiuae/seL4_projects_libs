@@ -316,6 +316,8 @@ vgic_vcpu_inject_irq(struct device* d, vm_t *vm, struct virq_handle *irq)
 
 int handle_vgic_maintenance(vm_t* vm, int idx)
 {
+    vm->lock();
+
     /* STATE d) */
     struct device* d;
     struct gic_dist_map* gic_dist;
@@ -346,6 +348,9 @@ int handle_vgic_maintenance(vm_t* vm, int idx)
         free(lrof);
         list_size--;
     }
+
+    vm->unlock();
+
     return 0;
 }
 
@@ -452,6 +457,8 @@ vgic_dist_disable_irq(struct device* d, vm_t* vm, int irq)
 static int
 vgic_dist_set_pending_irq(struct device* d, vm_t* vm, int irq)
 {
+
+    vm->lock();
     /* STATE c) */
     struct gic_dist_map* gic_dist;
     struct vgic* vgic;
@@ -468,10 +475,14 @@ vgic_dist_set_pending_irq(struct device* d, vm_t* vm, int irq)
         set_pending(gic_dist, virq_data->virq, true);
         err = vgic_vcpu_inject_irq(d, vm, virq_data);
         assert(!err);
+        vm->unlock();
         return err;
     } else {
         /* No further action */
     }
+
+    vm->unlock();
+
     return 0;
 }
 
@@ -682,7 +693,7 @@ vm_inject_IRQ(virq_handle_t virq)
     assert(virq);
     vm = virq->vm;
 
-    vm->lock();
+    // vm->lock();
 
     DIRQ("VM received IRQ %d\n", virq->virq);
 
@@ -694,7 +705,7 @@ vm_inject_IRQ(virq_handle_t virq)
 
     vgic_dist_set_pending_irq(vgic_device, vm, virq->virq);
 
-    vm->unlock();
+    // vm->unlock();
 
     return 0;
 }
