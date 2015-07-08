@@ -83,7 +83,7 @@ int libvchan_write(libvchan_t *ctrl, const void *data, size_t size) {
 }
 
 int libvchan_send(libvchan_t *ctrl, const void *data, size_t size) {
-    return libvchan_readwrite_action(ctrl, (void *) data, size, 1, VCHAN_SEND);
+    return libvchan_readwrite_action(ctrl, (void *) data, size, 0, VCHAN_SEND);
 }
 
 int libvchan_read(libvchan_t *ctrl, void *data, size_t size) {
@@ -91,7 +91,7 @@ int libvchan_read(libvchan_t *ctrl, void *data, size_t size) {
 }
 
 int libvchan_recv(libvchan_t *ctrl, void *data, size_t size) {
-    return libvchan_readwrite_action(ctrl, data, size, 1, VCHAN_RECV);
+    return libvchan_readwrite_action(ctrl, data, size, 0, VCHAN_RECV);
 }
 
 /*
