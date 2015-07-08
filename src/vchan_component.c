@@ -153,30 +153,36 @@ int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int str
     */
     size_t filled = abs(b->write_pos - b->read_pos);
     if(action == VCHAN_SEND) {
-        while(filled == VCHAN_BUF_SIZE) {
-            ctrl->con->wait();
-            filled = abs(b->write_pos - b->read_pos);
-        }
-
         if(stream) {
-            size = MIN(VCHAN_BUF_SIZE - filled, size);
-        } else if(size > VCHAN_BUF_SIZE - filled) {
-            return -1;
+            size_t ssize = MIN(VCHAN_BUF_SIZE - filled, size);
+            while(ssize == 0) {
+                ctrl->con->wait();
+                filled = abs(b->write_pos - b->read_pos);
+                ssize = MIN(VCHAN_BUF_SIZE - filled, size);
+            }
+            size = ssize;
+        } else {
+            while(size > (VCHAN_BUF_SIZE - filled)) {
+                ctrl->con->wait();
+                filled = abs(b->write_pos - b->read_pos);
+            }
         }
-
         update = &b->write_pos;
     } else {
-        while(filled == 0) {
-            ctrl->con->wait();
-            filled = abs(b->write_pos - b->read_pos);
-        }
-
         if(stream) {
-            size = MIN(filled, size);
-        } else if(size > filled) {
-            return -1;
+            size_t ssize = MIN(filled, size);
+            while(ssize == 0) {
+                ctrl->con->wait();
+                filled = abs(b->write_pos - b->read_pos);
+                ssize = MIN(filled, size);
+            }
+            size = ssize;
+        } else {
+            while(size > filled) {
+                ctrl->con->wait();
+                filled = abs(b->write_pos - b->read_pos);
+            }
         }
-
         update = &b->read_pos;
     }
 
@@ -245,7 +251,6 @@ int libvchan_wait(libvchan_t *ctrl) {
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
     assert(b != NULL);
     size_t filled = abs(b->write_pos - b->read_pos);
-
     while(filled == 0) {
         ctrl->con->wait();
         b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
@@ -254,7 +259,6 @@ int libvchan_wait(libvchan_t *ctrl) {
 
     return 0;
 }
-
 
 void libvchan_close(libvchan_t *ctrl) {
     assert(!"not impl");
@@ -277,11 +281,8 @@ int libvchan_data_ready(libvchan_t *ctrl) {
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
     assert(b != NULL);
     size_t filled = abs(b->write_pos - b->read_pos);
-    if(filled) {
-        return 1;
-    }
 
-    return 0;
+    return filled;
 }
 
 /*
