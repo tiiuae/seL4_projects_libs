@@ -26,12 +26,6 @@
 #define VCHAN_CLIENT 0
 #define VCHAN_SERVER 1
 
-#define VCHAN_CLOSED_DATA 0
-#define VCHAN_CLOSED      1
-#define VCHAN_EMPTY_BUF   2
-#define VCHAN_BUF_DATA    3
-#define VCHAN_BUF_FULL    4
-
 #define DPORT_KERN_ADDR 0xEE00000
 #define VCHAN_DATA_TOKEN 0xDEADBEEF
 
@@ -44,7 +38,9 @@ typedef struct vchan_ctrl {
 
 /* Used in arguments referring to a vchan instance */
 typedef struct vchan_alert {
-    int alert;
+    int buffer_space;
+    int data_ready;
+    int is_closed;
     int dest;
     int port;
 } vchan_alert_t;

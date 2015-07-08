@@ -27,8 +27,9 @@ typedef struct camkes_vchan_con {
     int (*connect)(vchan_connect_t);
     int (*disconnect)(vchan_connect_t);
     intptr_t (*get_buf)(vchan_ctrl_t, int);
+
     int (*status)(vchan_ctrl_t);
-    int (*alert_status)(vchan_ctrl_t);
+    int (*alert_status)(vchan_ctrl_t, int *data_ready, int *buffer_space);
 
     void (*wait)(void);
     void (*alert)(void);
