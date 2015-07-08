@@ -11,7 +11,7 @@
 #ifndef __VCHAN_COPY
 #define __VCHAN_COPY
 
-#define VCHAN_EVENT_IRQ 10
+#define VCHAN_EVENT_IRQ 92
 
 #define DATATYPE_INT        0
 #define DATATYPE_STRING     1
