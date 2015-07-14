@@ -36,13 +36,6 @@
 #include "vmm_manager.h"
 #include "vchan_copy.h"
 
-
-#define READ_WAIT 0
-#define WRITE_WAIT 1
-
-#define CLOSED_SERVER 	0
-#define NO_BLOCK	 	1
-
 int reg_event_irq_handler(void);
 void free_event_irq_handler(void);
 

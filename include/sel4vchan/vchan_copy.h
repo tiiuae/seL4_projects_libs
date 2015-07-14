@@ -11,23 +11,22 @@
 #ifndef __VCHAN_COPY
 #define __VCHAN_COPY
 
+#include "libvchan.h"
+
 #define VCHAN_EVENT_IRQ 92
 
 #define DATATYPE_INT        0
 #define DATATYPE_STRING     1
 
-/* Vchan defines */
+/* Defines for copying/reading data across vchans */
 #define VCHAN_PACKET_SIZE 4096
 #define FILE_DATAPORT_MAX_SIZE 4096
 
 #define NOWAIT_DATA_READY 1
 #define NOWAIT_BUF_SPACE 2
 
-#define VCHAN_CLIENT 0
-#define VCHAN_SERVER 1
-
-#define DPORT_KERN_ADDR 0xEE00000
-#define VCHAN_DATA_TOKEN 0xDEADBEEF
+#define VCHAN_STREAM    1
+#define VCHAN_NOSTREAM  0
 
 /* Used in arguments referring to a vchan instance */
 typedef struct vchan_ctrl {
@@ -40,7 +39,6 @@ typedef struct vchan_ctrl {
 typedef struct vchan_alert {
     int buffer_space;
     int data_ready;
-    int is_closed;
     int dest;
     int port;
 } vchan_alert_t;
