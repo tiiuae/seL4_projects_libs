@@ -68,6 +68,6 @@ typedef struct vchan_connect {
     unsigned event_mon;
 } vchan_connect_t;
 
-void volatile_copy(void *dest, void *rec, int size);
+int libvchan_readwrite(libvchan_t *ctrl, void *data, size_t size, int cmd, int stream);
 
 #endif
