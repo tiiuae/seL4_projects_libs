@@ -261,7 +261,14 @@ int libvchan_wait(libvchan_t *ctrl) {
 }
 
 void libvchan_close(libvchan_t *ctrl) {
-    assert(!"not impl");
+    vchan_connect_t t = {
+        .v.domain = ctrl->con->source_dom_number,
+        .v.dest = ctrl->domain_num,
+        .v.port = ctrl->port_num,
+        .server = ctrl->is_server,
+    };
+
+    ctrl->con->disconnect(t);
 }
 
 int libvchan_is_open(libvchan_t *ctrl) {
@@ -272,6 +279,14 @@ int libvchan_is_open(libvchan_t *ctrl) {
     };
 
     return ctrl->con->status(args);
+}
+
+/* Returns nonzero if the peer has closed connection */
+int libvchan_is_eof(libvchan_t *ctrl) {
+    if(libvchan_is_open(ctrl) != 1) {
+        return 1;
+    }
+    return 0;
 }
 
 /*
@@ -289,6 +304,10 @@ int libvchan_data_ready(libvchan_t *ctrl) {
     How much data can be written to the vchan
 */
 int libvchan_buffer_space(libvchan_t *ctrl) {
+    if(libvchan_is_open(ctrl) != 1) {
+        return 0;
+    }
+
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_SEND);
     assert(b != NULL);
     size_t filled = abs(b->write_pos - b->read_pos);
