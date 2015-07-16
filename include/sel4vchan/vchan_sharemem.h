@@ -20,14 +20,12 @@
 
 
 #define VCHAN_BUF_SIZE PAGE_SIZE_4K
-#define NUM_BUFFERS 2
+#define NUM_SHARED_VCHAN_BUFFERS 2
 
 typedef struct vchan_buf {
     int owner;
-    int used;
-    char sync_data[VCHAN_BUF_SIZE];
-    int filled;
     int read_pos, write_pos;
+    char sync_data[VCHAN_BUF_SIZE];
 } vchan_buf_t;
 
 /*
@@ -40,7 +38,7 @@ typedef struct vchan_shared_mem {
 } vchan_shared_mem_t;
 
 typedef struct vchan_shared_mem_headers {
-    vchan_shared_mem_t shared_buffers[NUM_BUFFERS];
+    vchan_shared_mem_t shared_buffers[NUM_SHARED_VCHAN_BUFFERS];
     int token;
 } vchan_headers_t;
 

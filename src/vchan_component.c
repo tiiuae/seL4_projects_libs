@@ -15,7 +15,6 @@
 #include <sel4vchan/vchan_sharemem.h>
 
 static libvchan_t *vchan_init(int domain, int port, int server);
-static int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int stream, int action);
 
 /*
     Set up the vchan connection interface
@@ -79,19 +78,19 @@ libvchan_t *vchan_init(int domain, int port, int server) {
     Reading and writing to the vchan
 */
 int libvchan_write(libvchan_t *ctrl, const void *data, size_t size) {
-    return libvchan_readwrite_action(ctrl, (void *) data, size, 1, VCHAN_SEND);
-}
-
-int libvchan_send(libvchan_t *ctrl, const void *data, size_t size) {
-    return libvchan_readwrite_action(ctrl, (void *) data, size, 1, VCHAN_SEND);
+    return libvchan_readwrite(ctrl, (void *) data, size, VCHAN_SEND, VCHAN_STREAM);
 }
 
 int libvchan_read(libvchan_t *ctrl, void *data, size_t size) {
-    return libvchan_readwrite_action(ctrl, data, size, 1, VCHAN_RECV);
+    return libvchan_readwrite(ctrl, data, size, VCHAN_RECV, VCHAN_STREAM);
+}
+
+int libvchan_send(libvchan_t *ctrl, const void *data, size_t size) {
+    return libvchan_readwrite(ctrl, (void *) data, size, VCHAN_SEND, VCHAN_NOSTREAM);
 }
 
 int libvchan_recv(libvchan_t *ctrl, void *data, size_t size) {
-    return libvchan_readwrite_action(ctrl, data, size, 1, VCHAN_RECV);
+    return libvchan_readwrite(ctrl, data, size, VCHAN_RECV, VCHAN_NOSTREAM);
 }
 
 /*
@@ -129,13 +128,22 @@ vchan_buf_t *get_vchan_ctrl_databuf(libvchan_t *ctrl, int action) {
     return get_vchan_buf(&args, ctrl->con, action);
 }
 
+static size_t get_actionsize(int type, size_t size, vchan_buf_t *buf) {
+    assert(buf != NULL);
+    size_t filled = abs(buf->write_pos - buf->read_pos);
+    if(type == VCHAN_SEND)
+        return MIN(VCHAN_BUF_SIZE - filled, size);
+    else
+        return MIN(filled, size);
+}
+
 /*
     Perform a vchan read/write action into a given buffer
      This function is intended for non Init components, Init components have a different method
 */
-int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int stream, int action) {
+int libvchan_readwrite(libvchan_t *ctrl, void *data, size_t size, int cmd, int stream) {
     int *update;
-    vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, action);
+    vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, cmd);
     if(b == NULL) {
         return -1;
     }
@@ -151,90 +159,78 @@ int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int str
         Amount of bytes in buffer is given by the difference between read_pos and write_pos
             if write_pos > read_pos, there is data yet to be read
     */
-    size_t filled = abs(b->write_pos - b->read_pos);
-    if(action == VCHAN_SEND) {
-        while(filled == VCHAN_BUF_SIZE) {
-            ctrl->con->wait();
-            filled = abs(b->write_pos - b->read_pos);
-        }
-
-        if(stream) {
-            size = MIN(VCHAN_BUF_SIZE - filled, size);
-        } else if(size > VCHAN_BUF_SIZE - filled) {
-            return -1;
-        }
-
+    if(cmd == VCHAN_SEND) {
         update = &b->write_pos;
     } else {
-        while(filled == 0) {
-            ctrl->con->wait();
-            filled = abs(b->write_pos - b->read_pos);
-        }
-
-        if(stream) {
-            size = MIN(filled, size);
-        } else if(size > filled) {
-            return -1;
-        }
-
         update = &b->read_pos;
     }
 
-    /*
-        Because this buffer is circular,
-            data may have to wrap around to the start of the buffer
-            This is achieved by doing two copies, one to buffer end
-            And one at start of buffer for remaining data
 
-        E.g if buffer size = 12
-        and if write pos = 7 && number of bytes to write = 8
+    size_t data_sz = size;
+    while(data_sz > 0) {
+        size_t call_size = MIN(data_sz, VCHAN_BUF_SIZE);
+        size_t ssize = get_actionsize(cmd, call_size, b);
+        while(ssize == 0) {
+            ctrl->con->wait();
+            ssize = get_actionsize(cmd, call_size, b);
+        }
 
-        Start:
-                write_pos
-                    V
-            [oooooooooooo]
-        End:
-            write_pos
-                V
-            [xxxooooxxxxx]
+        call_size = ssize;
 
-    */
-    off_t start = (*update % VCHAN_BUF_SIZE);
-    off_t remain = 0;
+        /*
+            Because this buffer is circular,
+                Data may have to wrap around to the start of the buffer
+                This is achieved by doing two copies, one to buffer end
+                And one at start of buffer for remaining data
+        */
+        off_t start = (*update % VCHAN_BUF_SIZE);
+        off_t remain = 0;
 
-    if(start + size > VCHAN_BUF_SIZE) {
-        remain = (start + size) - VCHAN_BUF_SIZE;
-        size -= remain;
+        if(start + call_size > VCHAN_BUF_SIZE) {
+            remain = (start + call_size) - VCHAN_BUF_SIZE;
+            call_size -= remain;
+        }
+
+        void *dbuf = &b->sync_data;
+
+        if(cmd == VCHAN_SEND) {
+            /*
+                src = address given by function caller
+                dest = vchan dataport
+            */
+            memcpy(dbuf + start, data, call_size);
+            memcpy(dbuf, data + call_size, remain);
+        } else {
+            /*
+                src = vchan dataport
+                dest = address given by function caller
+            */
+            memcpy(data, ((void *) dbuf) + start, call_size);
+            memcpy(data + call_size, dbuf, remain);
+        }
+        __sync_synchronize();
+
+        /*
+            Update either the read byte counter or the written byte counter
+                With how much was written or read
+        */
+        *update += (call_size + remain);
+        /*
+            If stream, we have written as much data as we can in one pass.
+                Otherwise, continue to write data and block block if the buffer is full
+        */
+        if(stream) {
+            ctrl->con->alert();
+            return (call_size + remain);
+        } else {
+            data_sz -= (call_size + remain);
+        }
+
+        data = data + (call_size + remain);
+        ctrl->con->alert();
     }
 
-    void *dbuf = &b->sync_data;
-
-    if(action == VCHAN_SEND) {
-        /*
-            src = address given by function caller
-            dest = vchan dataport
-        */
-        memcpy(dbuf + start, data, size);
-        memcpy(dbuf, data + size, remain);
-    } else {
-        /*
-            src = vchan dataport
-            dest = address given by function caller
-        */
-        memcpy(data, ((void *) dbuf) + start, size);
-        memcpy(data + size, dbuf, remain);
-    }
-    __sync_synchronize();
-
-    /*
-        Update either the read byte counter or the written byte counter
-            With how much was written or read
-    */
-    *update += (size + remain);
-
-    ctrl->con->alert();
-
-    return (size + remain);
+    return size;
 }
 
 
@@ -245,7 +241,6 @@ int libvchan_wait(libvchan_t *ctrl) {
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
     assert(b != NULL);
     size_t filled = abs(b->write_pos - b->read_pos);
-
     while(filled == 0) {
         ctrl->con->wait();
         b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
@@ -255,9 +250,15 @@ int libvchan_wait(libvchan_t *ctrl) {
     return 0;
 }
 
-
 void libvchan_close(libvchan_t *ctrl) {
-    assert(!"not impl");
+    vchan_connect_t t = {
+        .v.domain = ctrl->con->source_dom_number,
+        .v.dest = ctrl->domain_num,
+        .v.port = ctrl->port_num,
+        .server = ctrl->is_server,
+    };
+
+    ctrl->con->disconnect(t);
 }
 
 int libvchan_is_open(libvchan_t *ctrl) {
@@ -270,6 +271,14 @@ int libvchan_is_open(libvchan_t *ctrl) {
     return ctrl->con->status(args);
 }
 
+/* Returns nonzero if the peer has closed connection */
+int libvchan_is_eof(libvchan_t *ctrl) {
+    if(libvchan_is_open(ctrl) != 1) {
+        return 1;
+    }
+    return 0;
+}
+
 /*
     How much data can be read from the vchan
 */
@@ -277,17 +286,18 @@ int libvchan_data_ready(libvchan_t *ctrl) {
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
     assert(b != NULL);
     size_t filled = abs(b->write_pos - b->read_pos);
-    if(filled) {
-        return 1;
-    }
 
-    return 0;
+    return filled;
 }
 
 /*
     How much data can be written to the vchan
 */
 int libvchan_buffer_space(libvchan_t *ctrl) {
+    if(libvchan_is_open(ctrl) != 1) {
+        return 0;
+    }
+
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_SEND);
     assert(b != NULL);
     size_t filled = abs(b->write_pos - b->read_pos);
