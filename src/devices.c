@@ -329,6 +329,31 @@ vm_install_passthrough_device(vm_t* vm, const struct device* device)
     return err;
 }
 
+int
+vm_map_frame(vm_t *vm, seL4_CPtr cap, uintptr_t ipa, size_t size_bits, int cached, seL4_CapRights vm_rights)
+{
+    void* addr = (void*)ipa;
+    reservation_t res;
+    vspace_t *vm_vspace = vm_get_vspace(vm);
+    int err;
+
+    assert(vm_vspace != NULL);
+    assert(addr != NULL);
+
+    res = vspace_reserve_range_at(vm_vspace, addr, BIT(size_bits), vm_rights, cached);
+    if (!res.res) {
+        return -1;
+    }
+    err = vspace_map_pages_at_vaddr(vm_vspace, &cap, NULL, addr, 1, size_bits, res); //  NULL = cookies 1 = num caps
+    vspace_free_reservation(vm_vspace, res);
+    if (err) {
+        printf("Failed to provide memory\n");
+        return -1;
+    }
+
+    return 0;
+}
+
 static int
 handle_listening_fault(struct device* d, vm_t* vm,
                        fault_t* fault)
