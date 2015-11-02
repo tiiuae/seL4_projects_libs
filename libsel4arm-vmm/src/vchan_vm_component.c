@@ -10,6 +10,7 @@
 
 #include "vm.h"
 
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 int reg_new_vchan_con(vm_t *vmm, camkes_vchan_con_t *con) {
     int dom_num = con->dest_dom_number;
     unsigned int *hnum = &vmm->vchan_num_cons;
@@ -36,3 +37,4 @@ camkes_vchan_con_t *get_vchan_con(vm_t *vmm, int con_dom_num) {
     }
     return NULL;
 }
+#endif //CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT

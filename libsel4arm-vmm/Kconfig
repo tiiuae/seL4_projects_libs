@@ -8,7 +8,7 @@
 # @TAG(NICTA_BSD)
 #
 
-config LIB_SEL4_ARM_VMM
+menuconfig LIB_SEL4_ARM_VMM
     bool "VMM library for ARM"
     default y
     depends on LIB_UTILS
@@ -17,7 +17,6 @@ config LIB_SEL4_ARM_VMM
     depends on LIB_SEL4_VSPACE
     depends on LIB_SEL4_SIMPLE
     depends on LIB_PLATSUPPORT
-    depends on LIB_SEL4_VCHAN
     depends on ARM_HYPERVISOR_SUPPORT
     help
         Build a VMM support library for the seL4 hypervisor
@@ -28,3 +27,11 @@ config ONDEMAND_DEVICE_INSTALL
     depends on LIB_SEL4_ARM_VMM
     help
         Allow the VMM to install arbitrary devices into the VM as they are accessed.
+
+config LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
+    bool "Support vchan connections"
+    default n
+    depends on LIB_SEL4_ARM_VMM
+    select LIB_SEL4_VCHAN
+    help
+        Allow the VMM to setup vchan component connections

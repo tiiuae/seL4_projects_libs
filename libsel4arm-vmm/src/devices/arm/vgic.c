@@ -316,7 +316,9 @@ vgic_vcpu_inject_irq(struct device* d, vm_t *vm, struct virq_handle *irq)
 
 int handle_vgic_maintenance(vm_t* vm, int idx)
 {
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     vm->lock();
+#endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
     /* STATE d) */
     struct device* d;
@@ -349,7 +351,9 @@ int handle_vgic_maintenance(vm_t* vm, int idx)
         list_size--;
     }
 
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     vm->unlock();
+#endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
     return 0;
 }
@@ -457,8 +461,10 @@ vgic_dist_disable_irq(struct device* d, vm_t* vm, int irq)
 static int
 vgic_dist_set_pending_irq(struct device* d, vm_t* vm, int irq)
 {
-
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     vm->lock();
+#endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
+
     /* STATE c) */
     struct gic_dist_map* gic_dist;
     struct vgic* vgic;
@@ -475,13 +481,17 @@ vgic_dist_set_pending_irq(struct device* d, vm_t* vm, int irq)
         set_pending(gic_dist, virq_data->virq, true);
         err = vgic_vcpu_inject_irq(d, vm, virq_data);
         assert(!err);
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
         vm->unlock();
+#endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
         return err;
     } else {
         /* No further action */
     }
 
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     vm->unlock();
+#endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
     return 0;
 }

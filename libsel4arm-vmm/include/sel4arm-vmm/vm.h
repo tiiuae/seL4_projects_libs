@@ -22,9 +22,10 @@
 #include <sel4arm-vmm/devices.h>
 #include <sel4arm-vmm/fault.h>
 
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 #include <sel4arm-vmm/vchan_vm_component.h>
 #include <sel4vchan/vchan_component.h>
-
+#endif //CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
 #define MAX_DEVICES_PER_VM 50
 
@@ -53,11 +54,14 @@ struct vm {
     /* Fault structure */
     fault_t *fault;
 
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     /* Installed vchan connections */
     camkes_vchan_con_t **vchan_cons;
     unsigned int vchan_num_cons;
+
     int (*lock)(void);
     int (*unlock)(void);
+#endif //CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 };
 typedef struct vm vm_t;
 
