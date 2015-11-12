@@ -22,8 +22,8 @@
 #ifndef _LIBVCHAN_H
 #define _LIBVCHAN_H
 
-#include <stdint.h>
-#include <stddef.h>
+#include <linux/types.h>
+
 typedef int EVTCHN;
 
 struct libvchan;
