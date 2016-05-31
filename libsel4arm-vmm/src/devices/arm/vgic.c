@@ -67,10 +67,12 @@
 #define DDIST(...) do{}while(0)
 #endif
 
-#define MAX_VIRQS 64
-
 #ifdef PLAT_EXYNOS5
 #define GIC_PADDR 0x10480000
+#define MAX_VIRQS 64
+#elif PLAT_TK1
+#define GIC_PADDR 0x50040000
+#define MAX_VIRQS 200
 #else
 #error Unknown SoC
 #endif
@@ -480,15 +482,18 @@ vgic_dist_set_pending_irq(struct device* d, vm_t* vm, int irq)
     if (virq_data && gic_dist->enable && is_enabled(gic_dist, irq)) {
         int err;
         DDIST("Pending set: Inject IRQ from pending set (%d)\n", irq);
+
         set_pending(gic_dist, virq_data->virq, true);
         err = vgic_vcpu_inject_irq(d, vm, virq_data);
         assert(!err);
+
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
         vm->unlock();
 #endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
         return err;
     } else {
         /* No further action */
+        DDIST("IRQ not enabled (%d)\n", irq);
     }
 
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
@@ -527,6 +532,7 @@ handle_vgic_dist_fault(struct device* d, vm_t* vm, fault_t* fault)
 
     /* Out of range */
     if (offset < 0 || offset >= sizeof(struct gic_dist_map)) {
+        DDIST("offset out of range %x %x\n", offset, sizeof(struct gic_dist_map));
         return ignore_fault(fault);
 
         /* Read fault */

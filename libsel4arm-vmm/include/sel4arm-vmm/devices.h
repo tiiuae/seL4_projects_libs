@@ -55,6 +55,10 @@ struct device {
     uint32_t pstart;
 /// Device mapping size */
     uint32_t size;
+
+//  offset from the pstart, multiple devices may be in a same page
+    uint32_t offset;
+
 /// Fault handler */
     int (*handle_page_fault)(struct device* d, vm_t* vm, fault_t* fault);
 /// device emulation private data */

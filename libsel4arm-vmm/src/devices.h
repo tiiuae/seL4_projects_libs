@@ -11,8 +11,16 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
+#include <autoconf.h>
 #include <sel4arm-vmm/devices.h>
-#include <sel4arm-vmm/exynos/devices.h>
+
+#if defined(CONFIG_PLAT_EXYNOS54XX)
+#include <sel4arm-vmm/exynos5/devices.h>
+#elif defined(CONFIG_PLAT_TK1)
+#include <sel4arm-vmm/tk1/devices.h>
+#else
+#error Unsupported SoC
+#endif
 
 /**
  * Map a device

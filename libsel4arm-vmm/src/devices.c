@@ -8,12 +8,21 @@
  * @TAG(NICTA_BSD)
  */
 
+#include <autoconf.h>
 #include <sel4utils/mapping.h>
 #include "vm.h"
 #include <stdlib.h>
 
 #include <sel4arm-vmm/devices.h>
-#include <sel4arm-vmm/exynos/devices.h>
+
+#if defined(CONFIG_PLAT_EXYNOS54XX)
+#include <sel4arm-vmm/exynos5/devices.h>
+#elif defined(CONFIG_PLAT_TK1)
+#include <sel4arm-vmm/tk1/devices.h>
+#else
+#error Unsupported SoC
+#endif
+
 #include <sel4arm-vmm/fault.h>
 #include <vka/capops.h>
 
@@ -311,6 +320,7 @@ vm_install_passthrough_device(vm_t* vm, const struct device* device)
     for (paddr = d.pstart; paddr - d.pstart < d.size; paddr += 0x1000) {
         void* addr;
         addr = map_vm_device(vm, paddr, paddr, seL4_AllRights);
+#ifdef PLAT_EXYNOS5
         if (addr == NULL && paddr == MCT_ADDR) {
             printf("*****************************************\n");
             printf("*** Linux will try to use the MCT but ***\n");
@@ -320,6 +330,7 @@ vm_install_passthrough_device(vm_t* vm, const struct device* device)
 //            err = vm_install_vmct(vm);
             return -1;
         }
+#endif
         if (!addr) {
             return -1;
         }

@@ -11,7 +11,7 @@
 #ifndef IRQ_COMBINER_H
 #define IRQ_COMBINER_H
 
-#include "vm.h"
+#include "../../vm.h"
 #include <sel4utils/irq_server.h>
 
 struct combiner_irq {
