@@ -8,7 +8,7 @@
  * @TAG(NICTA_BSD)
  */
 
-#include <sel4arm-vmm/exynos5/device_map.h>
+#include <sel4arm-vmm/plat/device_map.h>
 #include <sel4arm-vmm/devices.h>
 
 const struct device dev_i2c1 = {

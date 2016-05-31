@@ -14,14 +14,7 @@
 #include <stdlib.h>
 
 #include <sel4arm-vmm/devices.h>
-
-#if defined(CONFIG_PLAT_EXYNOS54XX)
-#include <sel4arm-vmm/exynos5/devices.h>
-#elif defined(CONFIG_PLAT_TK1)
-#include <sel4arm-vmm/tk1/devices.h>
-#else
-#error Unsupported SoC
-#endif
+#include <sel4arm-vmm/plat/devices.h>
 
 #include <sel4arm-vmm/fault.h>
 #include <vka/capops.h>

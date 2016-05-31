@@ -11,7 +11,7 @@
 #ifndef SEL4ARM_VMM_EXYNOS_DEVICES_H
 #define SEL4ARM_VMM_EXYNOS_DEVICES_H
 
-#include <sel4arm-vmm/exynos5/device_map.h>
+#include <sel4arm-vmm/plat/device_map.h>
 #include <sel4arm-vmm/vm.h>
 
 #define GIC_PADDR   0x10480000

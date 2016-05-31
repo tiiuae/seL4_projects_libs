@@ -11,5 +11,5 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sel4arm-vmm/tk1/devices.h>
+#include <sel4arm-vmm/plat/devices.h>
 #include "../../vm.h"
