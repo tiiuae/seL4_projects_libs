@@ -22,7 +22,7 @@
 #ifndef _LIBVCHAN_H
 #define _LIBVCHAN_H
 
-#include <linux/types.h>
+#include <stddef.h>
 
 typedef int EVTCHN;
 
