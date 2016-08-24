@@ -216,11 +216,10 @@ vm_create(const char* name, int priority,
     vm->simple = simple;
     vm->vmm_vspace = vmm_vspace;
     vm->io_ops = io_ops;
-
-#ifdef CONFIG_SEL4_ARM_VMM_VCHAN_SUPPORT
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     vm->vchan_num_cons = 0;
     vm->vchan_cons = NULL;
-#endif //CONFIG_SEL4_ARM_VMM_VCHAN_SUPPORT
+#endif //CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
     /* Create a cspace */
     err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE_BITS, &vm->cspace);
