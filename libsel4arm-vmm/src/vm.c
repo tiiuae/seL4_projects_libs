@@ -8,6 +8,7 @@
  * @TAG(NICTA_BSD)
  */
 
+#include <autoconf.h>
 #include "vm.h"
 #include <stdio.h>
 #include <stdlib.h>
