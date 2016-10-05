@@ -258,7 +258,7 @@ vm_create(const char* name, int priority,
     /* Create TCB */
     err = vka_alloc_tcb(vka, &vm->tcb);
     assert(!err);
-    err = seL4_TCB_Configure(vm_get_tcb(vm), VM_FAULT_EP_SLOT, priority - 1,
+    err = seL4_TCB_Configure(vm_get_tcb(vm), VM_FAULT_EP_SLOT, seL4_PrioProps_new(priority - 1, priority -1),
                              vm->cspace.cptr, cspace_root_data,
                              vm->pd.cptr, null_cap_data, 0, seL4_CapNull);
     assert(!err);
