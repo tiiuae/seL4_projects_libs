@@ -400,7 +400,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     length = seL4_MessageInfo_get_length(tag);
 
     switch (label) {
-    case SEL4_PFIPC_LABEL: {
+    case seL4_VMFault: {
         int err;
         fault_t* fault;
         fault = vm->fault;
@@ -415,7 +415,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     }
     break;
 
-    case SEL4_EXCEPT_IPC_LABEL: {
+    case seL4_UnknownSyscall: {
         int err;
         assert(length == SEL4_EXCEPT_IPC_LENGTH);
         err = handle_syscall(vm, length);
@@ -428,7 +428,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     }
     break;
 
-    case SEL4_USER_EXCEPTION_LABEL: {
+    case seL4_UserException: {
         seL4_Word ip;
         int err;
         assert(length == SEL4_USER_EXCEPTION_LENGTH);
@@ -443,7 +443,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         }
     }
     break;
-    case SEL4_VGIC_MAINTENANCE_LABEL: {
+    case seL4_VGICMaintenance: {
         int idx;
         int err;
         assert(length == SEL4_VGIC_MAINTENANCE_LENGTH);
@@ -461,7 +461,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         }
     }
     break;
-    case SEL4_VCPU_FAULT_LABEL: {
+    case seL4_VCPUFault: {
         seL4_MessageInfo_t reply;
         seL4_UserContext regs;
         seL4_CPtr tcb;
