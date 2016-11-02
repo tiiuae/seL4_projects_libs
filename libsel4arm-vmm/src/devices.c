@@ -142,11 +142,15 @@ map_device(vspace_t *vspace, vka_t* vka, simple_t* simple, uintptr_t paddr,
     }
 
     /* Find the device cap */
-    err = simple_get_frame_cap(simple, (void*)paddr, 12, &frame);
+    seL4_Word cookie;
+    err = vka_utspace_alloc_at(vka, &frame, kobject_get_type(KOBJECT_FRAME, 12), 12, paddr, &cookie);
     if (err) {
-        printf("Failed to find device cap for 0x%x\n", (uint32_t)paddr);
-        //vka_cspace_free(vka, frame.capPtr);
-        return NULL;
+        err = simple_get_frame_cap(simple, (void*)paddr, 12, &frame);
+        if (err) {
+            printf("Failed to find device cap for 0x%x\n", (uint32_t)paddr);
+            //vka_cspace_free(vka, frame.capPtr);
+            return NULL;
+        }
     }
     /* Map the device */
     if (vaddr) {

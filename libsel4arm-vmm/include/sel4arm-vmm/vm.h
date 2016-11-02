@@ -50,7 +50,6 @@ struct vm {
     int ndevices;
     /* Other */
     void *entry_point;
-    struct vm_onode* onode_head;
     /* Fault structure */
     fault_t *fault;
 

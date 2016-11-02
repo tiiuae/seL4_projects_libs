@@ -25,6 +25,7 @@
 #include "devices/arm/vgic.h"
 
 #include "devices.h"
+#include "sel4arm-vmm/guest_vspace.h"
 
 //#define DEBUG_VM
 //#define DEBUG_RAM_FAULTS
@@ -178,22 +179,6 @@ static int handle_exception(vm_t* vm, seL4_Word ip)
     return 1;
 }
 
-static void
-vm_object_allocation_cb(void *allocated_object_cookie, vka_object_t object)
-{
-    struct vm_onode* onode;
-    vm_t* vm;
-    vm = (vm_t*)allocated_object_cookie;
-    assert(allocated_object_cookie);
-
-    onode = (struct vm_onode*)malloc(sizeof(*onode));
-    assert(onode);
-
-    memcpy(&onode->object, &object, sizeof(object));
-    onode->next = vm->onode_head;
-    vm->onode_head = onode;
-}
-
 int
 vm_create(const char* name, int priority,
           seL4_CPtr vmm_endpoint, seL4_Word vm_badge,
@@ -210,7 +195,6 @@ vm_create(const char* name, int priority,
 
     vm->name = name;
     vm->ndevices = 0;
-    vm->onode_head = NULL;
     vm->entry_point = NULL;
     vm->vka = vka;
     vm->simple = simple;
@@ -237,8 +221,7 @@ vm_create(const char* name, int priority,
     assert(!err);
     err = simple_ASIDPool_assign(simple, vm->pd.cptr);
     assert(err == seL4_NoError);
-    err = sel4utils_get_vspace(vmm_vspace, &vm->vm_vspace, &vm->data, vka, vm->pd.cptr,
-                               &vm_object_allocation_cb, (void*)vm);
+    err = vmm_get_guest_vspace(vmm_vspace, &vm->vm_vspace, vka, vm->pd.cptr);
     assert(!err);
 
     /* Badge the endpoint */
