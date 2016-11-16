@@ -15,6 +15,7 @@
 
 #include <sel4arm-vmm/fault.h>
 #include <platsupport/gpio.h>
+#include <platsupport/plat/clock.h>
 
 typedef struct vm vm_t;
 
