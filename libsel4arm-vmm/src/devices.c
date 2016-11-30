@@ -30,7 +30,7 @@
 
 static int
 generic_map_page(vka_t* vka, vspace_t* vmm_vspace, vspace_t* vm_vspace,
-                 uintptr_t ipa, size_t size, seL4_CapRights vm_rights,
+                 uintptr_t ipa, size_t size, seL4_CapRights_t vm_rights,
                  int cached, void** vmm_vaddr)
 {
     vka_object_t frame_obj;
@@ -103,7 +103,7 @@ generic_map_page(vka_t* vka, vspace_t* vmm_vspace, vspace_t* vm_vspace,
     /* Map into the vspace of the VMM, or do nothing */
     if (vmm_vspace != NULL) {
         void *addr;
-        seL4_CapRights rights = seL4_AllRights;
+        seL4_CapRights_t rights = seL4_AllRights;
         seL4_CPtr cap = frame[1].capPtr;
         addr = vspace_map_pages(vmm_vspace, &cap, NULL, rights, 1, 12, cached);
         if (addr == NULL) {
@@ -124,7 +124,7 @@ generic_map_page(vka_t* vka, vspace_t* vmm_vspace, vspace_t* vm_vspace,
 
 void*
 map_device(vspace_t *vspace, vka_t* vka, simple_t* simple, uintptr_t paddr,
-           uintptr_t _vaddr, seL4_CapRights rights)
+           uintptr_t _vaddr, seL4_CapRights_t rights)
 {
     cspacepath_t frame;
     void* vaddr;
@@ -181,7 +181,7 @@ map_device(vspace_t *vspace, vka_t* vka, simple_t* simple, uintptr_t paddr,
 }
 
 void*
-map_vm_device(vm_t* vm, uintptr_t pa, uintptr_t va, seL4_CapRights rights)
+map_vm_device(vm_t* vm, uintptr_t pa, uintptr_t va, seL4_CapRights_t rights)
 {
     return map_device(vm_get_vspace(vm), vm->vka, vm->simple, pa, va, rights);
 }
@@ -299,7 +299,7 @@ map_vm_ram(vm_t* vm, uintptr_t vaddr)
 }
 
 void*
-map_shared_page(vm_t* vm, uintptr_t ipa, seL4_CapRights rights)
+map_shared_page(vm_t* vm, uintptr_t ipa, seL4_CapRights_t rights)
 {
     void* addr = NULL;
     int ret;
@@ -338,7 +338,7 @@ vm_install_passthrough_device(vm_t* vm, const struct device* device)
 }
 
 int
-vm_map_frame(vm_t *vm, seL4_CPtr cap, uintptr_t ipa, size_t size_bits, int cached, seL4_CapRights vm_rights)
+vm_map_frame(vm_t *vm, seL4_CPtr cap, uintptr_t ipa, size_t size_bits, int cached, seL4_CapRights_t vm_rights)
 {
     void* addr = (void*)ipa;
     reservation_t res;

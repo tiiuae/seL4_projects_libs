@@ -27,7 +27,7 @@
  * @return            The virtual address of the mapping
  */
 void* map_device(vspace_t *vspace, vka_t* vka, simple_t* simple,
-                 uintptr_t pa, uintptr_t va, seL4_CapRights rights);
+                 uintptr_t pa, uintptr_t va, seL4_CapRights_t rights);
 
 /**
  * Map a device into a VM
@@ -37,7 +37,7 @@ void* map_device(vspace_t *vspace, vka_t* vka, simple_t* simple,
  * @param[in] rights  Rights to use for the mapping
  * @return            The virtual address of the mapping
  */
-void* map_vm_device(vm_t* vm, uintptr_t pa, uintptr_t va, seL4_CapRights rights);
+void* map_vm_device(vm_t* vm, uintptr_t pa, uintptr_t va, seL4_CapRights_t rights);
 
 /**
  * Map RAM with full access rights
@@ -64,7 +64,7 @@ void* map_vm_ram(vm_t* vm, uintptr_t va);
  * @param[in] rights The Access permissions of the mapping for the VM
  * @return           The VMM virtual address off the mapping
  */
-void* map_shared_page(vm_t* vm, uintptr_t ipa, seL4_CapRights rights);
+void* map_shared_page(vm_t* vm, uintptr_t ipa, seL4_CapRights_t rights);
 
 /**
  * Map a device ready for emulation

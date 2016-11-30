@@ -362,10 +362,10 @@ new_fault(fault_t* fault)
     assert(vm);
 
     /* First store message registers on the stack to free our message regs */
-    is_prefetch = seL4_GetMR(SEL4_PFIPC_PREFETCH_FAULT);
-    addr = seL4_GetMR(SEL4_PFIPC_FAULT_ADDR),
-    fsr = seL4_GetMR(SEL4_PFIPC_FSR);
-    ip = seL4_GetMR(SEL4_PFIPC_FAULT_IP);
+    is_prefetch = seL4_GetMR(seL4_VMFault_PrefetchFault);
+    addr = seL4_GetMR(seL4_VMFault_Addr),
+    fsr = seL4_GetMR(seL4_VMFault_FSR);
+    ip = seL4_GetMR(seL4_VMFault_IP);
     DFAULT("%s: New fault @ 0x%x from PC 0x%x\n", vm->name, addr, ip);
     /* Create the fault object */
     fault->is_prefetch = is_prefetch;

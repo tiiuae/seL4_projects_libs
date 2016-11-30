@@ -119,7 +119,7 @@ int vm_add_device(vm_t* vm, const struct device* d);
  * @param[in] vm_rights  Mapping rights
  * @return               0 on success
  */
-int vm_map_frame(vm_t *vm, seL4_CPtr cap, uintptr_t ipa, size_t size_bits, int cached, seL4_CapRights vm_rights);
+int vm_map_frame(vm_t *vm, seL4_CPtr cap, uintptr_t ipa, size_t size_bits, int cached, seL4_CapRights_t vm_rights);
 
 /**** GPIO ****/
 enum vacdev_default {

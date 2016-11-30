@@ -344,8 +344,8 @@ handle_syscall(vm_t* vm, seL4_Word length)
     seL4_CPtr tcb;
     int err;
 
-    syscall = seL4_GetMR(EXCEPT_IPC_SYS_MR_SYSCALL),
-    ip = seL4_GetMR(EXCEPT_IPC_SYS_MR_PC);
+    syscall = seL4_GetMR(seL4_UnknownSyscall_Syscall),
+    ip = seL4_GetMR(seL4_UnknownSyscall_FaultIP);
 
     tcb = vm_get_tcb(vm);
     err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
@@ -383,7 +383,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     length = seL4_MessageInfo_get_length(tag);
 
     switch (label) {
-    case seL4_VMFault: {
+    case seL4_Fault_VMFault: {
         int err;
         fault_t* fault;
         fault = vm->fault;
@@ -398,9 +398,9 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     }
     break;
 
-    case seL4_UnknownSyscall: {
+    case seL4_Fault_UnknownSyscall: {
         int err;
-        assert(length == SEL4_EXCEPT_IPC_LENGTH);
+        assert(length == seL4_UnknownSyscall_Length);
         err = handle_syscall(vm, length);
         assert(!err);
         if (!err) {
@@ -411,10 +411,10 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     }
     break;
 
-    case seL4_UserException: {
+    case seL4_Fault_UserException: {
         seL4_Word ip;
         int err;
-        assert(length == SEL4_USER_EXCEPTION_LENGTH);
+        assert(length == seL4_UserException_Length);
         ip = seL4_GetMR(0);
         err = handle_exception(vm, ip);
         assert(!err);
@@ -426,11 +426,11 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         }
     }
     break;
-    case seL4_VGICMaintenance: {
+    case seL4_Fault_VGICMaintenance: {
         int idx;
         int err;
-        assert(length == SEL4_VGIC_MAINTENANCE_LENGTH);
-        idx = seL4_GetMR(EXCEPT_IPC_SYS_MR_R0);
+        assert(length == seL4_VGICMaintenance_Length);
+        idx = seL4_GetMR(seL4_UnknownSyscall_R0);
         /* Currently not handling spurious IRQs */
         assert(idx >= 0);
 
@@ -444,14 +444,14 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         }
     }
     break;
-    case seL4_VCPUFault: {
+    case seL4_Fault_VCPUFault: {
         seL4_MessageInfo_t reply;
         seL4_UserContext regs;
         seL4_CPtr tcb;
         uint32_t hsr;
         int err;
-        assert(length == SEL4_VCPU_FAULT_LENGTH);
-        hsr = seL4_GetMR(EXCEPT_IPC_SYS_MR_R0);
+        assert(length == seL4_VCPUFault_Length);
+        hsr = seL4_GetMR(seL4_UnknownSyscall_R0);
         /* Increment the PC and ignore the fault */
         tcb = vm_get_tcb(vm);
         err = seL4_TCB_ReadRegisters(tcb, false, 0,
