@@ -20,6 +20,11 @@
 extern const struct device dev_vram;
 
 
+#define dev_vconsole dev_uartd
+
+extern const struct device dev_uartd;
+extern const struct device dev_clkcar;
+
 typedef int (*vm_power_cb)(vm_t* vm, void* token);
 int vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
                       vm_power_cb reboot_cb, void* reboot_token);
