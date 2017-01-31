@@ -33,6 +33,11 @@ static inline seL4_CPtr vm_get_tcb(vm_t* vm)
     return vm->tcb.cptr;
 }
 
+static inline seL4_CPtr vm_get_vcpu(vm_t* vm)
+{
+    return vm->vcpu.cptr;
+}
+
 vspace_t* vm_get_vspace(vm_t* vm);
 
 #endif /* VM_H */

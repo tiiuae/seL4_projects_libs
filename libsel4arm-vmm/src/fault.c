@@ -16,6 +16,7 @@
 #include <vka/capops.h>
 
 #include <stdlib.h>
+#include <sel4/sel4_arch/constants.h>
 
 //#define DEBUG_FAULTS
 //#define DEBUG_ERRATA
@@ -56,6 +57,18 @@
 #define CONTENT_INST               BIT(2)
 #define CONTENT_WIDTH              BIT(3)
 #define CONTENT_STAGE              BIT(4)
+#define CONTENT_PMODE              BIT(5)
+
+typedef enum processor_mode {
+    PMODE_USER       = 0x10,
+    PMODE_FIQ        = 0x11,
+    PMODE_IRQ        = 0x12,
+    PMODE_SUPERVISOR = 0x13,
+    PMODE_ABORT      = 0x17,
+    PMODE_HYPERVISOR = 0x1a,
+    PMODE_UNDEFINED  = 0x1b,
+    PMODE_SYSTEM     = 0x1f,
+} processor_mode_t;
 
 /**
  * Data structure representating a fault
@@ -86,6 +99,8 @@ struct fault {
     uint32_t instruction;
 /// The width of the fault
     enum fault_width width;
+/// The mode of the processor
+    processor_mode_t pmode;
 /// The active content within the fault structure to allow lazy loading
     int content;
 };
@@ -319,6 +334,13 @@ decode_rt(int reg, seL4_UserContext* c)
 static int
 get_rt(fault_t *f)
 {
+
+    /* Save processor mode in fault struct */
+    if ((f->content & CONTENT_PMODE)  == 0) {
+        f->pmode = fault_get_ctx(f)->cpsr & 0x1f;
+        f->content |= CONTENT_PMODE;
+    }
+
     int rt;
     if (HSR_IS_SYNDROME_VALID(f->fsr)) {
         if (HAS_ERRATA766422(f)) {
@@ -332,6 +354,88 @@ get_rt(fault_t *f)
     assert(rt >= 0);
     return rt;
 }
+
+/**
+ * Returns a seL4_VCPUReg if the fault affects a banked register.  Otherwise
+ * seL4_VCPUReg_Num is returned.  It uses the fault to look up what mode the
+ * processor is in and based on rt returns a banked register.
+ */
+int decode_vcpu_reg(int rt, fault_t* f) {
+    assert(f->pmode != PMODE_HYPERVISOR);
+    if (f->pmode == PMODE_USER || f->pmode == PMODE_SYSTEM) {
+      return seL4_VCPUReg_Num;
+    }
+
+    int reg = seL4_VCPUReg_Num;
+    if (f->pmode == PMODE_FIQ) {
+      switch (rt) {
+          case 8:
+              reg = seL4_VCPUReg_R8fiq;
+              break;
+          case 9:
+              reg = seL4_VCPUReg_R9fiq;
+              break;
+          case 10:
+              reg = seL4_VCPUReg_R10fiq;
+              break;
+          case 11:
+              reg = seL4_VCPUReg_R11fiq;
+              break;
+          case 12:
+              reg = seL4_VCPUReg_R12fiq;
+              break;
+          case 13:
+              reg = seL4_VCPUReg_SPfiq;
+              break;
+          case 14:
+              reg = seL4_VCPUReg_LRfiq;
+              break;
+          default:
+              reg = seL4_VCPUReg_Num;
+          break;
+      }
+
+    } else if (rt == 13) {
+        switch (f->pmode) {
+            case PMODE_IRQ:
+                reg = seL4_VCPUReg_SPirq;
+                break;
+            case PMODE_SUPERVISOR:
+                reg = seL4_VCPUReg_SPsvc;
+                break;
+            case PMODE_ABORT:
+                reg = seL4_VCPUReg_SPabt;
+                break;
+            case PMODE_UNDEFINED:
+                reg = seL4_VCPUReg_SPund;
+                break;
+            default:
+                ZF_LOGF("Invalid processor mode");
+        }
+
+    } else if (rt == 14) {
+        switch (f->pmode) {
+            case PMODE_IRQ:
+                reg = seL4_VCPUReg_LRirq;
+                break;
+            case PMODE_SUPERVISOR:
+                reg = seL4_VCPUReg_LRsvc;
+                break;
+            case PMODE_ABORT:
+                reg = seL4_VCPUReg_LRabt;
+                break;
+            case PMODE_UNDEFINED:
+                reg = seL4_VCPUReg_LRund;
+                break;
+            default:
+                ZF_LOGF("Invalid processor mode");
+        }
+
+    }
+
+    return reg;
+}
+
 
 fault_t*
 fault_init(vm_t* vm)
@@ -447,9 +551,28 @@ int advance_fault(fault_t* fault)
 {
     /* If data was to be read, load it into the user context */
     if (fault_is_data(fault) && fault_is_read(fault)) {
-        uint32_t* reg;
-        reg = decode_rt(get_rt(fault), fault_get_ctx(fault));
-        *reg = fault_emulate(fault, *reg);
+        /* Get register opearand */
+        int rt  = get_rt(fault);
+
+        /* Decode whether operand is banked */
+        int reg = decode_vcpu_reg(rt, fault);
+        if (reg == seL4_VCPUReg_Num) {
+            /* register is not banked, use seL4_UserContext */
+            uint32_t* reg_ctx = decode_rt(rt, fault_get_ctx(fault));
+            *reg_ctx = fault_emulate(fault, *reg_ctx);
+        } else {
+            /* register is banked, use vcpu invocations */
+            seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(vm_get_vcpu(fault->vm), reg);
+            if (res.error) {
+              ZF_LOGF("Read registers failed");
+              return -1;
+            }
+            int error = seL4_ARM_VCPU_WriteRegs(vm_get_vcpu(fault->vm), reg, fault_emulate(fault, res.value));
+            if (error) {
+              ZF_LOGF("Write registers failed");
+              return -1;
+            }
+        }
     }
     DFAULT("%s: Emulate fault @ 0x%x from PC 0x%x\n",
            fault->vm->name, fault->addr, fault->ip);
@@ -556,7 +679,24 @@ uint32_t
 fault_get_data(fault_t* f)
 {
     if ((f->content & CONTENT_DATA) == 0) {
-        fault_set_data(f, *decode_rt(get_rt(f), fault_get_ctx(f)));
+        /* Get register opearand */
+        int rt  = get_rt(f);
+
+        /* Decode whether register is banked */
+        int reg = decode_vcpu_reg(rt, f);
+        uint32_t data;
+        if (reg == seL4_VCPUReg_Num) {
+            /* Not banked, use seL4_UserContext */
+            data = *decode_rt(rt, fault_get_ctx(f));
+        } else {
+            /* Banked, use VCPU invocations */
+            seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(vm_get_vcpu(f->vm), reg);
+            if (res.error) {
+              ZF_LOGF("Read registers failed");
+            }
+            data = res.value;
+        }
+        fault_set_data(f, data);
     }
     return f->data;
 }
@@ -641,5 +781,3 @@ enum fault_width fault_get_width(fault_t* f)
     }
     return f->width;
 }
-
-
