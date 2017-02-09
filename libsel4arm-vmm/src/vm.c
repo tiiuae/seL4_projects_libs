@@ -22,7 +22,7 @@
 #include <sel4/sel4.h>
 #include <sel4/messages.h>
 
-#include "devices/arm/vgic.h"
+#include "arch/arm/devices/vgic.h"
 
 #include "devices.h"
 #include "sel4arm-vmm/guest_vspace.h"
@@ -654,5 +654,3 @@ vm_ipa_to_pa(vm_t* vm, uintptr_t ipa_base, size_t size)
     } while (ipa - ipa_base < size);
     return pa_base;
 }
-
-

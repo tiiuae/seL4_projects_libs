@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../devices.h"
-#include "../../vm.h"
+#include "../../../devices.h"
+#include "../../../vm.h"
 #include <platsupport/gpio.h>
 
 //#define GPIO_DEBUG
@@ -255,4 +255,3 @@ vm_gpio_restrict(struct gpio_device* gpio_device, gpio_id_t gpio_id)
 {
     return vm_gpio_config(gpio_device, gpio_id, 0);
 }
-

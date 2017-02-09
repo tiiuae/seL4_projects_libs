@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include <sel4arm-vmm/plat/devices.h>
-#include "../../vm.h"
+#include "../../../vm.h"
 
 //#define DEBUG_MCT
 #ifdef DEBUG_MCT
@@ -158,4 +158,3 @@ int vm_install_vmct(vm_t* vm)
     }
     return 0;
 }
-

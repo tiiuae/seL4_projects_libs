@@ -11,16 +11,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sel4arm-vmm/plat/devices.h>
-#include <platsupport/plat/serial.h>
+#include "../../../devices.h"
+#include "../../../vm.h"
 
-#include "../../vm.h"
-
-
-const struct device dev_uartd = {
-    .devid = DEV_UART3,
-    .name = "uartd",
-    .pstart = UARTD_PADDR,
+const struct device dev_clkcar = {
+    .devid = DEV_CUSTOM,
+    .name = "clkcar",
+    .pstart = TK1_CLKCAR_PADDR,
     .size = PAGE_SIZE,
     .handle_page_fault = NULL,
     .priv = NULL

@@ -15,8 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../devices.h"
-#include "../../vm.h"
+#include "../../../devices.h"
+#include "../../../vm.h"
 
 #define DWEMMC_DBADDR_OFFSET    0x088
 #define DWEMMC_DSCADDR_OFFSET   0x094

@@ -9,7 +9,7 @@
  */
 
 #include "irq_combiner.h"
-#include "../../devices.h"
+#include "../../../devices.h"
 #include <stdlib.h>
 #include <string.h>
 #include <platsupport/irq_combiner.h>

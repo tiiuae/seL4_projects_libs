@@ -8,8 +8,8 @@
  * @TAG(NICTA_BSD)
  */
 
-#include "../../devices.h"
-#include "../../vm.h"
+#include "../../../devices.h"
+#include "../../../vm.h"
 
 static int
 handle_ram_fault(struct device* d, vm_t* vm, fault_t* fault)

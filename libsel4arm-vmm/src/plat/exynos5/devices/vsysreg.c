@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../devices.h"
-#include "../../vm.h"
+#include "../../../devices.h"
+#include "../../../vm.h"
 
 //#define SYSREG_DEBUG
 
@@ -99,4 +99,3 @@ vm_install_vsysreg(vm_t* vm)
 
     return 0;
 }
-

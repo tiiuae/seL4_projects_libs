@@ -7,9 +7,3 @@
  *
  * @TAG(NICTA_BSD)
  */
-
-#include <stdlib.h>
-#include <string.h>
-
-#include "../../devices.h"
-#include "../../vm.h"

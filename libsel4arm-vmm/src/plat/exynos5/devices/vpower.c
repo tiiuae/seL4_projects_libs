@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../devices.h"
-#include "../../vm.h"
+#include "../../../devices.h"
+#include "../../../vm.h"
 
 //#define PWR_DEBUG
 
@@ -43,13 +43,57 @@ handle_vpower_fault(struct device* d, vm_t* vm, fault_t* fault)
 {
     struct power_priv* power_data = (struct power_priv*)d->priv;
     volatile uint32_t *reg;
-    int vm_offset;
+    int vm_offset, offset, reg_offset;
+    int bank;
 
     /* Gather fault information */
     vm_offset = fault_get_address(fault) - d->pstart;
+    bank = vm_offset >> 12;
+    offset = vm_offset & MASK(12);
+    reg_offset = offset & ~MASK(2);
 
-    /* TODO handle the fault for TK1 */
+    /* Handle the fault */
+    reg = (volatile uint32_t*)(power_data->regs[bank] + offset);
+    if (fault_is_read(fault)) {
+        fault_set_data(fault, *reg);
+        DPWR("[%s] pc0x%x| r0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
+             fault_get_address(fault), fault_get_data(fault));
+    } else {
+        if (bank == PWR_SWRST_BANK && reg_offset == PWR_SWRST_OFFSET) {
+            if (fault_get_data(fault)) {
+                /* Software reset */
+                DPWR("[%s] Software reset\n", d->name);
+                if (power_data->reboot_cb) {
+                    int err;
+                    err = power_data->reboot_cb(vm, power_data->reboot_token);
+                    if (err) {
+                        return err;
+                    }
+                }
+            }
+        } else if (bank == PWR_SHUTDOWN_BANK && reg_offset == PWR_SHUTDOWN_OFFSET) {
+            uint32_t new_reg = fault_emulate(fault, *reg);
+            new_reg &= BIT(31) | BIT(9) | BIT(8);
+            if (new_reg == (BIT(31) | BIT(9))) {
+                /* Software power down */
+                DPWR("[%s] Power down\n", d->name);
+                if (power_data->shutdown_cb) {
+                    int err;
+                    err = power_data->shutdown_cb(vm, power_data->reboot_token);
+                    if (err) {
+                        return err;
+                    }
+                }
+            } else {
+                *reg = fault_emulate(fault, *reg);
+            }
 
+        } else {
+            DPWR("[%s] pc 0x%x| access violation writing 0x%x to 0x%x\n",
+                 d->name, fault_get_ctx(fault)->pc, fault_get_data(fault),
+                 fault_get_address(fault));
+        }
+    }
     return advance_fault(fault);
 }
 
@@ -106,4 +150,3 @@ vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
 
     return 0;
 }
-

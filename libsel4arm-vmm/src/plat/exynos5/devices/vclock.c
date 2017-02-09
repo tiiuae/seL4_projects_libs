@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../devices.h"
-#include "../../vm.h"
+#include "../../../devices.h"
+#include "../../../vm.h"
 
 #define CLOCK_DEBUG
 
@@ -370,4 +370,3 @@ vm_clock_restrict(struct clock_device* clkd, enum clk_id clk_id)
 {
     return vm_clock_config(clkd, clk_id, 0);
 }
-

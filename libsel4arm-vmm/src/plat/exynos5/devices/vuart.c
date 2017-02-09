@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include <sel4arm-vmm/plat/devices.h>
-#include "../../vm.h"
+#include "../../../vm.h"
 
 #define VUART_BUFLEN 300
 
