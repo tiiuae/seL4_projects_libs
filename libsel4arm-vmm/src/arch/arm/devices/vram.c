@@ -30,8 +30,8 @@ handle_ram_fault(struct device* d, vm_t* vm, fault_t* fault)
 const struct device dev_vram = {
     .devid = DEV_RAM,
     .name = "RAM",
-    .pstart = 0x40000000,
-    .size = 0x80000000,
+    .pstart = RAM_BASE,
+    .size = RAM_SIZE,
     .handle_page_fault = handle_ram_fault,
     .priv = NULL,
 };

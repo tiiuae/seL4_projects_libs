@@ -14,9 +14,6 @@
 #include <sel4arm-vmm/plat/devices.h>
 #include <platsupport/plat/serial.h>
 
-#include "../../../vm.h"
-
-
 const struct device dev_uartd = {
     .devid = DEV_UART3,
     .name = "uartd",

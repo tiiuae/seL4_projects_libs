@@ -11,8 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../../devices.h"
-#include "../../../vm.h"
+#include <sel4arm-vmm/devices.h>
 
 const struct device dev_clkcar = {
     .devid = DEV_CUSTOM,
