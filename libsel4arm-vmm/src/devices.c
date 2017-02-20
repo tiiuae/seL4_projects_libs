@@ -274,7 +274,7 @@ map_ram(vspace_t *vspace, vka_t* vka, uintptr_t vaddr)
         return NULL;
     }
     /* Create a frame */
-    err = vka_alloc_frame(vka, 12, &frame);
+    err = vka_alloc_frame_maybe_device(vka, 12, true, &frame);
     assert(!err);
     if (err) {
         vspace_free_reservation(vspace, res);
