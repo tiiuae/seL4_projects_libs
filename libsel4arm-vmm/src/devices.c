@@ -258,9 +258,11 @@ map_emulated_device(vm_t* vm, const struct device *d)
 }
 
 void*
-map_ram(vspace_t *vspace, vka_t* vka, uintptr_t vaddr)
+map_ram(vspace_t *vspace, vspace_t *vmm_vspace, vka_t* vka, uintptr_t vaddr)
 {
-    vka_object_t frame;
+    vka_object_t frame_obj;
+    cspacepath_t frame[2];
+
     reservation_t res;
     void* addr;
     int err;
@@ -270,32 +272,71 @@ map_ram(vspace_t *vspace, vka_t* vka, uintptr_t vaddr)
     /* reserve vspace */
     res = vspace_reserve_range_at(vspace, addr, 0x1000, seL4_AllRights, 1);
     if (!res.res) {
-        assert(res.res);
+        ZF_LOGF("Failed to reserve range");
         return NULL;
     }
+
     /* Create a frame */
-    err = vka_alloc_frame_maybe_device(vka, 12, true, &frame);
-    assert(!err);
+    err = vka_alloc_frame_maybe_device(vka, 12, true, &frame_obj);
     if (err) {
+        ZF_LOGF("Failed vka_alloc_frame_maybe_device");
         vspace_free_reservation(vspace, res);
         return NULL;
     }
-    /* Map in the frame */
-    err = vspace_map_pages_at_vaddr(vspace, &frame.cptr, NULL, addr, 1, 12, res);
-    vspace_free_reservation(vspace, res);
-    assert(!err);
+
+    vka_cspace_make_path(vka, frame_obj.cptr, &frame[0]);
+
+    err = vka_cspace_alloc_path(vka, &frame[1]);
     if (err) {
-        printf("Failed to provide memory\n");
-        vka_free_object(vka, &frame);
+        ZF_LOGF("Failed vka_cspace_alloc_path");
+        vka_free_object(vka, &frame_obj);
+        vspace_free_reservation(vspace, res);
         return NULL;
     }
+
+    err = vka_cnode_copy(&frame[1], &frame[0], seL4_AllRights);
+    if (err) {
+        ZF_LOGF("Failed vka_cnode_copy");
+        vka_cspace_free(vka, frame[1].capPtr);
+        vka_free_object(vka, &frame_obj);
+        vspace_free_reservation(vspace, res);
+        return NULL;
+    }
+
+
+    /* Map in the frame */
+    err = vspace_map_pages_at_vaddr(vspace, &frame[0].capPtr, NULL, addr, 1, 12, res);
+    vspace_free_reservation(vspace, res);
+    if (err) {
+        ZF_LOGF("Failed vspace_map_pages_at_vaddr");
+        vka_cspace_free(vka, frame[1].capPtr);
+        vka_free_object(vka, &frame_obj);
+        return NULL;
+    }
+
+    /* Map into the vspace of the VMM to zero memory */
+    void *vmm_addr;
+    seL4_CapRights_t rights = seL4_AllRights;
+    seL4_CPtr cap = frame[1].capPtr;
+    vmm_addr = vspace_map_pages(vmm_vspace, &cap, NULL, rights, 1, 12, true);
+    if (vmm_addr == NULL) {
+        ZF_LOGF("Failed vspace_map_pages");
+        vspace_unmap_pages(vspace, (void*)addr, 1, 12, vka);
+        vka_cspace_free(vka, frame[1].capPtr);
+        vka_free_object(vka, &frame_obj);
+        return NULL;
+    }
+    memset(vmm_addr, 0, PAGE_SIZE_4K);
+    /* This also frees the cspace slot we made.  */
+    vspace_unmap_pages(vmm_vspace, (void*)vmm_addr, 1, 12, vka);
+
     return addr;
 }
 
 void*
 map_vm_ram(vm_t* vm, uintptr_t vaddr)
 {
-    return map_ram(vm_get_vspace(vm), vm->vka, vaddr);
+    return map_ram(vm_get_vspace(vm), vm->vmm_vspace, vm->vka, vaddr);
 }
 
 void*
@@ -473,4 +514,3 @@ vm_install_listening_ram(vm_t* vm, uintptr_t addr, size_t size)
     }
     return err;
 }
-
