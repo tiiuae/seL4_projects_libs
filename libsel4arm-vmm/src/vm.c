@@ -600,6 +600,11 @@ vspace_t* vm_get_vspace(vm_t* vm)
     return &vm->vm_vspace;
 }
 
+vspace_t* vm_get_vmm_vspace(vm_t* vm)
+{
+    return vm->vmm_vspace;
+}
+
 int
 vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t b)
 {

@@ -40,4 +40,6 @@ typedef int (*vm_power_cb)(vm_t* vm, void* token);
 int vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
                       vm_power_cb reboot_cb, void* reboot_token);
 
+int vm_install_tk1_usb_passthrough_device(vm_t *vm);
+
 #endif /* SEL4ARM_VMM_EXYNOS_DEVICES_H */

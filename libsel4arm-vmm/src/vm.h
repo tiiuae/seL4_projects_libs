@@ -39,5 +39,6 @@ static inline seL4_CPtr vm_get_vcpu(vm_t* vm)
 }
 
 vspace_t* vm_get_vspace(vm_t* vm);
+vspace_t* vm_get_vmm_vspace(vm_t *vm);
 
 #endif /* VM_H */
