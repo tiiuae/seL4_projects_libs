@@ -349,6 +349,24 @@ map_shared_page(vm_t* vm, uintptr_t ipa, seL4_CapRights_t rights)
 }
 
 int
+vm_install_ram_only_device(vm_t *vm, const struct device* device) {
+    struct device d;
+    uintptr_t paddr;
+    int err;
+    d = *device;
+    for (paddr = d.pstart; paddr - d.pstart < d.size; paddr += 0x1000) {
+        void* addr;
+        addr = map_vm_ram(vm, paddr);
+        if (!addr) {
+            return -1;
+        }
+    }
+    err = vm_add_device(vm, &d);
+    assert(!err);
+    return err;
+}
+
+int
 vm_install_passthrough_device(vm_t* vm, const struct device* device)
 {
     struct device d;

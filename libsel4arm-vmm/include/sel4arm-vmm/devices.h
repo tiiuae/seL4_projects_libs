@@ -81,6 +81,13 @@ struct clock_device;
  */
 int vm_install_passthrough_device(vm_t* vm, const struct device* device);
 
+/**
+ * Install a device backed by ram into a VM
+ * @param[in] vm     A handle to the VM that the device should be install to
+ * @param[in] device A description of the device
+ * @return           0 on success
+ */
+int vm_install_ram_only_device(vm_t *vm, const struct device* device);
 
 /**
  * Install a passthrough device into a VM, but trap and print all access
