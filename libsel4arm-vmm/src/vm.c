@@ -36,9 +36,6 @@
 #define VM_FAULT_EP_SLOT       1
 #define VM_CSPACE_SLOT         2
 
-#define HSR_WFI         0x05e00000
-#define HSR_WFE         0x05e00001
-
 #define MODE_USER       0x10
 #define MODE_FIQ        0x11
 #define MODE_IRQ        0x12
@@ -447,30 +444,19 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     break;
     case seL4_Fault_VCPUFault: {
         seL4_MessageInfo_t reply;
-        seL4_UserContext regs;
-        seL4_CPtr tcb;
         uint32_t hsr;
         int err;
+        fault_t* fault;
+        fault = vm->fault;
         assert(length == seL4_VCPUFault_Length);
         hsr = seL4_GetMR(seL4_UnknownSyscall_R0);
-        /* Increment the PC and ignore the fault */
-        tcb = vm_get_tcb(vm);
-        err = seL4_TCB_ReadRegisters(tcb, false, 0,
-                                     sizeof(regs) / sizeof(regs.pc), &regs);
-        assert(!err);
-        switch (hsr) {
-        case HSR_WFI:
-        case HSR_WFE:
-            regs.pc += (regs.cpsr & BIT(5)) ? 2 : 4;
-            err = seL4_TCB_WriteRegisters(tcb, false, 0,
-                                          sizeof(regs) / sizeof(regs.pc), &regs);
-            assert(!err);
-            reply = seL4_MessageInfo_new(0, 0, 0, 0);
-            seL4_Reply(reply);
+        /* check if the exception class (bits 26-31) of the HSR indicate WFI/WFE */
+        if ( (hsr >> 26) == 1) {
+            /* generate a new WFI fault */
+            new_wfi_fault(fault);
             return 0;
-        default:
+        } else {
             printf("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vm->name, hsr);
-            print_ctx_regs(&regs);
             return -1;
         }
     }

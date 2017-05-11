@@ -93,6 +93,8 @@ struct fault {
     uint32_t fsr;
 /// 'true' if the fault was a prefetch fault rather than a data fault
     bool is_prefetch;
+/// 'true' if we should wait for an interrupt before finishing the fault
+    bool is_wfi;
 /// For multiple str/ldr and 32 bit access, the fault is handled in stages
     int stage;
 /// If the instruction requires fetching, cache it here
@@ -456,6 +458,26 @@ fault_init(vm_t* vm)
 }
 
 int
+new_wfi_fault(fault_t *fault)
+{
+    int err;
+    assert(fault_handled(fault));
+    fault->is_wfi = 1;
+    fault->is_prefetch = 0;
+    fault->fsr = 0;
+    fault->instruction = 0;
+    fault->data = 0;
+    fault->width = -1;
+    fault->content = 0;
+    fault->stage = 1;
+    assert(fault->reply_cap.capPtr);
+    err = vka_cnode_saveCaller(&fault->reply_cap);
+    assert(!err);
+
+    return err;
+}
+
+int
 new_fault(fault_t* fault)
 {
     uint32_t is_prefetch, ip, addr, fsr;
@@ -465,6 +487,8 @@ new_fault(fault_t* fault)
     vm = fault->vm;
     assert(vm);
 
+    assert(fault_handled(fault));
+
     /* First store message registers on the stack to free our message regs */
     is_prefetch = seL4_GetMR(seL4_VMFault_PrefetchFault);
     addr = seL4_GetMR(seL4_VMFault_Addr),
@@ -472,6 +496,7 @@ new_fault(fault_t* fault)
     ip = seL4_GetMR(seL4_VMFault_IP);
     DFAULT("%s: New fault @ 0x%x from PC 0x%x\n", vm->name, addr, ip);
     /* Create the fault object */
+    fault->is_wfi = 0;
     fault->is_prefetch = is_prefetch;
     fault->ip = ip;
     fault->base_addr = fault->addr = addr;
@@ -744,8 +769,15 @@ int fault_is_prefetch(fault_t* f)
     return f->is_prefetch;
 }
 
+int fault_is_wfi(fault_t *f) {
+    return f->is_wfi;
+}
+
 int fault_is_32bit_instruction(fault_t* f)
 {
+    if (fault_is_wfi(f)) {
+        return !CPSR_IS_THUMB(fault_get_ctx(f)->cpsr);
+    }
     if (!HSR_IS_SYNDROME_VALID(f->fsr)) {
         /* (maybe) Trigger a decode to update the fsr. */
         fault_get_width(f);

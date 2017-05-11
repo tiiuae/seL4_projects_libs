@@ -36,6 +36,15 @@ fault_t* fault_init(vm_t* vm);
 
 /**
  * Populate an initialised fault structure with fault data obtained from
+ * a pending VCPU fault message that is determined to be a WFI. The reply
+ * cap to the faulting TCB will also be saved
+ * @param[in] fault A handle to a fault structure
+ * @return 0 on success;
+ */
+int new_wfi_fault(fault_t *fault);
+
+/**
+ * Populate an initialised fault structure with fault data obtained from
  * a pending fault IPC message. The reply cap to the faulting TCB will
  * also be saved.
  * @param[in] fault  A handle to a fault structure
@@ -169,6 +178,13 @@ uint32_t fault_get_fsr(fault_t *fault);
  *                   fault
  */
 int fault_is_prefetch(fault_t* fault);
+
+/**
+ * Determine if we should wait for an interrupt before
+ * resuming from the fault
+ * @param[in] fault A handle to the fault
+ */
+int fault_is_wfi(fault_t *fault);
 
 /**
  * Determine if a fault was caused by a 32 bit instruction

@@ -528,7 +528,7 @@ handle_vgic_dist_fault(struct device* d, vm_t* vm, fault_t* fault)
         /* Read fault */
     } else if (fault_is_read(fault)) {
         fault_set_data(fault, *reg);
-        return advance_fault(fault);
+        return ignore_fault(fault);
     } else {
         uint32_t data;
         switch (act) {
@@ -712,6 +712,10 @@ vm_inject_IRQ(virq_handle_t virq)
     }
 
     vgic_dist_set_pending_irq(vgic_device, vm, virq->virq);
+
+    if (!fault_handled(vm->fault) && fault_is_wfi(vm->fault)) {
+        ignore_fault(vm->fault);
+    }
 
     // vm->unlock();
 
