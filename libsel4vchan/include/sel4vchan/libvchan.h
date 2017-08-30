@@ -1,4 +1,7 @@
 /*
+ * @TAG(OTHER_GPL)
+ */
+/*
  * The Qubes OS Project, http://www.qubes-os.org
  *
  * Copyright (C) 2010  Rafal Wojtczuk  <rafal@invisiblethingslab.com>
