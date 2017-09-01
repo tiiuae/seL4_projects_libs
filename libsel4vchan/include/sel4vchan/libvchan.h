@@ -1,6 +1,4 @@
-/*
- * @TAG(OTHER_GPL)
- */
+/* @TAG(OTHER_GPL) */
 /*
  * The Qubes OS Project, http://www.qubes-os.org
  *

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, Data61
+ * Copyright 2017, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -9,7 +9,6 @@
  *
  * @TAG(DATA61_BSD)
  */
-
 #include "sel4arm-vmm/guest_vspace.h"
 #include <sel4utils/vspace.h>
 #include <sel4utils/vspace_internal.h>
