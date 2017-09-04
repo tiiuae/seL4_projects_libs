@@ -193,7 +193,7 @@ sel4urb_to_xact(vm_t* vm, struct sel4urb* surb, struct xact* xact)
     }
     /* Check if this should be an INT packet */
     if (surb->rate_ms) {
-        xact[0].type = PID_INT;
+        xact[0].type = PID_IN;
         assert(nxact == 1);
     } else if (xact[0].type == PID_SETUP) {
         if (nxact == 1) {
@@ -243,13 +243,17 @@ ctrl_to_xact(usb_ctrl_regs_t* ctrl, struct xact* xact)
 static int root_hub_ctrl_start(usb_host_t* hcd, usb_ctrl_regs_t* ctrl)
 {
     struct xact xact[2];
+    struct endpoint ep;
     int len;
     int err;
     err = ctrl_to_xact(ctrl, xact);
     if (err) {
         return -1;
     }
-    len = usb_hcd_schedule(hcd, 1, -1, 0, 0, 0, 64, 0, 0, xact, 2, NULL, NULL);
+    ep.type = EP_CONTROL;
+    ep.num = 0;
+    ep.max_pkt = 64;
+    len = usb_hcd_schedule(hcd, 1, -1, 0, 0, &ep, xact, 2, NULL, NULL);
     DROOTHUB("usb ctrl complete len %d\n", len);
     return len;
 }
@@ -369,6 +373,7 @@ vm_vusb_notify(vusb_device_t* vusb)
     struct sel4urb *u;
     struct xact xact[3];
     enum usb_speed speed;
+    struct endpoint ep;
     int len;
     int nxact;
     int i;
@@ -400,12 +405,13 @@ vm_vusb_notify(vusb_device_t* vusb)
         t = &vusb->token[i];
         t->vusb = vusb;
         t->idx = i;
+        ep.num = SURB_EPADDR_EP(u->epaddr);
+        ep.max_pkt = u->max_pkt;
+        ep.interval = u->rate_ms;
         len = usb_hcd_schedule(vusb->hcd, SURB_EPADDR_GET_ADDR(u->epaddr),
                                SURB_EPADDR_GET_HUB_ADDR(u->epaddr),
                                SURB_EPADDR_GET_HUB_PORT(u->epaddr),
-                               speed, SURB_EPADDR_GET_EP(u->epaddr),
-                               u->max_pkt, u->rate_ms,
-                               SURB_EPADDR_GET_DT(u->epaddr),
+                               speed, &ep,
                                xact, nxact, &vusb_complete_cb, t);
         if (len < 0) {
             surb_epaddr_change_state(u, SURB_EPADDR_STATE_ERROR);
@@ -422,6 +428,7 @@ vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
 {
     vusb_device_t* vusb;
     struct device d;
+    struct endpoint ep;
     int err;
 
     /* Setup book keeping */
@@ -474,12 +481,15 @@ vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
     }
 
     /* Schedule Root hub INT packet */
-    vusb->int_xact.type = PID_INT;
+    vusb->int_xact.type = PID_IN;
     vusb->int_xact.len = (vusb->ctrl_regs->nPorts + 7) / 8;
     vusb->int_xact.paddr = 0xdeadbeef;
     vusb->int_xact.vaddr = (void*)&vusb->rh_port_status;
-    err = usb_hcd_schedule(vusb->hcd, 1, -1, 0, 0, 1, 2, 10 /* ms */,
-                           0, &vusb->int_xact, 1, usb_sts_change, vusb);
+    ep.num = 1;
+    ep.max_pkt = 2;
+    ep.interval = 10;
+    err = usb_hcd_schedule(vusb->hcd, 1, -1, 0, 0, &ep,
+                           &vusb->int_xact, 1, usb_sts_change, vusb);
     if (err) {
         assert(!err);
         return NULL;
