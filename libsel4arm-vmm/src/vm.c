@@ -185,8 +185,8 @@ vm_create(const char* name, int priority,
           vm_t* vm)
 {
 
-    seL4_CapData_t null_cap_data = {{0}};
-    seL4_CapData_t cspace_root_data;
+    seL4_Word null_cap_data = seL4_NilData;
+    seL4_Word cspace_root_data;
     cspacepath_t src, dst;
 
     int err;
@@ -208,7 +208,7 @@ vm_create(const char* name, int priority,
     err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE_BITS, &vm->cspace);
     assert(!err);
     vka_cspace_make_path(vka, vm->cspace.cptr, &src);
-    cspace_root_data = seL4_CapData_Guard_new(0, 32 - VM_CSPACE_SIZE_BITS);
+    cspace_root_data = seL4_CNode_CapData_new(0, 32 - VM_CSPACE_SIZE_BITS).words[0];
     dst.root = vm->cspace.cptr;
     dst.capPtr = VM_CSPACE_SLOT;
     dst.capDepth = VM_CSPACE_SIZE_BITS;
