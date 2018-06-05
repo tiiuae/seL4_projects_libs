@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <autoconf.h>
+
 //#define DMA_DEBUG
 #ifdef DMA_DEBUG
 #define dprintf(...) do{     \
@@ -26,11 +28,11 @@
 #define dprintf(...) do{}while(0)
 #endif
 
-#if defined(PLAT_IMX6) || defined(IMX6)
+#if defined(CONFIG_PLAT_IMX6) || defined(IMX6)
 #define DMA_MINALIGN_BYTES 32
-#elif defined(PLAT_EXYNOS4)
+#elif defined(CONFIG_PLAT_EXYNOS4)
 #define DMA_MINALIGN_BYTES 32
-#elif defined(PLAT_EXYNOS5)
+#elif defined(CONFIG_PLAT_EXYNOS5)
 #define DMA_MINALIGN_BYTES 32
 #else
 #warning Unknown platform. DMA alignment defaulting to 32 bytes.
