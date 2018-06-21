@@ -30,7 +30,7 @@ typedef struct guest_vspace {
     /* debug flag for checking if we add io spaces late */
     int done_mapping;
     int num_iospaces;
-    guest_iospace_t *iospaces;
+    guest_iospace_t **iospaces;
 #endif
 } guest_vspace_t;
 
@@ -63,7 +63,7 @@ guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_CapRights_t 
         }
         error = vka_cnode_copy(&new_path, &orig_path, seL4_AllRights);
 
-        guest_iospace_t *guest_iospace = &guest_vspace->iospaces[i];
+        guest_iospace_t *guest_iospace = guest_vspace->iospaces[i];
 
         assert(error == seL4_NoError);
         error = sel4utils_map_iospace_page(guest_vspace->vspace_data.vka, guest_iospace->iospace,
@@ -117,11 +117,12 @@ int vmm_guest_vspace_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr i
 
     assert(!guest_vspace->done_mapping);
 
-    guest_vspace->iospaces = realloc(guest_vspace->iospaces, sizeof(guest_iospace_t) * (guest_vspace->num_iospaces + 1));
+    guest_vspace->iospaces = realloc(guest_vspace->iospaces, sizeof(guest_iospace_t *) * (guest_vspace->num_iospaces + 1));
     assert(guest_vspace->iospaces);
+    guest_vspace->iospaces[guest_vspace->num_iospaces] = calloc(1, sizeof(guest_iospace_t));
+    assert(guest_vspace->iospaces[guest_vspace->num_iospaces]);
 
-
-    guest_iospace_t *guest_iospace = &guest_vspace->iospaces[guest_vspace->num_iospaces];
+    guest_iospace_t *guest_iospace = guest_vspace->iospaces[guest_vspace->num_iospaces];
     guest_iospace->iospace = iospace;
     int error = sel4utils_get_vspace(loader, &guest_iospace->iospace_vspace, &guest_iospace->iospace_vspace_data,
                                      guest_vspace->vspace_data.vka, seL4_CapNull, NULL, NULL);
