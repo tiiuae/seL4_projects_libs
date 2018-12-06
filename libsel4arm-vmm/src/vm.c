@@ -47,6 +47,8 @@
 #define MODE_UNDEFINED  0x1b
 #define MODE_SYSTEM     0x1f
 
+#define SPSR_EL1        0x5
+
 #define CERROR    "\033[1;31m"
 #define CNORMAL   "\033[0m"
 
@@ -137,7 +139,6 @@ handle_page_fault(vm_t* vm, fault_t* fault)
         void* mapped;
         switch (addr) {
         case 0:
-            printf("VM fault on IPA 0x%08x\n", 0);
             print_fault(fault);
             return -1;
         default:
@@ -208,7 +209,11 @@ vm_create(const char* name, int priority,
     err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE_BITS, &vm->cspace);
     assert(!err);
     vka_cspace_make_path(vka, vm->cspace.cptr, &src);
-    cspace_root_data = seL4_CNode_CapData_new(0, 32 - VM_CSPACE_SIZE_BITS).words[0];
+#ifdef CONFIG_ARCH_AARCH64
+    cspace_root_data = seL4_CapData_Guard_new(0, 64 - VM_CSPACE_SIZE_BITS);
+#else
+    cspace_root_data = seL4_CapData_Guard_new(0, 32 - VM_CSPACE_SIZE_BITS);
+#endif
     dst.root = vm->cspace.cptr;
     dst.capPtr = VM_CSPACE_SLOT;
     dst.capDepth = VM_CSPACE_SIZE_BITS;
@@ -216,7 +221,7 @@ vm_create(const char* name, int priority,
     assert(!err);
 
     /* Create a vspace */
-    err = vka_alloc_page_directory(vka, &vm->pd);
+    err = vka_alloc_vspace_root(vka, &vm->pd);
     assert(!err);
     err = simple_ASIDPool_assign(simple, vm->pd.cptr);
     assert(err == seL4_NoError);
@@ -273,11 +278,17 @@ vm_set_bootargs(vm_t* vm, void* pc, uint32_t mach_type, uint32_t atags)
     tcb = vm_get_tcb(vm);
     err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
+#ifdef CONFIG_ARCH_AARCH64
+    regs.x0 = atags;
+    regs.pc = (seL4_Word)pc;
+    regs.spsr = SPSR_EL1;
+#else
     regs.r0 = 0;
     regs.r1 = mach_type;
     regs.r2 = atags;
     regs.pc = (seL4_Word)pc;
     regs.cpsr = MODE_SUPERVISOR;
+#endif
     err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
     return err;
@@ -300,9 +311,16 @@ static void
 sys_pa_to_ipa(vm_t* vm, seL4_UserContext* regs)
 {
     uint32_t pa;
+#ifdef CONFIG_ARCH_AARCH64
+#else
     pa = regs->r0;
+#endif
+
     DSTRACE("PA translation syscall from [%s]: 0x%08x->?\n", vm->name, pa);
+#ifdef CONFIG_ARCH_AARCH64
+#else
     regs->r0 = pa;
+#endif
 }
 
 
@@ -312,7 +330,10 @@ sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
     seL4_ARM_Page_GetAddress_t ret;
     uint32_t ipa;
     seL4_CPtr cap;
+#ifdef CONFIG_ARCH_AARCH64
+#else
     ipa = regs->r0;
+#endif
     cap = vspace_get_cap(vm_get_vspace(vm), (void*)ipa);
     if (cap == seL4_CapNull) {
         void* mapped_address;
@@ -329,7 +350,10 @@ sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
     assert(!ret.error);
     DSTRACE("IPA translation syscall from [%s]: 0x%08x->0x%08x\n",
             vm->name, ipa, ret.paddr);
+#ifdef CONFIG_ARCH_AARCH64
+#else
     regs->r0 = ret.paddr;
+#endif
 }
 
 static void
@@ -346,7 +370,7 @@ handle_syscall(vm_t* vm, seL4_Word length)
     seL4_CPtr tcb;
     int err;
 
-    syscall = seL4_GetMR(seL4_UnknownSyscall_Syscall),
+    syscall = seL4_GetMR(seL4_UnknownSyscall_Syscall);
     ip = seL4_GetMR(seL4_UnknownSyscall_FaultIP);
 
     tcb = vm_get_tcb(vm);
@@ -432,7 +456,11 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         int idx;
         int err;
         assert(length == seL4_VGICMaintenance_Length);
+#ifdef CONFIG_ARCH_AARCH64
+        idx = seL4_GetMR(seL4_UnknownSyscall_X0);
+#else
         idx = seL4_GetMR(seL4_UnknownSyscall_R0);
+#endif
         /* Currently not handling spurious IRQs */
         assert(idx >= 0);
 
@@ -453,7 +481,11 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         fault_t* fault;
         fault = vm->fault;
         assert(length == seL4_VCPUFault_Length);
+#ifdef CONFIG_ARCH_AARCH64
+        hsr = seL4_GetMR(seL4_UnknownSyscall_X0);
+#else
         hsr = seL4_GetMR(seL4_UnknownSyscall_R0);
+#endif
         /* check if the exception class (bits 26-31) of the HSR indicate WFI/WFE */
         if ( (hsr >> 26) == 1) {
             /* generate a new WFI fault */
@@ -461,6 +493,16 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
             return 0;
         } else {
             printf("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vm->name, hsr);
+            if ((hsr & 0xfc300000) == 0x60200000 || hsr == 0xf2000800) {
+                seL4_UserContext *regs;
+                new_wfi_fault(fault);
+                regs = fault_get_ctx(fault);
+                regs->pc += 4;
+                seL4_TCB_WriteRegisters(vm_get_tcb(vm), false, 0,
+                        sizeof(*regs) / sizeof(regs->pc), regs);
+                restart_fault(fault);
+                return 0;
+                }
             return -1;
         }
     }
