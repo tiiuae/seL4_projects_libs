@@ -53,3 +53,25 @@ seL4_Word *decode_rt(int reg, seL4_UserContext* c)
         return NULL;
     }
 };
+
+#define PREG(regs, r)    printf(#r ": 0x%x\n", regs->r)
+void print_ctx_regs(seL4_UserContext *regs)
+{
+    PREG(regs, r0);
+    PREG(regs, r1);
+    PREG(regs, r2);
+    PREG(regs, r3);
+    PREG(regs, r4);
+    PREG(regs, r5);
+    PREG(regs, r6);
+    PREG(regs, r7);
+    PREG(regs, r8);
+    PREG(regs, r9);
+    PREG(regs, r10);
+    PREG(regs, r11);
+    PREG(regs, r12);
+    PREG(regs, pc);
+    PREG(regs, r14);
+    PREG(regs, sp);
+    PREG(regs, cpsr);
+}
