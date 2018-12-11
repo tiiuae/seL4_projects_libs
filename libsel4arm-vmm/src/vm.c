@@ -497,7 +497,7 @@ vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
     int err;
 
     vka = vm->vka;
-    vm_addr = (void*)(addr & ~0xfff);
+    vm_addr = (void*)(addr & ~0xffflu);
     vm_vspace = vm_get_vspace(vm);
     vmm_vspace = vm->vmm_vspace;
 
