@@ -225,6 +225,8 @@ static inline uint32_t fault_get_addr_word(fault_t* f)
     return fault_get_address(f) & ~(0x3U);
 }
 
+seL4_Word *decode_rt(int reg, seL4_UserContext *c);
+
 #include <stdio.h>
 
 static inline void fault_print_data(fault_t* fault)
