@@ -16,6 +16,7 @@
 #include <sel4/messages.h>
 #include <vka/capops.h>
 
+#include <utils/ansi.h>
 #include <stdlib.h>
 #include <sel4/sel4_arch/constants.h>
 
@@ -40,9 +41,6 @@
 #else
 #define HAS_ERRATA766422(f) 0
 #endif
-
-#define COLOR_ERROR "\033[1;31m"
-#define COLOR_NORMAL "\033[0m"
 
 #define HSR_INST32                 BIT(25)
 #define HSR_IS_INST32(x)           ((x) & HSR_INST32)
@@ -465,7 +463,7 @@ seL4_Word fault_emulate(fault_t* f, seL4_Word o)
 void print_fault(fault_t* fault)
 {
     printf("--------\n");
-    printf(COLOR_ERROR);
+    printf(ANSI_COLOR(RED, BOLD));
     printf("Pagefault from [%s]: %s %s "
            "@ PC: 0x"XFMT" IPA: 0x"XFMT", FSR: 0x"XFMT "\n",
            fault->vm->name,
@@ -476,7 +474,7 @@ void print_fault(fault_t* fault)
            fault->fsr);
     printf("Context:\n");
     print_ctx_regs(fault_get_ctx(fault));
-    printf(COLOR_NORMAL);
+    printf(ANSI_COLOR(RESET));
     printf("--------\n");
 }
 

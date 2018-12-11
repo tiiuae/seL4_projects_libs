@@ -19,6 +19,7 @@
 #include <vka/capops.h>
 #include <string.h>
 #include <sel4utils/mapping.h>
+#include <utils/ansi.h>
 
 #include <sel4/sel4.h>
 #include <sel4/messages.h>
@@ -38,9 +39,6 @@
 #define VM_CSPACE_SIZE_BITS    4
 #define VM_FAULT_EP_SLOT       1
 #define VM_CSPACE_SLOT         2
-
-#define CERROR    "\033[1;31m"
-#define CNORMAL   "\033[0m"
 
 #define CFRED     "\033[31m"
 #define CFGREEN   "\033[32m"
@@ -161,7 +159,7 @@ static int handle_exception(vm_t* vm, seL4_Word ip)
     seL4_CPtr tcb = vm_get_tcb(vm);
     int err;
     printf("%sInvalid instruction from [%s] at PC: 0x"XFMT"%s\n",
-           CERROR, vm->name, seL4_GetMR(0), CNORMAL);
+           ANSI_COLOR(RED, BOLD), vm->name, seL4_GetMR(0), ANSI_COLOR(RESET));
     err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
     print_ctx_regs(&regs);
@@ -367,7 +365,7 @@ handle_syscall(vm_t* vm, seL4_Word length)
         break;
     default:
         printf("%sBad syscall from [%s]: scno %zd at PC: %p%s\n",
-               CERROR, vm->name, syscall, (void *) ip, CNORMAL);
+               ANSI_COLOR(RED, BOLD), vm->name, syscall, (void *) ip, ANSI_COLOR(RESET));
         return -1;
     }
     err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
