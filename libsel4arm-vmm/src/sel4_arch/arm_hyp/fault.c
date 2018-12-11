@@ -9,7 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-
+#include <stdio.h>
 #include <sel4arm-vmm/sel4_arch/fault.h>
 #include <sel4arm-vmm/sel4_arch/vm.h>
 #include <assert.h>
@@ -157,4 +157,23 @@ int decode_vcpu_reg(int rt, fault_t *f)
     }
 
     return reg;
+}
+
+void fault_print_data(fault_t* fault)
+{
+    seL4_Word data;
+    data = fault_get_data(fault) & fault_get_data_mask(fault);
+    switch (fault_get_width(fault)) {
+    case WIDTH_WORD:
+        printf("0x%8x", data);
+        break;
+    case WIDTH_HALFWORD:
+        printf("0x%4x", data);
+        break;
+    case WIDTH_BYTE:
+        printf("0x%02x", data);
+        break;
+    default:
+        printf("<Invalid width> 0x%x", data);
+    }
 }

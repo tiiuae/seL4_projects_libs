@@ -267,27 +267,7 @@ static inline uint32_t fault_get_addr_word(fault_t* f)
 
 seL4_Word *decode_rt(int reg, seL4_UserContext *c);
 int decode_vcpu_reg(int rt, fault_t *f);
-
-#include <stdio.h>
-
-static inline void fault_print_data(fault_t* fault)
-{
-    uint32_t data;
-    data = fault_get_data(fault) & fault_get_data_mask(fault);
-    switch (fault_get_width(fault)) {
-    case WIDTH_WORD:
-        printf("0x%08x", data);
-        break;
-    case WIDTH_HALFWORD:
-        printf("0x%04x", data);
-        break;
-    case WIDTH_BYTE:
-        printf("0x%02x", data);
-        break;
-    default:
-        printf("<Invalid width> 0x%x", data);
-    }
-}
+void fault_print_data(fault_t *fault);
 
 /***************
  ***  Debug  ***
