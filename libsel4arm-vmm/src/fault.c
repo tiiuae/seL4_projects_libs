@@ -9,7 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#include <sel4arm-vmm/fault.h>
+#include <sel4arm-vmm/sel4_arch/fault.h>
 #include "vm.h"
 
 #include <sel4/sel4.h>
@@ -36,7 +36,7 @@
 
 #ifdef PLAT_EXYNOS5250
 /* Stores in thumb mode trigger this errata */
-#define HAS_ERRATA766422(f) ( fault_is_write(f) && CPSR_IS_THUMB(fault_get_ctx(f)->cpsr))
+#define HAS_ERRATA766422(f) ( fault_is_write(f) && sel4arch_fault_is_thumb(f))
 #else
 #define HAS_ERRATA766422(f) 0
 #endif
@@ -50,8 +50,6 @@
 #define SRT_MASK    0xf
 #endif
 
-#define CPSR_THUMB                 BIT(5)
-#define CPSR_IS_THUMB(x)           ((x) & CPSR_THUMB)
 #define HSR_INST32                 BIT(25)
 #define HSR_IS_INST32(x)           ((x) & HSR_INST32)
 #define HSR_SYNDROME_VALID         BIT(24)
@@ -141,11 +139,7 @@ maybe_fetch_fault_instruction(fault_t* f)
             return -1;
         }
         /* Fixup the instruction */
-#ifdef CONFIG_ARCH_AARCH64
-        if (CPSR_IS_THUMB(fault_get_ctx(f)->spsr)) {
-#else
-        if (CPSR_IS_THUMB(fault_get_ctx(f)->cpsr)) {
-#endif
+        if (sel4arch_fault_is_thumb(f)) {
             if (thumb_is_32bit_instruction(inst)) {
                 f->fsr |= HSR_INST32;
             }
@@ -224,11 +218,7 @@ decode_instruction(fault_t* f)
     f->stage = 1;
     f->content |= CONTENT_STAGE;
     /* Decode */
-#ifdef CONFIG_ARCH_AARCH64
-    if (CPSR_IS_THUMB(fault_get_ctx(f)->spsr)) {
-#else
-    if (CPSR_IS_THUMB(fault_get_ctx(f)->cpsr)) {
-#endif
+    if (sel4arch_fault_is_thumb(f)) {
         if (thumb_is_32bit_instruction(inst)) {
             f->fsr |= BIT(25); /* 32 bit instruction */
             /* 32 BIT THUMB insts */
@@ -921,11 +911,7 @@ int fault_is_wfi(fault_t *f) {
 int fault_is_32bit_instruction(fault_t* f)
 {
     if (fault_is_wfi(f)) {
-#ifdef CONFIG_ARCH_AARCH64
-        return !CPSR_IS_THUMB(fault_get_ctx(f)->spsr);
-#else
-        return !CPSR_IS_THUMB(fault_get_ctx(f)->cpsr);
-#endif
+        return !sel4arch_fault_is_thumb(f);
     }
     if (!HSR_IS_SYNDROME_VALID(f->fsr)) {
         /* (maybe) Trigger a decode to update the fsr. */

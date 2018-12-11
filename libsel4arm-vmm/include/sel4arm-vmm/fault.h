@@ -25,6 +25,8 @@ enum fault_width {
     WIDTH_BYTE
 };
 
+#define CPSR_THUMB                 BIT(5)
+#define CPSR_IS_THUMB(x)           ((x) & CPSR_THUMB)
 
 /**
  * Initialise a fault structure.
