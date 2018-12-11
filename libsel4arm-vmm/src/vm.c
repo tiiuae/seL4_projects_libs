@@ -609,9 +609,8 @@ int
 vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t b)
 {
     cspacepath_t src, dst;
-    seL4_CapData_t badge;
+    seL4_Word badge = b;
     int err;
-    badge = seL4_CapData_Badge_new(b);
     vka_cspace_make_path(vm->vka, service, &src);
     dst.root = vm->cspace.cptr;
     dst.capPtr = index;
