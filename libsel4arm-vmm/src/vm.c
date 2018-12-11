@@ -304,7 +304,7 @@ static void
 sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
 {
     seL4_ARM_Page_GetAddress_t ret;
-    uint32_t ipa;
+    long ipa;
     seL4_CPtr cap;
 #ifdef CONFIG_ARCH_AARCH64
 #else

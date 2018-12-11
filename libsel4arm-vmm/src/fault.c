@@ -62,7 +62,7 @@
  *** Primary functions ***
  *************************/
 static inline int
-thumb_is_32bit_instruction(uint32_t instruction)
+thumb_is_32bit_instruction(seL4_Word instruction)
 {
     switch ((instruction >> 11) & 0x1f) {
     case 0b11101:
@@ -78,7 +78,7 @@ static int
 maybe_fetch_fault_instruction(fault_t* f)
 {
     if ((f->content & CONTENT_INST) == 0) {
-        uint32_t inst = 0;
+        seL4_Word inst = 0;
         /* Fetch the instruction */
         if (vm_copyin(f->vm, &inst, f->ip, 4) < 0) {
             return -1;
@@ -106,9 +106,9 @@ maybe_fetch_fault_instruction(fault_t* f)
 }
 
 static int
-errata766422_get_rt(fault_t* f, uint32_t hsr)
+errata766422_get_rt(fault_t* f, seL4_Word hsr)
 {
-    uint32_t inst;
+    seL4_Word inst;
     int err;
     err = maybe_fetch_fault_instruction(f);
     inst = f->instruction;
@@ -156,7 +156,7 @@ errata766422_get_rt(fault_t* f, uint32_t hsr)
 static int
 decode_instruction(fault_t* f)
 {
-    uint32_t inst;
+    seL4_Word inst;
     maybe_fetch_fault_instruction(f);
     inst = f->instruction;
     /* Single stage by default */
@@ -314,7 +314,7 @@ int
 new_fault(fault_t* fault)
 {
     seL4_Word ip, addr, fsr;
-    uint32_t is_prefetch;
+    seL4_Word is_prefetch;
     int err;
     vm_t *vm;
 
@@ -447,9 +447,9 @@ int advance_fault(fault_t* fault)
     }
 }
 
-uint32_t fault_emulate(fault_t* f, uint32_t o)
+seL4_Word fault_emulate(fault_t* f, seL4_Word o)
 {
-    uint32_t n, m, s;
+    seL4_Word n, m, s;
     s = (f->addr & 0x3) * 8;
     m = fault_get_data_mask(f);
     n = fault_get_data(f);
@@ -480,10 +480,10 @@ void print_fault(fault_t* fault)
     printf("--------\n");
 }
 
-uint32_t fault_get_data_mask(fault_t* f)
+seL4_Word fault_get_data_mask(fault_t* f)
 {
-    uint32_t mask = 0;
-    uint32_t addr = f->addr;
+    seL4_Word mask = 0;
+    seL4_Word addr = f->addr;
     switch (fault_get_width(f)) {
     case WIDTH_BYTE:
         mask = 0x000000ff;
@@ -511,7 +511,7 @@ uint32_t fault_get_data_mask(fault_t* f)
  *** Getters / Setters ***
  *************************/
 
-uint32_t
+seL4_Word
 fault_get_data(fault_t* f)
 {
     if ((f->content & CONTENT_DATA) == 0) {
@@ -520,7 +520,7 @@ fault_get_data(fault_t* f)
 
         /* Decode whether register is banked */
         int reg = decode_vcpu_reg(rt, f);
-        uint32_t data;
+        seL4_Word data;
         if (reg == seL4_VCPUReg_Num) {
             /* Not banked, use seL4_UserContext */
             data = *decode_rt(rt, fault_get_ctx(f));
@@ -538,19 +538,19 @@ fault_get_data(fault_t* f)
 }
 
 void
-fault_set_data(fault_t* f, uint32_t data)
+fault_set_data(fault_t* f, seL4_Word data)
 {
     f->data = data;
     f->content |= CONTENT_DATA;
 }
 
-uint32_t
+seL4_Word
 fault_get_address(fault_t* f)
 {
     return f->addr;
 }
 
-uint32_t
+seL4_Word
 fault_get_fsr(fault_t* f)
 {
     return f->fsr;

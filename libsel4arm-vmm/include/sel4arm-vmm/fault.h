@@ -146,7 +146,7 @@ int advance_fault(fault_t* fault);
  * @return           The updated data based on the operation that the VM
  *                   was attempting to perform.
  */
-uint32_t fault_emulate(fault_t* fault, uint32_t data);
+seL4_Word fault_emulate(fault_t* fault, seL4_Word data);
 
 /**
  * Determine if a fault has been handled. This is useful for multi-stage faults
@@ -165,7 +165,7 @@ int fault_handled(fault_t* fault);
  *                   to the thread when the fault is advanced. Otherwise, returns
  *                   the data that the thread was attempting to write.
  */
-uint32_t fault_get_data(fault_t* fault);
+seL4_Word fault_get_data(fault_t* fault);
 
 /**
  * Set the data that will be returned to the thread when the fault is advanced.
@@ -173,7 +173,7 @@ uint32_t fault_get_data(fault_t* fault);
  * @param[in] fault  A handle to the fault
  * @param[in] data   The data to return to the thread.
  */
-void fault_set_data(fault_t* fault, uint32_t data);
+void fault_set_data(fault_t* fault, seL4_Word data);
 
 /**
  * Retrieve a mask for the data within the aligned word that the fault is
@@ -182,14 +182,14 @@ void fault_set_data(fault_t* fault, uint32_t data);
  * @return           A mask for the data within the aligned word that the fault is
  *                   attempting to access
  */
-uint32_t fault_get_data_mask(fault_t* fault);
+seL4_Word fault_get_data_mask(fault_t* fault);
 
 /**
  * Get the faulting address
  * @param[in] fault  A handle to the fault
  * @return           The address that the faulting thread was attempting to access
  */
-uint32_t fault_get_address(fault_t* fault);
+seL4_Word fault_get_address(fault_t* fault);
 
 /**
  * Get the access width of the fault
@@ -212,7 +212,7 @@ seL4_UserContext *fault_get_ctx(fault_t *fault);
  * @return           the ARM HSR register associated with this fault. The EC
  *                   field will be masked out.
  */
-uint32_t fault_get_fsr(fault_t *fault);
+seL4_Word fault_get_fsr(fault_t *fault);
 
 /**
  * Determine if a fault is a data or prefetch fault
@@ -260,7 +260,7 @@ static inline int fault_is_read(fault_t* f)
     return !fault_is_write(f);
 }
 
-static inline uint32_t fault_get_addr_word(fault_t* f)
+static inline seL4_Word fault_get_addr_word(fault_t* f)
 {
     return fault_get_address(f) & ~(0x3U);
 }

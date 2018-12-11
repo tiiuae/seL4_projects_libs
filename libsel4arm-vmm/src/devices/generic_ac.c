@@ -36,19 +36,19 @@ static int
 handle_gac_fault(struct device* d, vm_t* vm, fault_t* fault)
 {
     struct gac_device_priv* gac_device_priv = (struct gac_device_priv*)d->priv;
-    volatile uint32_t *reg;
+    volatile uintptr_t *reg;
     int offset;
 
     /* Gather fault information */
     offset = fault_get_address(fault) - d->pstart;
-    reg = (volatile uint32_t*)(gac_device_priv->regs + offset);
+    reg = (volatile seL4_Word*)(gac_device_priv->regs + offset);
 
     if (fault_is_read(fault)) {
         fault_set_data(fault, *reg);
     } else if (offset < gac_device_priv->mask_size) {
-        uint32_t mask, result;
+        seL4_Word mask, result;
         assert((offset & MASK(2)) == 0);
-        mask = *(uint32_t*)(gac_device_priv->mask + offset);
+        mask = *(seL4_Word*)(gac_device_priv->mask + offset);
 
         result = fault_emulate(fault, *reg);
         /* Check for a change that involves denied access */
