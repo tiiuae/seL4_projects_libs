@@ -128,11 +128,11 @@ errata766422_get_rt(fault_t* f, seL4_Word hsr)
         } else if ((inst & 0xfff00000) == 0xf8000000) {
             return (inst >> 12) & 0xf;
         } else {
-            printf("Unable to decode inst 0x%08x\n", inst);
+            printf("Unable to decode inst %08lx\n", (long) inst);
             return -1;
         }
     } else {
-        DERRATA("Errata766422 @ 0x%08x (0x%04x)\n", fault_get_ctx(f)->pc, inst);
+        DERRATA("Errata766422 @ 0x%08lx (0x%04lx)\n", (long) fault_get_ctx(f)->pc, (long) inst);
         /* 16 bit insts */
         if ((inst & 0xf800) == 0x6000) {
             return (inst >> 0) & 0x7;
@@ -147,7 +147,7 @@ errata766422_get_rt(fault_t* f, seL4_Word hsr)
         } else if ((inst & 0xf800) == 0x8000) {
             return (inst >> 0) & 0x7;
         } else {
-            printf("Unable to decode inst 0x%04x\n", inst);
+            printf("Unable to decode inst 0x%04lx\n", (long) inst);
             return -1;
         }
     }
@@ -194,11 +194,11 @@ decode_instruction(fault_t* f)
                     f->width = WIDTH_DOUBLEWORD;
                     f->content |= CONTENT_WIDTH | CONTENT_STAGE;
                 }
-                f->addr = f->base_addr + ((2 - f->stage) * sizeof(uint32_t));
+                f->addr = f->base_addr + ((2 - f->stage) * sizeof(seL4_Word));
                 rt = ((inst >> 12) & 0xf) + (2 - f->stage);
                 return rt;
             } else {
-                printf("Unable to decode THUMB32 inst 0x%08x\n", inst);
+                printf("Unable to decode THUMB32 inst 0x%08lx\n", (long) inst);
                 print_fault(f);
                 return -1;
             }
@@ -229,7 +229,7 @@ decode_instruction(fault_t* f)
                 assert(!"No data width");
                 return (inst >> 0) & 0x7;
             } else {
-                printf("Unable to decode THUMB16 inst 0x%04x\n", inst);
+                printf("Unable to decode THUMB16 inst 0x%04lx\n", (long) inst);
                 print_fault(f);
                 return -1;
             }

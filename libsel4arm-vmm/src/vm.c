@@ -367,7 +367,7 @@ handle_syscall(vm_t* vm, seL4_Word length)
         break;
     default:
         printf("%sBad syscall from [%s]: scno %zd at PC: %p%s\n",
-               CERROR, vm->name, syscall, ip, CNORMAL);
+               CERROR, vm->name, syscall, (void *) ip, CNORMAL);
         return -1;
     }
     err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
@@ -477,8 +477,8 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     break;
     default:
         /* What? Why are we here? What just happened? */
-        printf("Unknown fault from [%s]: label=0x%x length=0x%x\n",
-               vm->name, label, length);
+        printf("Unknown fault from [%s]: label=%p length=%p\n",
+               vm->name, (void *) label, (void *) length);
         return -1;
     }
     return 0;

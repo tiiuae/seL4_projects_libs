@@ -57,9 +57,10 @@ handle_gac_fault(struct device* d, vm_t* vm, fault_t* fault)
             switch (gac_device_priv->action) {
             case VACDEV_REPORT_AND_MASK:
             case VACDEV_REPORT_ONLY:
-                printf("[ac/%s] pc 0x%08x | access violation: bits 0x%08x @ 0x%08x\n",
-                       d->name, fault_get_ctx(fault)->pc, (result ^ *reg) & ~mask,
-                       fault_get_address(fault));
+                printf("[ac/%s] pc %p | access violation: bits %p @ %p\n",
+                       d->name, (void *) fault_get_ctx(fault)->pc,
+                       (void *) ((result ^ *reg) & ~mask),
+                       (void *) fault_get_address(fault));
             default:
                 break;
             }
