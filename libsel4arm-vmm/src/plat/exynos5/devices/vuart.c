@@ -69,7 +69,6 @@ flush_vconsole_device(struct device* d)
     assert(d->priv);
     vuart_data = (struct vuart_priv*)d->priv;
     buf = vuart_data->buffer;
-    printf("%s", choose_colour(vuart_data->vm));
     for (i = 0; i < vuart_data->buf_pos; i++) {
         if (buf[i] != '\033') {
             putchar(buf[i]);
@@ -79,7 +78,6 @@ flush_vconsole_device(struct device* d)
             }
         }
     }
-    printf("%s", choose_colour(NULL));
     vuart_data->buf_pos = 0;
 }
 

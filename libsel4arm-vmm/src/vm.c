@@ -40,22 +40,6 @@
 #define VM_FAULT_EP_SLOT       1
 #define VM_CSPACE_SLOT         2
 
-#define CFRED     "\033[31m"
-#define CFGREEN   "\033[32m"
-#define CFYELLOW  "\033[33m"
-#define CFBLUE    "\033[34m"
-#define CFMAGENTA "\033[35m"
-#define CFCYAN    "\033[36m"
-#define CFWHITE   "\033[37m"
-
-#define CBRED     "\033[41m"
-#define CBGREEN   "\033[42m"
-#define CBYELLOW  "\033[43m"
-#define CBBLUE    "\033[44m"
-#define CBMAGENTA "\033[45m"
-#define CBCYAN    "\033[46m"
-#define CBWHITE   "\033[47m"
-
 #ifdef DEBUG_RAM_FAULTS
 #define DRAMFAULT(...) printf(__VA_ARGS__)
 #else
@@ -81,27 +65,6 @@
 #endif
 
 extern char _cpio_archive[];
-
-const char* choose_colour(vm_t* vm)
-{
-    int id;
-    static const char* vm_colours[] = {
-        CBBLUE,
-        CBYELLOW,
-        CBMAGENTA,
-        CBGREEN,
-        CBCYAN,
-        CBRED
-    };
-
-    if (vm) {
-        id = vm->vmid;
-        id = id % sizeof(vm_colours) / sizeof(*vm_colours);
-        return vm_colours[id];
-    } else {
-        return CNORMAL;
-    }
-}
 
 static int
 handle_page_fault(vm_t* vm, fault_t* fault)
