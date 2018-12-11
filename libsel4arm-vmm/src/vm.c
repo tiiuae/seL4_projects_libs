@@ -191,7 +191,7 @@ vm_create(const char* name, int priority,
     cspacepath_t src, dst;
 
     int err;
-
+    bzero(vm, sizeof(vm_t));
     vm->name = name;
     vm->ndevices = 0;
     vm->nhooks = 0;
@@ -209,11 +209,7 @@ vm_create(const char* name, int priority,
     err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE_BITS, &vm->cspace);
     assert(!err);
     vka_cspace_make_path(vka, vm->cspace.cptr, &src);
-#ifdef CONFIG_ARCH_AARCH64
-    cspace_root_data = seL4_CapData_Guard_new(0, 64 - VM_CSPACE_SIZE_BITS);
-#else
-    cspace_root_data = seL4_CapData_Guard_new(0, 32 - VM_CSPACE_SIZE_BITS);
-#endif
+    cspace_root_data = api_make_guard_skip_word(seL4_WordBits - VM_CSPACE_SIZE_BITS);
     dst.root = vm->cspace.cptr;
     dst.capPtr = VM_CSPACE_SLOT;
     dst.capDepth = VM_CSPACE_SIZE_BITS;
@@ -232,7 +228,7 @@ vm_create(const char* name, int priority,
     vka_cspace_make_path(vka, vmm_endpoint, &src);
     err = vka_cspace_alloc_path(vka, &dst);
     assert(!err);
-    err = vka_cnode_mint(&dst, &src, seL4_AllRights, seL4_CapData_Badge_new(vm_badge));
+    err = vka_cnode_mint(&dst, &src, seL4_AllRights, vm_badge);
     assert(!err);
     /* Copy it to the cspace of the VM for fault IPC */
     src = dst;
@@ -390,7 +386,7 @@ handle_syscall(vm_t* vm, seL4_Word length)
         sys_nop(vm, &regs);
         break;
     default:
-        printf("%sBad syscall from [%s]: scno "DFMT" at PC: 0x"XFMT"%s\n",
+        printf("%sBad syscall from [%s]: scno %zd at PC: %p%s\n",
                CERROR, vm->name, syscall, ip, CNORMAL);
         return -1;
     }
