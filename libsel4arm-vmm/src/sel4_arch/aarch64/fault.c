@@ -127,3 +127,8 @@ void print_ctx_regs(seL4_UserContext *regs)
     PREG(regs, x29);
     PREG(regs, x30);
 }
+
+int decode_vcpu_reg(int rt, fault_t *f)
+{
+    return seL4_VCPUReg_Num;
+}

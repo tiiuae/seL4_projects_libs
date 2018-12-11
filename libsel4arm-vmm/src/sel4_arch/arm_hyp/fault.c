@@ -75,3 +75,85 @@ void print_ctx_regs(seL4_UserContext *regs)
     PREG(regs, sp);
     PREG(regs, cpsr);
 }
+
+/**
+ * Returns a seL4_VCPUReg if the fault affects a banked register.  Otherwise
+ * seL4_VCPUReg_Num is returned.  It uses the fault to look up what mode the
+ * processor is in and based on rt returns a banked register.
+ */
+int decode_vcpu_reg(int rt, fault_t *f)
+{
+    assert(f->pmode != PMODE_HYPERVISOR);
+    if (f->pmode == PMODE_USER || f->pmode == PMODE_SYSTEM) {
+      return seL4_VCPUReg_Num;
+    }
+
+    int reg = seL4_VCPUReg_Num;
+    if (f->pmode == PMODE_FIQ) {
+      switch (rt) {
+          case 8:
+              reg = seL4_VCPUReg_R8fiq;
+              break;
+          case 9:
+              reg = seL4_VCPUReg_R9fiq;
+              break;
+          case 10:
+              reg = seL4_VCPUReg_R10fiq;
+              break;
+          case 11:
+              reg = seL4_VCPUReg_R11fiq;
+              break;
+          case 12:
+              reg = seL4_VCPUReg_R12fiq;
+              break;
+          case 13:
+              reg = seL4_VCPUReg_SPfiq;
+              break;
+          case 14:
+              reg = seL4_VCPUReg_LRfiq;
+              break;
+          default:
+              reg = seL4_VCPUReg_Num;
+          break;
+      }
+
+    } else if (rt == 13) {
+      switch (f->pmode) {
+            case PMODE_IRQ:
+                reg = seL4_VCPUReg_SPirq;
+                break;
+            case PMODE_SUPERVISOR:
+                reg = seL4_VCPUReg_SPsvc;
+                break;
+            case PMODE_ABORT:
+                reg = seL4_VCPUReg_SPabt;
+                break;
+            case PMODE_UNDEFINED:
+                reg = seL4_VCPUReg_SPund;
+                break;
+            default:
+                ZF_LOGF("Invalid processor mode");
+        }
+
+    } else if (rt == 14) {
+        switch (f->pmode) {
+            case PMODE_IRQ:
+                reg = seL4_VCPUReg_LRirq;
+                break;
+            case PMODE_SUPERVISOR:
+                reg = seL4_VCPUReg_LRsvc;
+                break;
+            case PMODE_ABORT:
+                reg = seL4_VCPUReg_LRabt;
+                break;
+            case PMODE_UNDEFINED:
+                reg = seL4_VCPUReg_LRund;
+                break;
+            default:
+                ZF_LOGF("Invalid processor mode");
+        }
+
+    }
+
+    return reg;
+}

@@ -226,6 +226,7 @@ static inline uint32_t fault_get_addr_word(fault_t* f)
 }
 
 seL4_Word *decode_rt(int reg, seL4_UserContext *c);
+int decode_vcpu_reg(int rt, fault_t *f);
 
 #include <stdio.h>
 
