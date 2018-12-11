@@ -16,6 +16,8 @@
 #include <utils/util.h>
 #include <sel4arm-vmm/fault.h>
 
+#define SRT_MASK    0x1f
+
 static inline bool sel4arch_fault_is_thumb(fault_t *f)
 {
     return CPSR_IS_THUMB(fault_get_ctx(f)->spsr);

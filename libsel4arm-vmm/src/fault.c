@@ -44,12 +44,6 @@
 #define COLOR_ERROR "\033[1;31m"
 #define COLOR_NORMAL "\033[0m"
 
-#ifdef CONFIG_ARCH_AARCH64
-#define SRT_MASK    0x1f
-#else
-#define SRT_MASK    0xf
-#endif
-
 #define HSR_INST32                 BIT(25)
 #define HSR_IS_INST32(x)           ((x) & HSR_INST32)
 #define HSR_SYNDROME_VALID         BIT(24)
