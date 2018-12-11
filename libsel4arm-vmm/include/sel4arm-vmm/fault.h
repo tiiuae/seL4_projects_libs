@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <vka/cspacepath_t.h>
+#include <sel4arm-vmm/sel4_arch/vm.h>
 
 typedef struct vm vm_t;
 typedef struct fault fault_t;

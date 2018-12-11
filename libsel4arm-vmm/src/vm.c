@@ -28,6 +28,8 @@
 #include "devices.h"
 #include "sel4arm-vmm/guest_vspace.h"
 
+#include <sel4arm-vmm/sel4_arch/vm.h>
+
 //#define DEBUG_VM
 //#define DEBUG_RAM_FAULTS
 //#define DEBUG_DEV_FAULTS
@@ -36,18 +38,6 @@
 #define VM_CSPACE_SIZE_BITS    4
 #define VM_FAULT_EP_SLOT       1
 #define VM_CSPACE_SLOT         2
-
-#define MODE_USER       0x10
-#define MODE_FIQ        0x11
-#define MODE_IRQ        0x12
-#define MODE_SUPERVISOR 0x13
-#define MODE_MONITOR    0x16
-#define MODE_ABORT      0x17
-#define MODE_HYP        0x1a
-#define MODE_UNDEFINED  0x1b
-#define MODE_SYSTEM     0x1f
-
-#define SPSR_EL1        0x5
 
 #define CERROR    "\033[1;31m"
 #define CNORMAL   "\033[0m"
@@ -264,7 +254,7 @@ vm_create(const char* name, int priority,
 
 
 int
-vm_set_bootargs(vm_t* vm, void* pc, uint32_t mach_type, uint32_t atags)
+vm_set_bootargs(vm_t* vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags)
 {
     seL4_UserContext regs;
     seL4_CPtr tcb;
@@ -274,17 +264,7 @@ vm_set_bootargs(vm_t* vm, void* pc, uint32_t mach_type, uint32_t atags)
     tcb = vm_get_tcb(vm);
     err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
-#ifdef CONFIG_ARCH_AARCH64
-    regs.x0 = atags;
-    regs.pc = (seL4_Word)pc;
-    regs.spsr = SPSR_EL1;
-#else
-    regs.r0 = 0;
-    regs.r1 = mach_type;
-    regs.r2 = atags;
-    regs.pc = (seL4_Word)pc;
-    regs.cpsr = MODE_SUPERVISOR;
-#endif
+    sel4arch_set_bootargs(&regs, pc, mach_type, atags);
     err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
     return err;
@@ -452,11 +432,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         int idx;
         int err;
         assert(length == seL4_VGICMaintenance_Length);
-#ifdef CONFIG_ARCH_AARCH64
-        idx = seL4_GetMR(seL4_UnknownSyscall_X0);
-#else
-        idx = seL4_GetMR(seL4_UnknownSyscall_R0);
-#endif
+        idx = seL4_GetMR(seL4_UnknownSyscall_ARG0);
         /* Currently not handling spurious IRQs */
         assert(idx >= 0);
 
@@ -477,11 +453,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         fault_t* fault;
         fault = vm->fault;
         assert(length == seL4_VCPUFault_Length);
-#ifdef CONFIG_ARCH_AARCH64
-        hsr = seL4_GetMR(seL4_UnknownSyscall_X0);
-#else
-        hsr = seL4_GetMR(seL4_UnknownSyscall_R0);
-#endif
+        hsr = seL4_GetMR(seL4_UnknownSyscall_ARG0);
         /* check if the exception class (bits 26-31) of the HSR indicate WFI/WFE */
         if ( (hsr >> 26) == 1) {
             /* generate a new WFI fault */

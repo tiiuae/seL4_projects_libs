@@ -11,6 +11,7 @@
  */
 
 #include <sel4arm-vmm/sel4_arch/fault.h>
+#include <sel4arm-vmm/sel4_arch/vm.h>
 #include <assert.h>
 
 seL4_Word *decode_rt(int reg, seL4_UserContext* c)

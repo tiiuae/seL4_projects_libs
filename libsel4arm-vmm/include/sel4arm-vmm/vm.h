@@ -12,6 +12,8 @@
 #ifndef SEL4ARM_VMM_VM_H
 #define SEL4ARM_VMM_VM_H
 
+#include <sel4arm-vmm/sel4_arch/vm.h>
+
 #include <sel4utils/process.h>
 #include <platsupport/io.h>
 
@@ -154,7 +156,7 @@ int vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr);
  * @param[in] atags     Linux specific IPA of atags
  * @return              0 on success
  */
-int vm_set_bootargs(vm_t* vm, void* pc, uint32_t mach_type, uint32_t atags);
+int vm_set_bootargs(vm_t* vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags);
 
 
 /**
