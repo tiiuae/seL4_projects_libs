@@ -58,17 +58,6 @@
 #define CONTENT_STAGE              BIT(4)
 #define CONTENT_PMODE              BIT(5)
 
-typedef enum processor_mode {
-    PMODE_USER       = 0x10,
-    PMODE_FIQ        = 0x11,
-    PMODE_IRQ        = 0x12,
-    PMODE_SUPERVISOR = 0x13,
-    PMODE_ABORT      = 0x17,
-    PMODE_HYPERVISOR = 0x1a,
-    PMODE_UNDEFINED  = 0x1b,
-    PMODE_SYSTEM     = 0x1f,
-} processor_mode_t;
-
 /**
  * Data structure representating a fault
  */

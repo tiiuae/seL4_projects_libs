@@ -23,6 +23,18 @@
 #define MODE_UNDEFINED  0x1b
 #define MODE_SYSTEM     0x1f
 
+typedef enum processor_mode {
+    PMODE_USER       = MODE_USER,
+    PMODE_FIQ        = MODE_FIQ,
+    PMODE_IRQ        = MODE_IRQ,
+    PMODE_SUPERVISOR = MODE_SUPERVISOR,
+    PMODE_MONITOR    = MODE_MONITOR,
+    PMODE_ABORT      = MODE_ABORT,
+    PMODE_HYPERVISOR = MODE_HYP,
+    PMODE_UNDEFINED  = MODE_UNDEFINED,
+    PMODE_SYSTEM     = MODE_SYSTEM
+} processor_mode_t;
+
 #define seL4_UnknownSyscall_ARG0 seL4_UnknownSyscall_R0
 
 static inline void sel4arch_set_bootargs(seL4_UserContext *regs, seL4_Word pc,
