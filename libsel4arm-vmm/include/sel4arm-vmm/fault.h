@@ -13,6 +13,7 @@
 #define SEL4ARM_VMM_FAULT_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <vka/cspacepath_t.h>
 #include <sel4arm-vmm/sel4_arch/vm.h>
 
@@ -28,6 +29,44 @@ enum fault_width {
 
 #define CPSR_THUMB                 BIT(5)
 #define CPSR_IS_THUMB(x)           ((x) & CPSR_THUMB)
+
+/**
+ * Data structure representating a fault
+ */
+struct fault {
+/// The VM associated with the fault
+    vm_t *vm;
+/// Reply capability to the faulting TCB
+    cspacepath_t reply_cap;
+/// VM registers at the time of the fault
+    seL4_UserContext regs;
+
+/// The IPA address of the fault
+    seL4_Word base_addr;
+/// The IPA address of the fault at the current stage
+    seL4_Word addr;
+/// The IPA of the instruction which caused the fault
+    seL4_Word ip;
+/// The data which was to be written, or the data to return to the VM
+    seL4_Word data;
+/// Fault status register (IL and ISS fields of HSR cp15 register)
+    seL4_Word fsr;
+/// 'true' if the fault was a prefetch fault rather than a data fault
+    bool is_prefetch;
+/// 'true' if we should wait for an interrupt before finishing the fault
+    bool is_wfi;
+/// For multiple str/ldr and 32 bit access, the fault is handled in stages
+    int stage;
+/// If the instruction requires fetching, cache it here
+    seL4_Word instruction;
+/// The width of the fault
+    enum fault_width width;
+/// The mode of the processor
+    processor_mode_t pmode;
+/// The active content within the fault structure to allow lazy loading
+    int content;
+};
+typedef struct fault fault_t;
 
 /**
  * Initialise a fault structure.
