@@ -16,7 +16,7 @@
 #include <sel4arm-vmm/vm.h>
 
 #define GIC_PADDR   0x10480000
-#define MAX_VIRQS   64
+#define MAX_VIRQS   200
 
 extern const struct device dev_vram;
 
