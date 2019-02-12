@@ -17,6 +17,7 @@
 #include <sel4utils/process.h>
 #include <platsupport/io.h>
 
+#include <elf/elf.h>
 #include <simple/simple.h>
 #include <vspace/vspace.h>
 #include <vka/vka.h>
@@ -132,7 +133,7 @@ int vm_copyout(vm_t* vm, void* data, uintptr_t address, size_t size);
  * @param[in] elf_data The address of the ELF file header
  * @return             On success, returns the IPA entry point of the ELF file
  */
-void* vm_copyout_elf(vm_t* vm, void* elf_data);
+void *vm_copyout_elf(vm_t *vm, elf_t *elf_data);
 
 /**
  * Copy out an atag list to the VM.

@@ -67,7 +67,7 @@ is_dtb(void* file)
 enum img_type
 image_get_type(void* file)
 {
-    if (elf_checkFile(file) == 0) {
+    if (elf_check_magic(file) == 0) {
         return IMG_ELF;
     } else if (is_zImage(file) == 0) {
         return IMG_ZIMAGE;

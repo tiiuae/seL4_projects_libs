@@ -148,11 +148,11 @@ vm_copyout(vm_t* vm, void* data, uintptr_t address, size_t size)
 }
 
 void*
-vm_copyout_elf(vm_t* vm, void* elf_file)
+vm_copyout_elf(vm_t *vm, elf_t *elf_file)
 {
-    long entry;
-    int num_headers;
-    int i;
+    uintptr_t entry;
+    size_t num_headers;
+    size_t i;
 
     entry = elf_getEntryPoint(elf_file);
     if (entry == 0) {
@@ -166,7 +166,7 @@ vm_copyout_elf(vm_t* vm, void* elf_file)
             char *data;
             int err;
 
-            data = elf_file + elf_getProgramHeaderOffset(elf_file, i);
+            data = elf_getProgramSegment(elf_file, i);
             size = elf_getProgramHeaderFileSize(elf_file, i);
             ipa = elf_getProgramHeaderVaddr(elf_file, i);
 
