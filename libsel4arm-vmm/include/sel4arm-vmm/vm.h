@@ -27,6 +27,7 @@
 #include <sel4arm-vmm/fault.h>
 
 #include <sel4vmm-core/util/io.h>
+#include <sel4pci/pci.h>
 
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 #include <sel4arm-vmm/vchan_vm_component.h>
@@ -71,6 +72,8 @@ struct vm {
     /* Fault structure */
     fault_t *fault;
 
+    /* Virtual PCI Host Bridge */
+    vmm_pci_space_t pci;
     /* IOPort Manager */
     vmm_io_port_list_t io_port;
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
