@@ -34,16 +34,19 @@ int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_
                 ZF_LOGE("Failed to map PCI bar %p size %zu", (void*)(uintptr_t)cfg->base_addr[i], size);
                 return -1;
             }
-            bars[bar].ismem = 1;
             bars[bar].address = addr;
-            bars[bar].prefetchable = cfg->base_addr_prefetchable[i];
+            if(cfg->base_addr_prefetchable[i]) {
+                bars[bar].mem_type = PREFETCH_MEM;
+            } else {
+                bars[bar].mem_type = NON_PREFETCH_MEM;
+            }
         } else {
             /* Need to add the IO port range */
             int error = vmm_io_port_add_passthrough(&vmm->io_port, cfg->base_addr[i], cfg->base_addr[i] + size - 1, "PCI Passthrough Device");
             if (error) {
                 return error;
             }
-            bars[bar].ismem=0;
+            bars[bar].mem_type = NON_MEM;
             bars[bar].address = cfg->base_addr[i];
             bars[bar].prefetchable = 0;
         }

@@ -59,12 +59,16 @@ typedef struct vmm_pci_device_def {
     void *caps;
 } PACKED vmm_pci_device_def_t;
 
+typedef enum pci_mem_type {
+    NON_MEM = 0,
+    NON_PREFETCH_MEM,
+    PREFETCH_MEM
+} pci_mem_type_t;
+
 typedef struct vmm_pci_bar {
-    int ismem;
+    pci_mem_type_t mem_type;
     /* Address must be size aligned */
     uintptr_t address;
-    /* only if memory */
-    int prefetchable;
     size_t size_bits;
 } vmm_pci_bar_t;
 

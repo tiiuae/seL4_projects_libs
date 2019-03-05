@@ -141,10 +141,10 @@ static uint32_t pci_make_bar(pci_bar_emulation_t *emul, int bar) {
     }
     uint32_t raw = 0;
     raw |= emul->bars[bar].address;
-    if (!emul->bars[bar].ismem) {
+    if (!(emul->bars[bar].mem_type)) {
         raw |= 1;
     } else {
-        if (emul->bars[bar].prefetchable) {
+        if (emul->bars[bar].mem_type == PREFETCH_MEM) {
             raw |= BIT(3);
         }
     }
