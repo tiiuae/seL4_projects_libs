@@ -63,9 +63,9 @@ typedef struct vmm_pci_bar {
     int ismem;
     /* Address must be size aligned */
     uintptr_t address;
-    int size_bits;
     /* only if memory */
     int prefetchable;
+    size_t size_bits;
 } vmm_pci_bar_t;
 
 typedef struct pci_bar_emulation {
