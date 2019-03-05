@@ -57,7 +57,7 @@ typedef struct vmm_pci_device_def {
     /* Now additional pointer to arbitrary capabilities */
     int caps_len;
     void *caps;
-} __attribute__((packed)) vmm_pci_device_def_t;
+} PACKED vmm_pci_device_def_t;
 
 typedef struct vmm_pci_bar {
     int ismem;
