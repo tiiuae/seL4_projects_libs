@@ -22,10 +22,10 @@ static int io_port_cmp(const void *pkey, const void *pelem) {
     unsigned int key = (unsigned int)(uintptr_t)pkey;
     const ioport_entry_t *entry = (const ioport_entry_t*)pelem;
     const ioport_range_t *elem = &entry->range;
-    if (key < elem->port_start) {
+    if (key < elem->start) {
         return -1;
     }
-    if (key > elem->port_end) {
+    if (key > elem->end) {
         return 1;
     }
     return 0;
@@ -36,7 +36,7 @@ static int io_port_cmp2(const void *a, const void *b) {
     const ioport_range_t *a_range = &a_entry->range;
     const ioport_entry_t *b_entry = (const ioport_entry_t*)b;
     const ioport_range_t *b_range = &b_entry->range;
-    return a_range->port_start - b_range->port_start;
+    return a_range->start - b_range->start;
 }
 
 static ioport_entry_t *search_port(vmm_io_port_list_t *io_port, unsigned int port_no) {
@@ -88,9 +88,9 @@ int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, int is
 static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_entry_t port) {
     /* ensure this range does not overlap */
     for (int i = 0; i < io_list->num_ioports; i++) {
-        if (io_list->ioports[i].range.port_end > port.range.port_start && io_list->ioports[i].range.port_start < port.range.port_end) {
+        if (io_list->ioports[i].range.end > port.range.start && io_list->ioports[i].range.start < port.range.end) {
             ZF_LOGE("Requested ioport range 0x%x-0x%x for %s overlaps with existing range 0x%x-0x%x for %s",
-                port.range.port_start, port.range.port_end, port.interface.desc ? port.interface.desc : "Unknown IO Port", io_list->ioports[i].range.port_start, io_list->ioports[i].range.port_end, io_list->ioports[i].interface.desc ? io_list->ioports[i].interface.desc : "Unknown IO Port");
+                port.range.start, port.range.end, port.interface.desc ? port.interface.desc : "Unknown IO Port", io_list->ioports[i].range.start, io_list->ioports[i].range.end, io_list->ioports[i].interface.desc ? io_list->ioports[i].interface.desc : "Unknown IO Port");
             return -1;
         }
     }

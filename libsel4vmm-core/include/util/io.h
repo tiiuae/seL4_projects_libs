@@ -22,8 +22,8 @@ typedef enum ioport_type {
 } ioport_type_t;
 
 typedef struct ioport_range {
-    uint16_t port_start;
-    uint16_t port_end;
+    uint16_t start;
+    uint16_t end;
 } ioport_range_t;
 
 typedef struct ioport_interface {
