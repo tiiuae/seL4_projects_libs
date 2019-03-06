@@ -12,21 +12,26 @@
 
 #pragma once
 
-
 #include <sel4vmm-core/util/io.h>
 #include <sel4pci/pci.h>
 #include <sel4pci/virtio_emul.h>
 
+/* Virtio net driver interface */
 typedef struct virtio_net {
+    /* IO Port base for Virtio net device */
     unsigned int iobase;
+    /* Virtio Ethernet emulation interface: VMM <-> Guest */
     ethif_virtio_emul_t *emul;
+    /* Backend  Ethernet driver interface: VMM <-> Ethernet driver */
     struct eth_driver *emul_driver;
+    /* Virtio Ethernet emulation functions: VMM <-> Guest */
     struct raw_iface_funcs emul_driver_funcs;
+    /* ioops for dma management */
     ps_io_ops_t ioops;
 } virtio_net_t;
 
 /**
- * Initialise a new virtio_net device with BARs starting at iobase and backend functions
+ * Initialise a new virtio_net device with Base Address Registers (BARs) starting at iobase and backend functions
  *
  * specified by the raw_iface_funcs struct.
  * @param emul_vm arch specfic vm cookie
