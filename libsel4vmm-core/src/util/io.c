@@ -18,7 +18,7 @@
 #include <sel4utils/util.h>
 #include <sel4vmm-core/util/io.h>
 
-static int io_port_cmp(const void *pkey, const void *pelem) {
+static int io_port_compare_by_range(const void *pkey, const void *pelem) {
     unsigned int key = (unsigned int)(uintptr_t)pkey;
     const ioport_entry_t *entry = (const ioport_entry_t*)pelem;
     const ioport_range_t *elem = &entry->range;
@@ -31,7 +31,7 @@ static int io_port_cmp(const void *pkey, const void *pelem) {
     return 0;
 }
 
-static int io_port_cmp2(const void *a, const void *b) {
+static int io_port_compare_by_start (const void *a, const void *b) {
     const ioport_entry_t *a_entry = (const ioport_entry_t*)a;
     const ioport_range_t *a_range = &a_entry->range;
     const ioport_entry_t *b_entry = (const ioport_entry_t*)b;
@@ -40,7 +40,7 @@ static int io_port_cmp2(const void *a, const void *b) {
 }
 
 static ioport_entry_t *search_port(vmm_io_port_list_t *io_port, unsigned int port_no) {
-    return (ioport_entry_t*)bsearch((void*)(uintptr_t)port_no, io_port->ioports, io_port->num_ioports, sizeof(ioport_entry_t), io_port_cmp);
+    return (ioport_entry_t*)bsearch((void*)(uintptr_t)port_no, io_port->ioports, io_port->num_ioports, sizeof(ioport_entry_t), io_port_compare_by_range);
 }
 
 /* Debug helper function for port no. */
@@ -101,7 +101,7 @@ static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_entry_t port) {
     io_list->ioports[io_list->num_ioports] = port;
     io_list->num_ioports++;
     /* sort */
-    qsort(io_list->ioports, io_list->num_ioports, sizeof(ioport_entry_t), io_port_cmp2);
+    qsort(io_list->ioports, io_list->num_ioports, sizeof(ioport_entry_t), io_port_compare_by_start);
     return 0;
 }
 
