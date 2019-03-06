@@ -16,30 +16,42 @@
 typedef int (*ioport_in_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result);
 typedef int (*ioport_out_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int value);
 
+typedef enum ioport_type {
+    IOPORT_EMULATED,
+    IOPORT_PASSTHROUGH,
+} ioport_type_t;
+
 typedef struct ioport_range {
-    unsigned int port_start;
-    unsigned int port_end;
+    uint16_t port_start;
+    uint16_t port_end;
+} ioport_range_t;
 
-    int passthrough;
-
-    /* If not passthrough, then handler functions */
+typedef struct ioport_interface {
     void *cookie;
+    /* ioport handler functions */
     ioport_in_fn port_in;
     ioport_out_fn port_out;
-
+    /* ioport description (for debugging) */
     const char* desc;
-} ioport_range_t;
+} ioport_interface_t;
+
+typedef struct ioport_entry {
+    ioport_range_t range;
+    ioport_interface_t interface;
+    /* ioport type (Passthrough or emulated)*/
+    ioport_type_t ioport_type;
+} ioport_entry_t;
 
 typedef struct vmm_io_list {
     int num_ioports;
     /* Sorted list of ioport functions */
-    ioport_range_t *ioports;
+    ioport_entry_t *ioports;
 } vmm_io_port_list_t;
 
 /* Initialize the io port list manager */
 int vmm_io_port_init(vmm_io_port_list_t *io_list);
 
 /* Add an io port range for emulation */
-int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, uint16_t start, uint16_t end, void *cookie, ioport_in_fn port_in, ioport_out_fn port_out, const char *desc);
+int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t ioport_range, ioport_interface_t ioport_interface);
 
 int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, int is_in, int size, unsigned int *data);
