@@ -21,7 +21,7 @@ int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_
         }
         size_t size = cfg->base_addr_size[i];
         assert(size != 0);
-        int size_bits = 31 - CLZ(size);
+        int size_bits = BYTES_TO_SIZE_BITS(size);
         if (BIT(size_bits) != size) {
             ZF_LOGE("PCI bar is not power of 2 size (%zu)", size);
             return -1;
