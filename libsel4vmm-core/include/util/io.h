@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -15,7 +15,6 @@
 #include <stdint.h>
 
 #include <sel4/sel4.h>
-#include <simple/simple.h>
 
 typedef int (*ioport_in_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result);
 typedef int (*ioport_out_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int value);
@@ -43,12 +42,7 @@ typedef struct vmm_io_list {
 /* Initialize the io port list manager */
 int vmm_io_port_init(vmm_io_port_list_t *io_list);
 
-/* Add an io port range for pass through */
-int vmm_io_port_add_passthrough(vmm_io_port_list_t *io_list, uint16_t start, uint16_t end, const char *desc);
-
 /* Add an io port range for emulation */
 int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, uint16_t start, uint16_t end, void *cookie, ioport_in_fn port_in, ioport_out_fn port_out, const char *desc);
 
-/* Add io ports to guest vcpu */
-int vmm_io_port_init_guest(vmm_io_port_list_t *io_list, simple_t *simple, seL4_CPtr vcpu, vka_t *vka);
-
+int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, int is_in, int size, unsigned int *data);
