@@ -13,8 +13,6 @@
 
 #include <stdint.h>
 
-#include <sel4/sel4.h>
-
 typedef int (*ioport_in_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result);
 typedef int (*ioport_out_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int value);
 

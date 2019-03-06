@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <sel4/sel4.h>
 #include <sel4utils/util.h>
 #include <sel4vmm-core/util/io.h>
 
