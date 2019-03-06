@@ -25,7 +25,7 @@
 
 #define QUEUE_SIZE 128
 
-static virtio_net_t *virtio_net = NULL;
+static ps_io_ops_t ops;
 
 static int virtio_net_io_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result) {
     virtio_net_t *net = (virtio_net_t*)cookie;
@@ -115,10 +115,10 @@ struct raw_iface_funcs virtio_net_default_backend() {
 }
 
 static vmm_pci_entry_t vmm_virtio_net_pci_bar(unsigned int iobase,
-                size_t iobase_size_bits, unsigned int interrupt_pin, unsigned int interrupt_line) {
-    vmm_pci_device_def_t *pci_config = malloc(sizeof(*pci_config));
-    assert(pci_config);
-    memset(pci_config, 0, sizeof(*pci_config));
+        size_t iobase_size_bits, unsigned int interrupt_pin, unsigned int interrupt_line) {
+    vmm_pci_device_def_t *pci_config;
+    int err = ps_calloc(&ops.malloc_ops, 1, sizeof(*pci_config),(void **)&pci_config);
+    ZF_LOGF_IF(err, "Failed to allocate pci config");
     *pci_config = (vmm_pci_device_def_t) {
         .vendor_id = VIRTIO_PCI_VENDOR_ID,
         .device_id = VIRTIO_NET_PCI_DEVICE_ID,
@@ -152,14 +152,16 @@ static vmm_pci_entry_t vmm_virtio_net_pci_bar(unsigned int iobase,
 virtio_net_t *common_make_virtio_net(virtio_emul_vm_t *emul_vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
         unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
         struct raw_iface_funcs backend) {
-
     size_t iobase_size_bits = BYTES_TO_SIZE_BITS(iobase_size);
+    int err = ps_new_stdlib_malloc_ops(&ops.malloc_ops);
+    ZF_LOGF_IF(err, "Failed to get malloc ops");
     vmm_pci_entry_t entry = vmm_virtio_net_pci_bar(iobase, iobase_size_bits, interrupt_pin, interrupt_line);
     vmm_pci_add_entry(pci, entry, NULL);
 
-    virtio_net_t *net = malloc(sizeof(*net));
-    assert(net);
-    memset(net, 0, sizeof(*net));
+    virtio_net_t *net;
+    err = ps_calloc(&ops.malloc_ops, 1, sizeof(*net),(void **)&net);
+    ZF_LOGF_IF(err, "Failed to allocate virtio net");
+
     net->iobase = iobase;
 
     ioport_range_t virtio_io_range = {iobase, iobase + iobase_size};
