@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -10,11 +10,12 @@
  * @TAG(DATA61_GPL)
  */
 
-#ifndef VM_INIT_VIRTIO_NET_H
-#define VM_INIT_VIRTIO_NET_H
+#pragma once
 
-void make_virtio_net(vmm_t *vmm);
-void virtio_net_notify(vmm_t *vmm);
+
+#include <sel4vmm-core/util/io.h>
+#include <sel4pci/pci.h>
+#include <sel4pci/virtio_emul.h>
 
 typedef struct virtio_net {
     unsigned int iobase;
@@ -28,18 +29,23 @@ typedef struct virtio_net {
  * Initialise a new virtio_net device with BARs starting at iobase and backend functions
  *
  * specified by the raw_iface_funcs struct.
- * @param vmm handle to vmm data
+ * @param emul_vm arch specfic vm cookie
+ * @param pci PCI library instance to register virtio net device
+ * @param ioport IOPort library instance to register virtio net ioport
  * @param iobase starting BAR port for front end emulation to start from
+ * @param iosize size of starting BAR port for front end emulation
+ * @param interrupt_pin PCI interrupt pin e.g. INTA = 1, INTB = 2 ,...
+ * @param interrupt_line PCI interrupt line for virtio net IRQS
  * @param backend function pointers to backend implementation. Can be initialised by
  *  virtio_net_default_backend for default methods.
  * @return pointer to an initialised virtio_net_t, NULL if error.
  */
-virtio_net_t *common_make_virtio_net(vmm_t *vmm, unsigned int iobase, struct raw_iface_funcs backend);
+virtio_net_t *common_make_virtio_net(virtio_emul_vm_t *emul_vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
+        unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
+        struct raw_iface_funcs backend);
 
 /**
- * @return a struct with a default virtio_net backend. It is the responsibility of the caller to
- *  update these function pointers with its own custom backend.
- */
+* @return a struct with a default virtio_net backend. It is the responsibility of the caller to
+*  update these function pointers with its own custom backend.
+*/
 struct raw_iface_funcs virtio_net_default_backend(void);
-
-#endif

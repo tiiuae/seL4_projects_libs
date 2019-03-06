@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -11,46 +11,32 @@
  */
 
 #include <stdio.h>
-#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
-#include <autoconf.h>
 
-#include <sel4platsupport/arch/io.h>
-#include <sel4utils/vspace.h>
-#include <sel4utils/iommu_dma.h>
-#include <simple/simple_helpers.h>
-#include <vka/capops.h>
-#include <utils/util.h>
+#include <sel4/sel4.h>
+#include <platsupport/io.h>
 
-#include <camkes.h>
-#include <camkes/dataport.h>
+#include <sel4vmm-core/drivers/virtio_net/virtio.h>
+#include <sel4vmm-core/drivers/virtio_net/virtio_net.h>
 
-#include <ethdrivers/virtio/virtio_pci.h>
-#include <ethdrivers/virtio/virtio_net.h>
-#include <ethdrivers/virtio/virtio_ring.h>
-
-#include "vmm/vmm.h"
-#include "vmm/driver/pci_helper.h"
-#include "vmm/driver/virtio_emul.h"
-#include "vmm/platform/ioports.h"
-#include "vmm/platform/guest_vspace.h"
-
-#include "virtio_net.h"
-#include "vm.h"
-#include "i8259.h"
-
-#define VIRTIO_VID 0x1af4
-#define VIRTIO_DID_START 0x1000
+#include <pci/helper.h>
+#include <sel4pci/pci_helper.h>
 
 #define QUEUE_SIZE 128
-
 
 static virtio_net_t *virtio_net = NULL;
 
 static int virtio_net_io_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result) {
     virtio_net_t *net = (virtio_net_t*)cookie;
     unsigned int offset = port_no - net->iobase;
-    return net->emul->io_in(net->emul, offset, size, result);
+    unsigned int val;
+    int err = net->emul->io_in(net->emul, offset, size, &val);
+    if(err) {
+        return err;
+    }
+    *result = val;
+    return 0;
 }
 
 static int virtio_net_io_out(void *cookie, unsigned int port_no, unsigned int size, unsigned int value) {
@@ -66,7 +52,7 @@ static int emul_raw_tx(struct eth_driver *driver, unsigned int num, uintptr_t *p
 }
 
 static void emul_raw_handle_irq(struct eth_driver *driver, int irq) {
-    i8259_gen_irq(6);
+    ZF_LOGF("not implemented");
 }
 
 static void emul_raw_poll(struct eth_driver *driver) {
@@ -128,41 +114,57 @@ struct raw_iface_funcs virtio_net_default_backend() {
     return emul_driver_funcs;
 }
 
-static vmm_pci_entry_t vmm_virtio_net_pci_bar(unsigned int iobase) {
+static vmm_pci_entry_t vmm_virtio_net_pci_bar(unsigned int iobase,
+                size_t iobase_size_bits, unsigned int interrupt_pin, unsigned int interrupt_line) {
     vmm_pci_device_def_t *pci_config = malloc(sizeof(*pci_config));
     assert(pci_config);
     memset(pci_config, 0, sizeof(*pci_config));
     *pci_config = (vmm_pci_device_def_t) {
-        .vendor_id = VIRTIO_VID,
-        .device_id = VIRTIO_DID_START,
+        .vendor_id = VIRTIO_PCI_VENDOR_ID,
+        .device_id = VIRTIO_NET_PCI_DEVICE_ID,
+        .command = PCI_COMMAND_IO | PCI_COMMAND_MEMORY,
+        .header_type = PCI_HEADER_TYPE_NORMAL,
+		.subsystem_vendor_id	= VIRTIO_PCI_SUBSYSTEM_VENDOR_ID,
+		.subsystem_id		= VIRTIO_ID_NET,
+        .interrupt_pin = interrupt_pin,
+        .interrupt_line = interrupt_line,
+        .bar0 = iobase | PCI_BASE_ADDRESS_SPACE_IO,
         .cache_line_size = 64,
         .latency_timer = 64,
-        .subsystem_id = 1,
-        .interrupt_pin = 6,
-        .interrupt_line = 6
+        .prog_if = VIRTIO_PCI_CLASS_NET & 0xff,
+        .subclass = (VIRTIO_PCI_CLASS_NET >> 8) & 0xff,
+        .class_code = (VIRTIO_PCI_CLASS_NET >> 16) & 0xff,
     };
     vmm_pci_entry_t entry = (vmm_pci_entry_t) {
         .cookie = pci_config,
         .ioread = vmm_pci_mem_device_read,
-        .iowrite = vmm_pci_entry_ignore_write
+        .iowrite = vmm_pci_mem_device_write
     };
+
     vmm_pci_bar_t bars[1] = {{
-        .ismem = 0,
+        .mem_type = NON_MEM,
         .address = iobase,
-        .size_bits = 6
+        .size_bits = iobase_size_bits
     }};
     return vmm_pci_create_bar_emulation(entry, 1, bars);
-
 }
 
-virtio_net_t *common_make_virtio_net(vmm_t *vmm, unsigned int iobase, struct raw_iface_funcs backend) {
-    vmm_pci_entry_t entry = vmm_virtio_net_pci_bar(iobase);
-    vmm_pci_add_entry(&vmm->pci, entry, NULL);
+virtio_net_t *common_make_virtio_net(virtio_emul_vm_t *emul_vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
+        unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
+        struct raw_iface_funcs backend) {
+
+    size_t iobase_size_bits = BYTES_TO_SIZE_BITS(iobase_size);
+    vmm_pci_entry_t entry = vmm_virtio_net_pci_bar(iobase, iobase_size_bits, interrupt_pin, interrupt_line);
+    vmm_pci_add_entry(pci, entry, NULL);
+
     virtio_net_t *net = malloc(sizeof(*net));
     assert(net);
     memset(net, 0, sizeof(*net));
     net->iobase = iobase;
-    vmm_io_port_add_handler(&vmm->io_port, iobase, iobase + MASK(6), net, virtio_net_io_in, virtio_net_io_out, "VIRTIO PCI NET");
+
+    ioport_range_t virtio_io_range = {iobase, iobase + iobase_size};
+    ioport_interface_t virtio_io_interface = {net, virtio_net_io_in, virtio_net_io_out, "VIRTIO PCI NET"};
+    vmm_io_port_add_handler(ioport, virtio_io_range, virtio_io_interface);
 
     ps_io_ops_t ioops;
 	ioops.dma_manager = (ps_dma_man_t) {
@@ -175,7 +177,8 @@ virtio_net_t *common_make_virtio_net(vmm_t *vmm, unsigned int iobase, struct raw
     };
 
     net->emul_driver_funcs = backend;
-    net->emul = ethif_virtio_emul_init(ioops, QUEUE_SIZE, &vmm->guest_mem.vspace, emul_driver_init, net);
+    net->emul = ethif_virtio_emul_init(ioops, QUEUE_SIZE, emul_vm, emul_driver_init, net);
+
     assert(net->emul);
     return net;
 }
