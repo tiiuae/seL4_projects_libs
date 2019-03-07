@@ -14,9 +14,6 @@
 
 #include <platsupport/io.h>
 #include <ethdrivers/raw.h>
-#include <vspace/vspace.h>
-#include <sel4arm-vmm/vm.h>
-
 #include <sel4pci/vmm_virtio_emul.h>
 
 struct ethif_virtio_emul_internal;

@@ -19,7 +19,6 @@
 #include <pci/helper.h>
 
 #include <sel4pci/pci_helper.h>
-#include <sel4arm-vmm/vm.h>
 
 int vmm_pci_mem_device_read(void *cookie, int offset, int size, uint32_t *result) {
     if (offset < 0) {
