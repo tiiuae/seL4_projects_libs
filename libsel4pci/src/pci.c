@@ -23,7 +23,6 @@
 
 #include <sel4pci/pci.h>
 #include <sel4pci/pci_helper.h>
-#include <sel4pci/debug.h>
 
 int vmm_pci_init(vmm_pci_space_t *space) {
     for (int i = 0; i < 32; i++) {
@@ -104,7 +103,7 @@ int vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, un
         if (addr.bus != 0) {
             ZF_LOGI("Guest attempted access to non existent device %02x:%02x.%d register 0x%x", addr.bus, addr.dev, addr.fun, reg);
         } else {
-            DPRINTF(3, "Ignoring guest probe for device %02x:%02x.%d register 0x%x\n", addr.bus, addr.dev, addr.fun, reg);
+            ZF_LOGI("Ignoring guest probe for device %02x:%02x.%d register 0x%x", addr.bus, addr.dev, addr.fun, reg);
         }
         *result = -1;
         return 0;
