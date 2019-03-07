@@ -30,6 +30,7 @@
 #include "sel4arm-vmm/guest_vspace.h"
 
 #include <sel4arm-vmm/sel4_arch/vm.h>
+#include <sel4vmm-core/util/io.h>
 
 //#define DEBUG_VM
 //#define DEBUG_RAM_FAULTS
@@ -209,6 +210,9 @@ vm_create(const char* name, int priority,
     /* Initialise fault system */
     vm->fault = fault_init(vm);
     assert(vm->fault);
+
+    /* Initialise IOPorts */
+    vmm_io_port_init(&vm->io_port);
 
     return err;
 }

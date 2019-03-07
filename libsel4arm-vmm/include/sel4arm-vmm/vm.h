@@ -26,6 +26,8 @@
 #include <sel4arm-vmm/devices.h>
 #include <sel4arm-vmm/fault.h>
 
+#include <sel4vmm-core/util/io.h>
+
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 #include <sel4arm-vmm/vchan_vm_component.h>
 #include <sel4vchan/vchan_component.h>
@@ -69,6 +71,8 @@ struct vm {
     /* Fault structure */
     fault_t *fault;
 
+    /* IOPort Manager */
+    vmm_io_port_list_t io_port;
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     /* Installed vchan connections */
     camkes_vchan_con_t **vchan_cons;
