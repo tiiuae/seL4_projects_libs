@@ -34,9 +34,7 @@ typedef struct ethif_virtio_emul_internal {
     uint16_t queue_size[2];
     uint32_t queue_pfn[2];
     uint16_t last_idx[2];
-    vspace_t guest_vspace;
-    //XXX: ARM SPECIFIC
-    vm_t *vm;
+    virtio_emul_vm_t *emul_vm;
     ps_dma_man_t dma_man;
 } ethif_virtio_emul_internal_t;
 
@@ -45,50 +43,30 @@ typedef struct emul_tx_cookie {
     void *vaddr;
 } emul_tx_cookie_t;
 
-static int read_guest_mem(uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie) {
-    memcpy(cookie + offset, vaddr, size);
-    return 0;
-}
-
-static int write_guest_mem(uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie) {
-    memcpy(vaddr, cookie + offset, size);
-    return 0;
-}
-
 static uint16_t ring_avail_idx(ethif_virtio_emul_t *emul, struct vring *vring) {
     uint16_t idx;
-    // XXX: ARM SPECIFIC
-    vm_copyin(emul->internal->vm, &idx, (uintptr_t)&vring->avail->idx, sizeof(vring->avail->idx));
-    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->avail->idx, sizeof(vring->avail->idx), read_guest_mem, &idx);
+    vm_guest_read_mem(emul->internal->emul_vm, &idx, (uintptr_t)&vring->avail->idx, sizeof(vring->avail->idx));
     return idx;
 }
 
 static uint16_t ring_avail(ethif_virtio_emul_t *emul, struct vring *vring, uint16_t idx) {
     uint16_t elem;
-    // XXX: ARM SPECIFIC
-    vm_copyin(emul->internal->vm, &elem, (uintptr_t)&(vring->avail->ring[idx % vring->num]), sizeof(elem));
-    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&(vring->avail->ring[idx % vring->num]), sizeof(elem), read_guest_mem, &elem);
+    vm_guest_read_mem(emul->internal->emul_vm, &elem, (uintptr_t)&(vring->avail->ring[idx % vring->num]), sizeof(elem));
     return elem;
 }
 
 static struct vring_desc ring_desc(ethif_virtio_emul_t *emul, struct vring *vring, uint16_t idx) {
     struct vring_desc desc;
-    // XXX: ARM SPECIFIC
-    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&(vring->desc[idx]), sizeof(desc), read_guest_mem, &desc);
-    vm_copyin(emul->internal->vm, &desc, (uintptr_t)&(vring->desc[idx]), sizeof(desc));
+    vm_guest_read_mem(emul->internal->emul_vm, &desc, (uintptr_t)&(vring->desc[idx]), sizeof(desc));
     return desc;
 }
 
 static void ring_used_add(ethif_virtio_emul_t *emul, struct vring *vring, struct vring_used_elem elem) {
     uint16_t guest_idx;
-    // XXX: ARM SPECIFIC
-    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx), read_guest_mem, &guest_idx);
-    vm_copyin(emul->internal->vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
-    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->used->ring[guest_idx % vring->num], sizeof(elem), write_guest_mem, &elem);
-    vm_copyout(emul->internal->vm, &elem, (uintptr_t)&vring->used->ring[guest_idx % vring->num], sizeof(elem));
+    vm_guest_read_mem(emul->internal->emul_vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
+    vm_guest_write_mem(emul->internal->emul_vm, &elem, (uintptr_t)&vring->used->ring[guest_idx % vring->num], sizeof(elem));
     guest_idx++;
-    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx), write_guest_mem, &guest_idx);
-    vm_copyout(emul->internal->vm, &guest_idx,(uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
+    vm_guest_write_mem(emul->internal->emul_vm, &guest_idx,(uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
 }
 
 static uintptr_t emul_allocate_rx_buf(void *iface, size_t buf_size, void **cookie) {
@@ -146,9 +124,7 @@ static void emul_rx_complete(void *iface, unsigned int num_bufs, void **cookies,
                 buf_base = cookies[current_buf];
             }
             copy = MIN(copy, desc.len - desc_written);
-            // XXX: ARM SPECIFIC 
-            vm_copyout(emul->internal->vm, buf_base + buf_written,(uintptr_t)desc.addr + desc_written, copy);
-            //vmm_guest_vspace_touch(&net->guest_vspace, (uintptr_t)desc.addr + desc_written, copy, write_guest_mem, buf_base + buf_written);
+            vm_guest_write_mem(emul->internal->emul_vm, buf_base + buf_written,(uintptr_t)desc.addr + desc_written, copy);
             /* update amounts */
             tot_written += copy;
             desc_written += copy;
@@ -245,9 +221,7 @@ static void emul_notify_tx(ethif_virtio_emul_t *emul) {
             /* truncate packets that are too large */
             uint32_t this_len = desc.len - skip;
             this_len = MIN(BUF_SIZE - len, this_len);
-            // XXX: ARM SPECIFIC
-            vm_copyin(emul->internal->vm, vaddr + len, (uintptr_t)desc.addr + skip, this_len);
-            //vmm_guest_vspace_touch(&net->guest_vspace, (uintptr_t)desc.addr + skip, this_len, read_guest_mem, vaddr + len);
+            vm_guest_read_mem(emul->internal->emul_vm, vaddr + len, (uintptr_t)desc.addr + skip, this_len);
             len += this_len;
             desc_idx = desc.next;
         } while (desc.flags & VRING_DESC_F_NEXT);
@@ -365,11 +339,7 @@ static int emul_notify(ethif_virtio_emul_t *emul) {
     return 0;
 }
 
-void ethif_virtio_set_vm(ethif_virtio_emul_t *emul, vm_t *vm) {
-    emul->internal->vm = vm;
-}
-
-ethif_virtio_emul_t *ethif_virtio_emul_init(ps_io_ops_t io_ops, int queue_size, vspace_t *guest_vspace, ethif_driver_init driver, void *config) {
+ethif_virtio_emul_t *ethif_virtio_emul_init(ps_io_ops_t io_ops, int queue_size, virtio_emul_vm_t *emul_vm, ethif_driver_init driver, void *config) {
     ethif_virtio_emul_t *emul = NULL;
     ethif_virtio_emul_internal_t *internal = NULL;
     int err;
@@ -391,8 +361,8 @@ ethif_virtio_emul_t *ethif_virtio_emul_init(ps_io_ops_t io_ops, int queue_size, 
     vring_init(&internal->vring[TX_QUEUE], emul->internal->queue_size[RX_QUEUE], 0, VIRTIO_PCI_VRING_ALIGN);
     internal->driver.cb_cookie = emul;
     internal->driver.i_cb = emul_callbacks;
-    internal->guest_vspace = *guest_vspace;
     internal->dma_man = io_ops.dma_manager;
+    internal->emul_vm = emul_vm;
     err = driver(&internal->driver, io_ops, config);
     if (err) {
         ZF_LOGE("Fafiled to initialize driver");
