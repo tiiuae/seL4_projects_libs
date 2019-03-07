@@ -9,7 +9,7 @@
  *
  * @TAG(DATA61_GPL)
  */
-/* x86 VMM PCI Driver, which manages the host's PCI devices, and handles guest OS PCI config space
+/* VMM PCI Driver, which manages the host's PCI devices, and handles guest OS PCI config space
  * read & writes.
  */
 
@@ -21,10 +21,9 @@
 #include <pci/pci.h>
 #include <pci/helper.h>
 
-#include "vmm/debug.h"
-#include "vmm/vmm.h"
-#include "vmm/driver/pci.h"
-#include "vmm/driver/pci_helper.h"
+#include <sel4pci/pci.h>
+#include <sel4pci/pci_helper.h>
+#include <sel4pci/debug.h>
 
 int vmm_pci_init(vmm_pci_space_t *space) {
     for (int i = 0; i < 32; i++) {
@@ -62,14 +61,14 @@ int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_add
     return -1;
 }
 
-static void make_addr_reg_from_config(uint32_t conf, vmm_pci_address_t *addr, uint8_t *reg) {
+void make_addr_reg_from_config(uint32_t conf, vmm_pci_address_t *addr, uint8_t *reg) {
     addr->bus = (conf >> 16) & MASK(8);
     addr->dev = (conf >> 11) & MASK(5);
     addr->fun = (conf >> 8) & MASK(3);
     *reg = conf & MASK(8);
 }
 
-static vmm_pci_entry_t *find_device(vmm_pci_space_t *self, vmm_pci_address_t addr) {
+vmm_pci_entry_t *find_device(vmm_pci_space_t *self, vmm_pci_address_t addr) {
     if (addr.bus != 0 || addr.dev >= 32 || addr.fun >= 8) {
         return NULL;
     }

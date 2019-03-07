@@ -14,7 +14,7 @@
 
 #include <string.h>
 
-#include <vmm/driver/virtio_emul.h>
+#include <sel4pci/virtio_emul.h>
 #include <ethdrivers/virtio/virtio_pci.h>
 #include <ethdrivers/virtio/virtio_net.h>
 #include <ethdrivers/virtio/virtio_ring.h>
@@ -35,6 +35,8 @@ typedef struct ethif_virtio_emul_internal {
     uint32_t queue_pfn[2];
     uint16_t last_idx[2];
     vspace_t guest_vspace;
+    //XXX: ARM SPECIFIC
+    vm_t *vm;
     ps_dma_man_t dma_man;
 } ethif_virtio_emul_internal_t;
 
@@ -55,28 +57,38 @@ static int write_guest_mem(uintptr_t phys, void *vaddr, size_t size, size_t offs
 
 static uint16_t ring_avail_idx(ethif_virtio_emul_t *emul, struct vring *vring) {
     uint16_t idx;
-    vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->avail->idx, sizeof(vring->avail->idx), read_guest_mem, &idx);
+    // XXX: ARM SPECIFIC
+    vm_copyin(emul->internal->vm, &idx, (uintptr_t)&vring->avail->idx, sizeof(vring->avail->idx));
+    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->avail->idx, sizeof(vring->avail->idx), read_guest_mem, &idx);
     return idx;
 }
 
 static uint16_t ring_avail(ethif_virtio_emul_t *emul, struct vring *vring, uint16_t idx) {
     uint16_t elem;
-    vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&(vring->avail->ring[idx % vring->num]), sizeof(elem), read_guest_mem, &elem);
+    // XXX: ARM SPECIFIC
+    vm_copyin(emul->internal->vm, &elem, (uintptr_t)&(vring->avail->ring[idx % vring->num]), sizeof(elem));
+    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&(vring->avail->ring[idx % vring->num]), sizeof(elem), read_guest_mem, &elem);
     return elem;
 }
 
 static struct vring_desc ring_desc(ethif_virtio_emul_t *emul, struct vring *vring, uint16_t idx) {
     struct vring_desc desc;
-    vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&(vring->desc[idx]), sizeof(desc), read_guest_mem, &desc);
+    // XXX: ARM SPECIFIC
+    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&(vring->desc[idx]), sizeof(desc), read_guest_mem, &desc);
+    vm_copyin(emul->internal->vm, &desc, (uintptr_t)&(vring->desc[idx]), sizeof(desc));
     return desc;
 }
 
 static void ring_used_add(ethif_virtio_emul_t *emul, struct vring *vring, struct vring_used_elem elem) {
     uint16_t guest_idx;
-    vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx), read_guest_mem, &guest_idx);
-    vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->used->ring[guest_idx % vring->num], sizeof(elem), write_guest_mem, &elem);
+    // XXX: ARM SPECIFIC
+    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx), read_guest_mem, &guest_idx);
+    vm_copyin(emul->internal->vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
+    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->used->ring[guest_idx % vring->num], sizeof(elem), write_guest_mem, &elem);
+    vm_copyout(emul->internal->vm, &elem, (uintptr_t)&vring->used->ring[guest_idx % vring->num], sizeof(elem));
     guest_idx++;
-    vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx), write_guest_mem, &guest_idx);
+    //vmm_guest_vspace_touch(&emul->internal->guest_vspace, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx), write_guest_mem, &guest_idx);
+    vm_copyout(emul->internal->vm, &guest_idx,(uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
 }
 
 static uintptr_t emul_allocate_rx_buf(void *iface, size_t buf_size, void **cookie) {
@@ -134,8 +146,9 @@ static void emul_rx_complete(void *iface, unsigned int num_bufs, void **cookies,
                 buf_base = cookies[current_buf];
             }
             copy = MIN(copy, desc.len - desc_written);
-            /* copy it */
-            vmm_guest_vspace_touch(&net->guest_vspace, (uintptr_t)desc.addr + desc_written, copy, write_guest_mem, buf_base + buf_written);
+            // XXX: ARM SPECIFIC 
+            vm_copyout(emul->internal->vm, buf_base + buf_written,(uintptr_t)desc.addr + desc_written, copy);
+            //vmm_guest_vspace_touch(&net->guest_vspace, (uintptr_t)desc.addr + desc_written, copy, write_guest_mem, buf_base + buf_written);
             /* update amounts */
             tot_written += copy;
             desc_written += copy;
@@ -232,7 +245,9 @@ static void emul_notify_tx(ethif_virtio_emul_t *emul) {
             /* truncate packets that are too large */
             uint32_t this_len = desc.len - skip;
             this_len = MIN(BUF_SIZE - len, this_len);
-            vmm_guest_vspace_touch(&net->guest_vspace, (uintptr_t)desc.addr + skip, this_len, read_guest_mem, vaddr + len);
+            // XXX: ARM SPECIFIC
+            vm_copyin(emul->internal->vm, vaddr + len, (uintptr_t)desc.addr + skip, this_len);
+            //vmm_guest_vspace_touch(&net->guest_vspace, (uintptr_t)desc.addr + skip, this_len, read_guest_mem, vaddr + len);
             len += this_len;
             desc_idx = desc.next;
         } while (desc.flags & VRING_DESC_F_NEXT);
@@ -348,6 +363,10 @@ static int emul_notify(ethif_virtio_emul_t *emul) {
     }
     emul_notify_tx(emul);
     return 0;
+}
+
+void ethif_virtio_set_vm(ethif_virtio_emul_t *emul, vm_t *vm) {
+    emul->internal->vm = vm;
 }
 
 ethif_virtio_emul_t *ethif_virtio_emul_init(ps_io_ops_t io_ops, int queue_size, vspace_t *guest_vspace, ethif_driver_init driver, void *config) {

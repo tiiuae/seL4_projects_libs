@@ -18,35 +18,8 @@
 #include <pci/virtual_pci.h>
 #include <pci/helper.h>
 
-#include "vmm/driver/pci_helper.h"
-
-typedef struct pci_bar_emulation {
-    vmm_pci_entry_t passthrough;
-    int num_bars;
-    vmm_pci_bar_t bars[6];
-    uint32_t bar_writes[6];
-} pci_bar_emulation_t;
-
-typedef struct pci_irq_emulation {
-    vmm_pci_entry_t passthrough;
-    int irq;
-} pci_irq_emulation_t;
-
-typedef struct pci_passthrough_device {
-    /* The address on the host system of this device */
-    vmm_pci_address_t addr;
-    /* Ops for accessing config space */
-    vmm_pci_config_t config;
-} pci_passthrough_device_t;
-
-typedef struct pci_cap_emulation {
-    vmm_pci_entry_t passthrough;
-    int num_caps;
-    uint8_t *caps;
-    int num_ignore;
-    uint8_t *ignore_start;
-    uint8_t *ignore_end;
-} pci_cap_emulation_t;
+#include <sel4pci/pci_helper.h>
+#include <sel4arm-vmm/vm.h>
 
 int vmm_pci_mem_device_read(void *cookie, int offset, int size, uint32_t *result) {
     if (offset < 0) {
@@ -60,6 +33,21 @@ int vmm_pci_mem_device_read(void *cookie, int offset, int size, uint32_t *result
     }
     *result = 0;
     memcpy(result, cookie + offset, size);
+    return 0;
+}
+
+int vmm_pci_mem_device_write(void *cookie, int offset, int size, uint32_t value) {
+    if (offset < 0) {
+        ZF_LOGE("Offset should not be negative");
+        return -1;
+    }
+    if (offset + size >= 0x40) {
+        ZF_LOGI("Indexing capability space not yet supported, returning 0");
+        return 0;
+    }
+
+    memcpy(cookie + offset, &value, size);
+
     return 0;
 }
 
@@ -222,6 +210,16 @@ static int pci_bar_emul_write(void *cookie, int offset, int size, uint32_t value
     return 0;
 }
 
+static int pci_bar_passthrough_emul_read(void *cookie, int offset, int size, uint32_t *result) {
+    pci_bar_emulation_t *emul = (pci_bar_emulation_t*)cookie;
+    return emul->passthrough.ioread(emul->passthrough.cookie, offset, size, result);
+}
+
+static int pci_bar_passthrough_emul_write(void *cookie, int offset, int size, uint32_t value) {
+    pci_bar_emulation_t *emul = (pci_bar_emulation_t*)cookie;
+    return emul->passthrough.iowrite(emul->passthrough.cookie, offset, size, value);
+}
+
 vmm_pci_entry_t vmm_pci_create_bar_emulation(vmm_pci_entry_t existing, int num_bars, vmm_pci_bar_t *bars) {
     pci_bar_emulation_t *bar_emul = malloc(sizeof(*bar_emul));
     assert(bar_emul);
@@ -230,6 +228,16 @@ vmm_pci_entry_t vmm_pci_create_bar_emulation(vmm_pci_entry_t existing, int num_b
     bar_emul->num_bars = num_bars;
     memset(bar_emul->bar_writes, 0, sizeof(bar_emul->bar_writes));
     return (vmm_pci_entry_t) {.cookie = bar_emul, .ioread = pci_bar_emul_read, .iowrite = pci_bar_emul_write};
+}
+
+vmm_pci_entry_t vmm_pci_create_passthrough_bar_emulation(vmm_pci_entry_t existing, int num_bars, vmm_pci_bar_t *bars) {
+    pci_bar_emulation_t *bar_emul = malloc(sizeof(*bar_emul));
+    assert(bar_emul);
+    memcpy(bar_emul->bars, bars, sizeof(vmm_pci_bar_t) * num_bars);
+    bar_emul->passthrough = existing;
+    bar_emul->num_bars = num_bars;
+    memset(bar_emul->bar_writes, 0, sizeof(bar_emul->bar_writes));
+    return (vmm_pci_entry_t) {.cookie = bar_emul, .ioread = pci_bar_passthrough_emul_read, .iowrite = pci_bar_passthrough_emul_write};
 }
 
 vmm_pci_entry_t vmm_pci_create_irq_emulation(vmm_pci_entry_t existing, int irq) {
@@ -247,46 +255,6 @@ vmm_pci_entry_t vmm_pci_create_passthrough(vmm_pci_address_t addr, vmm_pci_confi
     dev->config = config;
     ZF_LOGI("Creating passthrough device for %02x:%02x.%d", addr.bus, addr.dev, addr.fun);
     return (vmm_pci_entry_t){.cookie = dev, .ioread = passthrough_pci_config_ioread, .iowrite = passthrough_pci_config_iowrite};
-}
-
-int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars) {
-    int i;
-    int bar = 0;
-    for (i = 0; i < 6; i++) {
-        if (cfg->base_addr[i] == 0) {
-            continue;
-        }
-        size_t size = cfg->base_addr_size[i];
-        assert(size != 0);
-        int size_bits = 31 - CLZ(size);
-        if (BIT(size_bits) != size) {
-            ZF_LOGE("PCI bar is not power of 2 size (%zu)", size);
-            return -1;
-        }
-        bars[bar].size_bits = size_bits;
-        if (cfg->base_addr_space[i] == PCI_BASE_ADDRESS_SPACE_MEMORY) {
-            /* Need to map into the VMM. Make sure it is aligned */
-            uintptr_t addr = vmm_map_guest_device(vmm, cfg->base_addr[i], size, BIT(size_bits));
-            if(addr == 0) {
-                ZF_LOGE("Failed to map PCI bar %p size %zu", (void*)(uintptr_t)cfg->base_addr[i], size);
-                return -1;
-            }
-            bars[bar].ismem = 1;
-            bars[bar].address = addr;
-            bars[bar].prefetchable = cfg->base_addr_prefetchable[i];
-        } else {
-            /* Need to add the IO port range */
-            int error = vmm_io_port_add_passthrough(&vmm->io_port, cfg->base_addr[i], cfg->base_addr[i] + size - 1, "PCI Passthrough Device");
-            if (error) {
-                return error;
-            }
-            bars[bar].ismem=0;
-            bars[bar].address = cfg->base_addr[i];
-            bars[bar].prefetchable = 0;
-        }
-        bar++;
-    }
-    return bar;
 }
 
 static int pci_cap_emul_read(void *cookie, int offset, int size, uint32_t *result) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -15,8 +15,10 @@
 #include <stdint.h>
 #include <pci/pci.h>
 
-#include "vmm/driver/pci.h"
-#include "vmm/vmm.h"
+#include <sel4pci/pci.h>
+#include <sel4arm-vmm/vm.h>
+
+#define PCI_BAR_OFFSET(b)	(offsetof(vmm_pci_device_def_t, bar##b))
 
 /* Struct definition of a PCI device. This is used for emulating a device from
  * purely memory reads. This is not generally useful on its own, but provides
@@ -66,6 +68,34 @@ typedef struct vmm_pci_bar {
     int prefetchable;
 } vmm_pci_bar_t;
 
+typedef struct pci_bar_emulation {
+    vmm_pci_entry_t passthrough;
+    int num_bars;
+    vmm_pci_bar_t bars[6];
+    uint32_t bar_writes[6];
+} pci_bar_emulation_t;
+
+typedef struct pci_irq_emulation {
+    vmm_pci_entry_t passthrough;
+    int irq;
+} pci_irq_emulation_t;
+
+typedef struct pci_passthrough_device {
+    /* The address on the host system of this device */
+    vmm_pci_address_t addr;
+    /* Ops for accessing config space */
+    vmm_pci_config_t config;
+} pci_passthrough_device_t;
+
+typedef struct pci_cap_emulation {
+    vmm_pci_entry_t passthrough;
+    int num_caps;
+    uint8_t *caps;
+    int num_ignore;
+    uint8_t *ignore_start;
+    uint8_t *ignore_end;
+} pci_cap_emulation_t;
+
 /* Helper write function that just ignores any writes */
 int vmm_pci_entry_ignore_write(void *cookie, int offset, int size, uint32_t value);
 
@@ -93,9 +123,3 @@ vmm_pci_entry_t vmm_pci_create_cap_emulation(vmm_pci_entry_t existing, int num_c
 
 /* Finds the MSI capabilities and uses vmm_pci_create_cap_emulation to remove them */
 vmm_pci_entry_t vmm_pci_no_msi_cap_emulation(vmm_pci_entry_t existing);
-
-/* Takes a libpci device scan and adds the bar resources to the guest, creating
- * new pci bar information that can be passed to a virtual config space creator.
- * Creates at most 6 bars, returns how many it created, negative on error */
-int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars);
-

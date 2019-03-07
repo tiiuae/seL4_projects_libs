@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -9,7 +9,7 @@
  *
  * @TAG(DATA61_GPL)
  */
-/* x86 VMM PCI Driver, which manages the host's PCI devices, and handles guest OS PCI config space
+/* VMM PCI Driver, which manages the host's PCI devices, and handles guest OS PCI config space
  * read & writes.
 */
 
@@ -61,3 +61,8 @@ int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_add
 int vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result);
 int vmm_pci_io_port_out(void *cookie, unsigned int port_no, unsigned int size, unsigned int value);
 
+/* Convert config to pci address */
+void make_addr_reg_from_config(uint32_t conf, vmm_pci_address_t *addr, uint8_t *reg);
+
+/* Find pci device given a pci address (Bus/Dev/Func) */
+vmm_pci_entry_t *find_device(vmm_pci_space_t *self, vmm_pci_address_t addr);
