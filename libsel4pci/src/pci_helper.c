@@ -47,6 +47,12 @@ int vmm_pci_mem_device_write(void *cookie, int offset, int size, uint32_t value)
         return 0;
     }
 
+    /* Ensure we aren't writing data greater than the size of 'value' */
+    if (size > sizeof(value)) {
+        ZF_LOGE("Unable to perform a read of size 0x%x", size);
+        return -1;
+    }
+
     memcpy(cookie + offset, &value, size);
 
     return 0;
