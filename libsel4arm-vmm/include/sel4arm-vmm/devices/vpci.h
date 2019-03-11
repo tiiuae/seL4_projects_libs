@@ -14,7 +14,7 @@
 #include <sel4arm-vmm/vm.h>
 
 /* PCI host bridge memory regions are defined in the pci dts node
- * supplied to the Linux guest. These values are also reflect here */
+ * supplied to the Linux guest. These values are also reflected here */
 
 /* PCI host bridge configration space */
 #define PCI_CFG_REGION_ADDR 0x3E000000
