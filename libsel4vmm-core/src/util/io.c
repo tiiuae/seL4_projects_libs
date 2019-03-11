@@ -54,7 +54,7 @@ int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool i
 
     unsigned int value;
 
-    ZF_LOGI(4, "vm exit io request: in %d  port no 0x%x (%s) size %d\n",
+    ZF_LOGI("vm exit io request: in %d  port no 0x%x (%s) size %d\n",
             is_in, port_no, vmm_debug_io_portno_desc(io_port, port_no), size);
 
     ioport_entry_t *port = search_port(io_port, port_no);
