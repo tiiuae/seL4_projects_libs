@@ -23,7 +23,7 @@
 /* Size of PCI configuration space */
 #define PCI_CFG_REGION_SIZE 0x1000000
 /* Size of PCI IO space  */
-#define PCI_CFG_IO_REGION_SIZE 0x1000
+#define PCI_IO_REGION_SIZE 0x1000
 
 /* Mask to retrieve PCI bar size */
 #define PCI_CFG_BAR_MASK 0xFFFFFFFF

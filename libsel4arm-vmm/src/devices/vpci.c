@@ -138,7 +138,7 @@ const struct device dev_vpci_cfg_io_dist = {
     .devid = DEV_CUSTOM,
     .name = "vpci.cfg_io",
     .pstart = PCI_IO_REGION_ADDR,
-    .size = PCI_CFG_IO_REGION_SIZE,
+    .size = PCI_IO_REGION_SIZE,
     .handle_page_fault = &pci_cfg_io_fault_handler,
     .priv = NULL,
 };
