@@ -22,6 +22,7 @@
 
 #define PCI_CAPABILITY_SPACE_OFFSET 0x40
 
+/* Read PCI memory device */
 int vmm_pci_mem_device_read(void *cookie, int offset, int size, uint32_t *result) {
     if (offset < 0) {
         ZF_LOGE("Offset should not be negative");
@@ -33,10 +34,13 @@ int vmm_pci_mem_device_read(void *cookie, int offset, int size, uint32_t *result
         return 0;
     }
     *result = 0;
+    /* Read the PCI device field at the given offset
+     * We are passed the device header through the cookie parameter */
     memcpy(result, cookie + offset, size);
     return 0;
 }
 
+/* Write PCI memory device */
 int vmm_pci_mem_device_write(void *cookie, int offset, int size, uint32_t value) {
     if (offset < 0) {
         ZF_LOGE("Offset should not be negative");
@@ -53,6 +57,8 @@ int vmm_pci_mem_device_write(void *cookie, int offset, int size, uint32_t value)
         return -1;
     }
 
+    /* Write the PCI device field at the given offset
+     * We are passed the device header through the cookie parameter */
     memcpy(cookie + offset, &value, size);
 
     return 0;
