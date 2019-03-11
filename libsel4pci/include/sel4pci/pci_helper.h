@@ -102,8 +102,22 @@ typedef struct pci_cap_emulation {
 /* Helper write function that just ignores any writes */
 int vmm_pci_entry_ignore_write(void *cookie, int offset, int size, uint32_t value);
 
-/* Read and write methods for a memory device */
+/* Read and write methods for a memory device
+ * @param cookie PCI device header
+ * @param offset offset into PCI device header
+ * @param size size of data to be read
+ * @result resulting value read back from PCI device header
+ * @return 0 if success, -1 if error
+ */
 int vmm_pci_mem_device_read(void *cookie, int offset, int size, uint32_t *result);
+
+/* Read and write methods for a memory device
+ * @param cookie PCI device header
+ * @param offset offset into PCI device header
+ * @param size size of data to be read
+ * @value value to write to PCI device header offset
+ * @return 0 if success, -1 if error
+ */
 int vmm_pci_mem_device_write(void *cookie, int offset, int size, uint32_t value);
 
 void define_pci_host_bridge(vmm_pci_device_def_t *bridge);
