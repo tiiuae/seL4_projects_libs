@@ -15,12 +15,14 @@
 
 static int read_guest_mem(uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie)
 {
+    /* Copy memory from the guest (vaddr) to our given memory destination (cookie) */
     memcpy(cookie + offset, vaddr, size);
     return 0;
 }
 
 static int write_guest_mem(uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie)
 {
+    /* Copy memory to our guest (vaddr) from our given memory location (cookie) */
     memcpy(vaddr, cookie + offset, size);
     return 0;
 }
