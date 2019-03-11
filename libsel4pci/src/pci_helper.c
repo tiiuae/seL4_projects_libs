@@ -65,6 +65,7 @@ int vmm_pci_mem_device_write(void *cookie, int offset, int size, uint32_t value)
 }
 
 int vmm_pci_entry_ignore_write(void *cookie, int offset, int size, uint32_t value) {
+    ZF_LOGI("Ignoring PCI entry write @ offset 0x%x", offset);
     return 0;
 }
 
