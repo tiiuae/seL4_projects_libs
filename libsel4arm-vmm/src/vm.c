@@ -30,7 +30,7 @@
 #include "sel4arm-vmm/guest_vspace.h"
 
 #include <sel4arm-vmm/sel4_arch/vm.h>
-#include <sel4vmm-core/util/io.h>
+#include <sel4vmmcore/util/io.h>
 
 //#define DEBUG_VM
 //#define DEBUG_RAM_FAULTS

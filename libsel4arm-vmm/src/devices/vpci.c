@@ -21,7 +21,7 @@
 
 #include <sel4pci/pci_helper.h>
 #include <sel4pci/pci.h>
-#include <sel4vmm-core/util/io.h>
+#include <sel4vmmcore/util/io.h>
 #include <sel4arm-vmm/devices.h>
 #include <sel4arm-vmm/devices/vpci.h>
 

@@ -26,7 +26,7 @@
 #include <sel4arm-vmm/devices.h>
 #include <sel4arm-vmm/fault.h>
 
-#include <sel4vmm-core/util/io.h>
+#include <sel4vmmcore/util/io.h>
 #include <sel4pci/pci.h>
 
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
