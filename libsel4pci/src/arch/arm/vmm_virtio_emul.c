@@ -12,10 +12,12 @@
 
 #include <sel4pci/virtio_emul.h>
 
-int vm_guest_write_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size) {
+int vm_guest_write_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size)
+{
     return vm_copyout(emul_vm->vm, data, address, size);
 }
 
-int vm_guest_read_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size) {
+int vm_guest_read_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size)
+{
     return vm_copyin(emul_vm->vm, data, address, size);
 }

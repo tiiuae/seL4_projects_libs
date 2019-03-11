@@ -28,9 +28,10 @@
 #define NUM_DEVICES 32
 #define NUM_FUNCTIONS 8
 
-int vmm_pci_init(vmm_pci_space_t *space) {
+int vmm_pci_init(vmm_pci_space_t *space)
+{
     for (int i = 0; i < NUM_DEVICES; i++) {
-        for(int j = 0; j < NUM_FUNCTIONS; j++) {
+        for (int j = 0; j < NUM_FUNCTIONS; j++) {
             space->bus0[i][j] = NULL;
         }
     }
@@ -42,10 +43,13 @@ int vmm_pci_init(vmm_pci_space_t *space) {
         return -1;
     }
     define_pci_host_bridge(bridge);
-    return vmm_pci_add_entry(space, (vmm_pci_entry_t){.cookie = bridge, .ioread = vmm_pci_mem_device_read, .iowrite = vmm_pci_entry_ignore_write}, NULL);
+    return vmm_pci_add_entry(space, (vmm_pci_entry_t) {
+        .cookie = bridge, .ioread = vmm_pci_mem_device_read, .iowrite = vmm_pci_entry_ignore_write
+    }, NULL);
 }
 
-int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_address_t *addr) {
+int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_address_t *addr)
+{
     /* Find empty dev */
     for (int i = 0; i < 32; i++) {
         if (!space->bus0[i][0]) {
@@ -54,7 +58,9 @@ int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_add
             *space->bus0[i][0] = entry;
             /* Report addr if reqeusted */
             if (addr) {
-                *addr = (vmm_pci_address_t){.bus = 0, .dev = i, .fun = 0};
+                *addr = (vmm_pci_address_t) {
+                    .bus = 0, .dev = i, .fun = 0
+                };
             }
             ZF_LOGI("Adding virtual PCI device at %02x:%02x.%d", 0, i, 0);
             return 0;
@@ -64,21 +70,24 @@ int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_add
     return -1;
 }
 
-void make_addr_reg_from_config(uint32_t conf, vmm_pci_address_t *addr, uint8_t *reg) {
+void make_addr_reg_from_config(uint32_t conf, vmm_pci_address_t *addr, uint8_t *reg)
+{
     addr->bus = (conf >> 16) & MASK(8);
     addr->dev = (conf >> 11) & MASK(5);
     addr->fun = (conf >> 8) & MASK(3);
     *reg = conf & MASK(8);
 }
 
-vmm_pci_entry_t *find_device(vmm_pci_space_t *self, vmm_pci_address_t addr) {
+vmm_pci_entry_t *find_device(vmm_pci_space_t *self, vmm_pci_address_t addr)
+{
     if (addr.bus != 0 || addr.dev >= 32 || addr.fun >= 8) {
         return NULL;
     }
     return self->bus0[addr.dev][addr.fun];
 }
 
-int vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result) {
+int vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result)
+{
     vmm_pci_space_t *self = (vmm_pci_space_t*)cookie;
     uint8_t offset;
 
@@ -127,7 +136,8 @@ int vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, un
     return 0;
 }
 
-int vmm_pci_io_port_out(void *cookie, unsigned int port_no, unsigned int size, unsigned int value) {
+int vmm_pci_io_port_out(void *cookie, unsigned int port_no, unsigned int size, unsigned int value)
+{
     vmm_pci_space_t *self = (vmm_pci_space_t*)cookie;
     uint8_t offset;
 

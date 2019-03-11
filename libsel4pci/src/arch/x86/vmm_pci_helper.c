@@ -12,7 +12,8 @@
 
 #include <sel4pci/pci_vm.h>
 
-int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars) {
+int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars)
+{
     int i;
     int bar = 0;
     for (i = 0; i < 6; i++) {
@@ -30,12 +31,12 @@ int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_
         if (cfg->base_addr_space[i] == PCI_BASE_ADDRESS_SPACE_MEMORY) {
             /* Need to map into the VMM. Make sure it is aligned */
             uintptr_t addr = vmm_map_guest_device(vmm, cfg->base_addr[i], size, BIT(size_bits));
-            if(addr == 0) {
+            if (addr == 0) {
                 ZF_LOGE("Failed to map PCI bar %p size %zu", (void*)(uintptr_t)cfg->base_addr[i], size);
                 return -1;
             }
             bars[bar].address = addr;
-            if(cfg->base_addr_prefetchable[i]) {
+            if (cfg->base_addr_prefetchable[i]) {
                 bars[bar].mem_type = PREFETCH_MEM;
             } else {
                 bars[bar].mem_type = NON_PREFETCH_MEM;

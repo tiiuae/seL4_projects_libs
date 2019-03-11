@@ -43,33 +43,38 @@ typedef struct emul_tx_cookie {
     void *vaddr;
 } emul_tx_cookie_t;
 
-static uint16_t ring_avail_idx(ethif_virtio_emul_t *emul, struct vring *vring) {
+static uint16_t ring_avail_idx(ethif_virtio_emul_t *emul, struct vring *vring)
+{
     uint16_t idx;
     vm_guest_read_mem(emul->internal->emul_vm, &idx, (uintptr_t)&vring->avail->idx, sizeof(vring->avail->idx));
     return idx;
 }
 
-static uint16_t ring_avail(ethif_virtio_emul_t *emul, struct vring *vring, uint16_t idx) {
+static uint16_t ring_avail(ethif_virtio_emul_t *emul, struct vring *vring, uint16_t idx)
+{
     uint16_t elem;
-    vm_guest_read_mem(emul->internal->emul_vm, &elem, (uintptr_t)&(vring->avail->ring[idx % vring->num]), sizeof(elem));
+    vm_guest_read_mem(emul->internal->emul_vm, &elem, (uintptr_t) & (vring->avail->ring[idx % vring->num]), sizeof(elem));
     return elem;
 }
 
-static struct vring_desc ring_desc(ethif_virtio_emul_t *emul, struct vring *vring, uint16_t idx) {
+static struct vring_desc ring_desc(ethif_virtio_emul_t *emul, struct vring *vring, uint16_t idx)
+{
     struct vring_desc desc;
-    vm_guest_read_mem(emul->internal->emul_vm, &desc, (uintptr_t)&(vring->desc[idx]), sizeof(desc));
+    vm_guest_read_mem(emul->internal->emul_vm, &desc, (uintptr_t) & (vring->desc[idx]), sizeof(desc));
     return desc;
 }
 
-static void ring_used_add(ethif_virtio_emul_t *emul, struct vring *vring, struct vring_used_elem elem) {
+static void ring_used_add(ethif_virtio_emul_t *emul, struct vring *vring, struct vring_used_elem elem)
+{
     uint16_t guest_idx;
     vm_guest_read_mem(emul->internal->emul_vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
     vm_guest_write_mem(emul->internal->emul_vm, &elem, (uintptr_t)&vring->used->ring[guest_idx % vring->num], sizeof(elem));
     guest_idx++;
-    vm_guest_write_mem(emul->internal->emul_vm, &guest_idx,(uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
+    vm_guest_write_mem(emul->internal->emul_vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
 }
 
-static uintptr_t emul_allocate_rx_buf(void *iface, size_t buf_size, void **cookie) {
+static uintptr_t emul_allocate_rx_buf(void *iface, size_t buf_size, void **cookie)
+{
     ethif_virtio_emul_t *emul = (ethif_virtio_emul_t*)iface;
     ethif_virtio_emul_internal_t *net = emul->internal;
     if (buf_size > BUF_SIZE) {
@@ -84,7 +89,8 @@ static uintptr_t emul_allocate_rx_buf(void *iface, size_t buf_size, void **cooki
     return phys;
 }
 
-static void emul_rx_complete(void *iface, unsigned int num_bufs, void **cookies, unsigned int *lens) {
+static void emul_rx_complete(void *iface, unsigned int num_bufs, void **cookies, unsigned int *lens)
+{
     ethif_virtio_emul_t *emul = (ethif_virtio_emul_t*)iface;
     ethif_virtio_emul_internal_t *net = emul->internal;
     unsigned int tot_len = 0;
@@ -124,7 +130,7 @@ static void emul_rx_complete(void *iface, unsigned int num_bufs, void **cookies,
                 buf_base = cookies[current_buf];
             }
             copy = MIN(copy, desc.len - desc_written);
-            vm_guest_write_mem(emul->internal->emul_vm, buf_base + buf_written,(uintptr_t)desc.addr + desc_written, copy);
+            vm_guest_write_mem(emul->internal->emul_vm, buf_base + buf_written, (uintptr_t)desc.addr + desc_written, copy);
             /* update amounts */
             tot_written += copy;
             desc_written += copy;
@@ -166,7 +172,8 @@ static void emul_rx_complete(void *iface, unsigned int num_bufs, void **cookies,
     }
 }
 
-static void emul_tx_complete(void *iface, void *cookie) {
+static void emul_tx_complete(void *iface, void *cookie)
+{
     ethif_virtio_emul_t *emul = (ethif_virtio_emul_t*)iface;
     ethif_virtio_emul_internal_t *net = emul->internal;
     emul_tx_cookie_t *tx_cookie = (emul_tx_cookie_t*)cookie;
@@ -181,7 +188,8 @@ static void emul_tx_complete(void *iface, void *cookie) {
     net->driver.i_fn.raw_handleIRQ(&net->driver, 0);
 }
 
-static void emul_notify_tx(ethif_virtio_emul_t *emul) {
+static void emul_notify_tx(ethif_virtio_emul_t *emul)
+{
     ethif_virtio_emul_internal_t *net = emul->internal;
     struct vring *vring = &net->vring[TX_QUEUE];
     /* read the index */
@@ -248,7 +256,8 @@ static void emul_notify_tx(ethif_virtio_emul_t *emul) {
     net->last_idx[TX_QUEUE] = idx;
 }
 
-static void emul_tx_complete_external(void *iface, void *cookie) {
+static void emul_tx_complete_external(void *iface, void *cookie)
+{
     emul_tx_complete(iface, cookie);
     /* space may have cleared for additional transmits */
     emul_notify_tx(iface);
@@ -260,8 +269,9 @@ static struct raw_iface_callbacks emul_callbacks = {
     .allocate_rx_buf = emul_allocate_rx_buf
 };
 
-static int emul_io_in(struct ethif_virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int *result) {
-    switch(offset) {
+static int emul_io_in(struct ethif_virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int *result)
+{
+    switch (offset) {
     case VIRTIO_PCI_HOST_FEATURES:
         assert(size == 4);
         *result = BIT(VIRTIO_NET_F_MAC);
@@ -293,8 +303,9 @@ static int emul_io_in(struct ethif_virtio_emul *emul, unsigned int offset, unsig
     return 0;
 }
 
-static int emul_io_out(struct ethif_virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int value) {
-    switch(offset) {
+static int emul_io_out(struct ethif_virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int value)
+{
+    switch (offset) {
     case VIRTIO_PCI_GUEST_FEATURES:
         assert(size == 4);
         assert(value == BIT(VIRTIO_NET_F_MAC));
@@ -331,7 +342,8 @@ static int emul_io_out(struct ethif_virtio_emul *emul, unsigned int offset, unsi
     return 0;
 }
 
-static int emul_notify(ethif_virtio_emul_t *emul) {
+static int emul_notify(ethif_virtio_emul_t *emul)
+{
     if (emul->internal->status != VIRTIO_CONFIG_S_DRIVER_OK) {
         return -1;
     }
@@ -339,7 +351,8 @@ static int emul_notify(ethif_virtio_emul_t *emul) {
     return 0;
 }
 
-ethif_virtio_emul_t *ethif_virtio_emul_init(ps_io_ops_t io_ops, int queue_size, virtio_emul_vm_t *emul_vm, ethif_driver_init driver, void *config) {
+ethif_virtio_emul_t *ethif_virtio_emul_init(ps_io_ops_t io_ops, int queue_size, virtio_emul_vm_t *emul_vm, ethif_driver_init driver, void *config)
+{
     ethif_virtio_emul_t *emul = NULL;
     ethif_virtio_emul_internal_t *internal = NULL;
     int err;

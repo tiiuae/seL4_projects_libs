@@ -13,20 +13,24 @@
 #include <sel4pci/virtio_emul.h>
 #include <sel4pci/vmm_virtio_emul.h>
 
-static int read_guest_mem(uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie) {
+static int read_guest_mem(uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie)
+{
     memcpy(cookie + offset, vaddr, size);
     return 0;
 }
 
-static int write_guest_mem(uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie) {
+static int write_guest_mem(uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie)
+{
     memcpy(vaddr, cookie + offset, size);
     return 0;
 }
 
-int vm_guest_write_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size) {
+int vm_guest_write_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size)
+{
     return vmm_guest_vspace_touch(emul_vm->vmm->guest_vspace, address, size, write_guest_mem, data);
 }
 
-int vm_guest_read_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size) {
+int vm_guest_read_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size)
+{
     return vmm_guest_vspace_touch(emul_vm->vmm->guest_vspace, address, size, read_guest_mem, data);
 }
