@@ -25,9 +25,12 @@
 #include <sel4pci/pci.h>
 #include <sel4pci/pci_helper.h>
 
+#define NUM_DEVICES 32
+#define NUM_FUNCTIONS 8
+
 int vmm_pci_init(vmm_pci_space_t *space) {
-    for (int i = 0; i < 32; i++) {
-        for(int j = 0; j < 8; j++) {
+    for (int i = 0; i < NUM_DEVICES; i++) {
+        for(int j = 0; j < NUM_FUNCTIONS; j++) {
             space->bus0[i][j] = NULL;
         }
     }
