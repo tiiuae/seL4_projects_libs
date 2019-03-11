@@ -20,12 +20,14 @@
 
 #include <sel4pci/pci_helper.h>
 
+#define PCI_CAPABILITY_SPACE_OFFSET 0x40
+
 int vmm_pci_mem_device_read(void *cookie, int offset, int size, uint32_t *result) {
     if (offset < 0) {
         ZF_LOGE("Offset should not be negative");
         return -1;
     }
-    if (offset + size >= 0x40) {
+    if (offset + size >= PCI_CAPABILITY_SPACE_OFFSET) {
         ZF_LOGI("Indexing capability space not yet supported, returning 0");
         *result = 0;
         return 0;
@@ -40,7 +42,7 @@ int vmm_pci_mem_device_write(void *cookie, int offset, int size, uint32_t value)
         ZF_LOGE("Offset should not be negative");
         return -1;
     }
-    if (offset + size >= 0x40) {
+    if (offset + size >= PCI_CAPABILITY_SPACE_OFFSET) {
         ZF_LOGI("Indexing capability space not yet supported, returning 0");
         return 0;
     }
