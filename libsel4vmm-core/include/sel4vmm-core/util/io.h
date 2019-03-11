@@ -11,7 +11,9 @@
  */
 #pragma once
 
+#include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef int (*ioport_in_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result);
 typedef int (*ioport_out_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int value);
@@ -54,4 +56,4 @@ int vmm_io_port_init(vmm_io_port_list_t *io_list);
 /* Add an io port range for emulation */
 int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t ioport_range, ioport_interface_t ioport_interface);
 
-int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, int is_in, int size, unsigned int *data);
+int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool is_in, size_t size, unsigned int *data);

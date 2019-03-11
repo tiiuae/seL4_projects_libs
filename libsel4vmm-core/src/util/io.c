@@ -50,7 +50,7 @@ static const char* vmm_debug_io_portno_desc(vmm_io_port_list_t *io_port, int por
 }
 
 /* IO execution handler. */
-int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, int is_in, int size, unsigned int *data) {
+int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool is_in, size_t size, unsigned int *data) {
 
     unsigned int value;
 
