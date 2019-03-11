@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 #include <sel4utils/util.h>
-#include <sel4vmm-core/util/io.h>
+#include <sel4vmmcore/util/io.h>
 
 static int io_port_compare_by_range(const void *pkey, const void *pelem)
 {

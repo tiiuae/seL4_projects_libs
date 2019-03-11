@@ -12,12 +12,12 @@
 
 cmake_minimum_required(VERSION 3.8.2)
 
-project(libsel4vmm-core C)
+project(libsel4vmmcore C)
 
 add_compile_options(-std=gnu99)
 
 set(sources "src/drivers/virtio_net/virtio_net.c;src/util/io.c")
 
-add_library(sel4vmm-core STATIC EXCLUDE_FROM_ALL ${sources})
-target_include_directories(sel4vmm-core PUBLIC include)
-target_link_libraries(sel4vmm-core Configuration muslc sel4 utils sel4utils platsupport pci ethdrivers sel4pci pci)
+add_library(sel4vmmcore STATIC EXCLUDE_FROM_ALL ${sources})
+target_include_directories(sel4vmmcore PUBLIC include)
+target_link_libraries(sel4vmmcore Configuration muslc sel4 utils sel4utils platsupport pci ethdrivers sel4pci pci)

@@ -9,7 +9,7 @@
 
 -->
 
-libsel4vmm-core
+libsel4vmmcore
 ================
 
 This repo is a collection of vmm drivers and utilities that can be used

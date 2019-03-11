@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <sel4vmm-core/util/io.h>
+#include <sel4vmmcore/util/io.h>
 #include <sel4pci/pci.h>
 #include <sel4pci/virtio_emul.h>
 

@@ -17,8 +17,8 @@
 #include <sel4/sel4.h>
 #include <platsupport/io.h>
 
-#include <sel4vmm-core/drivers/virtio_net/virtio.h>
-#include <sel4vmm-core/drivers/virtio_net/virtio_net.h>
+#include <sel4vmmcore/drivers/virtio_net/virtio.h>
+#include <sel4vmmcore/drivers/virtio_net/virtio_net.h>
 
 #include <pci/helper.h>
 #include <sel4pci/pci_helper.h>
