@@ -16,7 +16,7 @@ project(libsel4vmm-core C)
 
 add_compile_options(-std=gnu99)
 
-file(GLOB sources src/drivers/*/*.c src/util/*.c)
+set(sources "src/drivers/virtio_net/virtio_net.c;src/util/io.c")
 
 add_library(sel4vmm-core STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4vmm-core PUBLIC include)
