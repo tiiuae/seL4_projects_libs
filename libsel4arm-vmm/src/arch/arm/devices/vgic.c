@@ -663,6 +663,14 @@ static void vgic_dist_reset(struct device* d)
     gic_dist->component_id[1] = 0x000000f0; /* RO */
     gic_dist->component_id[2] = 0x00000005; /* RO */
     gic_dist->component_id[3] = 0x000000b1; /* RO */
+
+    /* This tells Linux that all IRQs are routed to CPU0.
+     * When we eventually support multiple vCPUs per guest,
+     * this will need to be updated.
+     */
+    for (int i = 0; i < ARRAY_SIZE(gic_dist->targets); i++) {
+        gic_dist->targets[i] = 0x01010101;
+    }
 }
 
 virq_handle_t
