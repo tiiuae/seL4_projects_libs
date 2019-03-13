@@ -128,7 +128,7 @@ pci_cfg_io_fault_handler(struct device* d, vm_t *vm, fault_t* fault)
     return advance_fault(fault);
 }
 
-const struct device dev_vpci_cfg_dist = {
+const struct device dev_vpci_cfg = {
     .devid = DEV_CUSTOM,
     .name = "vpci.cfg",
     .pstart = PCI_CFG_REGION_ADDR,
@@ -137,7 +137,7 @@ const struct device dev_vpci_cfg_dist = {
     .priv = NULL,
 };
 
-const struct device dev_vpci_cfg_io_dist = {
+const struct device dev_vpci_cfg_io = {
     .devid = DEV_CUSTOM,
     .name = "vpci.cfg_io",
     .pstart = PCI_IO_REGION_ADDR,
@@ -156,14 +156,14 @@ int vm_install_vpci(vm_t *vm)
     }
 
     /* Install base VPCI CFG region */
-    err = vm_add_device(vm, &dev_vpci_cfg_dist);
+    err = vm_add_device(vm, &dev_vpci_cfg);
     if (err) {
         ZF_LOGE("Failed to install VPCI CFG region");
         return err;
     }
 
     /* Install base VPCI CFG IOPort region */
-    err = vm_add_device(vm, &dev_vpci_cfg_io_dist);
+    err = vm_add_device(vm, &dev_vpci_cfg_io);
     if (err) {
         ZF_LOGE("Failed to install VPCI CFG IOPort region");
         return err;
