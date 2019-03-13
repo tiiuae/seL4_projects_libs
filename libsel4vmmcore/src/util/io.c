@@ -129,7 +129,6 @@ int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t io_range
 int vmm_io_port_init(vmm_io_port_list_t *io_list)
 {
     io_list->num_ioports = 0;
-    io_list->ioports = malloc(0);
-    assert(io_list->ioports);
+    io_list->ioports = NULL;
     return 0;
 }
