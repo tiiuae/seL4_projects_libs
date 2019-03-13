@@ -25,6 +25,8 @@
 #include <sel4arm-vmm/devices.h>
 #include <sel4arm-vmm/devices/vpci.h>
 
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VPCI_SUPPORT
+
 static int width_to_size(enum fault_width fw)
 {
 
@@ -186,3 +188,4 @@ int vm_install_vpci(vm_t *vm)
     }
 
 }
+#endif //CONFIG_LIB_SEL4_ARM_VMM_VPCI_SUPPORT

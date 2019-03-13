@@ -211,9 +211,10 @@ vm_create(const char* name, int priority,
     vm->fault = fault_init(vm);
     assert(vm->fault);
 
-    /* Initialise IOPorts */
-    vmm_io_port_init(&vm->io_port);
-
+    if(config_set(CONFIG_LIB_SEL4_ARM_VMM_IOPORTS_SUPPORT)) {
+        /* Initialise IOPorts */
+        vmm_io_port_init(&vm->io_port);
+    }
     return err;
 }
 

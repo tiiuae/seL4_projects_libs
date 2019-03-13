@@ -11,6 +11,8 @@
  */
 #pragma once
 
+#ifdef CONFIG_LIB_SEL4_ARM_VMM_VPCI_SUPPORT
+
 #include <sel4arm-vmm/vm.h>
 
 /* PCI host bridge memory regions are defined in the pci dts node
@@ -30,3 +32,4 @@
 
 int vm_install_vpci(vm_t *vm);
 
+#endif //CONFIG_LIB_SEL4_ARM_VMM_VPCI_SUPPORT
