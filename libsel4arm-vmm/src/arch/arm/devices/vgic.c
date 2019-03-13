@@ -46,6 +46,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <utils/arith.h>
 #include <vka/vka.h>
 #include <vka/capops.h>
 
@@ -514,6 +515,8 @@ handle_vgic_dist_fault(struct device* d, vm_t* vm, fault_t* fault)
     gic_dist = vgic_priv_get_dist(d);
     mask = fault_get_data_mask(fault);
     offset = fault_get_address(fault) - d->pstart;
+
+    offset = ALIGN_DOWN(offset, sizeof(uint32_t));
 
     reg = (uint32_t*)( (uintptr_t)gic_dist + offset );
     act = gic_dist_get_action(offset);
