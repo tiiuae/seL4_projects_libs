@@ -27,7 +27,8 @@ enum img_type {
 /// Self decompressing linux image file
     IMG_ZIMAGE,
 /// Flattened device tree blob
-    IMG_DTB
+    IMG_DTB,
+    IMG_INITRD
 };
 
 /**

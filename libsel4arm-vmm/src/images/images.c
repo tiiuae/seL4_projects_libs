@@ -16,6 +16,7 @@
 #define UIMAGE_MAGIC 0x56190527
 #define ZIMAGE_MAGIC 0x016F2818
 #define DTB_MAGIC    0xedfe0dd0
+#define INITRD_GZ_MAGIC 0x8b1f
 
 struct dtb_hdr {
     uint32_t magic;
@@ -31,6 +32,12 @@ struct dtb_hdr {
     uint32_t size_dt_strings;
     uint32_t size_dt_struct;
 #endif
+};
+
+struct initrd_gz_hdr {
+    uint16_t magic;
+    uint8_t compression;
+    uint8_t flags;
 };
 
 struct zimage_hdr {
@@ -64,6 +71,15 @@ is_dtb(void* file)
     return hdr->magic != DTB_MAGIC;
 }
 
+static int
+is_initrd(void* file)
+{
+    /* We currently only support initrd files in the gzip format */
+    struct initrd_gz_hdr* hdr;
+    hdr = (struct initrd_gz_hdr*)file;
+    return hdr->magic != INITRD_GZ_MAGIC;
+}
+
 enum img_type
 image_get_type(void* file)
 {
@@ -75,6 +91,8 @@ image_get_type(void* file)
         return IMG_UIMAGE;
     } else if (is_dtb(file) == 0) {
         return IMG_DTB;
+    } else if (is_initrd(file) == 0) {
+        return IMG_INITRD;
     } else {
         return IMG_BIN;
     }
