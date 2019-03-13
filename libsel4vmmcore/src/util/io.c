@@ -118,7 +118,6 @@ int vmm_io_port_add_passthrough(vmm_io_port_list_t *io_list, ioport_range_t io_r
     });
 }
 
-//int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, uint16_t start, uint16_t end, void *cookie, ioport_in_fn port_in, ioport_out_fn port_out, const char *desc) {
 /* Add an io port range for emulation */
 int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t io_range, ioport_interface_t io_interface)
 {
