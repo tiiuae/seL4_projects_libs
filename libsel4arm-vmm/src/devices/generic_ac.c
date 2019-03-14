@@ -103,8 +103,8 @@ vm_install_generic_ac_device(vm_t* vm, const struct device* d, void* mask,
     gac_device_priv->action = action;
 
     /* Map the device */
-    gac_device_priv->regs = map_device(vmm_vspace, vm->vka, vm->simple,
-                                       d->pstart, 0, seL4_AllRights);
+    gac_device_priv->regs = ps_io_map(vm->io_ops, d->pstart, PAGE_SIZE_4K, 0, PS_MEM_NORMAL);
+
     if (gac_device_priv->regs == NULL) {
         free(gac_device_priv);
         return -1;
