@@ -25,8 +25,6 @@
 #include <sel4arm-vmm/devices.h>
 #include <sel4arm-vmm/devices/vpci.h>
 
-#ifdef CONFIG_LIB_SEL4_ARM_VMM_VPCI_SUPPORT
-
 static int width_to_size(enum fault_width fw)
 {
 
@@ -96,7 +94,7 @@ pci_cfg_fault_handler(struct device* d, vm_t *vm, fault_t* fault)
     make_addr_reg_from_config(addr, &pci_addr, &offset);
     pci_addr.fun = 0;
 
-    vmm_pci_entry_t *dev = find_device(&vm->pci, pci_addr);
+    vmm_pci_entry_t *dev = find_device(vm->pci, pci_addr);
     if (!dev) {
         ZF_LOGW("Failed to find pci device B:%d D:%d F:%d", pci_addr.bus, pci_addr.dev, pci_addr.fun);
         /* No device found */
@@ -128,7 +126,7 @@ pci_cfg_io_fault_handler(struct device* d, vm_t *vm, fault_t* fault)
         value = fault_get_data(fault);
     }
     /* Emulate IO */
-    emulate_io_handler(&vm->io_port, cfg_port, is_in, width_to_size(fault_get_width(fault)), (void *)&value);
+    emulate_io_handler(vm->io_port, cfg_port, is_in, width_to_size(fault_get_width(fault)), (void *)&value);
 
     if (is_in) {
         memcpy(&fault_data, (void *)&value, width_to_size(fault_get_width(fault)));
@@ -184,7 +182,7 @@ int vm_install_vpci(vm_t *vm)
     /* PCI_CONFIG_DATA */
     ioport_range_t config_data_range = {PCI_CONF_PORT_DATA, PCI_CONF_PORT_DATA_END};
     ioport_interface_t config_data_interface = {&vm->pci, vmm_pci_io_port_in, vmm_pci_io_port_out, "PCI_CONF_PORT_DATA"};
-    err = vmm_io_port_add_handler(&vm->io_port, config_data_range, config_data_interface);
+    err = vmm_io_port_add_handler(vm->io_port, config_data_range, config_data_interface);
     if (err) {
         ZF_LOGE("Failed to register IOPort handler for PCI_CONF_PORT_DATA (Port: 0x%x-0x%x)", PCI_CONF_PORT_DATA, PCI_CONF_PORT_DATA_END);
         return -1;
@@ -192,11 +190,10 @@ int vm_install_vpci(vm_t *vm)
     /* PCI_CONFIG_ADDRESS */
     ioport_range_t config_address_range = {PCI_CONF_PORT_DATA, PCI_CONF_PORT_ADDR_END};
     ioport_interface_t config_address_interface = {&vm->pci, vmm_pci_io_port_in, vmm_pci_io_port_out, "PCI_CONF_PORT_ADDR"};
-    err = vmm_io_port_add_handler(&vm->io_port, config_address_range, config_address_interface);
+    err = vmm_io_port_add_handler(vm->io_port, config_address_range, config_address_interface);
     if (err) {
         ZF_LOGE("Failed to register IOPort handler for PCI_CONF_PORT_ADDR (Port: 0x%x-0x%x)", PCI_CONF_PORT_ADDR, PCI_CONF_PORT_ADDR_END);
         return -1;
     }
 
 }
-#endif //CONFIG_LIB_SEL4_ARM_VMM_VPCI_SUPPORT

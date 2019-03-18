@@ -72,14 +72,10 @@ struct vm {
     /* Fault structure */
     fault_t *fault;
 
-#ifdef CONFIG_LIB_SEL4_ARM_VMM_VPCI_SUPPORT
     /* Virtual PCI Host Bridge */
-    vmm_pci_space_t pci;
-#endif
-#ifdef CONFIG_LIB_SEL4_ARM_VMM_IOPORTS_SUPPORT
+    vmm_pci_space_t *pci;
     /* IOPort Manager */
-    vmm_io_port_list_t io_port;
-#endif
+    vmm_io_port_list_t *io_port;
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     /* Installed vchan connections */
     camkes_vchan_con_t **vchan_cons;

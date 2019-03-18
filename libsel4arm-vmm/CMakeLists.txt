@@ -24,14 +24,6 @@ config_option(LibSel4ArmVMMVchanSupport LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     "Support vchan connections"
     DEFAULT OFF)
 
-config_option(LibSel4ArmVMMVPCISupport LIB_SEL4_ARM_VMM_VPCI_SUPPORT
-    "Support a virtual pci device"
-    DEFAULT OFF)
-
-config_option(LibSel4ArmVMMIOPortsSupport LIB_SEL4_ARM_VMM_IOPORTS_SUPPORT
-    "Support a ioports emulation"
-    DEFAULT OFF)
-
 add_config_library(sel4arm-vmm "${configure_string}")
 
 add_compile_options(-std=gnu99)
