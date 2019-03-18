@@ -129,6 +129,9 @@ vmm_pci_entry_t vmm_pci_create_passthrough(vmm_pci_address_t addr, vmm_pci_confi
 /* Bar read/write emulation, rest passed on */
 vmm_pci_entry_t vmm_pci_create_bar_emulation(vmm_pci_entry_t existing, int num_bars, vmm_pci_bar_t *bars);
 
+/* All bar read/writes passed through to emulated io(read/write) handlers */
+vmm_pci_entry_t vmm_pci_create_passthrough_bar_emulation(vmm_pci_entry_t existing, int num_bars, vmm_pci_bar_t *bars);
+
 /* Interrupt read/write emulation, rest passed on */
 vmm_pci_entry_t vmm_pci_create_irq_emulation(vmm_pci_entry_t existing, int irq);
 
