@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sel4/sel4.h>
 #include <platsupport/io.h>
 
 #include <sel4vmmcore/drivers/virtio_net/virtio.h>
