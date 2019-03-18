@@ -46,7 +46,13 @@ static void pci_cfg_read_fault(struct device* d, vm_t *vm, fault_t* fault, vmm_p
                                uint8_t offset, vmm_pci_entry_t *dev)
 {
     seL4_Word data = 0;
-    dev->ioread((void *)dev->cookie, offset, width_to_size(fault_get_width(fault)), &data);
+    int err = 0;
+
+    err = dev->ioread((void *)dev->cookie, offset, width_to_size(fault_get_width(fault)), &data);
+    if (err) {
+        ZF_LOGE("Failure performing read from PCI CFG device");
+    }
+
     seL4_Word s = (fault_get_address(fault) & 0x3) * 8;
     fault_set_data(fault, data << s);
 }
@@ -57,6 +63,7 @@ static void pci_cfg_write_fault(struct device* d, vm_t *vm, fault_t* fault, vmm_
     uint32_t mask;
     uint32_t value;
     uint8_t bar;
+    int err;
 
     bar = (offset - PCI_BAR_OFFSET(0)) / sizeof(uint32_t);
     mask = fault_get_data_mask(fault);
@@ -67,9 +74,12 @@ static void pci_cfg_write_fault(struct device* d, vm_t *vm, fault_t* fault, vmm_
     * be the size. */
     if (bar < 6 && value == PCI_CFG_BAR_MASK) {
         uint32_t bar_size =  BIT((bar_emul->bars[bar].size_bits));
-        dev->iowrite((void *)dev->cookie, offset, sizeof(bar_size), bar_size);
+        err = dev->iowrite((void *)dev->cookie, offset, sizeof(bar_size), bar_size);
     } else {
-        dev->iowrite((void *)dev->cookie, offset, sizeof(value), value);
+        err = dev->iowrite((void *)dev->cookie, offset, sizeof(value), value);
+    }
+    if (err) {
+        ZF_LOGE("Failure writing to PCI CFG device");
     }
 }
 
@@ -88,6 +98,7 @@ pci_cfg_fault_handler(struct device* d, vm_t *vm, fault_t* fault)
 
     vmm_pci_entry_t *dev = find_device(&vm->pci, pci_addr);
     if (!dev) {
+        ZF_LOGW("Failed to find pci device B:%d D:%d F:%d", pci_addr.bus, pci_addr.dev, pci_addr.fun);
         /* No device found */
         return advance_fault(fault);
     }
