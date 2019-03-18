@@ -59,6 +59,11 @@ int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool i
 
     unsigned int value;
 
+    if (io_port == NULL) {
+        ZF_LOGE("Unable to emulate port - io port list is uninitalised");
+        return -1;
+    }
+
     ZF_LOGI("vm exit io request: in %d  port no 0x%x (%s) size %d\n",
             is_in, port_no, vmm_debug_io_portno_desc(io_port, port_no), size);
 
@@ -92,6 +97,10 @@ int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool i
 
 static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_entry_t port)
 {
+    if (io_list == NULL) {
+        ZF_LOGE("Unable to add port - io port list is uninitalised");
+        return -1;
+    }
     /* ensure this range does not overlap */
     for (int i = 0; i < io_list->num_ioports; i++) {
         if (io_list->ioports[i].range.end > port.range.start && io_list->ioports[i].range.start < port.range.end) {
@@ -126,9 +135,16 @@ int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t io_range
     });
 }
 
-int vmm_io_port_init(vmm_io_port_list_t *io_list)
+int vmm_io_port_init(vmm_io_port_list_t **io_list)
 {
-    io_list->num_ioports = 0;
-    io_list->ioports = NULL;
+    vmm_io_port_list_t *init_iolist = (vmm_io_port_list_t *)malloc(sizeof(vmm_io_port_list_t));
+    if (init_iolist == NULL) {
+        ZF_LOGE("Failed to malloc memory for io port list");
+        return -1;
+    }
+
+    init_iolist->num_ioports = 0;
+    init_iolist->ioports = NULL;
+    *io_list = init_iolist;
     return 0;
 }

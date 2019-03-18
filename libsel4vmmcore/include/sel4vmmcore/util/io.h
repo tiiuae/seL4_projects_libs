@@ -51,7 +51,7 @@ typedef struct vmm_io_list {
 } vmm_io_port_list_t;
 
 /* Initialize the io port list manager */
-int vmm_io_port_init(vmm_io_port_list_t *io_list);
+int vmm_io_port_init(vmm_io_port_list_t **io_list);
 
 /* Add an io port range for emulation */
 int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t ioport_range, ioport_interface_t ioport_interface);
