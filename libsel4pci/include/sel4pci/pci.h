@@ -52,7 +52,7 @@ typedef struct vmm_pci_space {
 } vmm_pci_space_t;
 
 /* Initialize PCI space */
-int vmm_pci_init(vmm_pci_space_t *space);
+int vmm_pci_init(vmm_pci_space_t **space);
 
 /* Add a PCI entry. Optionally reports where it is located */
 int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_address_t *addr);

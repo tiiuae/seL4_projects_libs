@@ -28,14 +28,20 @@
 #define NUM_DEVICES 32
 #define NUM_FUNCTIONS 8
 
-int vmm_pci_init(vmm_pci_space_t *space)
+int vmm_pci_init(vmm_pci_space_t **space)
 {
+    vmm_pci_space_t *pci_space = (vmm_pci_space_t *)malloc(sizeof(vmm_pci_space_t));
+    if (!pci_space) {
+        ZF_LOGE("Failed to malloc memory for pci space");
+        return -1;
+    }
+
     for (int i = 0; i < NUM_DEVICES; i++) {
         for (int j = 0; j < NUM_FUNCTIONS; j++) {
-            space->bus0[i][j] = NULL;
+            pci_space->bus0[i][j] = NULL;
         }
     }
-    space->conf_port_addr = 0;
+    pci_space->conf_port_addr = 0;
     /* Define the initial PCI bridge */
     vmm_pci_device_def_t *bridge = malloc(sizeof(*bridge));
     if (!bridge) {
@@ -43,7 +49,8 @@ int vmm_pci_init(vmm_pci_space_t *space)
         return -1;
     }
     define_pci_host_bridge(bridge);
-    return vmm_pci_add_entry(space, (vmm_pci_entry_t) {
+    *space = pci_space;
+    return vmm_pci_add_entry(pci_space, (vmm_pci_entry_t) {
         .cookie = bridge, .ioread = vmm_pci_mem_device_read, .iowrite = vmm_pci_entry_ignore_write
     }, NULL);
 }
