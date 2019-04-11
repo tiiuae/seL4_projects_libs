@@ -16,10 +16,7 @@ project(libsel4pci C)
 
 add_compile_options(-std=gnu99)
 
-set(sources "src/pci.c;src/pci_helper.c;src/virtio_emul.c;src/arch/${KernelArch}/vmm_virtio_emul.c")
-if(${KernelArch} STREQUAL "x86")
-    list(APPEND sources "src/arch/x86/vmm_pci_helper.c")
-endif()
+file(GLOB sources src/*.c src/${KernelArch}/*.c)
 
 add_library(sel4pci STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4pci PUBLIC include arch_include/${KernelArch})
