@@ -15,8 +15,8 @@
 
 #include <sel4/sel4.h>
 
-#include "vmm/vmm.h"
-#include "vmm/platform/vmcs.h"
+#include "sel4vm/vmm.h"
+#include "sel4vm/platform/vmcs.h"
 
 int vmm_vmcs_read(seL4_CPtr vcpu, seL4_Word field) {
 

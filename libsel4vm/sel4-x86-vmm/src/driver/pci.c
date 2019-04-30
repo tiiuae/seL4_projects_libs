@@ -21,10 +21,10 @@
 #include <pci/pci.h>
 #include <pci/helper.h>
 
-#include "vmm/debug.h"
-#include "vmm/vmm.h"
-#include "vmm/driver/pci.h"
-#include "vmm/driver/pci_helper.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/vmm.h"
+#include "sel4vm/driver/pci.h"
+#include "sel4vm/driver/pci_helper.h"
 
 int vmm_pci_init(vmm_pci_space_t *space) {
     for (int i = 0; i < 32; i++) {

@@ -11,7 +11,7 @@
  */
 
 #include <autoconf.h>
-#include <sel4vmm/gen_config.h>
+#include <sel4vm/gen_config.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -21,7 +21,7 @@
 #include <sel4utils/vspace_internal.h>
 #include <vka/capops.h>
 
-#include "vmm/platform/guest_vspace.h"
+#include "sel4vm/platform/guest_vspace.h"
 
 #ifdef CONFIG_IOMMU
 typedef struct guest_iospace {

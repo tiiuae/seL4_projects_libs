@@ -11,7 +11,7 @@
  */
 
 #include <autoconf.h>
-#include <sel4vmm/gen_config.h>
+#include <sel4vm/gen_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,9 +21,9 @@
 #include <utils/util.h>
 #include <vka/capops.h>
 
-#include "vmm/vmm.h"
-#include "vmm/debug.h"
-#include "vmm/platform/guest_memory.h"
+#include "sel4vm/vmm.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/platform/guest_memory.h"
 
 static void push_guest_ram_region(guest_memory_t *guest_memory, uintptr_t start, size_t size, int allocated)
 {

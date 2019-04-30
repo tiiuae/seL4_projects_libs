@@ -22,12 +22,12 @@
 
 #include <sel4/sel4.h>
 
-#include "vmm/debug.h"
+#include "sel4vm/debug.h"
 
-#include "vmm/vmm.h"
+#include "sel4vm/vmm.h"
 
-#include "vmm/processor/cpuid.h"
-#include "vmm/processor/cpufeature.h"
+#include "sel4vm/processor/cpuid.h"
+#include "sel4vm/processor/cpufeature.h"
 
 static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
                 unsigned int *ecx, unsigned int *edx) {

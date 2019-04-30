@@ -11,11 +11,11 @@
  */
 
 #include <autoconf.h>
-#include <sel4vmm/gen_config.h>
+#include <sel4vm/gen_config.h>
 
 #include <string.h>
 
-#include <vmm/driver/virtio_emul.h>
+#include <sel4vm/driver/virtio_emul.h>
 #include <ethdrivers/virtio/virtio_pci.h>
 #include <ethdrivers/virtio/virtio_net.h>
 #include <ethdrivers/virtio/virtio_ring.h>

@@ -12,9 +12,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sel4arm-vmm/vm.h>
-#include <sel4arm-vmm/devices.h>
-#include <sel4arm-vmm/devices/generic_forward.h>
+#include <sel4vm/vm.h>
+#include <sel4vm/devices.h>
+#include <sel4vm/devices/generic_forward.h>
 
 struct gf_device_priv {
     struct generic_forward_cfg cfg;

@@ -17,9 +17,9 @@
 
 #include <sel4/sel4.h>
 
-#include "vmm/debug.h"
-#include "vmm/vmm.h"
-#include "vmm/processor/decode.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/vmm.h"
+#include "sel4vm/processor/decode.h"
 
 #define TRAMPOLINE_LENGTH (100)
 

@@ -19,11 +19,11 @@ Author: W.A.
 #include <stdlib.h>
 #include <string.h>
 
-#include "vmm/debug.h"
-#include "vmm/platform/guest_vspace.h"
-#include "vmm/platform/guest_memory.h"
-#include "vmm/guest_state.h"
-#include "vmm/processor/platfeature.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/platform/guest_vspace.h"
+#include "sel4vm/platform/guest_memory.h"
+#include "sel4vm/guest_state.h"
+#include "sel4vm/processor/platfeature.h"
 
 /* TODO are these defined elsewhere? */
 #define IA32_PDE_SIZE(pde) (pde & BIT(7))

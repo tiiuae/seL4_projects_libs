@@ -20,7 +20,7 @@
 
 #include <sel4/sel4.h>
 
-#include "vmm/debug.h"
+#include "sel4vm/debug.h"
 
 /* Print out the context of a guest OS thread. */
 void vmm_print_guest_context(int level, vmm_vcpu_t *vcpu) {

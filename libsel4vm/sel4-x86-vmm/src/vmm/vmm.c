@@ -25,10 +25,10 @@
 #include <platsupport/arch/tsc.h>
 #include <sel4/arch/vmenter.h>
 
-#include "vmm/debug.h"
-#include "vmm/vmm.h"
-#include "vmm/interrupt.h"
-#include "vmm/platform/boot_guest.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/vmm.h"
+#include "sel4vm/interrupt.h"
+#include "sel4vm/platform/boot_guest.h"
 
 void vmm_sync_guest_context(vmm_vcpu_t *vcpu) {
     if (IS_MACHINE_STATE_MODIFIED(vcpu->guest_state.machine.context)) {

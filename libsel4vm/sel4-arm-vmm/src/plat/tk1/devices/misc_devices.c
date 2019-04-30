@@ -9,8 +9,8 @@
  *
  * @TAG(DATA61_BSD)
  */
-#include <sel4arm-vmm/plat/device_map.h>
-#include <sel4arm-vmm/devices.h>
+#include <sel4vm/plat/device_map.h>
+#include <sel4vm/devices.h>
 
 
 const struct device dev_usb1 = {

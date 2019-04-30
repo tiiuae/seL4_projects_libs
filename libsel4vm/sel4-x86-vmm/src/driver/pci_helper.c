@@ -18,7 +18,7 @@
 #include <pci/virtual_pci.h>
 #include <pci/helper.h>
 
-#include "vmm/driver/pci_helper.h"
+#include "sel4vm/driver/pci_helper.h"
 
 typedef struct pci_bar_emulation {
     vmm_pci_entry_t passthrough;

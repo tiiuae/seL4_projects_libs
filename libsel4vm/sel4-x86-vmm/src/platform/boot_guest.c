@@ -14,7 +14,7 @@
  * manipulation */
 
 #include <autoconf.h>
-#include <sel4vmm/gen_config.h>
+#include <sel4vm/gen_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,15 +25,15 @@
 #include <sel4utils/mapping.h>
 #include <vka/capops.h>
 
-#include "vmm/debug.h"
-#include "vmm/processor/platfeature.h"
-#include "vmm/platform/boot_guest.h"
-#include "vmm/platform/guest_memory.h"
-#include "vmm/platform/e820.h"
-#include "vmm/platform/bootinfo.h"
-#include "vmm/platform/guest_vspace.h"
-#include "vmm/platform/elf_helper.h"
-#include "vmm/platform/acpi.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/processor/platfeature.h"
+#include "sel4vm/platform/boot_guest.h"
+#include "sel4vm/platform/guest_memory.h"
+#include "sel4vm/platform/e820.h"
+#include "sel4vm/platform/bootinfo.h"
+#include "sel4vm/platform/guest_vspace.h"
+#include "sel4vm/platform/elf_helper.h"
+#include "sel4vm/platform/acpi.h"
 
 #include <sel4/arch/bootinfo_types.h>
 

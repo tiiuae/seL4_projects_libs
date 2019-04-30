@@ -13,14 +13,14 @@
 /*vm exits related with vmx timer*/
 
 #include <autoconf.h>
-#include <sel4vmm/gen_config.h>
+#include <sel4vm/gen_config.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <sel4/sel4.h>
 
-#include "vmm/vmm.h"
-#include "vmm/platform/vmcs.h"
+#include "sel4vm/vmm.h"
+#include "sel4vm/platform/vmcs.h"
 
 int vmm_vmx_timer_handler(vmm_vcpu_t *vcpu)
 {

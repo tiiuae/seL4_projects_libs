@@ -9,7 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#include <sel4arm-vmm/sel4_arch/fault.h>
+#include <sel4vm/sel4_arch/fault.h>
 #include "vm.h"
 
 #include <sel4/sel4.h>

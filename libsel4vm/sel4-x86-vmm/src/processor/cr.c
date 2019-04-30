@@ -18,11 +18,11 @@
 #include <sel4/sel4.h>
 #include <utils/util.h>
 
-#include "vmm/debug.h"
-#include "vmm/processor/platfeature.h"
-#include "vmm/platform/vmcs.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/processor/platfeature.h"
+#include "sel4vm/platform/vmcs.h"
 
-#include "vmm/vmm.h"
+#include "sel4vm/vmm.h"
 
 static inline unsigned int apply_cr_bits(unsigned int cr, unsigned int mask, unsigned int host_bits) {
     /* force any bit in the mask to be the value from the shadow (both enabled and disabled) */

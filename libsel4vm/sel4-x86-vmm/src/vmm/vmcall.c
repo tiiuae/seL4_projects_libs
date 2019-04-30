@@ -10,9 +10,9 @@
  * @TAG(DATA61_GPL)
  */
 
-#include "vmm/vmm.h"
-#include "vmm/debug.h"
-#include "vmm/vmcall.h"
+#include "sel4vm/vmm.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/vmcall.h"
 
 static vmcall_handler_t *get_handle(vmm_t *vmm, int token);
 

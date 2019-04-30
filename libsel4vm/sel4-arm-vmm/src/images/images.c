@@ -9,7 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#include <sel4arm-vmm/images.h>
+#include <sel4vm/images.h>
 #include <string.h>
 #include <elf/elf.h>
 

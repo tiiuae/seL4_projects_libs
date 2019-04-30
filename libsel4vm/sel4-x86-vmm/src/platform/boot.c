@@ -14,7 +14,7 @@
  * booting and management. */
 
 #include <autoconf.h>
-#include <sel4vmm/gen_config.h>
+#include <sel4vm/gen_config.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -24,10 +24,10 @@
 #include <simple/simple.h>
 #include <vka/capops.h>
 
-#include "vmm/platform/boot.h"
-#include "vmm/platform/guest_vspace.h"
-#include "vmm/processor/apicdef.h"
-#include "vmm/processor/lapic.h"
+#include "sel4vm/platform/boot.h"
+#include "sel4vm/platform/guest_vspace.h"
+#include "sel4vm/processor/apicdef.h"
+#include "sel4vm/processor/lapic.h"
 
 int vmm_init(vmm_t *vmm, allocman_t *allocman, simple_t simple, vka_t vka, vspace_t vspace,
              platform_callbacks_t callbacks)

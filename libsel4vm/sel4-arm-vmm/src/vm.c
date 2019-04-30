@@ -10,7 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 #include <autoconf.h>
-#include <sel4arm-vmm/gen_config.h>
+#include <sel4vm/gen_config.h>
 #include "vm.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,9 +28,9 @@
 #include "arch/arm/devices/vgic.h"
 
 #include "devices.h"
-#include "sel4arm-vmm/guest_vspace.h"
+#include "sel4vm/guest_vspace.h"
 
-#include <sel4arm-vmm/sel4_arch/vm.h>
+#include <sel4vm/sel4_arch/vm.h>
 #include <sel4vmmcore/util/io.h>
 
 //#define DEBUG_VM

@@ -10,7 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 #include <stdio.h>
-#include <sel4arm-vmm/fault.h>
+#include <sel4vm/fault.h>
 #include <assert.h>
 
 static seL4_Word wzr = 0;

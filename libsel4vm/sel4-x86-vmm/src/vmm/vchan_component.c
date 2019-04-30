@@ -10,11 +10,11 @@
  * @TAG(DATA61_GPL)
  */
 
-#include "vmm/vmm.h"
-#include "vmm/vmm_manager.h"
-#include "vmm/vchan_component.h"
-#include "vmm/debug.h"
-#include "vmm/vchan_sharemem.h"
+#include "sel4vm/vmm.h"
+#include "sel4vm/vmm_manager.h"
+#include "sel4vm/vchan_component.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/vchan_sharemem.h"
 
 static libvchan_t *vchan_init(int domain, int port, int server);
 static int libvchan_readwrite_action(libvchan_t *ctrl, void *data, size_t size, int stream, int action);

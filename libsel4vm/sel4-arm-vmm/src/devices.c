@@ -10,15 +10,15 @@
  * @TAG(DATA61_BSD)
  */
 #include <autoconf.h>
-#include <sel4arm-vmm/gen_config.h>
+#include <sel4vm/gen_config.h>
 #include <sel4utils/mapping.h>
 #include "vm.h"
 #include <stdlib.h>
 
-#include <sel4arm-vmm/devices.h>
-#include <sel4arm-vmm/plat/devices.h>
+#include <sel4vm/devices.h>
+#include <sel4vm/plat/devices.h>
 
-#include <sel4arm-vmm/fault.h>
+#include <sel4vm/fault.h>
 #include <vka/capops.h>
 
 //#define DEBUG_MAPPINGS

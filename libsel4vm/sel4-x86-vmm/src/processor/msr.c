@@ -17,9 +17,9 @@
 
 #include <sel4/sel4.h>
 
-#include "vmm/debug.h"
-#include "vmm/vmm.h"
-#include "vmm/processor/msr.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/vmm.h"
+#include "sel4vm/processor/msr.h"
 
 int vmm_rdmsr_handler(vmm_vcpu_t *vcpu) {
 

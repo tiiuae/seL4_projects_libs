@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <vmm/vmm.h>
+#include <sel4vm/vmm.h>
 
 typedef struct virtio_emul_vm {
     vmm_t *vmm;

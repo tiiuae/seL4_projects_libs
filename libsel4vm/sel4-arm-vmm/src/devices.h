@@ -12,10 +12,10 @@
 #pragma once
 
 #include <autoconf.h>
-#include <sel4arm-vmm/gen_config.h>
-#include <sel4arm-vmm/devices.h>
+#include <sel4vm/gen_config.h>
+#include <sel4vm/devices.h>
 
-#include <sel4arm-vmm/plat/devices.h>
+#include <sel4vm/plat/devices.h>
 
 /**
  * Map a device

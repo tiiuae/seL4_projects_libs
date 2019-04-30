@@ -10,7 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <vmm/vmm.h>
+#include <sel4vm/vmm.h>
 #include <pci/virtual_pci.h>
 #include <pci/helper.h>
 

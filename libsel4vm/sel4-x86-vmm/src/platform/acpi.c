@@ -16,11 +16,11 @@ Author: W.A. */
 #include <stdlib.h>
 #include <string.h>
 
-#include "vmm/debug.h"
-#include "vmm/platform/acpi.h"
-#include "vmm/platform/guest_memory.h"
-#include "vmm/platform/guest_vspace.h"
-#include "vmm/processor/apicdef.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/platform/acpi.h"
+#include "sel4vm/platform/guest_memory.h"
+#include "sel4vm/platform/guest_vspace.h"
+#include "sel4vm/processor/apicdef.h"
 
 #include "platsupport/plat/acpi/acpi.h"
 

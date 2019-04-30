@@ -9,7 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#include "sel4arm-vmm/guest_vspace.h"
+#include "sel4vm/guest_vspace.h"
 #include <sel4utils/vspace.h>
 #include <sel4utils/vspace_internal.h>
 #include <vka/capops.h>

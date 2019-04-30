@@ -9,7 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#include <sel4arm-vmm/atags.h>
+#include <sel4vm/atags.h>
 
 #include <stdlib.h>
 #include <assert.h>

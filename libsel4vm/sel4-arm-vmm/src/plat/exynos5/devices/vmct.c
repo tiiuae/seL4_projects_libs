@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sel4arm-vmm/plat/devices.h>
+#include <sel4vm/plat/devices.h>
 #include "../../../vm.h"
 
 //#define DEBUG_MCT

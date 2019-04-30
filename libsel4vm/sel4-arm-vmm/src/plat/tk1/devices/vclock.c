@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sel4arm-vmm/devices.h>
+#include <sel4vm/devices.h>
 
 const struct device dev_clkcar = {
     .devid = DEV_CUSTOM,

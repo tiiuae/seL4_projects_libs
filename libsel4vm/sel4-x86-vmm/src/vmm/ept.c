@@ -17,10 +17,10 @@
 
 #include <sel4/sel4.h>
 
-#include "vmm/debug.h"
-#include "vmm/vmm.h"
-#include "vmm/platform/vmcs.h"
-#include "vmm/mmio.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/vmm.h"
+#include "sel4vm/platform/vmcs.h"
+#include "sel4vm/mmio.h"
 
 /* Handling EPT violation VMExit Events. */
 int vmm_ept_violation_handler(vmm_vcpu_t *vcpu) {

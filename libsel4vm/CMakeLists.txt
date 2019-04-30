@@ -55,7 +55,7 @@ if("${KernelArch}" STREQUAL "arm")
     )
     target_include_directories(sel4vm PUBLIC sel4-arm-vmm/sel4_arch_include/${KernelSel4Arch})
     target_link_libraries(
-        sel4arm-vmm
+        sel4vm
         muslc
         sel4
         sel4simple

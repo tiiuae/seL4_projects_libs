@@ -19,9 +19,9 @@
 #include <sel4utils/util.h>
 #include <simple/simple.h>
 
-#include "vmm/debug.h"
-#include "vmm/io.h"
-#include "vmm/vmm.h"
+#include "sel4vm/debug.h"
+#include "sel4vm/io.h"
+#include "sel4vm/vmm.h"
 
 static int io_port_cmp(const void *pkey, const void *pelem) {
     unsigned int key = (unsigned int)(uintptr_t)pkey;

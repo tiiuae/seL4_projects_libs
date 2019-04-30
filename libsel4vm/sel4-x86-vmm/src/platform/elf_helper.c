@@ -11,7 +11,7 @@
  */
 
 #include <elf/elf.h>
-#include "vmm/platform/elf_helper.h"
+#include "sel4vm/platform/elf_helper.h"
 
 /*
 	Reads the elf header and elf program headers from a file

@@ -17,7 +17,7 @@
 
 #include <sel4/sel4.h>
 
-#include "vmm/vmm.h"
+#include "sel4vm/vmm.h"
 
 /* Handling halt instruction VMExit Events. */
 int vmm_hlt_handler(vmm_vcpu_t *vcpu) {

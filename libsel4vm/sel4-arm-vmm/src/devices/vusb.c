@@ -9,7 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#include <sel4arm-vmm/devices/vusb.h>
+#include <sel4vm/devices/vusb.h>
 
 #ifdef CONFIG_LIB_USB
 
@@ -20,7 +20,7 @@
 #include <simple/simple.h>
 #include <platsupport/io.h>
 #include <sel4utils/thread.h>
-#include <sel4arm-vmm/vm.h>
+#include <sel4vm/vm.h>
 #include <stdlib.h>
 #include <usb/usb_host.h>
 #include <usb/usb.h>
