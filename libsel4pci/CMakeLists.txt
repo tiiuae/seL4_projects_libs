@@ -16,7 +16,7 @@ project(libsel4pci C)
 
 add_compile_options(-std=gnu99)
 
-file(GLOB sources src/*.c src/${KernelArch}/*.c)
+file(GLOB sources src/*.c src/arch/${KernelArch}/*.c)
 
 add_library(sel4pci STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4pci PUBLIC include arch_include/${KernelArch})
