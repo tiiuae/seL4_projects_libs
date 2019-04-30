@@ -12,7 +12,7 @@
 
 cmake_minimum_required(VERSION 3.8.2)
 
-add_subdirectory(libsel4arm-vmm)
+add_subdirectory(libsel4vm)
 add_subdirectory(libsel4vchan)
 add_subdirectory(libsel4dma)
 add_subdirectory(libsel4bga)
