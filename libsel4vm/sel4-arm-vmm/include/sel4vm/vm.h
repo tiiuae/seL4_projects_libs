@@ -39,30 +39,6 @@ typedef int (*reboot_hook_fn)(vm_t* vm, void *token);
 typedef struct virq_handle *virq_handle_t;
 
 /**
- * Create a virtual machine
- * @param name           A logical name for the VM
- * @param priority       The priority of the new VM
- * @param vmm_endpoint   An endpoint for IPC delivery such as VM faults
- * @param vm_badge       The badge for delivered IPCs
- * @param vka            A vka for object allocation.
- *                       Must be valid for the life of the VM.
- * @param simple         A simple instance for key cap acquisition.
- *                       Must be valid for the life of the VM.
- * @param vmm_vspace     The vspace of the VMM.
- *                       Must be valid for the life of the VM.
- * @param io_ops         IO operations for the VM to use when mapping and
- *                       configuring hardware.
- *                       Must be valid for the life of the VM.
- * @param vm             A reference to a vm struct to initialise
- * @return               0 on success
- */
-int vm_create(const char *name, int priority,
-              seL4_CPtr vmm_endpoint, seL4_Word vm_badge,
-              vka_t *vka, simple_t *simple, vspace_t *vspace,
-              ps_io_ops_t *io_ops,
-              vm_t *vm);
-
-/**
  * Copy data in from the VM.
  * @param[in] vm      A handle to the VM that the data should be read from
  * @param[in] data    The address of the data to load to

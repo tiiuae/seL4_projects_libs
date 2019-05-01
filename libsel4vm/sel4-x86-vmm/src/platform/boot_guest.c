@@ -37,14 +37,6 @@
 
 #include <sel4/arch/bootinfo_types.h>
 
-#define VMM_VMCS_CR0_MASK           (X86_CR0_PG | X86_CR0_PE)
-#define VMM_VMCS_CR0_VALUE          VMM_VMCS_CR0_MASK
-
-// We need to own the PSE and PAE bits up until the guest has actually turned on paging,
-// then it can control them
-#define VMM_VMCS_CR4_MASK           (X86_CR4_PSE | X86_CR4_PAE | X86_CR4_VMXE)
-#define VMM_VMCS_CR4_VALUE          (X86_CR4_PSE | X86_CR4_VMXE)
-
 typedef struct boot_guest_cookie {
     vmm_t *vmm;
     FILE *file;
@@ -200,33 +192,6 @@ static inline uint32_t vmm_plat_vesa_fbuffer_size(seL4_VBEModeInfoBlock_t *block
 {
     assert(block);
     return ALIGN_UP(block->vbe_common.bytesPerScanLine * block->vbe12_part1.yRes, 65536);
-}
-
-static int make_guest_page_dir_continued(uintptr_t guest_phys, void *vaddr, size_t size, size_t offset, void *cookie)
-{
-    assert(offset == 0);
-    assert(size == BIT(seL4_PageBits));
-    /* Write into this frame as the init page directory: 4M pages, 1 to 1 mapping. */
-    uint32_t *pd = vaddr;
-    for (int i = 0; i < 1024; i++) {
-        /* Present, write, user, page size 4M */
-        pd[i] = (i << PAGE_BITS_4M) | 0x87;
-    }
-    return 0;
-}
-
-static int make_guest_page_dir(vmm_t *vmm)
-{
-    /* Create a 4K Page to be our 1-1 pd */
-    /* This is constructed with magical new memory that we will not tell Linux about */
-    uintptr_t pd = (uintptr_t)vspace_new_pages(&vmm->guest_mem.vspace, seL4_AllRights, 1, seL4_PageBits);
-    if (pd == 0) {
-        ZF_LOGE("Failed to allocate page for initial guest pd");
-        return -1;
-    }
-    printf("Guest page dir allocated at 0x%x. Creating 1-1 entries\n", (unsigned int)pd);
-    vmm->guest_image.pd = pd;
-    return vmm_guest_vspace_touch(&vmm->guest_mem.vspace, pd, BIT(seL4_PageBits), make_guest_page_dir_continued, NULL);
 }
 
 static int make_guest_cmd_line_continued(uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie)
@@ -416,9 +381,6 @@ void vmm_plat_init_guest_boot_structure(vmm_t *vmm, const char *cmdline)
 {
     int UNUSED err;
 
-    err = make_guest_page_dir(vmm);
-    assert(!err);
-
     err = make_guest_cmd_line(vmm, cmdline);
     assert(!err);
 
@@ -441,23 +403,6 @@ void vmm_init_guest_thread_state(vmm_vcpu_t *vcpu)
     vmm_guest_state_set_eip(&vcpu->guest_state, vcpu->vmm->guest_image.entry);
     /* The boot_param structure. */
     vmm_set_user_context(&vcpu->guest_state, USER_CONTEXT_ESI, vcpu->vmm->guest_image.boot_info);
-
-    /* Set the initial CR state */
-    vcpu->guest_state.virt.cr.cr0_mask = VMM_VMCS_CR0_MASK;
-    vcpu->guest_state.virt.cr.cr0_shadow = 0;
-    vcpu->guest_state.virt.cr.cr0_host_bits = VMM_VMCS_CR0_VALUE;
-
-    vcpu->guest_state.virt.cr.cr4_mask = VMM_VMCS_CR4_MASK;
-    vcpu->guest_state.virt.cr.cr4_shadow = 0;
-    vcpu->guest_state.virt.cr.cr4_host_bits = VMM_VMCS_CR4_VALUE;
-
-    /* Set the initial CR states */
-    vmm_guest_state_set_cr0(&vcpu->guest_state, vcpu->guest_state.virt.cr.cr0_host_bits);
-    vmm_guest_state_set_cr3(&vcpu->guest_state, vcpu->vmm->guest_image.pd);
-    vmm_guest_state_set_cr4(&vcpu->guest_state, vcpu->guest_state.virt.cr.cr4_host_bits);
-
-    /* Init guest OS vcpu state. */
-    vmm_vmcs_init_guest(vcpu);
 }
 
 /* TODO: Refactor and stop rewriting fucking elf loading code */

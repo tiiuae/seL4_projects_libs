@@ -155,15 +155,9 @@ const struct device dev_vpci_cfg_io = {
 
 int vm_install_vpci(vm_t *vm)
 {
-    /* Initialize vmm pci device */
-    int err = vmm_pci_init(&vm->pci);
-    if (err) {
-        ZF_LOGE("Failed to initialize vpci");
-        return err;
-    }
 
     /* Install base VPCI CFG region */
-    err = vm_add_device(vm, &dev_vpci_cfg);
+    int err = vm_add_device(vm, &dev_vpci_cfg);
     if (err) {
         ZF_LOGE("Failed to install VPCI CFG region");
         return err;
