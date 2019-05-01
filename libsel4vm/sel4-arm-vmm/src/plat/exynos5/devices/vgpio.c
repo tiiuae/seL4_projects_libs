@@ -9,9 +9,11 @@
  *
  * @TAG(DATA61_BSD)
  */
+
 #include <stdlib.h>
 #include <string.h>
 
+#include <sel4vm/guest_vm.h>
 #include "../../../devices.h"
 #include "../../../vm.h"
 #include <platsupport/gpio.h>
@@ -185,12 +187,11 @@ static int handle_vgpio_left_fault(struct device *d, vm_t *vm, fault_t *fault)
 }
 
 
-struct gpio_device *
-vm_install_ac_gpio(vm_t *vm, enum vacdev_default default_ac, enum vacdev_action action)
-{
-    struct gpio_device *gpio_device;
-    vspace_t *vmm_vspace;
-    vmm_vspace = vm->vmm_vspace;
+struct gpio_device*
+vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac, enum vacdev_action action) {
+    struct gpio_device* gpio_device;
+    vspace_t* vmm_vspace;
+    vmm_vspace = &vm->mem.vmm_vspace;
     uint8_t ac = (default_ac == VACDEV_DEFAULT_ALLOW) ? 0xff : 0x00;
     int i;
 

@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sel4vm/guest_vm.h>
+
 #include "../../../devices.h"
 #include "../../../vm.h"
 
@@ -71,7 +73,7 @@ int vm_install_vsysreg(vm_t *vm)
     int err;
 
     d = dev_sysreg;
-    vmm_vspace = vm->vmm_vspace;
+    vmm_vspace = &vm->mem.vmm_vspace;
 
     /* Initialise the virtual device */
     sysreg_data = malloc(sizeof(struct sysreg_priv));

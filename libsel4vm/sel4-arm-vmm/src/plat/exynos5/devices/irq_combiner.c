@@ -9,6 +9,9 @@
  *
  * @TAG(DATA61_BSD)
  */
+
+#include <sel4vm/guest_vm.h>
+
 #include "irq_combiner.h"
 #include "../../../devices.h"
 #include <stdlib.h>

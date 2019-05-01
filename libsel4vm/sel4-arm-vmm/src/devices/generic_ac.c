@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sel4vm/guest_vm.h>
+
 #include "../vm.h"
 #include "../devices.h"
 
@@ -87,8 +89,8 @@ int vm_install_generic_ac_device(vm_t *vm, const struct device *d, void *mask,
 {
     struct gac_device_priv *gac_device_priv;
     struct device dev;
-    vspace_t *vmm_vspace;
-    vmm_vspace = vm->vmm_vspace;
+    vspace_t* vmm_vspace;
+    vmm_vspace = &vm->mem.vmm_vspace;
     int err;
 
     /* initialise private data */

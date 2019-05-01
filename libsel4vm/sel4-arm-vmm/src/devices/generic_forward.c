@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sel4vm/guest_vm.h>
+
 #include <sel4vm/vm.h>
 #include <sel4vm/devices.h>
 #include <sel4vm/devices/generic_forward.h>

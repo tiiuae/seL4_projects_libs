@@ -13,6 +13,7 @@
 
 #include <stdint.h>
 
+#include <sel4vm/vm.h>
 #include <sel4vm/fault.h>
 #include <platsupport/gpio.h>
 #include <platsupport/plat/clock.h>

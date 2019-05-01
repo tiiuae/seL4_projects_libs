@@ -11,6 +11,8 @@
  */
 #pragma once
 
+#include <sel4vm/guest_vm.h>
+
 #include <autoconf.h>
 #include <sel4vm/gen_config.h>
 #include <sel4vm/devices.h>

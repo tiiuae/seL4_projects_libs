@@ -9,6 +9,8 @@
  *
  * @TAG(DATA61_BSD)
  */
+
+#include <sel4vm/guest_vm.h>
 #include "../../../vm.h"
 
 extern const struct device dev_vgic_dist;

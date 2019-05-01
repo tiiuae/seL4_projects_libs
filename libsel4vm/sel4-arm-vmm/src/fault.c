@@ -9,6 +9,9 @@
  *
  * @TAG(DATA61_BSD)
  */
+
+#include <sel4vm/guest_vm.h>
+
 #include <sel4vm/sel4_arch/fault.h>
 #include "vm.h"
 
@@ -76,7 +79,7 @@ static int maybe_fetch_fault_instruction(fault_t *f)
     if ((f->content & CONTENT_INST) == 0) {
         seL4_Word inst = 0;
         /* Fetch the instruction */
-        if (vm_copyin(f->vm, &inst, f->ip, 4) < 0) {
+        if (vm_copyin(f->vcpu->vm, &inst, f->ip, 4) < 0) {
             return -1;
         }
         /* Fixup the instruction */
@@ -265,15 +268,16 @@ static int get_rt(fault_t *f)
     return rt;
 }
 
-fault_t *fault_init(vm_t *vm)
+fault_t*
+fault_init(vm_vcpu_t* vcpu)
 {
     fault_t *fault;
     int err;
     fault = (fault_t *)malloc(sizeof(*fault));
     if (fault != NULL) {
-        fault->vm = vm;
+        fault->vcpu = vcpu;
         /* Reserve a slot for saving reply caps */
-        err = vka_cspace_alloc_path(vm->vka, &fault->reply_cap);
+        err = vka_cspace_alloc_path(vcpu->vm->vka, &fault->reply_cap);
         if (err) {
             free(fault);
             fault = NULL;
@@ -308,7 +312,7 @@ int new_fault(fault_t *fault)
     int err;
     vm_t *vm;
 
-    vm = fault->vm;
+    vm = fault->vcpu->vm;
     assert(vm);
 
     assert(fault_handled(fault));
@@ -318,7 +322,7 @@ int new_fault(fault_t *fault)
     addr = seL4_GetMR(seL4_VMFault_Addr),
     fsr = seL4_GetMR(seL4_VMFault_FSR);
     ip = seL4_GetMR(seL4_VMFault_IP);
-    DFAULT("%s: New fault @ 0x%x from PC 0x%x\n", vm->name, addr, ip);
+    DFAULT("%s: New fault @ 0x%x from PC 0x%x\n", vm->vm_name, addr, ip);
     /* Create the fault object */
     fault->is_wfi = 0;
     fault->is_prefetch = is_prefetch;
@@ -358,7 +362,7 @@ int abandon_fault(fault_t *fault)
 {
     /* Nothing to do here */
     DFAULT("%s: Release fault @ 0x%x from PC 0x%x\n",
-           fault->vm->name, fault->addr, fault->ip);
+           fault->vcpu->vm->vm_name, fault->addr, fault->ip);
     return 0;
 }
 
@@ -370,7 +374,7 @@ int restart_fault(fault_t *fault)
     seL4_MessageInfo_t reply;
     reply = seL4_MessageInfo_new(0, 0, 0, 0);
     DFAULT("%s: Restart fault @ 0x%x from PC 0x%x\n",
-           fault->vm->name, fault->addr, fault->ip);
+           fault->vcpu->vm->vm_name, fault->addr, fault->ip);
     seL4_Send(fault->reply_cap.capPtr, reply);
     /* Clean up */
     return abandon_fault(fault);
@@ -385,7 +389,7 @@ int ignore_fault(fault_t *fault)
     /* Advance the PC */
     regs->pc += fault_is_32bit_instruction(fault) ? 4 : 2;
     /* Write back CPU registers */
-    err = seL4_TCB_WriteRegisters(vm_get_tcb(fault->vm), false, 0,
+    err = seL4_TCB_WriteRegisters(vm_get_tcb(fault->vcpu->vm), false, 0,
                                   sizeof(*regs) / sizeof(regs->pc), regs);
     assert(!err);
     if (err) {
@@ -411,12 +415,12 @@ int advance_fault(fault_t *fault)
             *reg_ctx = fault_emulate(fault, *reg_ctx);
         } else {
             /* register is banked, use vcpu invocations */
-            seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(vm_get_vcpu(fault->vm), reg);
+            seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(fault->vcpu->vm_vcpu.cptr, reg);
             if (res.error) {
                 ZF_LOGF("Read registers failed");
                 return -1;
             }
-            int error = seL4_ARM_VCPU_WriteRegs(vm_get_vcpu(fault->vm), reg, fault_emulate(fault, res.value));
+            int error = seL4_ARM_VCPU_WriteRegs(fault->vcpu->vm_vcpu.cptr, reg, fault_emulate(fault, res.value));
             if (error) {
                 ZF_LOGF("Write registers failed");
                 return -1;
@@ -424,7 +428,7 @@ int advance_fault(fault_t *fault)
         }
     }
     DFAULT("%s: Emulate fault @ 0x%x from PC 0x%x\n",
-           fault->vm->name, fault->addr, fault->ip);
+           fault->vcpu->vm->vm_name, fault->addr, fault->ip);
     /* If this is the final stage of the fault, return to user */
     assert(fault->stage > 0);
     fault->stage--;
@@ -458,7 +462,7 @@ void print_fault(fault_t *fault)
     printf(ANSI_COLOR(RED, BOLD));
     printf("Pagefault from [%s]: %s %s "
            "@ PC: 0x"XFMT" IPA: 0x"XFMT", FSR: 0x"XFMT "\n",
-           fault->vm->name,
+           fault->vcpu->vm->vm_name,
            fault_is_read(fault) ? "read" : "write",
            fault_is_prefetch(fault) ? "prefetch fault" : "fault",
            fault->ip,
@@ -515,7 +519,7 @@ seL4_Word fault_get_data(fault_t *f)
             data = *decode_rt(rt, fault_get_ctx(f));
         } else {
             /* Banked, use VCPU invocations */
-            seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(vm_get_vcpu(f->vm), reg);
+            seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(f->vcpu->vm_vcpu.cptr, reg);
             if (res.error) {
                 ZF_LOGF("Read registers failed");
             }
@@ -546,7 +550,7 @@ seL4_UserContext *fault_get_ctx(fault_t *f)
 {
     if ((f->content & CONTENT_REGS) == 0) {
         int err;
-        err = seL4_TCB_ReadRegisters(vm_get_tcb(f->vm), false, 0,
+        err = seL4_TCB_ReadRegisters(vm_get_tcb(f->vcpu->vm), false, 0,
                                      sizeof(f->regs) / sizeof(f->regs.pc),
                                      &f->regs);
         assert(!err);

@@ -9,6 +9,9 @@
  *
  * @TAG(DATA61_BSD)
  */
+
+#include <sel4vm/guest_vm.h>
+
 #include "vm.h"
 
 #include <string.h>
@@ -141,7 +144,7 @@ static int copy_out(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t *vka, void
 
 int vm_copyout(vm_t *vm, void *data, uintptr_t address, size_t size)
 {
-    return copy_out(vm_get_vspace(vm), vm->vmm_vspace, vm->vka, data, address, size);
+    return copy_out(vm_get_vspace(vm), &vm->mem.vmm_vspace, vm->vka, data, address, size);
 }
 
 void *vm_copyout_elf(vm_t *vm, elf_t *elf_file)
@@ -258,6 +261,6 @@ static int copy_in(vspace_t *dst_vspace, vspace_t *src_vspace, vka_t *vka, void 
 
 int vm_copyin(vm_t *vm, void *data, uintptr_t address, size_t size)
 {
-    return copy_in(vm->vmm_vspace, vm_get_vspace(vm), vm->vka, data, address, size);
+    return copy_in(&vm->mem.vmm_vspace, vm_get_vspace(vm), vm->vka, data, address, size);
 }
 

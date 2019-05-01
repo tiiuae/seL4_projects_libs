@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sel4vm/guest_vm.h>
 #include "../../../devices.h"
 #include "../../../vm.h"
 
@@ -116,7 +117,7 @@ int vm_install_vpower(vm_t *vm, vm_power_cb shutdown_cb, void *shutdown_token,
     int i;
 
     d = dev_alive;
-    vmm_vspace = vm->vmm_vspace;
+    vmm_vspace = &vm->mem.vmm_vspace;
 
     /* Initialise the virtual device */
     power_data = malloc(sizeof(struct power_priv));

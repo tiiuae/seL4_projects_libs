@@ -11,6 +11,9 @@
  */
 #include <autoconf.h>
 #include <sel4vm/gen_config.h>
+
+#include <sel4vm/guest_vm.h>
+#include <sel4vm/boot.h>
 #include "vm.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -123,7 +126,7 @@ static int handle_exception(vm_t *vm, seL4_Word ip)
     seL4_CPtr tcb = vm_get_tcb(vm);
     int err;
     printf("%sInvalid instruction from [%s] at PC: 0x"XFMT"%s\n",
-           ANSI_COLOR(RED, BOLD), vm->name, seL4_GetMR(0), ANSI_COLOR(RESET));
+           ANSI_COLOR(RED, BOLD), vm->vm_name, seL4_GetMR(0), ANSI_COLOR(RESET));
     err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
     print_ctx_regs(&regs);
@@ -165,7 +168,7 @@ static void sys_pa_to_ipa(vm_t *vm, seL4_UserContext *regs)
     pa = regs->r0;
 #endif
 
-    DSTRACE("PA translation syscall from [%s]: 0x%08x->?\n", vm->name, pa);
+    DSTRACE("PA translation syscall from [%s]: 0x%08x->?\n", vm->vm_name, pa);
 #ifdef CONFIG_ARCH_AARCH64
 #else
     regs->r0 = pa;
@@ -197,7 +200,7 @@ static void sys_ipa_to_pa(vm_t *vm, seL4_UserContext *regs)
     ret = seL4_ARM_Page_GetAddress(cap);
     assert(!ret.error);
     DSTRACE("IPA translation syscall from [%s]: 0x%08x->0x%08x\n",
-            vm->name, ipa, ret.paddr);
+            vm->vm_name, ipa, ret.paddr);
 #ifdef CONFIG_ARCH_AARCH64
 #else
     regs->r0 = ret.paddr;
@@ -206,7 +209,7 @@ static void sys_ipa_to_pa(vm_t *vm, seL4_UserContext *regs)
 
 static void sys_nop(vm_t *vm, seL4_UserContext *regs)
 {
-    DSTRACE("NOP syscall from [%s]\n", vm->name);
+    DSTRACE("NOP syscall from [%s]\n", vm->vm_name);
 }
 
 static int handle_syscall(vm_t *vm, seL4_Word length)
@@ -224,7 +227,7 @@ static int handle_syscall(vm_t *vm, seL4_Word length)
     assert(!err);
     regs.pc += 4;
 
-    DSTRACE("Syscall %d from [%s]\n", syscall, vm->name);
+    DSTRACE("Syscall %d from [%s]\n", syscall, vm->vm_name);
     switch (syscall) {
     case 65:
         sys_pa_to_ipa(vm, &regs);
@@ -237,7 +240,7 @@ static int handle_syscall(vm_t *vm, seL4_Word length)
         break;
     default:
         printf("%sBad syscall from [%s]: scno %zd at PC: %p%s\n",
-               ANSI_COLOR(RED, BOLD), vm->name, syscall, (void *) ip, ANSI_COLOR(RESET));
+               ANSI_COLOR(RED, BOLD), vm->vm_name, syscall, (void *) ip, ANSI_COLOR(RESET));
         return -1;
     }
     err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
@@ -256,8 +259,8 @@ int vm_event(vm_t *vm, seL4_MessageInfo_t tag)
     switch (label) {
     case seL4_Fault_VMFault: {
         int err;
-        fault_t *fault;
-        fault = vm->fault;
+        fault_t* fault;
+        fault = vm->vcpus[BOOT_VCPU]->vcpu_arch.fault;
         err = new_fault(fault);
         assert(!err);
         do {
@@ -319,8 +322,8 @@ int vm_event(vm_t *vm, seL4_MessageInfo_t tag)
         seL4_MessageInfo_t reply;
         uint32_t hsr;
         int err;
-        fault_t *fault;
-        fault = vm->fault;
+        fault_t* fault;
+        fault = vm->vcpus[BOOT_VCPU]->vcpu_arch.fault;
         assert(length == seL4_VCPUFault_Length);
         hsr = seL4_GetMR(seL4_UnknownSyscall_ARG0);
         /* check if the exception class (bits 26-31) of the HSR indicate WFI/WFE */
@@ -329,7 +332,7 @@ int vm_event(vm_t *vm, seL4_MessageInfo_t tag)
             new_wfi_fault(fault);
             return 0;
         } else {
-            printf("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vm->name, hsr);
+            printf("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vm->vm_name, hsr);
             if ((hsr & 0xfc300000) == 0x60200000 || hsr == 0xf2000800) {
                 seL4_UserContext *regs;
                 new_wfi_fault(fault);
@@ -347,7 +350,7 @@ int vm_event(vm_t *vm, seL4_MessageInfo_t tag)
     default:
         /* What? Why are we here? What just happened? */
         printf("Unknown fault from [%s]: label=%p length=%p\n",
-               vm->name, (void *) label, (void *) length);
+               vm->vm_name, (void *) label, (void *) length);
         return -1;
     }
     return 0;
@@ -367,7 +370,7 @@ int vm_copyout_atags(vm_t *vm, struct atag_list *atags, uint32_t addr)
     vka = vm->vka;
     vm_addr = (void *)(addr & ~0xffflu);
     vm_vspace = vm_get_vspace(vm);
-    vmm_vspace = vm->vmm_vspace;
+    vmm_vspace = vm_get_vmm_vspace(vm);
 
     /* Make sure we don't cross a page boundary
      * NOTE: the next page will usually be used by linux for PT!
@@ -422,8 +425,8 @@ int vm_copyout_atags(vm_t *vm, struct atag_list *atags, uint32_t addr)
 int vm_add_device(vm_t *vm, const struct device *d)
 {
     assert(d != NULL);
-    if (vm->ndevices < MAX_DEVICES_PER_VM) {
-        vm->devices[vm->ndevices++] = *d;
+    if (vm->arch.ndevices < MAX_DEVICES_PER_VM) {
+        vm->arch.devices[vm->arch.ndevices++] = *d;
         return 0;
     } else {
         return -1;
@@ -445,7 +448,7 @@ vm_find_device(vm_t *vm, int (*cmp)(struct device *d, void *data), void *data)
 {
     struct device *ret;
     int i;
-    for (i = 0, ret = vm->devices; i < vm->ndevices; i++, ret++) {
+    for (i = 0, ret = vm->arch.devices; i < vm->arch.ndevices; i++, ret++) {
         if (cmp(ret, data) == 0) {
             return ret;
         }
@@ -467,12 +470,12 @@ vm_find_device_by_ipa(vm_t *vm, uintptr_t ipa)
 
 vspace_t *vm_get_vspace(vm_t *vm)
 {
-    return &vm->vm_vspace;
+    return &vm->mem.vm_vspace;
 }
 
 vspace_t *vm_get_vmm_vspace(vm_t *vm)
 {
-    return vm->vmm_vspace;
+    return &vm->mem.vmm_vspace;
 }
 
 int vm_install_service(vm_t *vm, seL4_CPtr service, int index, uint32_t b)
@@ -481,7 +484,7 @@ int vm_install_service(vm_t *vm, seL4_CPtr service, int index, uint32_t b)
     seL4_Word badge = b;
     int err;
     vka_cspace_make_path(vm->vka, service, &src);
-    dst.root = vm->cspace.cptr;
+    dst.root = vm->tcb.cspace.cptr;
     dst.capPtr = index;
     dst.capDepth = VM_CSPACE_SIZE_BITS;
     err =  vka_cnode_mint(&dst, &src, seL4_AllRights, badge);
@@ -538,8 +541,8 @@ int vm_register_reboot_callback(vm_t *vm, reboot_hook_fn hook, void *token)
         .fn = hook,
         .token = token
     };
-    if (vm->nhooks < MAX_REBOOT_HOOKS_PER_VM) {
-        vm->rb_hooks[vm->nhooks++] = rb;
+    if (vm->arch.nhooks < MAX_REBOOT_HOOKS_PER_VM) {
+        vm->arch.rb_hooks[vm->arch.nhooks++] = rb;
         return 0;
     } else {
         return -1;
@@ -547,10 +550,9 @@ int vm_register_reboot_callback(vm_t *vm, reboot_hook_fn hook, void *token)
 
 }
 
-int vm_process_reboot_callbacks(vm_t *vm)
-{
-    for (int i = 0; i < vm->nhooks; i++) {
-        struct reboot_hooks rb = vm->rb_hooks[i];
+int vm_process_reboot_callbacks(vm_t *vm) {
+    for (int i = 0; i < vm->arch.nhooks; i++) {
+        struct reboot_hooks rb = vm->arch.rb_hooks[i];
         if (rb.fn == NULL) {
             ZF_LOGE("NULL call back has been registered");
             return -1;

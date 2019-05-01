@@ -50,6 +50,9 @@
 #include <vka/vka.h>
 #include <vka/capops.h>
 
+#include <sel4vm/guest_vm.h>
+#include <sel4vm/boot.h>
+
 #include "../../../devices.h"
 #include "../../../vm.h"
 
@@ -292,7 +295,7 @@ static int vgic_vcpu_inject_irq(struct device *d, vm_t *vm, struct virq_handle *
     vgic = vgic_device_get_vgic(d);
 
     seL4_CPtr vcpu;
-    vcpu = vm->vcpu.cptr;
+    vcpu = vm->vcpus[BOOT_VCPU]->vm_vcpu.cptr;
     for (i = 0; i < 64; i++) {
         if (vgic->irq[i] == NULL) {
             break;
@@ -320,7 +323,7 @@ static int vgic_vcpu_inject_irq(struct device *d, vm_t *vm, struct virq_handle *
 int handle_vgic_maintenance(vm_t *vm, int idx)
 {
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
-    vm->lock();
+    vm->arch.lock();
 #endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
     /* STATE d) */
@@ -354,7 +357,7 @@ int handle_vgic_maintenance(vm_t *vm, int idx)
         }
     }
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
-    vm->unlock();
+    vm->arch.unlock();
 #endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
     return 0;
@@ -459,7 +462,7 @@ static int vgic_dist_disable_irq(struct device *d, vm_t *vm, int irq)
 static int vgic_dist_set_pending_irq(struct device *d, vm_t *vm, int irq)
 {
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
-    vm->lock();
+    vm->arch.lock();
 #endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
     /* STATE c) */
@@ -481,7 +484,7 @@ static int vgic_dist_set_pending_irq(struct device *d, vm_t *vm, int irq)
         assert(!err);
 
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
-        vm->unlock();
+        vm->arch.unlock();
 #endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
         return err;
     } else {
@@ -490,7 +493,7 @@ static int vgic_dist_set_pending_irq(struct device *d, vm_t *vm, int irq)
     }
 
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
-    vm->unlock();
+    vm->arch.unlock();
 #endif //CONCONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
     return 0;
@@ -722,8 +725,8 @@ int vm_inject_IRQ(virq_handle_t virq)
 
     vgic_dist_set_pending_irq(vgic_device, vm, virq->virq);
 
-    if (!fault_handled(vm->fault) && fault_is_wfi(vm->fault)) {
-        ignore_fault(vm->fault);
+    if (!fault_handled(vm->vcpus[BOOT_VCPU]->vcpu_arch.fault) && fault_is_wfi(vm->vcpus[BOOT_VCPU]->vcpu_arch.fault)) {
+        ignore_fault(vm->vcpus[BOOT_VCPU]->vcpu_arch.fault);
     }
 
     // vm->unlock();

@@ -13,6 +13,7 @@
 #include <string.h>
 #include <sel4/types.h>
 
+#include <sel4vm/guest_vm.h>
 #include <sel4vm/devices.h>
 #include <utils/io.h>
 

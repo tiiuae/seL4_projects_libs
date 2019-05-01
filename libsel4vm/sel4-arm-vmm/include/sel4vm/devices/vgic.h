@@ -11,6 +11,7 @@
  */
 #pragma once
 
+#include <sel4vm/guest_vm.h>
 #include <sel4vm/vm.h>
 
 int vm_install_vgic(vm_t *vm);

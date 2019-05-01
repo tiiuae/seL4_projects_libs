@@ -9,6 +9,9 @@
  *
  * @TAG(DATA61_BSD)
  */
+
+#include <sel4vm/guest_vm.h>
+
 #include <sel4vm/devices/vusb.h>
 
 #ifdef CONFIG_LIB_USB

@@ -15,6 +15,8 @@
 #include "vm.h"
 #include <stdlib.h>
 
+#include <sel4vm/guest_vm.h>
+
 #include <sel4vm/devices.h>
 #include <sel4vm/plat/devices.h>
 
@@ -200,7 +202,7 @@ void *map_emulated_device(vm_t *vm, const struct device *d)
     vm_addr = (void *)d->pstart;
     size = d->size;
     vm_vspace = vm_get_vspace(vm);
-    vmm_vspace = vm->vmm_vspace;
+    vmm_vspace = &vm->mem.vmm_vspace;
     assert(size == 0x1000);
 
     /* Create a frame (and a copy for the VMM) */
@@ -334,14 +336,14 @@ void *map_ram(vspace_t *vspace, vspace_t *vmm_vspace, vka_t *vka, uintptr_t vadd
 
 void *map_vm_ram(vm_t *vm, uintptr_t vaddr)
 {
-    return map_ram(vm_get_vspace(vm), vm->vmm_vspace, vm->vka, vaddr);
+    return map_ram(vm_get_vspace(vm), &vm->mem.vmm_vspace, vm->vka, vaddr);
 }
 
 void *map_shared_page(vm_t *vm, uintptr_t ipa, seL4_CapRights_t rights)
 {
     void *addr = NULL;
     int ret;
-    ret = generic_map_page(vm->vka, vm->vmm_vspace, &vm->vm_vspace, ipa, BIT(12), rights, 0, &addr);
+    ret = generic_map_page(vm->vka, &vm->mem.vmm_vspace, &vm->mem.vm_vspace, ipa, BIT(12), rights, 0, &addr);
     return ret ? NULL : addr;
 }
 
@@ -462,7 +464,7 @@ int vm_install_listening_device(vm_t *vm, const struct device *dev_listening)
     }
     d.priv = map;
     for (i = 0; i < pages; i++) {
-        map[i] = map_device(vm->vmm_vspace, vm->vka, vm->simple,
+        map[i] = map_device(&vm->mem.vmm_vspace, vm->vka, vm->simple,
                             d.pstart + (i << 12), 0, seL4_AllRights);
     }
     err = vm_add_device(vm, &d);

@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sel4vm/guest_vm.h>
+
 #include "../../../devices.h"
 #include "../../../vm.h"
 

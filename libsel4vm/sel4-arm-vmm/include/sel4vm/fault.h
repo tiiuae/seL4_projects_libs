@@ -16,7 +16,7 @@
 #include <vka/cspacepath_t.h>
 #include <sel4vm/sel4_arch/vm.h>
 
-typedef struct vm vm_t;
+typedef struct vm_vcpu vm_vcpu_t;
 typedef struct fault fault_t;
 
 enum fault_width {
@@ -33,8 +33,8 @@ enum fault_width {
  * Data structure representating a fault
  */
 struct fault {
-/// The VM associated with the fault
-    vm_t *vm;
+/// The vcpu associated with the fault
+    vm_vcpu_t *vcpu;
 /// Reply capability to the faulting TCB
     cspacepath_t reply_cap;
 /// VM registers at the time of the fault
@@ -74,7 +74,7 @@ typedef struct fault fault_t;
  * @param[in] vm    The VM that the fault structure should be bound to
  * @return          An initialised fault structure handle or NULL on failure
  */
-fault_t *fault_init(vm_t *vm);
+fault_t* fault_init(vm_vcpu_t* vcpu);
 
 /**
  * Populate an initialised fault structure with fault data obtained from

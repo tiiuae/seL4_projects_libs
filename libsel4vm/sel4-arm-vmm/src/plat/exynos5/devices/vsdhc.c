@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sel4vm/guest_vm.h>
+
 #include "../../../devices.h"
 #include "../../../vm.h"
 
@@ -134,7 +136,7 @@ static int vm_install_nodma_sdhc(vm_t *vm, int idx)
         return -1;
     }
 
-    vmm_vspace = vm->vmm_vspace;
+    vmm_vspace = &vm->mem.vmm_vspace;
 
     /* Initialise the virtual device */
     sdhc_data = malloc(sizeof(struct sdhc_priv));

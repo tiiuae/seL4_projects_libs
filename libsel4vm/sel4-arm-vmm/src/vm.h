@@ -11,13 +11,14 @@
  */
 #pragma once
 
+#include <sel4vm/guest_vm.h>
+
 #include <sel4vm/vm.h>
 
 struct vm_onode {
     vka_object_t object;
     struct vm_onode *next;
 };
-
 
 /* When differentiating VM's by colour, call this function */
 const char *choose_colour(vm_t *vm);
@@ -30,12 +31,15 @@ struct device *vm_find_device_by_ipa(vm_t *vm, uintptr_t ipa);
 
 static inline seL4_CPtr vm_get_tcb(vm_t *vm)
 {
-    return vm->tcb.cptr;
+    return vm->tcb.tcb.cptr;
 }
 
-static inline seL4_CPtr vm_get_vcpu(vm_t *vm)
+static inline seL4_CPtr vm_get_vcpu(vm_t* vm, unsigned int vcpu_idx)
 {
-    return vm->vcpu.cptr;
+    if (vcpu_idx >= vm->num_vcpus) {
+        return seL4_CapNull;
+    }
+    return vm->vcpus[vcpu_idx]->vm_vcpu.cptr;
 }
 
 vspace_t *vm_get_vspace(vm_t *vm);

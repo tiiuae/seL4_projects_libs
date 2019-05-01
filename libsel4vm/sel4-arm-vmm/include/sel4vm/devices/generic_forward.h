@@ -12,6 +12,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <sel4vm/guest_vm.h>
 
 /**
  * This virtual device is used for dispatching faults to external handlers.
