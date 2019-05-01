@@ -18,6 +18,8 @@ set(configure_string "")
 
 add_compile_options(-std=gnu99)
 
+set(sources src/boot.c src/arch/${KernelArch}/boot.c)
+
 if("${KernelArch}" STREQUAL "arm")
     config_option(
         LibSel4ArmVMMOnDemandDeviceInstall
@@ -39,7 +41,7 @@ if("${KernelArch}" STREQUAL "arm")
 
     file(
         GLOB
-            sources
+            arm_sources
             sel4-arm-vmm/src/*.c
             sel4-arm-vmm/src/arch/arm/*/*.c
             sel4-arm-vmm/src/images/*.c
@@ -47,12 +49,17 @@ if("${KernelArch}" STREQUAL "arm")
             sel4-arm-vmm/src/plat/${KernelPlatform}/*/*.c
             sel4-arm-vmm/src/sel4_arch/${KernelSel4Arch}/*.c
     )
+    list(APPEND sources ${arm_sources})
     add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
-
     target_include_directories(
         sel4vm
-        PUBLIC sel4-arm-vmm/include sel4-arm-vmm/plat_include/${KernelPlatform}
+        PUBLIC
+            include
+            arch_include/${KernelArch}
+            sel4-arm-vmm/include
+            sel4-arm-vmm/plat_include/${KernelPlatform}
     )
+
     target_include_directories(sel4vm PUBLIC sel4-arm-vmm/sel4_arch_include/${KernelSel4Arch})
     target_link_libraries(
         sel4vm
@@ -136,16 +143,20 @@ elseif("${KernelArch}" STREQUAL "x86")
 
     file(
         GLOB
-            sources
+            x86_sources
             sel4-x86-vmm/src/vmm/*.c
             sel4-x86-vmm/src/platform/*.c
             sel4-x86-vmm/src/driver/*.c
             sel4-x86-vmm/src/manager/*.c
             sel4-x86-vmm/src/processor/*.c
     )
+    list(APPEND sources ${x86_sources})
     add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
 
-    target_include_directories(sel4vm PUBLIC sel4-x86-vmm/include)
+    target_include_directories(
+        sel4vm
+        PUBLIC include arch_include/${KernelArch} sel4-x86-vmm/include
+    )
     target_link_libraries(
         sel4vm
         PUBLIC
