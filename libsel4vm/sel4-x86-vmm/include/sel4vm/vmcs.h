@@ -14,9 +14,10 @@
 
 #include <sel4/sel4.h>
 
+#include <sel4vm/guest_vm.h>
 #include <sel4vm/vmm.h>
 
 int vmm_vmcs_read(seL4_CPtr vcpu, seL4_Word field);
 void vmm_vmcs_write(seL4_CPtr vcpu, seL4_Word field, seL4_Word value);
-void vmm_vmcs_init_guest(vmm_vcpu_t *vcpu);
+void vmm_vmcs_init_guest(vm_vcpu_t *vcpu);
 

@@ -13,18 +13,19 @@
 #pragma once
 
 #include <sel4vm/interrupt.h>
+#include <sel4vm/guest_vm.h>
 #include <sel4vm/vmm.h>
 
-typedef int(*vmexit_handler_ptr)(vmm_vcpu_t *vcpu);
+/*typedef int(*vmexit_handler_ptr)(vm_vcpu_t *vcpu);*/
 
 /*vm exit handlers*/
-int vmm_cpuid_handler(vmm_vcpu_t *vcpu);
-int vmm_ept_violation_handler(vmm_vcpu_t *vcpu);
-int vmm_wrmsr_handler(vmm_vcpu_t *vcpu);
-int vmm_rdmsr_handler(vmm_vcpu_t *vcpu);
-int vmm_io_instruction_handler(vmm_vcpu_t *vcpu);
-int vmm_hlt_handler(vmm_vcpu_t *vcpu);
-int vmm_vmx_timer_handler(vmm_vcpu_t *vcpu);
-int vmm_cr_access_handler(vmm_vcpu_t *vcpu);
-int vmm_vmcall_handler(vmm_vcpu_t *vcpu);
+int vmm_cpuid_handler(vm_vcpu_t *vcpu);
+int vmm_ept_violation_handler(vm_vcpu_t *vcpu);
+int vmm_wrmsr_handler(vm_vcpu_t *vcpu);
+int vmm_rdmsr_handler(vm_vcpu_t *vcpu);
+int vmm_io_instruction_handler(vm_vcpu_t *vcpu);
+int vmm_hlt_handler(vm_vcpu_t *vcpu);
+int vmm_vmx_timer_handler(vm_vcpu_t *vcpu);
+int vmm_cr_access_handler(vm_vcpu_t *vcpu);
+int vmm_vmcall_handler(vm_vcpu_t *vcpu);
 

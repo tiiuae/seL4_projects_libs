@@ -18,6 +18,7 @@
 
 #include <sel4/sel4.h>
 
+#include <sel4vm/guest_vm.h>
 #include "sel4vm/debug.h"
 #include "sel4vm/vmm.h"
 #include "sel4vm/platform/vmcs.h"
@@ -38,7 +39,7 @@ int vmm_mmio_init(vmm_mmio_list_t *list) {
 }
 
 // Returns 0 if the exit was handled
-int vmm_mmio_exit_handler(vmm_vcpu_t *vcpu, uintptr_t addr, unsigned int qualification) {
+int vmm_mmio_exit_handler(vm_vcpu_t *vcpu, uintptr_t addr, unsigned int qualification) {
     int read = EPT_VIOL_READ(qualification);
     int write = EPT_VIOL_WRITE(qualification);
     int fetch = EPT_VIOL_FETCH(qualification);
@@ -52,8 +53,8 @@ int vmm_mmio_exit_handler(vmm_vcpu_t *vcpu, uintptr_t addr, unsigned int qualifi
     }
 
     // Search the list
-    for (int i = 0; i < vcpu->vmm->mmio_list.num_ranges; i++) {
-        vmm_mmio_range_t *range = &vcpu->vmm->mmio_list.ranges[i];
+    for (int i = 0; i < vcpu->vm->arch.mmio_list.num_ranges; i++) {
+        vmm_mmio_range_t *range = &vcpu->vm->arch.mmio_list.ranges[i];
 
         if (addr < range->start) {
             return -1;
@@ -70,10 +71,10 @@ int vmm_mmio_exit_handler(vmm_vcpu_t *vcpu, uintptr_t addr, unsigned int qualifi
 
             // Decode instruction
             uint8_t ibuf[15];
-            int instr_len = vmm_guest_exit_get_int_len(&vcpu->guest_state);
+            int instr_len = vmm_guest_exit_get_int_len(&vcpu->vcpu_arch.guest_state);
             vmm_fetch_instruction(vcpu,
-                    vmm_guest_state_get_eip(&vcpu->guest_state),
-                    vmm_guest_state_get_cr3(&vcpu->guest_state, vcpu->guest_vcpu),
+                    vmm_guest_state_get_eip(&vcpu->vcpu_arch.guest_state),
+                    vmm_guest_state_get_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr),
                     instr_len, ibuf);
 
             int reg;
@@ -91,7 +92,7 @@ assert(size == 4); // we don't support non-32 bit accesses. TODO fix this
                 assert(reg >= 0 && reg < 8);
                 int vcpu_reg = vmm_decoder_reg_mapw[reg];
                 assert(vcpu_reg >= 0);
-                vmm_set_user_context(&vcpu->guest_state,
+                vmm_set_user_context(&vcpu->vcpu_arch.guest_state,
                         vcpu_reg, result);
             } else {
                 // Get value to pass in
@@ -99,7 +100,7 @@ assert(size == 4); // we don't support non-32 bit accesses. TODO fix this
                 assert (reg >= 0);
                 int vcpu_reg =  vmm_decoder_reg_mapw[reg];
                 assert(vcpu_reg >= 0);
-                value = vmm_read_user_context(&vcpu->guest_state,
+                value = vmm_read_user_context(&vcpu->vcpu_arch.guest_state,
                         vcpu_reg);
 
                 range->write_handler(vcpu, range->cookie, addr - range->start, size, value);

@@ -15,4 +15,6 @@
 #define ACPI_START (0xE0000) // Start of ACPI tables; RSD PTR is right here
 #define MAX_ACPI_TABLES (2)
 
-int make_guest_acpi_tables(vmm_t *vmm);
+#include <sel4vm/guest_vm.h>
+
+int make_guest_acpi_tables(vm_t *vm);

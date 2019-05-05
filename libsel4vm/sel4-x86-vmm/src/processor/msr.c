@@ -17,14 +17,15 @@
 
 #include <sel4/sel4.h>
 
+#include <sel4vm/guest_vm.h>
 #include "sel4vm/debug.h"
 #include "sel4vm/vmm.h"
 #include "sel4vm/processor/msr.h"
 
-int vmm_rdmsr_handler(vmm_vcpu_t *vcpu) {
+int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
 
     int ret = 0;
-    unsigned int msr_no = vmm_read_user_context(&vcpu->guest_state, USER_CONTEXT_ECX);
+    unsigned int msr_no = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_ECX);
     uint64_t data = 0;
 
     DPRINTF(4, "rdmsr ecx 0x%x\n", msr_no);
@@ -76,21 +77,21 @@ int vmm_rdmsr_handler(vmm_vcpu_t *vcpu) {
    }
 
     if (!ret) {
-        vmm_set_user_context(&vcpu->guest_state, USER_CONTEXT_EAX, (uint32_t)(data & 0xffffffff));
-        vmm_set_user_context(&vcpu->guest_state, USER_CONTEXT_EDX, (uint32_t)(data >> 32));
-        vmm_guest_exit_next_instruction(&vcpu->guest_state, vcpu->guest_vcpu);
+        vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, (uint32_t)(data & 0xffffffff));
+        vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX, (uint32_t)(data >> 32));
+        vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
     }
 
     return ret;
 }
 
-int vmm_wrmsr_handler(vmm_vcpu_t *vcpu) {
+int vmm_wrmsr_handler(vm_vcpu_t *vcpu) {
 
     int ret = 0;
 
-    unsigned int msr_no = vmm_read_user_context(&vcpu->guest_state, USER_CONTEXT_ECX);
-    unsigned int val_high = vmm_read_user_context(&vcpu->guest_state, USER_CONTEXT_EDX);
-    unsigned int val_low = vmm_read_user_context(&vcpu->guest_state, USER_CONTEXT_EAX);
+    unsigned int msr_no = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_ECX);
+    unsigned int val_high = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX);
+    unsigned int val_low = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
 
     DPRINTF(4, "wrmsr ecx 0x%x   value: 0x%x  0x%x\n", msr_no, val_high, val_low);
 
@@ -120,7 +121,7 @@ int vmm_wrmsr_handler(vmm_vcpu_t *vcpu) {
     }
 
     if (!ret)
-        vmm_guest_exit_next_instruction(&vcpu->guest_state, vcpu->guest_vcpu);
+        vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
 
     return ret;
 }

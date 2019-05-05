@@ -19,6 +19,7 @@ Author: W.A.
 #include <stdlib.h>
 #include <string.h>
 
+#include <sel4vm/guest_vm.h>
 #include "sel4vm/debug.h"
 #include "sel4vm/platform/guest_vspace.h"
 #include "sel4vm/platform/guest_memory.h"
@@ -39,23 +40,23 @@ Author: W.A.
 #define SEG_MULT (0x10)
 
 /* Get a word from a guest physical address */
-inline static uint32_t guest_get_phys_word(vmm_t *vmm, uintptr_t addr) {
+inline static uint32_t guest_get_phys_word(vm_t *vm, uintptr_t addr) {
     uint32_t val;
 
-    vmm_guest_vspace_touch(&vmm->guest_mem.vspace, addr, sizeof(uint32_t),
+    vmm_guest_vspace_touch(&vm->mem.vm_vspace, addr, sizeof(uint32_t),
             vmm_guest_get_phys_data_help, &val);
 
     return val;
 }
 
 /* Fetch a guest's instruction */
-int vmm_fetch_instruction(vmm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
+int vmm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
         int len, uint8_t *buf) {
     /* Walk page tables to get physical address of instruction */
     uintptr_t instr_phys = 0;
 
     /* ensure that PAE is not enabled */
-    if (vmm_guest_state_get_cr4(&vcpu->guest_state, vcpu->guest_vcpu) & X86_CR4_PAE) {
+    if (vmm_guest_state_get_cr4(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr) & X86_CR4_PAE) {
         ZF_LOGE("Do not support walking PAE paging structures");
         return -1;
     }
@@ -66,7 +67,7 @@ int vmm_fetch_instruction(vmm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
     uint32_t pdi = eip >> 22;
     uint32_t pti = (eip >> 12) & 0x3FF;
 
-    uint32_t pde = guest_get_phys_word(vcpu->vmm, cr3 + pdi * 4);
+    uint32_t pde = guest_get_phys_word(vcpu->vm, cr3 + pdi * 4);
 
     assert(IA32_PDE_PRESENT(pde)); /* WTF? */
 
@@ -75,7 +76,7 @@ int vmm_fetch_instruction(vmm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
         instr_phys = (uintptr_t)IA32_PSE_ADDR(pde) + (eip & 0x3FFFFF);
     } else {
         /* 4k pages */
-        uint32_t pte = guest_get_phys_word(vcpu->vmm,
+        uint32_t pte = guest_get_phys_word(vcpu->vm,
                 (uintptr_t)IA32_PTE_ADDR(pde) + pti * 4);
 
         assert(IA32_PDE_PRESENT(pte));
@@ -84,7 +85,7 @@ int vmm_fetch_instruction(vmm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
     }
 
     /* Fetch instruction */
-    vmm_guest_vspace_touch(&vcpu->vmm->guest_mem.vspace, instr_phys, len,
+    vmm_guest_vspace_touch(&vcpu->vm->mem.vm_vspace, instr_phys, len,
             vmm_guest_get_phys_data_help, buf);
 
     return 0;
@@ -187,7 +188,7 @@ int vmm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *im
 
 /* Interpret just enough virtual 8086 instructions to run trampoline code.
    Returns the final jump address */
-uintptr_t vmm_emulate_realmode(guest_memory_t *gm, uint8_t *instr_buf,
+uintptr_t vmm_emulate_realmode(vm_mem_t *gm, uint8_t *instr_buf,
         uint16_t *segment, uintptr_t eip, uint32_t len, guest_state_t *gs)
 {
     /* We only track one segment, and assume that code and data are in the same
@@ -220,9 +221,9 @@ uintptr_t vmm_emulate_realmode(guest_memory_t *gm, uint8_t *instr_buf,
                     instr += 2;
 
                     /* Limit is first 2 bytes, base is next 4 bytes */
-                    vmm_guest_vspace_touch(&gm->vspace, mem,
+                    vmm_guest_vspace_touch(&gm->vm_vspace, mem,
                             2, vmm_guest_get_phys_data_help, &limit);
-                    vmm_guest_vspace_touch(&gm->vspace, mem + 2,
+                    vmm_guest_vspace_touch(&gm->vm_vspace, mem + 2,
                             4, vmm_guest_get_phys_data_help, &base);
                     DPRINTF(4, "lidtl %p\n", (void*)mem);
 
@@ -236,9 +237,9 @@ uintptr_t vmm_emulate_realmode(guest_memory_t *gm, uint8_t *instr_buf,
                     instr += 2;
 
                     /* Limit is first 2 bytes, base is next 4 bytes */
-                    vmm_guest_vspace_touch(&gm->vspace, mem,
+                    vmm_guest_vspace_touch(&gm->vm_vspace, mem,
                             2, vmm_guest_get_phys_data_help, &limit);
-                    vmm_guest_vspace_touch(&gm->vspace, mem + 2,
+                    vmm_guest_vspace_touch(&gm->vm_vspace, mem + 2,
                             4, vmm_guest_get_phys_data_help, &base);
                     DPRINTF(4, "lgdtl %p; base = %x, limit = %x\n", (void*)mem,
                             base, limit);
@@ -293,7 +294,7 @@ uintptr_t vmm_emulate_realmode(guest_memory_t *gm, uint8_t *instr_buf,
                     mem += *segment * SEG_MULT;
                     DPRINTF(4, "mov %p, eax\n", (void*)mem);
                     uint32_t eax;
-                    vmm_guest_vspace_touch(&gm->vspace, mem,
+                    vmm_guest_vspace_touch(&gm->vm_vspace, mem,
                             4, vmm_guest_get_phys_data_help, &eax);
                     vmm_set_user_context(gs, USER_CONTEXT_EAX, eax);
                     break;
@@ -315,7 +316,7 @@ uintptr_t vmm_emulate_realmode(guest_memory_t *gm, uint8_t *instr_buf,
                         }
                         instr += size;
                         DPRINTF(4, "mov $0x%x, %p\n", lit, (void*)mem);
-                        vmm_guest_vspace_touch(&gm->vspace, mem,
+                        vmm_guest_vspace_touch(&gm->vm_vspace, mem,
                                 size, vmm_guest_set_phys_data_help, &lit);
                     }
                     break;

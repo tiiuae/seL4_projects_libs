@@ -16,6 +16,7 @@ Author: W.A. */
 #include <stdlib.h>
 #include <string.h>
 
+#include <sel4vm/guest_vm.h>
 #include "sel4vm/debug.h"
 #include "sel4vm/platform/acpi.h"
 #include "sel4vm/platform/guest_memory.h"
@@ -61,10 +62,10 @@ static int make_guest_acpi_tables_continued(uintptr_t paddr, void *vaddr,
 }
 
 // Give some ACPI tables to the guest
-int make_guest_acpi_tables(vmm_t *vmm) {
+int make_guest_acpi_tables(vm_t *vm) {
     DPRINTF(2, "Making ACPI tables\n");
 
-    int cpus = vmm->num_vcpus;
+    int cpus = vm->num_vcpus;
 
     int err;
 
@@ -155,7 +156,7 @@ int make_guest_acpi_tables(vmm_t *vmm) {
     for (int i = 0; i < num_tables; i++) {
         DPRINTF(2, "ACPI table \"%.4s\", addr = %p, size = %zu bytes\n",
                 (char *)tables[i], (void*)table_paddr, table_sizes[i]);
-        err = vmm_guest_vspace_touch(&vmm->guest_mem.vspace, table_paddr,
+        err = vmm_guest_vspace_touch(&vm->mem.vm_vspace, table_paddr,
                 table_sizes[i], make_guest_acpi_tables_continued, tables[i]);
         if (err) {
             return err;
@@ -165,7 +166,7 @@ int make_guest_acpi_tables(vmm_t *vmm) {
 
     // RSDP
     uintptr_t rsdp_addr = ACPI_START;
-    err = vmm_alloc_guest_device_at(vmm, ACPI_START, sizeof(acpi_rsdp_t));
+    err = vmm_alloc_guest_device_at(vm, ACPI_START, sizeof(acpi_rsdp_t));
     if (err) {
         return err;
     }
@@ -189,6 +190,6 @@ int make_guest_acpi_tables(vmm_t *vmm) {
 
     DPRINTF(2, "ACPI RSDP addr = %p\n", (void*)rsdp_addr);
 
-    return vmm_guest_vspace_touch(&vmm->guest_mem.vspace, rsdp_addr, sizeof(rsdp),
+    return vmm_guest_vspace_touch(&vm->mem.vm_vspace, rsdp_addr, sizeof(rsdp),
             make_guest_acpi_tables_continued, &rsdp);
 }

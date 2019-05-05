@@ -10,6 +10,7 @@
  * @TAG(DATA61_GPL)
  */
 
+#include <sel4vm/guest_vm.h>
 #include <elf/elf.h>
 #include "sel4vm/platform/elf_helper.h"
 
@@ -17,7 +18,7 @@
 	Reads the elf header and elf program headers from a file
 		when given a sufficiently large memory buffer
 */
-int vmm_read_elf_headers(void *buf, vmm_t *vmm, FILE *file, size_t buf_size, elf_t *elf) {
+int vmm_read_elf_headers(void *buf, vm_t *vm, FILE *file, size_t buf_size, elf_t *elf) {
 	size_t result;
 	if(buf_size < sizeof(Elf32_Ehdr))
 		return -1;

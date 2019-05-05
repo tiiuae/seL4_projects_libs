@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <pci/pci.h>
 
+#include <sel4vm/guest_vm.h>
 #include "sel4vm/driver/pci.h"
 #include "sel4vm/vmm.h"
 
@@ -97,5 +98,5 @@ vmm_pci_entry_t vmm_pci_no_msi_cap_emulation(vmm_pci_entry_t existing);
 /* Takes a libpci device scan and adds the bar resources to the guest, creating
  * new pci bar information that can be passed to a virtual config space creator.
  * Creates at most 6 bars, returns how many it created, negative on error */
-int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars);
+int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars);
 

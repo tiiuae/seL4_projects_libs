@@ -53,26 +53,26 @@ typedef struct vmm_lapic {
 
 int vmm_apic_enabled(vmm_lapic_t *apic);
 
-int vmm_create_lapic(vmm_vcpu_t *vcpu, int enabled);
-void vmm_free_lapic(vmm_vcpu_t *vcpu);
+int vmm_create_lapic(vm_vcpu_t *vcpu, int enabled);
+void vmm_free_lapic(vm_vcpu_t *vcpu);
 
-int vmm_apic_has_interrupt(vmm_vcpu_t *vcpu);
-int vmm_apic_get_interrupt(vmm_vcpu_t *vcpu);
+int vmm_apic_has_interrupt(vm_vcpu_t *vcpu);
+int vmm_apic_get_interrupt(vm_vcpu_t *vcpu);
 
-void vmm_apic_consume_extints(vmm_vcpu_t *vcpu, int (*get)(void));
+void vmm_apic_consume_extints(vm_vcpu_t *vcpu, int (*get)(void));
 
 /* MSR functions */
-void vmm_lapic_set_base_msr(vmm_vcpu_t *vcpu, uint32_t value);
-uint32_t vmm_lapic_get_base_msr(vmm_vcpu_t *vcpu);
+void vmm_lapic_set_base_msr(vm_vcpu_t *vcpu, uint32_t value);
+uint32_t vmm_lapic_get_base_msr(vm_vcpu_t *vcpu);
 
-int vmm_apic_local_deliver(vmm_vcpu_t *vcpu, int lvt_type);
-int vmm_apic_accept_pic_intr(vmm_vcpu_t *vcpu);
+int vmm_apic_local_deliver(vm_vcpu_t *vcpu, int lvt_type);
+int vmm_apic_accept_pic_intr(vm_vcpu_t *vcpu);
 
-void vmm_apic_mmio_write(vmm_vcpu_t *vcpu, void *cookie, uint32_t offset,
+void vmm_apic_mmio_write(vm_vcpu_t *vcpu, void *cookie, uint32_t offset,
         int len, const uint32_t data);
-void vmm_apic_mmio_read(vmm_vcpu_t *vcpu, void *cookie, uint32_t offset,
+void vmm_apic_mmio_read(vm_vcpu_t *vcpu, void *cookie, uint32_t offset,
         int len, uint32_t *data);
 
-uint64_t vmm_get_lapic_tscdeadline_msr(vmm_vcpu_t *vcpu);
-void vmm_set_lapic_tscdeadline_msr(vmm_vcpu_t *vcpu, uint64_t data);
+uint64_t vmm_get_lapic_tscdeadline_msr(vm_vcpu_t *vcpu);
+void vmm_set_lapic_tscdeadline_msr(vm_vcpu_t *vcpu, uint64_t data);
 

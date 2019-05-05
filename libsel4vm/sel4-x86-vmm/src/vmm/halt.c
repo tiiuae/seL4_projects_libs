@@ -17,19 +17,20 @@
 
 #include <sel4/sel4.h>
 
+#include <sel4vm/guest_vm.h>
 #include "sel4vm/vmm.h"
 
 /* Handling halt instruction VMExit Events. */
-int vmm_hlt_handler(vmm_vcpu_t *vcpu) {
-    if (!(vmm_guest_state_get_rflags(&vcpu->guest_state, vcpu->guest_vcpu) & BIT(9))) {
+int vmm_hlt_handler(vm_vcpu_t *vcpu) {
+    if (!(vmm_guest_state_get_rflags(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr) & BIT(9))) {
         printf("vcpu %d is halted forever :(\n", vcpu->vcpu_id);
     }
 
     if (vmm_apic_has_interrupt(vcpu) == -1) {
         /* Halted, don't reply until we get an interrupt */
-        vcpu->guest_state.virt.interrupt_halt = 1;
+        vcpu->vcpu_arch.guest_state.virt.interrupt_halt = 1;
     }
 
-    vmm_guest_exit_next_instruction(&vcpu->guest_state, vcpu->guest_vcpu);
+    vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
     return 0;
 }

@@ -15,16 +15,16 @@
 #include <stdint.h>
 #include <vspace/vspace.h>
 
-struct vmm;
+typedef struct vm vm_t;
+typedef struct vm_mem vm_mem_t;
 
-uintptr_t guest_ram_largest_free_region_start(guest_memory_t *guest_memory);
-void print_guest_ram_regions(guest_memory_t *guest_memory);
-void guest_ram_mark_allocated(guest_memory_t *guest_memory, uintptr_t start, size_t bytes);
-uintptr_t guest_ram_allocate(guest_memory_t *guest_memory, size_t bytes);
+uintptr_t guest_ram_largest_free_region_start(vm_mem_t *guest_memory);
+void print_guest_ram_regions(vm_mem_t *guest_memory);
+void guest_ram_mark_allocated(vm_mem_t *guest_memory, uintptr_t start, size_t bytes);
+uintptr_t guest_ram_allocate(vm_mem_t *guest_memory, size_t bytes);
 
-int vmm_alloc_guest_device_at(struct vmm *vmm, uintptr_t start, size_t bytes);
-uintptr_t vmm_map_guest_device(struct vmm *vmm, uintptr_t paddr, size_t bytes, size_t align);
-int vmm_map_guest_device_at(struct vmm *vmm, uintptr_t vaddr, uintptr_t paddr, size_t bytes);
-int vmm_alloc_guest_ram_at(struct vmm *vmm, uintptr_t start, size_t bytes);
-int vmm_alloc_guest_ram(struct vmm *vmm, size_t bytes, int onetoone);
-
+int vmm_alloc_guest_device_at(vm_t *vm, uintptr_t start, size_t bytes);
+uintptr_t vmm_map_guest_device(vm_t *vm, uintptr_t paddr, size_t bytes, size_t align);
+int vmm_map_guest_device_at(vm_t *vm, uintptr_t vaddr, uintptr_t paddr, size_t bytes);
+int vmm_alloc_guest_ram_at(vm_t *vm, uintptr_t start, size_t bytes);
+int vmm_alloc_guest_ram(vm_t *vm, size_t bytes, int onetoone);

@@ -12,15 +12,15 @@
 
 #pragma once
 
+#include <sel4vm/guest_vm.h>
 #include "vmm.h"
 
 /*
     Simple functions for registering handlers,
         calling a handler
 */
-int reg_new_handler(vmm_t *vmm, vmcall_handler func, int token);
-int vmm_vmcall_handler(vmm_vcpu_t *vcpu);
+int reg_new_handler(vm_t *vm, vmcall_handler func, int token);
+int vmm_vmcall_handler(vm_vcpu_t *vcpu);
 
 /* Handlers that can be registered */
-int vchan_handler(vmm_vcpu_t *vcpu);
-
+int vchan_handler(vm_vcpu_t *vcpu);

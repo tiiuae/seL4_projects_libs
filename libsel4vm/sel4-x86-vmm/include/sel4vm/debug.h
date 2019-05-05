@@ -14,6 +14,7 @@
 
 #include <autoconf.h>
 #include <sel4vm/gen_config.h>
+#include <sel4vm/guest_vm.h>
 #include "sel4vm/vmm.h"
 
 #ifndef COLOUR
@@ -61,5 +62,5 @@
         }while(0)
 #endif
 
-void vmm_print_guest_context(int, vmm_vcpu_t *);
+void vmm_print_guest_context(int, vm_vcpu_t*);
 

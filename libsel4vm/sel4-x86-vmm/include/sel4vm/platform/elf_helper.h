@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <sel4vm/guest_vm.h>
 #include "sel4vm/vmm.h"
 #include <stdio.h>
 #include <elf/elf.h>
@@ -20,5 +21,5 @@
 	Reads the elf header and elf program headers from a file
 		when given a sufficiently large memory buffer
 */
-int vmm_read_elf_headers(void *buf, vmm_t *vmm, FILE *file, size_t buf_size, elf_t *elf);
+int vmm_read_elf_headers(void *buf, vm_t *vm, FILE *file, size_t buf_size, elf_t *elf);
 

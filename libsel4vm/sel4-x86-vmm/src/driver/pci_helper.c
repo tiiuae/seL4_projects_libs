@@ -15,6 +15,8 @@
 #include <string.h>
 #include <sel4/sel4.h>
 
+#include <sel4vm/guest_vm.h>
+
 #include <pci/virtual_pci.h>
 #include <pci/helper.h>
 
@@ -249,7 +251,7 @@ vmm_pci_entry_t vmm_pci_create_passthrough(vmm_pci_address_t addr, vmm_pci_confi
     return (vmm_pci_entry_t){.cookie = dev, .ioread = passthrough_pci_config_ioread, .iowrite = passthrough_pci_config_iowrite};
 }
 
-int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars) {
+int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars) {
     int i;
     int bar = 0;
     for (i = 0; i < 6; i++) {
@@ -266,7 +268,7 @@ int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_
         bars[bar].size_bits = size_bits;
         if (cfg->base_addr_space[i] == PCI_BASE_ADDRESS_SPACE_MEMORY) {
             /* Need to map into the VMM. Make sure it is aligned */
-            uintptr_t addr = vmm_map_guest_device(vmm, cfg->base_addr[i], size, BIT(size_bits));
+            uintptr_t addr = vmm_map_guest_device(vm, cfg->base_addr[i], size, BIT(size_bits));
             if(addr == 0) {
                 ZF_LOGE("Failed to map PCI bar %p size %zu", (void*)(uintptr_t)cfg->base_addr[i], size);
                 return -1;
@@ -276,7 +278,7 @@ int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_
             bars[bar].prefetchable = cfg->base_addr_prefetchable[i];
         } else {
             /* Need to add the IO port range */
-            int error = vmm_io_port_add_passthrough(&vmm->io_port, cfg->base_addr[i], cfg->base_addr[i] + size - 1, "PCI Passthrough Device");
+            int error = vmm_io_port_add_passthrough(&vm->arch.io_port, cfg->base_addr[i], cfg->base_addr[i] + size - 1, "PCI Passthrough Device");
             if (error) {
                 return error;
             }

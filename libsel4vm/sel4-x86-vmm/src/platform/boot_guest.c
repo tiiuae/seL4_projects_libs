@@ -25,6 +25,8 @@
 #include <sel4utils/mapping.h>
 #include <vka/capops.h>
 
+#include <sel4vm/guest_vm.h>
+
 #include "sel4vm/debug.h"
 #include "sel4vm/processor/platfeature.h"
 #include "sel4vm/platform/boot_guest.h"
@@ -38,7 +40,7 @@
 #include <sel4/arch/bootinfo_types.h>
 
 typedef struct boot_guest_cookie {
-    vmm_t *vmm;
+    vm_t *vm;
     FILE *file;
 } boot_guest_cookie_t;
 
@@ -54,9 +56,8 @@ static int guest_elf_read_address(uintptr_t paddr, void *vaddr, size_t size, siz
     return 0;
 }
 
-void vmm_plat_guest_elf_relocate(vmm_t *vmm, const char *relocs_filename)
-{
-    guest_image_t *image = &vmm->guest_image;
+void vmm_plat_guest_elf_relocate(vm_t *vm, const char *relocs_filename) {
+    guest_image_t *image = &vm->arch.guest_image;
     int delta = image->relocation_offset;
     if (delta == 0) {
         /* No relocation needed. */
@@ -122,11 +123,11 @@ void vmm_plat_guest_elf_relocate(vmm_t *vmm, const char *relocs_filename)
         /* Perform the relocation. */
         DPRINTF(5, "   reloc vaddr 0x%x guest_addr 0x%x\n", (unsigned int)vaddr, (unsigned int)guest_paddr);
         uint32_t addr;
-        vmm_guest_vspace_touch(&vmm->guest_mem.vspace, guest_paddr, sizeof(int),
-                               guest_elf_read_address, &addr);
+        vmm_guest_vspace_touch(&vm->mem.vm_vspace, guest_paddr, sizeof(int),
+                guest_elf_read_address, &addr);
         addr += delta;
-        vmm_guest_vspace_touch(&vmm->guest_mem.vspace, guest_paddr, sizeof(int),
-                               guest_elf_write_address, &addr);
+        vmm_guest_vspace_touch(&vm->mem.vm_vspace, guest_paddr, sizeof(int),
+                guest_elf_write_address, &addr);
 
         if (i && i % 50000 == 0) {
             DPRINTF(2, "    %u relocs done.\n", i);
@@ -154,9 +155,8 @@ static int vmm_guest_load_boot_module_continued(uintptr_t paddr, void *addr, siz
     return 0;
 }
 
-int vmm_guest_load_boot_module(vmm_t *vmm, const char *name)
-{
-    uintptr_t load_addr = guest_ram_largest_free_region_start(&vmm->guest_mem);
+int vmm_guest_load_boot_module(vm_t *vm, const char *name) {
+    uintptr_t load_addr = guest_ram_largest_free_region_start(&vm->mem);
     printf("Loading boot module \"%s\" at 0x%x\n", name, (unsigned int)load_addr);
 
     size_t initrd_size = 0;
@@ -173,15 +173,15 @@ int vmm_guest_load_boot_module(vmm_t *vmm, const char *name)
         return -1;
     }
 
-    vmm->guest_image.boot_module_paddr = load_addr;
-    vmm->guest_image.boot_module_size = initrd_size;
+    vm->arch.guest_image.boot_module_paddr = load_addr;
+    vm->arch.guest_image.boot_module_size = initrd_size;
 
-    guest_ram_mark_allocated(&vmm->guest_mem, load_addr, initrd_size);
-    boot_guest_cookie_t pass = { .vmm = vmm, .file = file};
-    vmm_guest_vspace_touch(&vmm->guest_mem.vspace, load_addr, initrd_size, vmm_guest_load_boot_module_continued, &pass);
+    guest_ram_mark_allocated(&vm->mem, load_addr, initrd_size);
+    boot_guest_cookie_t pass = { .vm = vm, .file = file};
+    vmm_guest_vspace_touch(&vm->mem.vm_vspace, load_addr, initrd_size, vmm_guest_load_boot_module_continued, &pass);
 
     printf("Guest memory after loading initrd:\n");
-    print_guest_ram_regions(&vmm->guest_mem);
+    print_guest_ram_regions(&vm->mem);
 
     fclose(file);
 
@@ -202,30 +202,26 @@ static int make_guest_cmd_line_continued(uintptr_t phys, void *vaddr, size_t siz
     return 0;
 }
 
-static int make_guest_cmd_line(vmm_t *vmm, const char *cmdline)
-{
+static int make_guest_cmd_line(vm_t *vm, const char *cmdline) {
     /* Allocate command line from guest ram */
     int len = strlen(cmdline);
-    uintptr_t cmd_addr = guest_ram_allocate(&vmm->guest_mem, len + 1);
+    uintptr_t cmd_addr = guest_ram_allocate(&vm->mem, len + 1);
     if (cmd_addr == 0) {
         ZF_LOGE("Failed to allocate guest cmdline (length %d)", len);
         return -1;
     }
     printf("Constructing guest cmdline at 0x%x of size %d\n", (unsigned int)cmd_addr, len);
-    vmm->guest_image.cmd_line = cmd_addr;
-    vmm->guest_image.cmd_line_len = len;
-    return vmm_guest_vspace_touch(&vmm->guest_mem.vspace, cmd_addr, len + 1, make_guest_cmd_line_continued,
-                                  (void *)cmdline);
+    vm->arch.guest_image.cmd_line = cmd_addr;
+    vm->arch.guest_image.cmd_line_len = len;
+    return vmm_guest_vspace_touch(&vm->mem.vm_vspace, cmd_addr, len + 1, make_guest_cmd_line_continued, (void*)cmdline);
 }
 
-static void make_guest_screen_info(vmm_t *vmm, struct screen_info *info)
-{
+static void make_guest_screen_info(vm_t *vm, struct screen_info *info) {
     /* VESA information */
     seL4_X86_BootInfo_VBE vbeinfo;
     ssize_t result;
     int error;
-    result = simple_get_extended_bootinfo(&vmm->host_simple, SEL4_BOOTINFO_HEADER_X86_VBE, &vbeinfo,
-                                          sizeof(seL4_X86_BootInfo_VBE));
+    result = simple_get_extended_bootinfo(vm->simple, SEL4_BOOTINFO_HEADER_X86_VBE, &vbeinfo, sizeof(seL4_X86_BootInfo_VBE));
     uintptr_t base = 0;
     size_t fbuffer_size;
     if (config_set(CONFIG_VMM_VESA_FRAMEBUFFER) && result != -1) {
@@ -238,13 +234,13 @@ static void make_guest_screen_info(vmm_t *vmm, struct screen_info *info)
             uintptr_t aligned_pm = ROUND_DOWN(pm_base, PAGE_SIZE_4K);
             int size = vbeinfo.vbeInterfaceLen + (pm_base - aligned_pm);
             size = ROUND_UP(size, PAGE_SIZE_4K);
-            error = vmm_map_guest_device_at(vmm, aligned_pm, aligned_pm, size);
+            error = vmm_map_guest_device_at(vm, aligned_pm, aligned_pm, size);
         }
         if (error) {
             ZF_LOGE("Failed to map vbe protected mode interface for VESA frame buffer. Disabling");
         } else {
             fbuffer_size = vmm_plat_vesa_fbuffer_size(&vbeinfo.vbeModeInfoBlock);
-            base = vmm_map_guest_device(vmm, vbeinfo.vbeModeInfoBlock.vbe20.physBasePtr, fbuffer_size, PAGE_SIZE_4K);
+            base = vmm_map_guest_device(vm, vbeinfo.vbeModeInfoBlock.vbe20.physBasePtr, fbuffer_size, PAGE_SIZE_4K);
             if (!base) {
                 ZF_LOGE("Failed to map base pointer for VESA frame buffer. Disabling");
             }
@@ -276,8 +272,7 @@ static void make_guest_screen_info(vmm_t *vmm, struct screen_info *info)
     }
 }
 
-static int make_guest_e820_map(struct e820entry *e820, guest_memory_t *guest_memory)
-{
+static int make_guest_e820_map(struct e820entry *e820, vm_mem_t *guest_memory) {
     int i;
     int entry = 0;
     printf("Constructing e820 memory map for guest with:\n");
@@ -325,16 +320,15 @@ static int make_guest_e820_map(struct e820entry *e820, guest_memory_t *guest_mem
     return entry + 1;
 }
 
-static int make_guest_boot_info(vmm_t *vmm)
-{
+static int make_guest_boot_info(vm_t *vm) {
     /* TODO: Bootinfo struct needs to be allocated in location accessable by real mode? */
-    uintptr_t addr = guest_ram_allocate(&vmm->guest_mem, sizeof(struct boot_params));
+    uintptr_t addr = guest_ram_allocate(&vm->mem, sizeof(struct boot_params));
     if (addr == 0) {
         ZF_LOGE("Failed to allocate %zu bytes for guest boot info struct", sizeof(struct boot_params));
         return -1;
     }
-    printf("Guest boot info allocated at %p. Populating...\n", (void *)addr);
-    vmm->guest_image.boot_info = addr;
+    printf("Guest boot info allocated at %p. Populating...\n", (void*)addr);
+    vm->arch.guest_image.boot_info = addr;
 
     /* Map in BIOS boot info structure. */
     struct boot_params boot_info;
@@ -344,20 +338,20 @@ static int make_guest_boot_info(vmm_t *vmm)
     boot_info.hdr.header = 0x53726448; /* Magic number 'HdrS' */
     boot_info.hdr.boot_flag = 0xAA55; /* Magic number for Linux. */
     boot_info.hdr.type_of_loader = 0xFF; /* Undefined loeader type. */
-    boot_info.hdr.code32_start = vmm->guest_image.load_paddr;
-    boot_info.hdr.kernel_alignment = vmm->guest_image.alignment;
+    boot_info.hdr.code32_start = vm->arch.guest_image.load_paddr;
+    boot_info.hdr.kernel_alignment = vm->arch.guest_image.alignment;
     boot_info.hdr.relocatable_kernel = true;
 
     /* Set up screen information. */
     /* Tell Guest OS about VESA mode. */
-    make_guest_screen_info(vmm, &boot_info.screen_info);
+    make_guest_screen_info(vm, &boot_info.screen_info);
 
     /* Create e820 memory map */
-    boot_info.e820_entries = make_guest_e820_map(boot_info.e820_map, &vmm->guest_mem);
+    boot_info.e820_entries = make_guest_e820_map(boot_info.e820_map, &vm->mem);
 
     /* Pass in the command line string. */
-    boot_info.hdr.cmd_line_ptr = vmm->guest_image.cmd_line;
-    boot_info.hdr.cmdline_size = vmm->guest_image.cmd_line_len;
+    boot_info.hdr.cmd_line_ptr = vm->arch.guest_image.cmd_line;
+    boot_info.hdr.cmdline_size = vm->arch.guest_image.cmd_line_len;
 
     /* These are not needed to be precise, because Linux uses these values
      * only to raise an error when the decompression code cannot find good
@@ -365,58 +359,55 @@ static int make_guest_boot_info(vmm_t *vmm)
     boot_info.alt_mem_k = 0;//((32 * 0x100000) >> 10);
 
     /* Pass in initramfs. */
-    if (vmm->guest_image.boot_module_paddr) {
-        boot_info.hdr.ramdisk_image = (uint32_t) vmm->guest_image.boot_module_paddr;
-        boot_info.hdr.ramdisk_size = vmm->guest_image.boot_module_size;
+    if (vm->arch.guest_image.boot_module_paddr) {
+        boot_info.hdr.ramdisk_image = (uint32_t) vm->arch.guest_image.boot_module_paddr;
+        boot_info.hdr.ramdisk_size = vm->arch.guest_image.boot_module_size;
         boot_info.hdr.root_dev = 0x0100;
         boot_info.hdr.version = 0x0204; /* Report version 2.04 in order to report ramdisk_image. */
     } else {
         boot_info.hdr.version = 0x0202;
     }
-    return vmm_guest_vspace_touch(&vmm->guest_mem.vspace, addr, sizeof(boot_info), guest_elf_write_address, &boot_info);
+    return vmm_guest_vspace_touch(&vm->mem.vm_vspace, addr, sizeof(boot_info), guest_elf_write_address, &boot_info);
 }
 
 /* Init the guest page directory, cmd line args and boot info structures. */
-void vmm_plat_init_guest_boot_structure(vmm_t *vmm, const char *cmdline)
-{
+void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline) {
     int UNUSED err;
 
-    err = make_guest_cmd_line(vmm, cmdline);
+    err = make_guest_cmd_line(vm, cmdline);
     assert(!err);
 
-    err = make_guest_boot_info(vmm);
+    err = make_guest_boot_info(vm);
     assert(!err);
 
-    err = make_guest_acpi_tables(vmm);
+    err = make_guest_acpi_tables(vm);
     assert(!err);
 }
 
-void vmm_init_guest_thread_state(vmm_vcpu_t *vcpu)
-{
-    vmm_set_user_context(&vcpu->guest_state, USER_CONTEXT_EAX, 0);
-    vmm_set_user_context(&vcpu->guest_state, USER_CONTEXT_EBX, 0);
-    vmm_set_user_context(&vcpu->guest_state, USER_CONTEXT_ECX, 0);
-    vmm_set_user_context(&vcpu->guest_state, USER_CONTEXT_EDX, 0);
+void vmm_init_guest_thread_state(vm_vcpu_t *vcpu) {
+    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, 0);
+    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EBX, 0);
+    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_ECX, 0);
+    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX, 0);
 
     /* Entry point. */
-    printf("Initializing guest to start running at 0x%x\n", (unsigned int)vcpu->vmm->guest_image.entry);
-    vmm_guest_state_set_eip(&vcpu->guest_state, vcpu->vmm->guest_image.entry);
+    printf("Initializing guest to start running at 0x%x\n", (unsigned int)vcpu->vm->arch.guest_image.entry);
+    vmm_guest_state_set_eip(&vcpu->vcpu_arch.guest_state, vcpu->vm->arch.guest_image.entry);
     /* The boot_param structure. */
-    vmm_set_user_context(&vcpu->guest_state, USER_CONTEXT_ESI, vcpu->vmm->guest_image.boot_info);
+    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_ESI, vcpu->vm->arch.guest_image.boot_info);
 }
 
 /* TODO: Refactor and stop rewriting fucking elf loading code */
-static int vmm_load_guest_segment(vmm_t *vmm, seL4_Word source_offset,
-                                  seL4_Word dest_addr, unsigned int segment_size, unsigned int file_size, FILE *file)
-{
+static int vmm_load_guest_segment(vm_t *vm, seL4_Word source_offset,
+        seL4_Word dest_addr, unsigned int segment_size, unsigned int file_size, FILE *file) {
 
     int ret;
-    unsigned int page_size = vmm->page_size;
+    unsigned int page_size = vm->mem.page_size;
     assert(file_size <= segment_size);
 
     /* Allocate a cslot for duplicating frame caps */
     cspacepath_t dup_slot;
-    ret = vka_cspace_alloc_path(&vmm->vka, &dup_slot);
+    ret = vka_cspace_alloc_path(vm->vka, &dup_slot);
     if (ret) {
         ZF_LOGE("Failed to allocate slot");
         return ret;
@@ -427,17 +418,17 @@ static int vmm_load_guest_segment(vmm_t *vmm, seL4_Word source_offset,
     while (current < segment_size) {
         /* Retrieve the mapping */
         seL4_CPtr cap;
-        cap = vspace_get_cap(&vmm->guest_mem.vspace, (void *)dest_addr);
+        cap = vspace_get_cap(&vm->mem.vm_vspace, (void*)dest_addr);
         if (!cap) {
             ZF_LOGE("Failed to find frame cap while loading elf segment at %p", (void *)dest_addr);
             return -1;
         }
         cspacepath_t cap_path;
-        vka_cspace_make_path(&vmm->vka, cap, &cap_path);
+        vka_cspace_make_path(vm->vka, cap, &cap_path);
 
         /* Copy cap and map into our vspace */
         vka_cnode_copy(&dup_slot, &cap_path, seL4_AllRights);
-        void *map_vaddr = vspace_map_pages(&vmm->host_vspace, &dup_slot.capPtr, NULL, seL4_AllRights, 1, page_size, 1);
+        void *map_vaddr = vspace_map_pages(&vm->mem.vmm_vspace, &dup_slot.capPtr, NULL, seL4_AllRights, 1, page_size, 1);
         if (!map_vaddr) {
             ZF_LOGE("Failed to map page into host vspace");
             return -1;
@@ -472,7 +463,7 @@ static int vmm_load_guest_segment(vmm_t *vmm, seL4_Word source_offset,
         current += copy_len;
 
         /* Unamp the page and delete the temporary cap */
-        vspace_unmap_pages(&vmm->host_vspace, map_vaddr, 1, page_size, NULL);
+        vspace_unmap_pages(&vm->mem.vmm_vspace, map_vaddr, 1, page_size, NULL);
         vka_cnode_delete(&dup_slot);
     }
 
@@ -487,8 +478,7 @@ static int vmm_load_guest_segment(vmm_t *vmm, seL4_Word source_offset,
 
 */
 /* TODO: refactor yet more elf loading code */
-int vmm_load_guest_elf(vmm_t *vmm, const char *elfname, size_t alignment)
-{
+int vmm_load_guest_elf(vm_t *vm, const char *elfname, size_t alignment) {
     int ret;
     char elf_file[256];
     elf_t elf;
@@ -500,8 +490,8 @@ int vmm_load_guest_elf(vmm_t *vmm, const char *elfname, size_t alignment)
         return -1;
     }
 
-    ret = vmm_read_elf_headers(elf_file, vmm, file, sizeof(elf_file), &elf);
-    if (ret < 0) {
+    ret = vmm_read_elf_headers(elf_file, vm, file, sizeof(elf_file), &elf);
+    if(ret < 0) {
         ZF_LOGE("Guest elf \"%s\" invalid.", elfname);
         return -1;
     }
@@ -509,7 +499,7 @@ int vmm_load_guest_elf(vmm_t *vmm, const char *elfname, size_t alignment)
     unsigned int n_headers = elf_getNumProgramHeaders(&elf);
 
     /* Find the largest guest ram region and use that for loading */
-    uintptr_t load_addr = guest_ram_largest_free_region_start(&vmm->guest_mem);
+    uintptr_t load_addr = guest_ram_largest_free_region_start(&vm->mem);
     /* Round up by the alignemnt. We just hope its still in the memory region.
      * if it isn't we will just fail when we try and get the frame */
     load_addr = ROUND_UP(load_addr, alignment);
@@ -562,28 +552,28 @@ int vmm_load_guest_elf(vmm_t *vmm, const char *elfname, size_t alignment)
         }
 
         /* Load this ELf segment. */
-        ret = vmm_load_guest_segment(vmm, source_offset, dest_addr, segment_size, file_size, file);
+        ret = vmm_load_guest_segment(vm, source_offset, dest_addr, segment_size, file_size, file);
         if (ret) {
             return ret;
         }
 
         /* Record it as allocated */
-        guest_ram_mark_allocated(&vmm->guest_mem, dest_addr, segment_size);
+        guest_ram_mark_allocated(&vm->mem, dest_addr, segment_size);
     }
 
     /* Record the entry point. */
-    vmm->guest_image.entry = elf_getEntryPoint(&elf);
-    vmm->guest_image.entry += guest_relocation_offset;
+    vm->arch.guest_image.entry = elf_getEntryPoint(&elf);
+    vm->arch.guest_image.entry += guest_relocation_offset;
 
     /* Remember where we started loading the kernel to fix up relocations in future */
-    vmm->guest_image.load_paddr = load_addr;
-    vmm->guest_image.link_paddr = guest_kernel_addr;
-    vmm->guest_image.link_vaddr = guest_kernel_vaddr;
-    vmm->guest_image.relocation_offset = guest_relocation_offset;
-    vmm->guest_image.alignment = alignment;
+    vm->arch.guest_image.load_paddr = load_addr;
+    vm->arch.guest_image.link_paddr = guest_kernel_addr;
+    vm->arch.guest_image.link_vaddr = guest_kernel_vaddr;
+    vm->arch.guest_image.relocation_offset = guest_relocation_offset;
+    vm->arch.guest_image.alignment = alignment;
 
     printf("Guest memory layout after loading elf\n");
-    print_guest_ram_regions(&vmm->guest_mem);
+    print_guest_ram_regions(&vm->mem);
 
     fclose(file);
 

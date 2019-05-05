@@ -15,9 +15,9 @@
 #include <stdint.h>
 #include "sel4vm/vmm.h"
 
-void vmm_plat_guest_elf_relocate(vmm_t *vmm, const char *relocs_filename);
-int vmm_guest_load_boot_module(vmm_t *vmm, const char *name);
-void vmm_plat_init_guest_boot_structure(vmm_t *vmm, const char *cmdline);
-void vmm_init_guest_thread_state(vmm_vcpu_t *vcpu);
-int vmm_load_guest_elf(vmm_t *vmm, const char *elfname, size_t alignment);
+void vmm_plat_guest_elf_relocate(vm_t *vm, const char *relocs_filename);
+int vmm_guest_load_boot_module(vm_t *vm, const char *name);
+void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline);
+void vmm_init_guest_thread_state(vm_vcpu_t *vcpu);
+int vmm_load_guest_elf(vm_t *vm, const char *elfname, size_t alignment);
 
