@@ -14,17 +14,6 @@
 
 #include "vmm.h"
 
-typedef int (*vmcall_handler)(vmm_vcpu_t *vcpu);
-
-/*
-    A handler for a given vmcall function
-     Called in a vmcall exception if its token matches the vcpu register eax
-*/
-typedef struct vmcall_handler {
-    int token;
-    vmcall_handler func;
-} vmcall_handler_t;
-
 /*
     Simple functions for registering handlers,
         calling a handler

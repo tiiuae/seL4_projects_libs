@@ -33,58 +33,8 @@
 #include <sel4vchan/vchan_component.h>
 #endif //CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
-#define MAX_DEVICES_PER_VM 50
-#define MAX_REBOOT_HOOKS_PER_VM 10
-
-typedef int (*reboot_hook_fn)(vm_t *vm, void *token);
-
-struct reboot_hooks {
-    reboot_hook_fn fn;
-    void *token;
-};
-
-struct vm {
-    /* Identification */
-    const char *name;
-    int vmid;
-    /* OS support */
-    vka_t *vka;
-    simple_t *simple;
-    vspace_t *vmm_vspace;
-    ps_io_ops_t *io_ops;
-    /* VM objects */
-    vspace_t vm_vspace;
-    sel4utils_alloc_data_t data;
-    vka_object_t cspace;
-    vka_object_t tcb;
-    vka_object_t pd;
-    vka_object_t vcpu;
-    /* Installed devices */
-    struct device devices[MAX_DEVICES_PER_VM];
-    int ndevices;
-    /* Installed reboot hooks */
-    struct reboot_hooks rb_hooks[MAX_REBOOT_HOOKS_PER_VM];
-    int nhooks;
-
-    /* Other */
-    void *entry_point;
-    /* Fault structure */
-    fault_t *fault;
-
-    /* Virtual PCI Host Bridge */
-    vmm_pci_space_t *pci;
-    /* IOPort Manager */
-    vmm_io_port_list_t *io_port;
-#ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
-    /* Installed vchan connections */
-    camkes_vchan_con_t **vchan_cons;
-    unsigned int vchan_num_cons;
-
-    int (*lock)(void);
-    int (*unlock)(void);
-#endif //CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
-};
 typedef struct vm vm_t;
+typedef int (*reboot_hook_fn)(vm_t* vm, void *token);
 
 typedef struct virq_handle *virq_handle_t;
 

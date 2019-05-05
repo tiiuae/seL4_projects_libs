@@ -15,28 +15,6 @@
 #include <stdint.h>
 #include <vspace/vspace.h>
 
-typedef struct guest_ram_region {
-    /* Guest physical start address */
-    uintptr_t start;
-    /* size in bytes */
-    size_t size;
-    /* whether or not this region has been 'allocated'
-     * an allocated region has initial guest information loaded into it
-     * this could be elf, initrd modules, etc */
-    int allocated;
-} guest_ram_region_t;
-
-typedef struct guest_memory {
-    /* Guest vspace management. This manages ALL mappings in the guest
-     * address space. This may include memory that we may tell the guest
-     * is not present/reserved */
-    vspace_t vspace;
-    /* We maintain all pieces of ram as a sorted list of regions.
-     * This is memory that we will specifically give the guest as actual RAM */
-    int num_ram_regions;
-    guest_ram_region_t *ram_regions;
-} guest_memory_t;
-
 struct vmm;
 
 uintptr_t guest_ram_largest_free_region_start(guest_memory_t *guest_memory);
