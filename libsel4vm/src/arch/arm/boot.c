@@ -84,7 +84,7 @@ vm_init_arch(vm_t *vm, void *cookie) {
     assert(!err);
     err = simple_ASIDPool_assign(vm->simple, vm->mem.vm_vspace_root.cptr);
     assert(err == seL4_NoError);
-    err = vmm_get_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vm_vspace, vm->vka, vm->mem.vm_vspace_root.cptr);
+    err = vm_get_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vmm_vspace, &vm->mem.vm_vspace, vm->vka, vm->mem.vm_vspace_root.cptr);
     assert(!err);
 
     /* Badge the endpoint */
