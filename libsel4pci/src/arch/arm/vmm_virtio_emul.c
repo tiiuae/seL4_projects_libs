@@ -11,13 +11,15 @@
  */
 
 #include <sel4pci/virtio_emul.h>
+#include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_vspace.h>
 
 int vm_guest_write_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size)
 {
-    return vm_copyout(emul_vm->vm, data, address, size);
+    return vm_guest_vspace_touch(&emul_vm->vm->mem.vm_vspace, address, size, vm_guest_set_phys_data_help, data);
 }
 
 int vm_guest_read_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size)
 {
-    return vm_copyin(emul_vm->vm, data, address, size);
+    return vm_guest_vspace_touch(&emul_vm->vm->mem.vm_vspace, address, size, vm_guest_get_phys_data_help, data);
 }

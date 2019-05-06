@@ -39,35 +39,6 @@ typedef int (*reboot_hook_fn)(vm_t* vm, void *token);
 typedef struct virq_handle *virq_handle_t;
 
 /**
- * Copy data in from the VM.
- * @param[in] vm      A handle to the VM that the data should be read from
- * @param[in] data    The address of the data to load to
- * @param[in] address The VM IPA address that the data should be read at
- * @param[in] size    The number of bytes of data to read
- * @return            0 on success
- */
-int vm_copyin(vm_t *vm, void *data, uintptr_t address, size_t size);
-
-/**
- * Copy data out to the VM.
- * @param[in] vm      A handle to the VM that the data should be loaded into
- * @param[in] data    The address of the data to load
- * @param[in] address The VM IPA address that the data should be loaded at
- * @param[in] size    The number of bytes of data to load
- * @return            0 on success
- */
-int vm_copyout(vm_t *vm, void *data, uintptr_t address, size_t size);
-
-/**
- * Copy ELF segments out to the VM/
- * The virtual addresses in the ELF file are assummed to represent IPA addresses
- * @param[in] vm       A handle to the VM that the ELF should be loaded into
- * @param[in] elf_data The address of the ELF file header
- * @return             On success, returns the IPA entry point of the ELF file
- */
-void *vm_copyout_elf(vm_t *vm, elf_t *elf_data);
-
-/**
  * Copy out an atag list to the VM.
  * @param[in] vm        A handle to the VM that the ELF should be loaded into
  * @param[in] atag_list A handle to a list of atags

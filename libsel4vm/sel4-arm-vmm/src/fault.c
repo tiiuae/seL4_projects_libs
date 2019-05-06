@@ -13,6 +13,7 @@
 #include <sel4vm/guest_vm.h>
 
 #include <sel4vm/sel4_arch/fault.h>
+#include <sel4vm/guest_vspace.h>
 #include "vm.h"
 
 #include <sel4/sel4.h>
@@ -79,7 +80,7 @@ static int maybe_fetch_fault_instruction(fault_t *f)
     if ((f->content & CONTENT_INST) == 0) {
         seL4_Word inst = 0;
         /* Fetch the instruction */
-        if (vm_copyin(f->vcpu->vm, &inst, f->ip, 4) < 0) {
+        if(vm_guest_vspace_touch(&f->vcpu->vm->mem.vm_vspace, f->ip, 4, vm_guest_get_phys_data_help, &inst)) {
             return -1;
         }
         /* Fixup the instruction */
