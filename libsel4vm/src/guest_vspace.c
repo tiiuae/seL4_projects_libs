@@ -1,29 +1,24 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
  * This software may be distributed and modified according to the terms of
- * the GNU General Public License version 2. Note that NO WARRANTY is provided.
- * See "LICENSE_GPLv2.txt" for details.
+ * the BSD 2-Clause license. Note that NO WARRANTY is provided.
+ * See "LICENSE_BSD2.txt" for details.
  *
- * @TAG(DATA61_GPL)
+ * @TAG(DATA61_BSD)
  */
 
 #include <autoconf.h>
 #include <sel4vm/gen_config.h>
 
-#include <stdlib.h>
-#include <string.h>
-
-#include <vspace/vspace.h>
+#include <sel4vm/guest_vspace.h>
 #include <sel4utils/vspace.h>
 #include <sel4utils/vspace_internal.h>
 #include <vka/capops.h>
 
-#include "sel4vm/platform/guest_vspace.h"
-
-#ifdef CONFIG_IOMMU
+#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
 typedef struct guest_iospace {
     seL4_CPtr iospace;
     struct sel4utils_alloc_data iospace_vspace_data;
@@ -42,7 +37,7 @@ typedef struct guest_vspace {
      * the translation from guest to vmm */
     struct sel4utils_alloc_data translation_vspace_data;
     vspace_t translation_vspace;
-#ifdef CONFIG_IOMMU
+#if defined(CONFIG_ARM_SMU) || defined(CONFIG_IOMMU)
     /* debug flag for checking if we add io spaces late */
     int done_mapping;
     int num_iospaces;
@@ -58,9 +53,9 @@ static int guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_C
     /* this type cast works because the alloc data was at the start of the struct
      * so it has the same address.
      * This conversion is guaranteed to work by the C standard */
-    guest_vspace_t *guest_vspace = (guest_vspace_t *) data;
-    /* perfrom the ept mapping */
-    error = sel4utils_map_page_ept(vspace, cap, vaddr, rights, cacheable, size_bits);
+    guest_vspace_t *guest_vspace = (guest_vspace_t*) data;
+    /* perform the guest mapping */
+    error = guest_vspace_map_page_arch(vspace, cap, vaddr, rights, cacheable, size_bits);
     if (error) {
         return error;
     }
@@ -84,12 +79,12 @@ static int guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_C
     }
     /* add translation information. give dummy cap value of 42 as it cannot be zero
      * but we really just want to store information in the cookie */
-    error = update_entries(&guest_vspace->translation_vspace, (uintptr_t)vaddr, 42, size_bits, (uintptr_t)vmm_vaddr);
-    if (error) {
+    error = update_entries(&guest_vspace->translation_vspace, (uintptr_t)vaddr, new_path.capPtr, size_bits, (uintptr_t)vmm_vaddr);
+    if (error){
         ZF_LOGE("Failed to add translation information");
         return error;
     }
-#ifdef CONFIG_IOMMU
+#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
     /* set the mapping bit */
     guest_vspace->done_mapping = 1;
     /* map into all the io spaces */
@@ -133,13 +128,13 @@ void guest_vspace_unmap(vspace_t *vspace, void *vaddr, size_t num_pages, size_t 
 
     int error;
 
-    // Unmap pages from EPT.
-    // vaddr is a guest physical address.
-    // This can be done in a single call as mappings are contiguous in this vspace.
+    /* Unmap pages from PT.
+     * vaddr is a guest physical address.
+     * This can be done in a single call as mappings are contiguous in this vspace. */
     sel4utils_unmap_pages(vspace, vaddr, num_pages, size_bits, vka);
 
-    // Each page must be unmapped individually from the vmm vspace, as mappings are not
-    // necessarily host-virtually contiguous.
+    /* Each page must be unmapped individually from the vmm vspace, as mappings are not
+     * necessarily host-virtually contiguous. */
     size_t page_size = BIT(size_bits);
 
     for (int i = 0; i < num_pages; i++) {
@@ -160,7 +155,7 @@ void guest_vspace_unmap(vspace_t *vspace, void *vaddr, size_t num_pages, size_t 
             return;
         }
 
-#ifdef CONFIG_IOMMU
+#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
         /* Unmap the vaddr from each iospace, freeing the cslots used to store the
          * copy of the frame cap. */
         for (int i = 0; i < guest_vspace->num_iospaces; i++) {
@@ -193,9 +188,8 @@ void guest_vspace_unmap(vspace_t *vspace, void *vaddr, size_t num_pages, size_t 
     }
 }
 
-#ifdef CONFIG_IOMMU
-int vmm_guest_vspace_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr iospace)
-{
+#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
+int vm_guest_vspace_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr iospace) {
     struct sel4utils_alloc_data *data = get_alloc_data(vspace);
     guest_vspace_t *guest_vspace = (guest_vspace_t *) data;
 
@@ -218,15 +212,14 @@ int vmm_guest_vspace_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr i
 }
 #endif
 
-int vmm_get_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, vka_t *vka, seL4_CPtr page_directory)
-{
+int vm_get_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, vka_t *vka, seL4_CPtr page_directory) {
     int error;
     guest_vspace_t *vspace = malloc(sizeof(*vspace));
     if (!vspace) {
         ZF_LOGE("Malloc failed");
         return -1;
     }
-#ifdef CONFIG_IOMMU
+#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
     vspace->done_mapping = 0;
     vspace->num_iospaces = 0;
     vspace->iospaces = malloc(0);
@@ -252,25 +245,19 @@ int vmm_get_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, 
 }
 
 /* Helpers for use with touch below */
-int vmm_guest_get_phys_data_help(uintptr_t addr, void *vaddr, size_t size,
-                                 size_t offset, void *cookie)
-{
+int vm_guest_get_phys_data_help(uintptr_t addr, void *vaddr, size_t size,
+        size_t offset, seL4_CPtr cap, void *cookie) {
     memcpy(cookie, vaddr, size);
-
     return 0;
 }
 
-int vmm_guest_set_phys_data_help(uintptr_t addr, void *vaddr, size_t size,
-                                 size_t offset, void *cookie)
-{
+int vm_guest_set_phys_data_help(uintptr_t addr, void *vaddr, size_t size,
+        size_t offset, seL4_CPtr cap, void *cookie) {
     memcpy(vaddr, cookie, size);
-
     return 0;
 }
 
-int vmm_guest_vspace_touch(vspace_t *vspace, uintptr_t addr, size_t size, vmm_guest_vspace_touch_callback callback,
-                           void *cookie)
-{
+int vm_guest_vspace_touch(vspace_t *vspace, uintptr_t addr, size_t size, vm_guest_vspace_touch_callback callback, void *cookie) {
     struct sel4utils_alloc_data *data = get_alloc_data(vspace);
     guest_vspace_t *guest_vspace = (guest_vspace_t *) data;
     uintptr_t current_addr;
@@ -285,8 +272,8 @@ int vmm_guest_vspace_touch(vspace_t *vspace, uintptr_t addr, size_t size, vmm_gu
             ZF_LOGE("Failed to get cookie at %p", (void *)current_aligned);
             return -1;
         }
-        int result = callback(current_addr, (void *)(vaddr + (current_addr - current_aligned)), next_addr - current_addr,
-                              current_addr - addr, cookie);
+        seL4_CPtr current_cap = sel4utils_get_cap(&guest_vspace->translation_vspace, (void*)current_aligned);
+        int result = callback(current_addr, (void*)(vaddr + (current_addr - current_aligned)), next_addr - current_addr, current_addr - addr, current_cap, cookie);
         if (result) {
             return result;
         }
