@@ -17,10 +17,11 @@ Author: W.A. */
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_vspace.h>
+
 #include "sel4vm/debug.h"
 #include "sel4vm/platform/acpi.h"
 #include "sel4vm/platform/guest_memory.h"
-#include "sel4vm/platform/guest_vspace.h"
 #include "sel4vm/processor/apicdef.h"
 
 #include "platsupport/plat/acpi/acpi.h"
@@ -55,7 +56,7 @@ static void acpi_fill_table_head(acpi_header_t *head, const char *signature, uin
 }
 
 static int make_guest_acpi_tables_continued(uintptr_t paddr, void *vaddr,
-        size_t size, size_t offset, void *cookie) {
+        size_t size, size_t offset, seL4_CPtr cap, void *cookie) {
     (void)offset;
     memcpy((char *)vaddr, (char *)cookie, size);
     return 0;
@@ -156,7 +157,7 @@ int make_guest_acpi_tables(vm_t *vm) {
     for (int i = 0; i < num_tables; i++) {
         DPRINTF(2, "ACPI table \"%.4s\", addr = %p, size = %zu bytes\n",
                 (char *)tables[i], (void*)table_paddr, table_sizes[i]);
-        err = vmm_guest_vspace_touch(&vm->mem.vm_vspace, table_paddr,
+        err = vm_guest_vspace_touch(&vm->mem.vm_vspace, table_paddr,
                 table_sizes[i], make_guest_acpi_tables_continued, tables[i]);
         if (err) {
             return err;
@@ -190,6 +191,6 @@ int make_guest_acpi_tables(vm_t *vm) {
 
     DPRINTF(2, "ACPI RSDP addr = %p\n", (void*)rsdp_addr);
 
-    return vmm_guest_vspace_touch(&vm->mem.vm_vspace, rsdp_addr, sizeof(rsdp),
+    return vm_guest_vspace_touch(&vm->mem.vm_vspace, rsdp_addr, sizeof(rsdp),
             make_guest_acpi_tables_continued, &rsdp);
 }

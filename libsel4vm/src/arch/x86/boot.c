@@ -22,6 +22,8 @@
 #include <sel4utils/api.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_vspace.h>
+
 #include <sel4vm/boot.h>
 #include <sel4vm/platform/guest_memory.h>
 #include <sel4vm/guest_state.h>
@@ -40,7 +42,7 @@
 #define VMM_VMCS_CR4_MASK           (X86_CR4_PSE | X86_CR4_PAE | X86_CR4_VMXE)
 #define VMM_VMCS_CR4_VALUE          (X86_CR4_PSE | X86_CR4_VMXE)
 
-static int make_guest_page_dir_continued(uintptr_t guest_phys, void *vaddr, size_t size, size_t offset, void *cookie) {
+static int make_guest_page_dir_continued(uintptr_t guest_phys, void *vaddr, size_t size, size_t offset, seL4_CPtr cap, void *cookie) {
     assert(offset == 0);
     assert(size == BIT(seL4_PageBits));
     /* Write into this frame as the init page directory: 4M pages, 1 to 1 mapping. */
@@ -62,7 +64,7 @@ static int make_guest_page_dir(vm_t *vm) {
     }
     printf("Guest page dir allocated at 0x%x. Creating 1-1 entries\n", (unsigned int)pd);
     vm->arch.guest_pd = pd;
-    return vmm_guest_vspace_touch(&vm->mem.vm_vspace, pd, BIT(seL4_PageBits), make_guest_page_dir_continued, NULL);
+    return vm_guest_vspace_touch(&vm->mem.vm_vspace, pd, BIT(seL4_PageBits), make_guest_page_dir_continued, NULL);
 }
 
 int
@@ -92,7 +94,7 @@ vm_init_arch(vm_t *vm, void *cookie) {
     err = seL4_TCB_SetEPTRoot(simple_get_tcb(vm->simple), vm->mem.vm_vspace_root.cptr);
     assert(err == seL4_NoError);
     /* Initialize a vspace for the guest */
-    err = vmm_get_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vmm_vspace,
+    err = vm_get_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vmm_vspace,
             &vm->mem.vm_vspace, vm->vka, vm->mem.vm_vspace_root.cptr);
     if (err) {
         return err;

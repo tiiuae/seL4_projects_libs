@@ -14,7 +14,7 @@
 
 #include <platsupport/io.h>
 #include <ethdrivers/raw.h>
-#include <sel4vm/platform/guest_vspace.h>
+#include <sel4vm/guest_vspace.h>
 
 struct ethif_virtio_emul_internal;
 
