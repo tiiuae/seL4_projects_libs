@@ -20,6 +20,8 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
 
+#include "vm_boot.h"
+
 int
 vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace, vm_plat_callbacks_t callbacks, int priority,
         ps_io_ops_t* io_ops, const char* name, void *cookie) {

@@ -30,6 +30,8 @@
 #include <sel4vm/processor/lapic.h>
 #include <sel4vm/processor/platfeature.h>
 
+#include "vm_boot.h"
+
 #define VMM_VMCS_CR0_MASK           (X86_CR0_PG | X86_CR0_PE)
 #define VMM_VMCS_CR0_VALUE          VMM_VMCS_CR0_MASK
 /* We need to own the PSE and PAE bits up until the guest has actually turned on paging,

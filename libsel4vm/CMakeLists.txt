@@ -170,3 +170,5 @@ elseif("${KernelArch}" STREQUAL "x86")
             sel4vm_Config
     )
 endif()
+
+target_include_directories(sel4vm PRIVATE src)

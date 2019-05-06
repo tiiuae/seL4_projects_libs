@@ -29,6 +29,8 @@
 
 #include <sel4pci/pci.h>
 
+#include "vm_boot.h"
+
 int
 vm_init_arch(vm_t *vm, void *cookie) {
     seL4_Word null_cap_data = seL4_NilData;
