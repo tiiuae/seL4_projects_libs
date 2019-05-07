@@ -16,6 +16,7 @@
 #include <stdlib.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_vm_util.h>
 
 #include <sel4vm/devices.h>
 #include <sel4vm/plat/devices.h>

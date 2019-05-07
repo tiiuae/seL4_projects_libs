@@ -14,6 +14,8 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
+#include <sel4vm/guest_vm_util.h>
+
 #include "vm.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -467,17 +469,8 @@ vm_find_device_by_ipa(vm_t *vm, uintptr_t ipa)
     return vm_find_device(vm, &cmp_ipa, &ipa);
 }
 
-vspace_t *vm_get_vspace(vm_t *vm)
-{
-    return &vm->mem.vm_vspace;
-}
-
-vspace_t *vm_get_vmm_vspace(vm_t *vm)
-{
-    return &vm->mem.vmm_vspace;
-}
-
-int vm_install_service(vm_t *vm, seL4_CPtr service, int index, uint32_t b)
+int
+vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t b)
 {
     cspacepath_t src, dst;
     seL4_Word badge = b;

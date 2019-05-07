@@ -14,6 +14,7 @@
 
 #include <sel4vm/sel4_arch/fault.h>
 #include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_vm_util.h>
 #include "vm.h"
 
 #include <sel4/sel4.h>
