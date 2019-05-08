@@ -80,11 +80,11 @@ vm_init_arch(vm_t *vm, void *cookie) {
     assert(!err);
 
     /* Create a vspace */
-    err = vka_alloc_vspace_root(vka, &vm->mem.vm_pd);
+    err = vka_alloc_vspace_root(vka, &vm->mem.vm_vspace_root);
     assert(!err);
-    err = simple_ASIDPool_assign(vm->simple, vm->mem.vm_pd.cptr);
+    err = simple_ASIDPool_assign(vm->simple, vm->mem.vm_vspace_root.cptr);
     assert(err == seL4_NoError);
-    err = vmm_get_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vm_vspace, vm->vka, vm->mem.vm_pd.cptr);
+    err = vmm_get_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vm_vspace, vm->vka, vm->mem.vm_vspace_root.cptr);
     assert(!err);
 
     /* Badge the endpoint */
@@ -106,7 +106,7 @@ vm_init_arch(vm_t *vm, void *cookie) {
     assert(!err);
     err = seL4_TCB_Configure(vm->tcb.tcb.cptr, VM_FAULT_EP_SLOT,
                              vm->tcb.cspace.cptr, cspace_root_data,
-                             vm->mem.vm_pd.cptr, null_cap_data, 0, seL4_CapNull);
+                             vm->mem.vm_vspace_root.cptr, null_cap_data, 0, seL4_CapNull);
     assert(!err);
     err = seL4_TCB_SetSchedParams(vm->tcb.tcb.cptr, simple_get_tcb(vm->simple), vm->tcb.priority - 1, vm->tcb.priority - 1);
     assert(!err);

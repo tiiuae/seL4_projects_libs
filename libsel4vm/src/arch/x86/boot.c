@@ -78,22 +78,22 @@ vm_init_arch(vm_t *vm, void *cookie) {
     vm->arch.vmcall_num_handlers = 0;
 
     /* Create an EPT which is the pd for all the vcpu tcbs */
-    err = vka_alloc_ept_pml4(vm->vka, &vm->mem.vm_pd);
+    err = vka_alloc_ept_pml4(vm->vka, &vm->mem.vm_vspace_root);
     if (err) {
         return -1;
     }
     /* Assign an ASID */
-    err = simple_ASIDPool_assign(vm->simple, vm->mem.vm_pd.cptr);
+    err = simple_ASIDPool_assign(vm->simple, vm->mem.vm_vspace_root.cptr);
     if (err != seL4_NoError) {
         ZF_LOGE("Failed to assign ASID pool to EPT root");
         return -1;
     }
     /* Install the guest PD */
-    err = seL4_TCB_SetEPTRoot(simple_get_tcb(vm->simple), vm->mem.vm_pd.cptr);
+    err = seL4_TCB_SetEPTRoot(simple_get_tcb(vm->simple), vm->mem.vm_vspace_root.cptr);
     assert(err == seL4_NoError);
     /* Initialize a vspace for the guest */
     err = vmm_get_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vmm_vspace,
-            &vm->mem.vm_vspace, vm->vka, vm->mem.vm_pd.cptr);
+            &vm->mem.vm_vspace, vm->vka, vm->mem.vm_vspace_root.cptr);
     if (err) {
         return err;
     }

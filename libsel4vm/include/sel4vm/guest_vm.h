@@ -86,8 +86,8 @@ struct vm_ram_region {
 struct vm_mem {
     /* Guest vm vspace management */
     vspace_t vm_vspace;
-    /* Guest vm page directory */
-    vka_object_t vm_pd;
+    /* Guest vm root vspace */
+    vka_object_t vm_vspace_root;
     /* vmm vspace */
     vspace_t vmm_vspace;
     /* Guest vm ram regions */
