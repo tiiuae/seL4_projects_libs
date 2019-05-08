@@ -42,7 +42,7 @@ void vmm_sync_guest_context(vm_vcpu_t *vcpu) {
         context.esi = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_ESI);
         context.edi = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDI);
         context.ebp = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EBP);
-        seL4_X86_VCPU_WriteRegisters(vcpu->vm_vcpu.cptr, &context);
+        seL4_X86_VCPU_WriteRegisters(vcpu->vcpu.cptr, &context);
         /* Sync our context */
         MACHINE_STATE_SYNC(vcpu->vcpu_arch.guest_state.machine.context);
     }
@@ -63,15 +63,15 @@ void vmm_reply_vm_exit(vm_vcpu_t *vcpu) {
 }
 
 void vmm_sync_guest_state(vm_vcpu_t *vcpu) {
-    vmm_guest_state_sync_cr0(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
-    vmm_guest_state_sync_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
-    vmm_guest_state_sync_cr4(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
-    vmm_guest_state_sync_idt_base(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
-    vmm_guest_state_sync_idt_limit(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
-    vmm_guest_state_sync_gdt_base(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
-    vmm_guest_state_sync_gdt_limit(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
-    vmm_guest_state_sync_cs_selector(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
-    vmm_guest_state_sync_entry_exception_error_code(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
+    vmm_guest_state_sync_cr0(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_cr4(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_idt_base(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_idt_limit(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_gdt_base(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_gdt_limit(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_cs_selector(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_entry_exception_error_code(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 }
 
 /* Handle VM exit in VMM module. */
@@ -247,7 +247,7 @@ int vmm_finalize(vm_t *vm) {
         vm_vcpu_t *vcpu = vm->vcpus[i];
 
         vmm_init_guest_thread_state(vcpu);
-        err = vmm_io_port_init_guest(&vm->arch.io_port, vm->simple, vcpu->vm_vcpu.cptr, vm->vka);
+        err = vmm_io_port_init_guest(&vm->arch.io_port, vm->simple, vcpu->vcpu.cptr, vm->vka);
         if (err) {
             return err;
         }

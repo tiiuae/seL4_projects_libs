@@ -118,7 +118,7 @@ struct vm_vcpu {
     /* Parent vm */
     struct vm *vm;
     /* Kernel vcpu object */
-    vka_object_t vm_vcpu;
+    vka_object_t vcpu;
     /* Id of vcpu */
     unsigned int vcpu_id;
     /* is the vcpu online */

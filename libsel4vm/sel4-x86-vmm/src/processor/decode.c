@@ -56,7 +56,7 @@ int vmm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
     uintptr_t instr_phys = 0;
 
     /* ensure that PAE is not enabled */
-    if (vmm_guest_state_get_cr4(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr) & X86_CR4_PAE) {
+    if (vmm_guest_state_get_cr4(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr) & X86_CR4_PAE) {
         ZF_LOGE("Do not support walking PAE paging structures");
         return -1;
     }

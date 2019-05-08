@@ -295,7 +295,7 @@ static int vgic_vcpu_inject_irq(struct device *d, vm_t *vm, struct virq_handle *
     vgic = vgic_device_get_vgic(d);
 
     seL4_CPtr vcpu;
-    vcpu = vm->vcpus[BOOT_VCPU]->vm_vcpu.cptr;
+    vcpu = vm->vcpus[BOOT_VCPU]->vcpu.cptr;
     for (i = 0; i < 64; i++) {
         if (vgic->irq[i] == NULL) {
             break;

@@ -71,7 +71,7 @@ vm_create_vcpu(vm_t *vm, void *cookie) {
     assert(vcpu_new);
     bzero(vcpu_new, sizeof(vm_vcpu_t));
     /* Create VCPU */
-    err = vka_alloc_vcpu(vm->vka, &vcpu_new->vm_vcpu);
+    err = vka_alloc_vcpu(vm->vka, &vcpu_new->vcpu);
     assert(!err);
     /* Initialise vcpu fields */
     vcpu_new->vm = vm;

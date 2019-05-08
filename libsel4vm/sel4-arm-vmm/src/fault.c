@@ -415,12 +415,12 @@ int advance_fault(fault_t *fault)
             *reg_ctx = fault_emulate(fault, *reg_ctx);
         } else {
             /* register is banked, use vcpu invocations */
-            seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(fault->vcpu->vm_vcpu.cptr, reg);
+            seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(fault->vcpu->vcpu.cptr, reg);
             if (res.error) {
                 ZF_LOGF("Read registers failed");
                 return -1;
             }
-            int error = seL4_ARM_VCPU_WriteRegs(fault->vcpu->vm_vcpu.cptr, reg, fault_emulate(fault, res.value));
+            int error = seL4_ARM_VCPU_WriteRegs(fault->vcpu->vcpu.cptr, reg, fault_emulate(fault, res.value));
             if (error) {
                 ZF_LOGF("Write registers failed");
                 return -1;
@@ -519,7 +519,7 @@ seL4_Word fault_get_data(fault_t *f)
             data = *decode_rt(rt, fault_get_ctx(f));
         } else {
             /* Banked, use VCPU invocations */
-            seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(f->vcpu->vm_vcpu.cptr, reg);
+            seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(f->vcpu->vcpu.cptr, reg);
             if (res.error) {
                 ZF_LOGF("Read registers failed");
             }

@@ -39,7 +39,7 @@ static inline seL4_CPtr vm_get_vcpu(vm_t* vm, unsigned int vcpu_idx)
     if (vcpu_idx >= vm->num_vcpus) {
         return seL4_CapNull;
     }
-    return vm->vcpus[vcpu_idx]->vm_vcpu.cptr;
+    return vm->vcpus[vcpu_idx]->vcpu.cptr;
 }
 
 vspace_t *vm_get_vspace(vm_t *vm);

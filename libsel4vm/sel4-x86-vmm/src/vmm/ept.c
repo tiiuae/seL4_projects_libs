@@ -34,7 +34,7 @@ int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
         DPRINTF(5, "EPT violation handled by mmio\n");
     } else {
         /* Read linear address that guest is trying to access. */
-        unsigned int linear_address = vmm_vmcs_read(vcpu->vm_vcpu.cptr, VMX_DATA_GUEST_LINEAR_ADDRESS);
+        unsigned int linear_address = vmm_vmcs_read(vcpu->vcpu.cptr, VMX_DATA_GUEST_LINEAR_ADDRESS);
         printf(COLOUR_R "!!!!!!!! ALERT :: GUEST OS PAGE FAULT !!!!!!!!\n");
         printf("    Guest OS VMExit due to EPT Violation:\n");
         printf("        Linear address 0x%x.\n", linear_address);
@@ -47,7 +47,7 @@ int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
     printf(COLOUR_R "    The faulting Guest OS thread will now be blocked forever.\n" COLOUR_RESET);
     return -1;
 #else
-    vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
+    vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     return 0;
 #endif
 }

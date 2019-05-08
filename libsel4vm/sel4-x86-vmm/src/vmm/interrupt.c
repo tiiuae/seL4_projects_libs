@@ -58,8 +58,8 @@ void wait_for_guest_ready(vm_vcpu_t *vcpu) {
 }
 
 int can_inject(vm_vcpu_t *vcpu) {
-    uint32_t rflags = vmm_guest_state_get_rflags(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
-    uint32_t guest_int = vmm_guest_state_get_interruptibility(&vcpu->vcpu_arch.guest_state, vcpu->vm_vcpu.cptr);
+    uint32_t rflags = vmm_guest_state_get_rflags(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    uint32_t guest_int = vmm_guest_state_get_interruptibility(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     uint32_t int_control = vmm_guest_state_get_control_entry(&vcpu->vcpu_arch.guest_state);
 
     /* we can only inject if the interrupt mask flag is not set in flags,
@@ -131,7 +131,7 @@ void vmm_start_ap_vcpu(vm_vcpu_t *vcpu, unsigned int sipi_vector)
 
     /* Emulate up to 100 bytes of trampoline code */
     uint8_t instr[TRAMPOLINE_LENGTH];
-    vmm_fetch_instruction(vcpu, eip, vmm_guest_state_get_cr3(gs, vcpu->vm_vcpu.cptr),
+    vmm_fetch_instruction(vcpu, eip, vmm_guest_state_get_cr3(gs, vcpu->vcpu.cptr),
             TRAMPOLINE_LENGTH, instr);
 
     eip = vmm_emulate_realmode(&vcpu->vm->mem, instr, &segment, eip,
