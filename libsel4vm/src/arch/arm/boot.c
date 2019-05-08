@@ -48,7 +48,7 @@ vm_init_arch(vm_t *vm, void *cookie) {
         ZF_LOGE("Failed to initialise vm arch: Invalid vm");
         return -1;
     }
-    struct vm_init_arm *vm_init_arm_params = cookie;
+    struct vm_init_arm_config *vm_init_arm_params = cookie;
 
     /* Initialise arm specific fields */
     vm->arch.entry_point = NULL;
