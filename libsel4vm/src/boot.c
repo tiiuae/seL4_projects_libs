@@ -22,6 +22,8 @@
 
 #include "vm_boot.h"
 
+static int curr_vcpu_index = 0;
+
 int
 vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace, vm_plat_callbacks_t callbacks, int priority,
         ps_io_ops_t* io_ops, const char* name, void *cookie) {
@@ -58,16 +60,12 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
     return 0;
 }
 
-int
-vm_create_vcpu(vm_t *vm, void *cookie, vm_vcpu_t **vcpu, unsigned int vcpu_id) {
+vm_vcpu_t*
+vm_create_vcpu(vm_t *vm, void *cookie) {
     int err;
-    if(vcpu_id >= MAX_NUM_VCPUS) {
-        ZF_LOGE("Invalid vcpu_id: id %d out of range", vcpu_id);
-        return -1;
-    }
-    if(vm->vcpus[vcpu_id]) {
-        ZF_LOGE("Invalid vcpu_id: id %d already initialised", vcpu_id);
-        return -1;
+    if( vm->num_vcpus >= MAX_NUM_VCPUS) {
+        ZF_LOGE("Failed to create vcpu, reached maximum number of support vcpus");
+        return NULL;
     }
     vm_vcpu_t *vcpu_new = malloc(sizeof(vm_vcpu_t));
     assert(vcpu_new);
@@ -77,11 +75,10 @@ vm_create_vcpu(vm_t *vm, void *cookie, vm_vcpu_t **vcpu, unsigned int vcpu_id) {
     assert(!err);
     /* Initialise vcpu fields */
     vcpu_new->vm = vm;
-    vcpu_new->vcpu_id = vcpu_id;
+    vcpu_new->vcpu_id = curr_vcpu_index++;
     err = vm_create_vcpu_arch(vm, cookie, vcpu_new);
     assert(!err);
-    vm->vcpus[vcpu_id] = vcpu_new;
-    *vcpu = vcpu_new;
+    vm->vcpus[vm->num_vcpus] = vcpu_new;
     vm->num_vcpus++;
-    return err;
+    return vcpu_new;
 }
