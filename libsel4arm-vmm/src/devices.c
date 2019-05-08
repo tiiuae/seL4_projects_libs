@@ -230,8 +230,7 @@ map_emulated_device(vm_t* vm, const struct device *d)
     /* Map the frame to the VM */
     DMAP("Mapping emulated device ipa0x%x\n", (uint32_t)vm_addr);
 
-    //TODO why is CanRead required on the TK1?
-    seL4_CapRights_t rights = config_set(CONFIG_PLAT_TK1) ? seL4_CanRead : seL4_NoRights;
+    seL4_CapRights_t rights = seL4_CanRead;
     res = vspace_reserve_range_at(vm_vspace, vm_addr, size, rights, 0);
     assert(res.res);
     if (!res.res) {
