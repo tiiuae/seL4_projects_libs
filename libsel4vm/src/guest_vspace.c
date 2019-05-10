@@ -17,7 +17,7 @@
 #include <sel4utils/vspace_internal.h>
 #include <vka/capops.h>
 
-#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
+#include <sel4vm/guest_iospace.h>
 
 #include "guest_vspace.h"
 #include "guest_vspace_arch.h"
@@ -27,13 +27,11 @@ typedef struct guest_iospace {
     struct sel4utils_alloc_data iospace_vspace_data;
     vspace_t iospace_vspace;
 } guest_iospace_t;
-#endif
 
 typedef struct guest_vspace {
     /* We abuse struct ordering and this member MUST be the first
      * thing in the struct */
     struct sel4utils_alloc_data vspace_data;
-#if defined(CONFIG_ARM_SMU) || defined(CONFIG_IOMMU)
     /* debug flag for checking if we add io spaces late */
     int done_mapping;
     int num_iospaces;
@@ -106,12 +104,12 @@ void guest_vspace_unmap(vspace_t *vspace, void *vaddr, size_t num_pages, size_t 
      * This can be done in a single call as mappings are contiguous in this vspace. */
     sel4utils_unmap_pages(vspace, vaddr, num_pages, size_bits, vka);
 
+#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
     /* Each page must be unmapped individually from the vmm vspace, as mappings are not
      * necessarily host-virtually contiguous. */
     size_t page_size = BIT(size_bits);
     for (int i = 0; i < num_pages; i++) {
         void *page_vaddr = (void*)(vaddr + i * page_size);
-#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
         /* Unmap the vaddr from each iospace, freeing the cslots used to store the
          * copy of the frame cap. */
         for (int i = 0; i < guest_vspace->num_iospaces; i++) {
@@ -140,12 +138,11 @@ void guest_vspace_unmap(vspace_t *vspace, void *vaddr, size_t num_pages, size_t 
                 return;
             }
         }
-#endif
     }
+#endif
 }
 
-#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
-int vm_guest_vspace_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr iospace) {
+int vm_guest_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr iospace) {
     struct sel4utils_alloc_data *data = get_alloc_data(vspace);
     guest_vspace_t *guest_vspace = (guest_vspace_t *) data;
 
@@ -168,7 +165,6 @@ int vm_guest_vspace_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr io
     guest_vspace->num_iospaces++;
     return 0;
 }
-#endif
 
 int vm_init_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, vka_t *vka, seL4_CPtr page_directory) {
     int error;
@@ -177,12 +173,10 @@ int vm_init_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, 
         ZF_LOGE("Malloc failed");
         return -1;
     }
-#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
     vspace->done_mapping = 0;
     vspace->num_iospaces = 0;
     vspace->iospaces = malloc(0);
     assert(vspace->iospaces);
-#endif
     error = sel4utils_get_vspace_with_map(loader, new_vspace, &vspace->vspace_data, vka, page_directory, NULL, NULL, guest_vspace_map);
     if (error) {
         ZF_LOGE("Failed to create guest vspace");
