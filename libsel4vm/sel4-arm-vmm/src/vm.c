@@ -31,7 +31,6 @@
 #include "arch/arm/devices/vgic.h"
 
 #include "devices.h"
-#include "sel4vm/guest_vspace.h"
 
 #include <sel4vm/sel4_arch/vm.h>
 #include <sel4vmmcore/util/io.h>

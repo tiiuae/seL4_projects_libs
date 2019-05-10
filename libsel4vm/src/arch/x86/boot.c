@@ -33,6 +33,7 @@
 #include <sel4vm/processor/platfeature.h>
 
 #include "vm_boot.h"
+#include "guest_vspace.h"
 
 #define VMM_VMCS_CR0_MASK           (X86_CR0_PG | X86_CR0_PE)
 #define VMM_VMCS_CR0_VALUE          VMM_VMCS_CR0_MASK
@@ -94,7 +95,7 @@ vm_init_arch(vm_t *vm, void *cookie) {
     err = seL4_TCB_SetEPTRoot(simple_get_tcb(vm->simple), vm->mem.vm_vspace_root.cptr);
     assert(err == seL4_NoError);
     /* Initialize a vspace for the guest */
-    err = vm_get_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vmm_vspace,
+    err = vm_init_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vmm_vspace,
             &vm->mem.vm_vspace, vm->vka, vm->mem.vm_vspace_root.cptr);
     if (err) {
         return err;

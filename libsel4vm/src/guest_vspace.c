@@ -13,12 +13,15 @@
 #include <autoconf.h>
 #include <sel4vm/gen_config.h>
 
-#include <sel4vm/guest_vspace.h>
 #include <sel4utils/vspace.h>
 #include <sel4utils/vspace_internal.h>
 #include <vka/capops.h>
 
 #if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
+
+#include "guest_vspace.h"
+#include "guest_vspace_arch.h"
+
 typedef struct guest_iospace {
     seL4_CPtr iospace;
     struct sel4utils_alloc_data iospace_vspace_data;
@@ -167,7 +170,7 @@ int vm_guest_vspace_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr io
 }
 #endif
 
-int vm_get_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, vka_t *vka, seL4_CPtr page_directory) {
+int vm_init_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, vka_t *vka, seL4_CPtr page_directory) {
     int error;
     guest_vspace_t *vspace = malloc(sizeof(*vspace));
     if (!vspace) {

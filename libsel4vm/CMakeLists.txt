@@ -171,4 +171,4 @@ elseif("${KernelArch}" STREQUAL "x86")
     )
 endif()
 
-target_include_directories(sel4vm PRIVATE src)
+target_include_directories(sel4vm PRIVATE src src/arch/${KernelArch})
