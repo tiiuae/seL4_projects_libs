@@ -41,8 +41,7 @@ typedef struct guest_vspace {
     /* debug flag for checking if we add io spaces late */
     int done_mapping;
     int num_iospaces;
-    guest_iospace_t *iospaces;
-#endif
+    guest_iospace_t **iospaces;
 } guest_vspace_t;
 
 static int guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_CapRights_t rights,
@@ -96,11 +95,11 @@ static int guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_C
         }
         error = vka_cnode_copy(&new_path, &orig_path, seL4_AllRights);
 
-        guest_iospace_t *guest_iospace = &guest_vspace->iospaces[i];
+        guest_iospace_t *guest_iospace = guest_vspace->iospaces[i];
 
         assert(error == seL4_NoError);
         error = sel4utils_map_iospace_page(guest_vspace->vspace_data.vka, guest_iospace->iospace,
-                                           new_path.capPtr, (uintptr_t)vaddr, rights, cacheable,
+                                           new_path.capPtr, (uintptr_t)vaddr, rights, 1,
                                            size_bits, NULL, NULL);
         if (error) {
             ZF_LOGE("Failed to map page into iospace");
@@ -159,7 +158,7 @@ void guest_vspace_unmap(vspace_t *vspace, void *vaddr, size_t num_pages, size_t 
         /* Unmap the vaddr from each iospace, freeing the cslots used to store the
          * copy of the frame cap. */
         for (int i = 0; i < guest_vspace->num_iospaces; i++) {
-            guest_iospace_t *guest_iospace = &guest_vspace->iospaces[i];
+            guest_iospace_t *guest_iospace = guest_vspace->iospaces[i];
             seL4_CPtr iospace_frame_cap_copy = vspace_get_cap(&guest_iospace->iospace_vspace, page_vaddr);
 
             error = seL4_ARCH_Page_Unmap(iospace_frame_cap_copy);
@@ -197,8 +196,10 @@ int vm_guest_vspace_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr io
 
     guest_vspace->iospaces = realloc(guest_vspace->iospaces, sizeof(guest_iospace_t) * (guest_vspace->num_iospaces + 1));
     assert(guest_vspace->iospaces);
+    guest_vspace->iospaces[guest_vspace->num_iospaces] = calloc(1, sizeof(guest_iospace_t));
+    assert(guest_vspace->iospaces[guest_vspace->num_iospaces]);
 
-    guest_iospace_t *guest_iospace = &guest_vspace->iospaces[guest_vspace->num_iospaces];
+    guest_iospace_t *guest_iospace = guest_vspace->iospaces[guest_vspace->num_iospaces];
     guest_iospace->iospace = iospace;
     int error = sel4utils_get_vspace(loader, &guest_iospace->iospace_vspace, &guest_iospace->iospace_vspace_data,
                                      guest_vspace->vspace_data.vka, seL4_CapNull, NULL, NULL);
