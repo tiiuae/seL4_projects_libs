@@ -14,7 +14,7 @@
 
 #include <platsupport/io.h>
 #include <ethdrivers/raw.h>
-#include <sel4vm/guest_vspace.h>
+#include <sel4vm/guest_memory.h>
 
 struct ethif_virtio_emul_internal;
 
@@ -30,5 +30,5 @@ typedef struct ethif_virtio_emul {
     int (*notify)(struct ethif_virtio_emul *emul);
 } ethif_virtio_emul_t;
 
-ethif_virtio_emul_t *ethif_virtio_emul_init(ps_io_ops_t io_ops, int queue_size, vspace_t *guest_vspace, ethif_driver_init driver, void *config);
+ethif_virtio_emul_t *ethif_virtio_emul_init(vm_t *vm, ps_io_ops_t io_ops, int queue_size, vspace_t *guest_vspace, ethif_driver_init driver, void *config);
 

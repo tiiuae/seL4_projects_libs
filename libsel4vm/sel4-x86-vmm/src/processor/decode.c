@@ -20,7 +20,7 @@ Author: W.A.
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/guest_vspace.h>
+#include <sel4vm/guest_memory.h>
 
 #include "sel4vm/debug.h"
 #include "sel4vm/platform/guest_memory.h"
@@ -44,8 +44,8 @@ Author: W.A.
 inline static uint32_t guest_get_phys_word(vm_t *vm, uintptr_t addr) {
     uint32_t val;
 
-    vm_guest_vspace_touch(&vm->mem.vm_vspace, addr, sizeof(uint32_t),
-            vm_guest_get_phys_data_help, &val);
+    vm_guest_mem_touch(vm, addr, sizeof(uint32_t),
+            vm_guest_mem_read_callback, &val);
 
     return val;
 }
@@ -86,8 +86,8 @@ int vmm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
     }
 
     /* Fetch instruction */
-    vm_guest_vspace_touch(&vcpu->vm->mem.vm_vspace, instr_phys, len,
-            vm_guest_get_phys_data_help, buf);
+    vm_guest_mem_touch(vcpu->vm, instr_phys, len,
+            vm_guest_mem_read_callback, buf);
 
     return 0;
 }
@@ -189,7 +189,7 @@ int vmm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *im
 
 /* Interpret just enough virtual 8086 instructions to run trampoline code.
    Returns the final jump address */
-uintptr_t vmm_emulate_realmode(vm_mem_t *gm, uint8_t *instr_buf,
+uintptr_t vmm_emulate_realmode(vm_t *vm, uint8_t *instr_buf,
         uint16_t *segment, uintptr_t eip, uint32_t len, guest_state_t *gs)
 {
     /* We only track one segment, and assume that code and data are in the same
@@ -222,10 +222,10 @@ uintptr_t vmm_emulate_realmode(vm_mem_t *gm, uint8_t *instr_buf,
                     instr += 2;
 
                     /* Limit is first 2 bytes, base is next 4 bytes */
-                    vm_guest_vspace_touch(&gm->vm_vspace, mem,
-                            2, vm_guest_get_phys_data_help, &limit);
-                    vm_guest_vspace_touch(&gm->vm_vspace, mem + 2,
-                            4, vm_guest_get_phys_data_help, &base);
+                    vm_guest_mem_touch(vm, mem,
+                            2, vm_guest_mem_read_callback, &limit);
+                    vm_guest_mem_touch(vm, mem + 2,
+                            4, vm_guest_mem_read_callback, &base);
                     DPRINTF(4, "lidtl %p\n", (void*)mem);
 
                     vmm_guest_state_set_idt_base(gs, base);
@@ -238,10 +238,10 @@ uintptr_t vmm_emulate_realmode(vm_mem_t *gm, uint8_t *instr_buf,
                     instr += 2;
 
                     /* Limit is first 2 bytes, base is next 4 bytes */
-                    vm_guest_vspace_touch(&gm->vm_vspace, mem,
-                            2, vm_guest_get_phys_data_help, &limit);
-                    vm_guest_vspace_touch(&gm->vm_vspace, mem + 2,
-                            4, vm_guest_get_phys_data_help, &base);
+                    vm_guest_mem_touch(vm, mem,
+                            2, vm_guest_mem_read_callback, &limit);
+                    vm_guest_mem_touch(vm, mem + 2,
+                            4, vm_guest_mem_read_callback, &base);
                     DPRINTF(4, "lgdtl %p; base = %x, limit = %x\n", (void*)mem,
                             base, limit);
 
@@ -295,8 +295,8 @@ uintptr_t vmm_emulate_realmode(vm_mem_t *gm, uint8_t *instr_buf,
                     mem += *segment * SEG_MULT;
                     DPRINTF(4, "mov %p, eax\n", (void*)mem);
                     uint32_t eax;
-                    vm_guest_vspace_touch(&gm->vm_vspace, mem,
-                            4, vm_guest_get_phys_data_help, &eax);
+                    vm_guest_mem_touch(vm, mem,
+                            4, vm_guest_mem_read_callback, &eax);
                     vmm_set_user_context(gs, USER_CONTEXT_EAX, eax);
                     break;
                 case 0xc7:
@@ -317,8 +317,8 @@ uintptr_t vmm_emulate_realmode(vm_mem_t *gm, uint8_t *instr_buf,
                         }
                         instr += size;
                         DPRINTF(4, "mov $0x%x, %p\n", lit, (void*)mem);
-                        vm_guest_vspace_touch(&gm->vm_vspace, mem,
-                                size, vm_guest_set_phys_data_help, &lit);
+                        vm_guest_mem_touch(vm, mem,
+                                size, vm_guest_mem_write_callback, &lit);
                     }
                     break;
                 case 0xba:

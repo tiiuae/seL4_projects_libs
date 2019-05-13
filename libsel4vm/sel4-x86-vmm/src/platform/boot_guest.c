@@ -26,7 +26,7 @@
 #include <vka/capops.h>
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/guest_vspace.h>
+#include <sel4vm/guest_memory.h>
 
 #include "sel4vm/debug.h"
 #include "sel4vm/processor/platfeature.h"
@@ -44,14 +44,14 @@ typedef struct boot_guest_cookie {
     FILE *file;
 } boot_guest_cookie_t;
 
-static int guest_elf_write_address(uintptr_t paddr, void *vaddr, size_t size, size_t offset,
-        seL4_CPtr cap, void *cookie) {
+static int guest_elf_write_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset,
+        void *cookie) {
     memcpy(vaddr, cookie + offset, size);
     return 0;
 }
 
-static int guest_elf_read_address(uintptr_t paddr, void *vaddr, size_t size, size_t offset,
-        seL4_CPtr cap, void *cookie) {
+static int guest_elf_read_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset,
+        void *cookie) {
     memcpy(cookie + offset, vaddr, size);
     return 0;
 }
@@ -123,10 +123,10 @@ void vmm_plat_guest_elf_relocate(vm_t *vm, const char *relocs_filename) {
         /* Perform the relocation. */
         DPRINTF(5, "   reloc vaddr 0x%x guest_addr 0x%x\n", (unsigned int)vaddr, (unsigned int)guest_paddr);
         uint32_t addr;
-        vm_guest_vspace_touch(&vm->mem.vm_vspace, guest_paddr, sizeof(int),
+        vm_guest_mem_touch(vm, guest_paddr, sizeof(int),
                 guest_elf_read_address, &addr);
         addr += delta;
-        vm_guest_vspace_touch(&vm->mem.vm_vspace, guest_paddr, sizeof(int),
+        vm_guest_mem_touch(vm, guest_paddr, sizeof(int),
                 guest_elf_write_address, &addr);
 
         if (i && i % 50000 == 0) {
@@ -145,7 +145,7 @@ void vmm_plat_guest_elf_relocate(vm_t *vm, const char *relocs_filename) {
 
 }
 
-static int vmm_guest_load_boot_module_continued(uintptr_t paddr, void *addr, size_t size, size_t offset, seL4_CPtr cap, void *cookie) {
+static int vmm_guest_load_boot_module_continued(vm_t *vm, uintptr_t paddr, void *addr, size_t size, size_t offset, void *cookie) {
     boot_guest_cookie_t *pass = ( boot_guest_cookie_t *) cookie;
     fseek(pass->file, offset, SEEK_SET);
     size_t result = fread(addr, size, 1, pass->file);
@@ -177,7 +177,7 @@ int vmm_guest_load_boot_module(vm_t *vm, const char *name) {
 
     guest_ram_mark_allocated(&vm->mem, load_addr, initrd_size);
     boot_guest_cookie_t pass = { .vm = vm, .file = file};
-    vm_guest_vspace_touch(&vm->mem.vm_vspace, load_addr, initrd_size, vmm_guest_load_boot_module_continued, &pass);
+    vm_guest_mem_touch(vm, load_addr, initrd_size, vmm_guest_load_boot_module_continued, &pass);
 
     printf("Guest memory after loading initrd:\n");
     print_guest_ram_regions(&vm->mem);
@@ -193,7 +193,7 @@ static inline uint32_t vmm_plat_vesa_fbuffer_size(seL4_VBEModeInfoBlock_t *block
     return ALIGN_UP(block->vbe_common.bytesPerScanLine * block->vbe12_part1.yRes, 65536);
 }
 
-static int make_guest_cmd_line_continued(uintptr_t phys, void *vaddr, size_t size, size_t offset, seL4_CPtr cap, void *cookie) {
+static int make_guest_cmd_line_continued(vm_t *vm, uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie) {
     /* Copy the string to this area. */
     const char *cmdline = (const char *)cookie;
     memcpy(vaddr, cmdline + offset, size);
@@ -211,7 +211,7 @@ static int make_guest_cmd_line(vm_t *vm, const char *cmdline) {
     printf("Constructing guest cmdline at 0x%x of size %d\n", (unsigned int)cmd_addr, len);
     vm->arch.guest_image.cmd_line = cmd_addr;
     vm->arch.guest_image.cmd_line_len = len;
-    return vm_guest_vspace_touch(&vm->mem.vm_vspace, cmd_addr, len + 1, make_guest_cmd_line_continued, (void*)cmdline);
+    return vm_guest_mem_touch(vm, cmd_addr, len + 1, make_guest_cmd_line_continued, (void*)cmdline);
 }
 
 static void make_guest_screen_info(vm_t *vm, struct screen_info *info) {
@@ -365,7 +365,7 @@ static int make_guest_boot_info(vm_t *vm) {
     } else {
         boot_info.hdr.version = 0x0202;
     }
-    return vm_guest_vspace_touch(&vm->mem.vm_vspace, addr, sizeof(boot_info), guest_elf_write_address, &boot_info);
+    return vm_guest_mem_touch(vm, addr, sizeof(boot_info), guest_elf_write_address, &boot_info);
 }
 
 /* Init the guest page directory, cmd line args and boot info structures. */
