@@ -28,6 +28,7 @@
 
 #include <sel4pci/pci.h>
 
+#include "arm_vm.h"
 #include "vm_boot.h"
 #include "guest_vspace.h"
 
@@ -91,7 +92,7 @@ vm_init_arch(vm_t *vm, void *cookie) {
     vka_cspace_make_path(vka, vm_init_arm_params->vmm_endpoint, &src);
     err = vka_cspace_alloc_path(vka, &dst);
     assert(!err);
-    err = vka_cnode_mint(&dst, &src, seL4_AllRights, vm_init_arm_params->vm_badge);
+    err = vka_cnode_mint(&dst, &src, seL4_AllRights, VM_BADGE);
     assert(!err);
     /* Copy it to the cspace of the VM for fault IPC */
     src = dst;

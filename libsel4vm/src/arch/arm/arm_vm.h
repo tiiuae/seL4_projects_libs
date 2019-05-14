@@ -12,13 +12,4 @@
 
 #pragma once
 
-#include <sel4/sel4.h>
-#include <sel4utils/irq_server.h>
-
-#define MAX_NUM_VCPUS 1
-
-typedef struct vm_init_arm_config vm_init_arm_config_t;
-
-struct vm_init_arm_config {
-    seL4_CPtr vmm_endpoint;
-};
+#define VM_BADGE        (1U << 0)
