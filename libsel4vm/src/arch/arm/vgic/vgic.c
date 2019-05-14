@@ -846,6 +846,22 @@ int vm_install_vgic(vm_t *vm)
     return 0;
 }
 
+int vm_vgic_maintenance_handler(vm_vcpu_t *vcpu) {
+    int idx;
+    int err;
+    idx = seL4_GetMR(seL4_UnknownSyscall_ARG0);
+    /* Currently not handling spurious IRQs */
+    assert(idx >= 0);
+
+    err = handle_vgic_maintenance(vcpu->vm, idx);
+    if (!err) {
+        seL4_MessageInfo_t reply;
+        reply = seL4_MessageInfo_new(0, 0, 0, 0);
+        seL4_Reply(reply);
+    }
+    return 0;
+}
+
 const struct device dev_vgic_dist = {
     .devid = DEV_VGIC_DIST,
     .name = "vgic.distributor",

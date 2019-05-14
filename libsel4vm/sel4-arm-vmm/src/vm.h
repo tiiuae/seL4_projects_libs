@@ -22,9 +22,3 @@ struct vm_onode {
 
 /* When differentiating VM's by colour, call this function */
 const char *choose_colour(vm_t *vm);
-
-/**
- * Find a device within the VM
- */
-struct device *vm_find_device_by_id(vm_t *vm, enum devid id);
-struct device *vm_find_device_by_ipa(vm_t *vm, uintptr_t ipa);

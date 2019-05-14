@@ -21,8 +21,113 @@
 #include <sel4vm/guest_vm_util.h>
 #include <sel4vm/boot.h>
 
-#include "arm_vm.h"
 #include "vm.h"
+#include "arm_vm.h"
+#include "arm_vm_exits.h"
+
+#include "vgic/vgic.h"
+#include "syscalls.h"
+#include "mem_abort.h"
+
+static int vm_user_exception_handler(vm_vcpu_t *vcpu);
+static int vm_vcpu_handler(vm_vcpu_t *vcpu);
+static int vm_unknown_exit_handler(vm_vcpu_t *vcpu);
+
+static vm_exit_handler_fn_t arm_exit_handlers[] = {
+    [VM_GUEST_ABORT_EXIT] = vm_guest_mem_abort_handler,
+    [VM_SYSCALL_EXIT] = vm_syscall_handler,
+    [VM_USER_EXCEPTION_EXIT] = vm_user_exception_handler,
+    [VM_VGIC_MAINTENANCE_EXIT] = vm_vgic_maintenance_handler,
+    [VM_VCPU_EXIT] = vm_vcpu_handler,
+    [VM_UNKNOWN_EXIT] = vm_unknown_exit_handler
+};
+
+static int
+vm_decode_exit(seL4_Word label)
+{
+    int exit_reason = VM_UNKNOWN_EXIT;
+
+    switch (label) {
+    case seL4_Fault_VMFault:
+        exit_reason = VM_GUEST_ABORT_EXIT;
+        break;
+    case seL4_Fault_UnknownSyscall:
+        exit_reason = VM_SYSCALL_EXIT;
+        break;
+    case seL4_Fault_UserException:
+        exit_reason = VM_USER_EXCEPTION_EXIT;
+        break;
+    case seL4_Fault_VGICMaintenance:
+        exit_reason = VM_VGIC_MAINTENANCE_EXIT;
+        break;
+    case seL4_Fault_VCPUFault:
+        exit_reason = VM_VCPU_EXIT;
+        break;
+    default:
+       exit_reason = VM_UNKNOWN_EXIT;
+    }
+    return exit_reason;
+}
+
+static int handle_exception(vm_t* vm, seL4_Word ip)
+{
+    seL4_UserContext regs;
+    seL4_CPtr tcb = vm_get_tcb(vm);
+    int err;
+    ZF_LOGE("%sInvalid instruction from [%s] at PC: 0x"XFMT"%s\n",
+           ANSI_COLOR(RED, BOLD), vm->vm_name, seL4_GetMR(0), ANSI_COLOR(RESET));
+    err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
+    assert(!err);
+    print_ctx_regs(&regs);
+    return 0;
+}
+
+static int vm_user_exception_handler(vm_vcpu_t *vcpu) {
+    seL4_Word ip;
+    int err;
+    ip = seL4_GetMR(0);
+    err = handle_exception(vcpu->vm, ip);
+    assert(!err);
+    if (!err) {
+        seL4_MessageInfo_t reply;
+        reply = seL4_MessageInfo_new(0, 0, 0, 0);
+        seL4_Reply(reply);
+    }
+    return 0;
+}
+
+static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
+    uint32_t hsr;
+    int err;
+    fault_t* fault;
+    fault = vcpu->vcpu_arch.fault;
+    hsr = seL4_GetMR(seL4_UnknownSyscall_ARG0);
+    /* check if the exception class (bits 26-31) of the HSR indicate WFI/WFE */
+    if ( (hsr >> HSR_CLASS_EXCEPTION_SHIFT) == HSR_WFI) {
+        /* generate a new WFI fault */
+        new_wfi_fault(fault);
+        return 0;
+    } else {
+        ZF_LOGE("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vcpu->vm->vm_name, hsr);
+        if ((hsr & 0xfc300000) == 0x60200000 || hsr == 0xf2000800) {
+            seL4_UserContext *regs;
+            new_wfi_fault(fault);
+            regs = fault_get_ctx(fault);
+            regs->pc += 4;
+            seL4_TCB_WriteRegisters(vm_get_tcb(vcpu->vm), false, 0,
+                    sizeof(*regs) / sizeof(regs->pc), regs);
+            restart_fault(fault);
+            return 1;
+            }
+        return -1;
+    }
+}
+
+static int vm_unknown_exit_handler(vm_vcpu_t *vcpu) {
+    /* What? Why are we here? What just happened? */
+    ZF_LOGE("Unknown fault from [%s]", vcpu->vm->vm_name);
+    return -1;
+}
 
 static int
 vm_stop(vm_t *vm) {
@@ -51,11 +156,13 @@ int vm_run_arch(vm_t *vm) {
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge;
         seL4_Word label;
+        int vm_exit_reason;
 
         tag = seL4_Recv(vm->arch.fault_endpoint, &sender_badge);
         label = seL4_MessageInfo_get_label(tag);
         if (sender_badge == VM_BADGE) {
-            ret = vm_event(vm, tag);
+            vm_exit_reason = vm_decode_exit(label);
+            ret = arm_exit_handlers[vm_exit_reason](vm->vcpus[BOOT_VCPU]);
             if (ret) {
                 break;
             }

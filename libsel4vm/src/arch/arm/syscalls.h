@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -9,12 +9,13 @@
  *
  * @TAG(DATA61_BSD)
  */
+
 #pragma once
 
 #include <sel4vm/guest_vm.h>
 
-#include <autoconf.h>
-#include <sel4vm/gen_config.h>
-#include <sel4vm/devices.h>
+#define SYS_PA_TO_IPA 65
+#define SYS_IPA_TO_PA 66
+#define SYS_NOP 67
 
-#include <sel4vm/plat/devices.h>
+int vm_syscall_handler(vm_vcpu_t *vcpu);
