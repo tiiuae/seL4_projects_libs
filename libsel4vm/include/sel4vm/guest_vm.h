@@ -54,7 +54,7 @@ typedef struct vm_mmio_list {
 typedef struct vm_plat_callbacks {
     int (*get_interrupt)();
     int (*has_interrupt)();
-    int (*do_async)(seL4_Word id);
+    int (*do_async)(seL4_Word badge, seL4_Word label);
     seL4_CPtr (*get_async_event_notification)();
 } vm_plat_callbacks_t;
 
