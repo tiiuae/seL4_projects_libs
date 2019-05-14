@@ -232,18 +232,8 @@ int vm_set_bootargs(vm_t *vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags
     return err;
 }
 
-int vm_start(vm_t *vm)
-{
-    return seL4_TCB_Resume(vm_get_tcb(vm));
-}
-
-int vm_stop(vm_t *vm)
-{
-    return seL4_TCB_Suspend(vm_get_tcb(vm));
-}
-
-
-static void sys_pa_to_ipa(vm_t *vm, seL4_UserContext *regs)
+static void
+sys_pa_to_ipa(vm_t* vm, seL4_UserContext* regs)
 {
     uint32_t pa;
 #ifdef CONFIG_ARCH_AARCH64

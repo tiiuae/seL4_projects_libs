@@ -62,21 +62,6 @@ int vm_copyout_atags(vm_t *vm, struct atag_list *atags, uint32_t addr);
  */
 int vm_set_bootargs(vm_t *vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags);
 
-
-/**
- * Start up a VM
- * @param[in] vm  The virtual machine to boot
- * @return        0 on success
- */
-int vm_start(vm_t *vm);
-
-/**
- * Stop a VM. The VM can be started later with a call to vm_start
- * @param[in] vm The virtual machine to stop
- * @return       0 on success
- */
-int vm_stop(vm_t *vm);
-
 /**
  * Handle a VM event
  * @param[in] vm   A handle to the VM that triggered the event

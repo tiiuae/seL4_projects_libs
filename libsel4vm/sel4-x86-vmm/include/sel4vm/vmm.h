@@ -36,9 +36,6 @@ typedef struct vm_vcpu vm_vcpu_t;
 /* Finalize the VM before running it */
 int vmm_finalize(vm_t *vm);
 
-/*running vmm moudle*/
-void vmm_run(vm_t *vm);
-
 /* TODO htf did these get here? lets refactor everything  */
 void vmm_sync_guest_state(vm_vcpu_t *vcpu);
 void vmm_sync_guest_context(vm_vcpu_t *vcpu);

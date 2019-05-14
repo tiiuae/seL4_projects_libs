@@ -162,3 +162,6 @@ struct vm {
     unsigned int vm_id;
     bool vm_initialised;
 };
+
+/* Run the VM */
+int vm_run(vm_t *vm);
