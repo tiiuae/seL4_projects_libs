@@ -24,6 +24,8 @@
 #include "sel4vm/io.h"
 #include "sel4vm/vmm.h"
 
+#include "vm.h"
+
 static int io_port_cmp(const void *pkey, const void *pelem) {
     unsigned int key = (unsigned int)(uintptr_t)pkey;
     const ioport_range_t *elem = (const ioport_range_t*)pelem;
@@ -99,7 +101,7 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
             vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, eax);
         }
         vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-        return 0;
+        return VM_EXIT_HANDLED;
     }
 
     if (is_in) {
@@ -129,7 +131,7 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
 
     vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 
-    return 0;
+    return VM_EXIT_HANDLED;
 }
 
 static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_range_t port) {

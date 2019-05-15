@@ -19,6 +19,7 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
+#include <sel4vm/guest_vm_exits.h>
 
 #include "vm_boot.h"
 
@@ -38,6 +39,7 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
     vm->callbacks = callbacks;
     vm->tcb.priority = priority;
     vm->vm_name = strndup(name, strlen(name));
+    vm->run.exit_reason = VM_GUEST_UNKNOWN_EXIT;
     /* Initialise ram region */
     vm->mem.num_ram_regions = 0;
     vm->mem.ram_regions = malloc(0);

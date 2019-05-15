@@ -30,6 +30,8 @@
 #include "sel4vm/processor/cpuid.h"
 #include "sel4vm/processor/cpufeature.h"
 
+#include "vm.h"
+
 static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
                 unsigned int *ecx, unsigned int *edx) {
     /* ecx is often an input as well as an output. */
@@ -369,7 +371,7 @@ int vmm_cpuid_handler(vm_vcpu_t *vcpu) {
     /* Virtualise the CPUID instruction. */
     ret = vmm_cpuid_virt(function, index, &val, vcpu);
     if (ret)
-        return ret;
+        return VM_EXIT_HANDLE_ERROR;
 
     /* Set the return values in guest context. */
     vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, val.eax);
@@ -380,5 +382,5 @@ int vmm_cpuid_handler(vm_vcpu_t *vcpu) {
     vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 
     /* Return success. */
-    return 0;
+    return VM_EXIT_HANDLED;
 }

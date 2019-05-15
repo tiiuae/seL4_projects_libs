@@ -20,6 +20,8 @@
 #include <sel4vm/guest_vm.h>
 #include "sel4vm/vmm.h"
 
+#include "vm.h"
+
 /* Handling halt instruction VMExit Events. */
 int vmm_hlt_handler(vm_vcpu_t *vcpu) {
     if (!(vmm_guest_state_get_rflags(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr) & BIT(9))) {
@@ -32,5 +34,5 @@ int vmm_hlt_handler(vm_vcpu_t *vcpu) {
     }
 
     vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    return 0;
+    return VM_EXIT_HANDLED;
 }

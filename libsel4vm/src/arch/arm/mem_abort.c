@@ -21,6 +21,7 @@
 #include <sel4vm/fault.h>
 #include <sel4vm/devices.h>
 
+#include "vm.h"
 #include "mem_abort.h"
 
 static inline int dev_paddr_in_range(uintptr_t addr, const struct device* d)
@@ -202,5 +203,8 @@ int vm_guest_mem_abort_handler(vm_vcpu_t *vcpu) {
         return -1;
     }
     err = handle_page_fault(vcpu->vm, fault);
-    return err;
+    if (err) {
+        return VM_EXIT_HANDLE_ERROR;
+    }
+    return VM_EXIT_HANDLED;
 }

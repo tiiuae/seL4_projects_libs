@@ -22,6 +22,8 @@
 #include "sel4vm/vmm.h"
 #include "sel4vm/processor/msr.h"
 
+#include "vm.h"
+
 int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
 
     int ret = 0;
@@ -72,7 +74,7 @@ int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
             DPRINTF(1, "rdmsr WARNING unsupported msr_no 0x%x\n", msr_no);
             // generate a GP fault
             vmm_inject_exception(vcpu, 13, 1, 0);
-            return 0;
+            return VM_EXIT_HANDLED;
 
    }
 
@@ -80,9 +82,10 @@ int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
         vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, (uint32_t)(data & 0xffffffff));
         vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX, (uint32_t)(data >> 32));
         vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        return VM_EXIT_HANDLED;
     }
 
-    return ret;
+    return VM_EXIT_HANDLE_ERROR;
 }
 
 int vmm_wrmsr_handler(vm_vcpu_t *vcpu) {
@@ -117,11 +120,10 @@ int vmm_wrmsr_handler(vm_vcpu_t *vcpu) {
             DPRINTF(1, "wrmsr WARNING unsupported msr_no 0x%x\n", msr_no);
             // generate a GP fault
             vmm_inject_exception(vcpu, 13, 1, 0);
-            return 0;
+            return VM_EXIT_HANDLED;
     }
 
-    if (!ret)
-        vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    return VM_EXIT_HANDLED;
 
-    return ret;
 }

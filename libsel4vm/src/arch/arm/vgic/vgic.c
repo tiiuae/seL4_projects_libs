@@ -58,6 +58,9 @@
 #include <sel4vm/guest_memory_util.h>
 
 #include <sel4vm/plat/devices.h>
+
+#include "vm.h"
+
 //#define DEBUG_IRQ
 //#define DEBUG_DIST
 
@@ -859,7 +862,7 @@ int vm_vgic_maintenance_handler(vm_vcpu_t *vcpu) {
         reply = seL4_MessageInfo_new(0, 0, 0, 0);
         seL4_Reply(reply);
     }
-    return 0;
+    return VM_EXIT_HANDLED;
 }
 
 const struct device dev_vgic_dist = {

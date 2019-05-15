@@ -24,6 +24,8 @@
 #include "sel4vm/platform/vmcs.h"
 #include "sel4vm/processor/decode.h"
 
+#include "vm.h"
+
 #define EPT_VIOL_READ(qual) ((qual) & BIT(0))
 #define EPT_VIOL_WRITE(qual) ((qual) & BIT(1))
 #define EPT_VIOL_FETCH(qual) ((qual) & BIT(2))
@@ -61,11 +63,11 @@ int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
     int fetch = EPT_VIOL_FETCH(qualification);
     if (read && write) {
         /* Indicates a fault while walking EPT */
-        return -1;
+        return VM_EXIT_HANDLE_ERROR;
     }
     if (fetch) {
         /* This is not MMIO */
-        return -1;
+        return VM_EXIT_HANDLE_ERROR;
     }
 
     int reg;
@@ -74,11 +76,11 @@ int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
     decode_ept_violation(vcpu, &reg, &imm, &size);
     if (size != 4) {
         ZF_LOGE("Currently don't support non-32 bit accesses");
-        return -1;
+        return VM_EXIT_HANDLE_ERROR;
     }
     if (reg < 0) {
         ZF_LOGE("Invalid reg while decoding ept violation");
-        return -1;
+        return VM_EXIT_HANDLE_ERROR;
     }
 
     guest_memory_arch_data_t arch_data;
@@ -108,7 +110,7 @@ int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
             }
         case FAULT_IGNORE:
             vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-            return 0;
+            return VM_EXIT_HANDLED;
     }
     ZF_LOGE("Failed to handle ept fault");
     print_ept_violation(vcpu);

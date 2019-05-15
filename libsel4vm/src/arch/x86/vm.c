@@ -24,6 +24,7 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_vm_util.h>
 #include <sel4vm/boot.h>
+#include <sel4vm/guest_vm_exits.h>
 
 #include "vm.h"
 
@@ -74,7 +75,7 @@ static int handle_vm_exit(vm_vcpu_t *vcpu) {
 
     /* Call the handler. */
     ret = x86_exit_handlers[reason](vcpu);
-    if (ret) {
+    if (ret == -1) {
         printf("VM_FATAL_ERROR ::: vmexit handler return error\n");
         vmm_print_guest_context(0, vcpu);
         vcpu->vcpu_online = false;
@@ -133,7 +134,9 @@ int vm_run_arch(vm_t *vm) {
     assert(vmm_guest_state_no_modified(&vcpu->vcpu_arch.guest_state));
     vmm_guest_state_invalidate_all(&vcpu->vcpu_arch.guest_state);
 
-    while (1) {
+    ret = 1;
+    vm->run.exit_reason = -1;
+    while (ret > 0) {
         /* Block and wait for incoming msg or VM exits. */
         seL4_Word badge;
         int fault;
@@ -176,14 +179,16 @@ int vm_run_arch(vm_t *vm) {
                 vmm_check_external_interrupt(vm);
             }
             continue;
+        } else {
+            /* Handle the vm exit */
+            ret = handle_vm_exit(vcpu);
+            vmm_check_external_interrupt(vm);
         }
 
-        /* Handle the vm exit */
-        ret = handle_vm_exit(vcpu);
-        if (ret) {
-            break;
+        if (ret == VM_EXIT_HANDLE_ERROR) {
+            vm->run.exit_reason = VM_GUEST_ERROR_EXIT;
         }
-        vmm_check_external_interrupt(vm);
+
     }
     return ret;
 }

@@ -24,6 +24,8 @@
 #include "sel4vm/vmm.h"
 #include "sel4vm/processor/decode.h"
 
+#include "vm.h"
+
 #define TRAMPOLINE_LENGTH (100)
 
 static void resume_guest(vm_vcpu_t *vcpu) {
@@ -119,7 +121,7 @@ int vmm_pending_interrupt_handler(vm_vcpu_t *vcpu) {
         }
         vcpu->vcpu_arch.guest_state.virt.interrupt_halt = 0;
     }
-    return 0;
+    return VM_EXIT_HANDLED;
 }
 
 /* Start an AP vcpu after a sipi with the requested vector */

@@ -20,6 +20,7 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_vm_util.h>
 #include <sel4vm/boot.h>
+#include <sel4vm/guest_vm_exits.h>
 
 #include "vm.h"
 #include "arm_vm.h"
@@ -79,7 +80,7 @@ static int handle_exception(vm_t* vm, seL4_Word ip)
     err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
     print_ctx_regs(&regs);
-    return 0;
+    return VM_EXIT_HANDLED;
 }
 
 static int vm_user_exception_handler(vm_vcpu_t *vcpu) {
@@ -93,7 +94,7 @@ static int vm_user_exception_handler(vm_vcpu_t *vcpu) {
         reply = seL4_MessageInfo_new(0, 0, 0, 0);
         seL4_Reply(reply);
     }
-    return 0;
+    return VM_EXIT_HANDLED;
 }
 
 static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
@@ -106,7 +107,7 @@ static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
     if ( (hsr >> HSR_CLASS_EXCEPTION_SHIFT) == HSR_WFI) {
         /* generate a new WFI fault */
         new_wfi_fault(fault);
-        return 0;
+        return VM_EXIT_HANDLED;
     } else {
         ZF_LOGE("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vcpu->vm->vm_name, hsr);
         if ((hsr & 0xfc300000) == 0x60200000 || hsr == 0xf2000800) {
@@ -117,16 +118,17 @@ static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
             seL4_TCB_WriteRegisters(vm_get_tcb(vcpu->vm), false, 0,
                     sizeof(*regs) / sizeof(regs->pc), regs);
             restart_fault(fault);
-            return 1;
+            return VM_EXIT_HANDLED;
             }
-        return -1;
+        return VM_EXIT_HANDLE_ERROR;
     }
 }
 
 static int vm_unknown_exit_handler(vm_vcpu_t *vcpu) {
     /* What? Why are we here? What just happened? */
     ZF_LOGE("Unknown fault from [%s]", vcpu->vm->vm_name);
-    return -1;
+    vcpu->vm->run.exit_reason = VM_GUEST_UNKNOWN_EXIT;
+    return VM_EXIT_HANDLE_ERROR;
 }
 
 static int
@@ -152,7 +154,7 @@ int vm_run_arch(vm_t *vm) {
     }
 
     /* Loop, handling events */
-    while (1) {
+    while (ret > 0) {
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge;
         seL4_Word label;
@@ -163,8 +165,8 @@ int vm_run_arch(vm_t *vm) {
         if (sender_badge == VM_BADGE) {
             vm_exit_reason = vm_decode_exit(label);
             ret = arm_exit_handlers[vm_exit_reason](vm->vcpus[BOOT_VCPU]);
-            if (ret) {
-                break;
+            if (ret == VM_EXIT_HANDLE_ERROR) {
+                vm->run.exit_reason = VM_GUEST_ERROR_EXIT;
             }
         } else {
             err = vm->callbacks.do_async(sender_badge, label);

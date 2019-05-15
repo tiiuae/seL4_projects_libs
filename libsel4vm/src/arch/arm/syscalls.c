@@ -21,6 +21,7 @@
 #include <sel4vm/guest_vm_util.h>
 #include <sel4vm/guest_memory.h>
 
+#include "vm.h"
 #include "syscalls.h"
 
 static void
@@ -121,7 +122,7 @@ handle_syscall(vm_t* vm)
     }
     err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
-    return 0;
+    return VM_EXIT_HANDLED;
 }
 
 int vm_syscall_handler(vm_vcpu_t *vcpu) {

@@ -12,13 +12,11 @@
 
 #pragma once
 
-#include <sel4vm/guest_vm.h>
+typedef enum vm_exit_codes {
+    VM_GUEST_MMIO_EXIT,
+    VM_GUEST_IO_EXIT,
+    VM_GUEST_NOTIFICATION_EXIT,
+    VM_GUEST_UNKNOWN_EXIT
+} vm_exit_codes_t;
 
-/* Internal exit codes */
-#define VM_EXIT_UNHANDLED           0
-#define VM_EXIT_HANDLED             1
-#define VM_EXIT_HANDLE_ERROR       -1
-
-typedef int(*vm_exit_handler_fn_t)(vm_vcpu_t *vcpu);
-
-int vm_run_arch(vm_t *vm);
+#define VM_GUEST_ERROR_EXIT -1

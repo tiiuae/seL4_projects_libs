@@ -23,13 +23,15 @@
 #include "sel4vm/vmm.h"
 #include "sel4vm/platform/vmcs.h"
 
+#include "vm.h"
+
 int vmm_vmx_timer_handler(vm_vcpu_t *vcpu) {
 #ifdef CONFIG_LIB_VMM_VMX_TIMER_DEBUG
     vmm_print_guest_context(0, vcpu);
 //    vmm_vmcs_write(vmm->guest_vcpu, VMX_CONTROL_PIN_EXECUTION_CONTROLS, vmm_vmcs_read(vmm->guest_vcpu, VMX_CONTROL_PIN_EXECUTION_CONTROLS) | BIT(6));
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_VMX_PREEMPTION_TIMER_VALUE, CONFIG_LIB_VMM_VMX_TIMER_TIMEOUT);
-    return 0;
+    return VM_EXIT_HANDLED;
 #else
-    return -1;
+    return VM_EXIT_HANDLE_ERROR;
 #endif
 }

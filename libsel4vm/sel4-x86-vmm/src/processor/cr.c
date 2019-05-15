@@ -25,6 +25,8 @@
 
 #include "sel4vm/vmm.h"
 
+#include "vm.h"
+
 static inline unsigned int apply_cr_bits(unsigned int cr, unsigned int mask, unsigned int host_bits) {
     /* force any bit in the mask to be the value from the shadow (both enabled and disabled) */
     cr |= (mask & host_bits);
@@ -227,7 +229,8 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
 
     if (!ret) {
         vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        return VM_EXIT_HANDLED;
     }
 
-    return ret;
+    return VM_EXIT_HANDLE_ERROR;
 }

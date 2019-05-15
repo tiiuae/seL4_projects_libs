@@ -15,6 +15,8 @@
 #include "sel4vm/debug.h"
 #include "sel4vm/vmcall.h"
 
+#include "vm.h"
+
 static vmcall_handler_t *get_handle(vm_t *vm, int token);
 
 static vmcall_handler_t *get_handle(vm_t *vm, int token) {
@@ -55,13 +57,14 @@ int vmm_vmcall_handler(vm_vcpu_t *vcpu) {
     if(h == NULL) {
         DPRINTF(2, "Failed to find handler for token:%x\n", token);
         vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-        return 0;
+        return VM_EXIT_HANDLED;
     }
 
     res = h->func(vcpu);
     if(res == 0) {
         vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        return VM_EXIT_HANDLED;
     }
 
-    return res;
+    return VM_EXIT_HANDLE_ERROR;
 }
