@@ -49,7 +49,7 @@ int vm_guest_mem_touch(vm_t *vm, uintptr_t addr, size_t size, mem_touch_callback
     access_cookie.touch_fn = touch_callback;
     access_cookie.data = cookie;
     access_cookie.vm = vm;
-    for (current_addr = (uintptr_t)addr; current_addr < end_addr; current_addr = next_addr) {
+    for (current_addr = addr; current_addr < end_addr; current_addr = next_addr) {
         uintptr_t current_aligned = PAGE_ALIGN_4K(current_addr);
         uintptr_t next_page_start = current_aligned + PAGE_SIZE_4K;
         next_addr = MIN(end_addr, next_page_start);
