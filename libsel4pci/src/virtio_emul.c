@@ -93,12 +93,9 @@ static void emul_rx_complete(void *iface, unsigned int num_bufs, void **cookies,
 {
     ethif_virtio_emul_t *emul = (ethif_virtio_emul_t*)iface;
     ethif_virtio_emul_internal_t *net = emul->internal;
-    unsigned int tot_len = 0;
     int i;
     struct vring *vring = &net->vring[RX_QUEUE];
-    for (i = 0; i < num_bufs; i++) {
-        tot_len += lens[i];
-    }
+
     /* grab the next receive chain */
     struct virtio_net_hdr virtio_hdr;
     memset(&virtio_hdr, 0, sizeof(virtio_hdr));
