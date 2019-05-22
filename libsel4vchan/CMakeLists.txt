@@ -18,4 +18,4 @@ file(GLOB sources src/*.c)
 
 add_library(sel4vchan STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4vchan PUBLIC include)
-target_link_libraries(sel4vchan Configuration muslc sel4 sel4simple utils sel4utils sel4vka sel4vspace sel4dma)
+target_link_libraries(sel4vchan muslc sel4 sel4simple utils sel4utils sel4vka sel4vspace sel4dma)

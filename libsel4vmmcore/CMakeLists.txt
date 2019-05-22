@@ -27,7 +27,6 @@ add_library(sel4vmmcore STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4vmmcore PUBLIC include)
 target_link_libraries(
     sel4vmmcore
-    Configuration
     muslc
     sel4
     utils

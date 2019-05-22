@@ -33,8 +33,23 @@ file(GLOB sources src/*.c src/arch/arm/*/*.c src/images/*.c src/devices/*.c src/
 add_library(sel4arm-vmm STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4arm-vmm PUBLIC include plat_include/${KernelPlatform})
 target_include_directories(sel4arm-vmm PUBLIC include sel4_arch_include/${KernelSel4Arch})
-target_link_libraries(sel4arm-vmm Configuration muslc sel4 sel4simple utils sel4utils sel4vka sel4vspace sel4allocman sel4dma platsupport sel4pci
-    sel4vmmcore)
+target_link_libraries(
+    sel4arm-vmm
+    muslc
+    sel4
+    sel4simple
+    utils
+    sel4utils
+    sel4vka
+    sel4vspace
+    sel4allocman
+    sel4dma
+    platsupport
+    sel4pci
+    sel4vmmcore
+    sel4arm-vmm_Config
+    usbdrivers_Config
+)
 if(LibSel4ArmVMMVchanSupport)
     target_link_libraries(sel4arm-vmm sel4vchan)
 endif()

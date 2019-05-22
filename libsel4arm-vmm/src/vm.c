@@ -10,6 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 #include <autoconf.h>
+#include <sel4arm-vmm/gen_config.h>
 #include "vm.h"
 #include <stdio.h>
 #include <stdlib.h>

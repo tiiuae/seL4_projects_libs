@@ -13,6 +13,7 @@
 #define SEL4ARM_VMM_EXYNOS_MAP_H
 
 #include <autoconf.h>
+#include <sel4arm-vmm/gen_config.h>
 
 /***** Physical Map ****/
 #define RAM_BASE  0x40000000

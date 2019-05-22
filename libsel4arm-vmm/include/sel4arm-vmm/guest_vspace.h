@@ -12,6 +12,7 @@
 #pragma once
 
 #include <autoconf.h>
+#include <sel4arm-vmm/gen_config.h>
 #include <vspace/vspace.h>
 #include <vka/vka.h>
 

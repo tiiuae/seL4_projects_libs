@@ -10,6 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
+#include <autoconf.h>
 #include <sel4nanopb/sel4nanopb.h>
 #include <sel4rpc/server.h>
 #include <sel4utils/api.h>

@@ -13,6 +13,7 @@
 #define DEVICES_H
 
 #include <autoconf.h>
+#include <sel4arm-vmm/gen_config.h>
 #include <sel4arm-vmm/devices.h>
 
 #include <sel4arm-vmm/plat/devices.h>

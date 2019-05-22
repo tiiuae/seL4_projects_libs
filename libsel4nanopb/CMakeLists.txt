@@ -20,4 +20,4 @@ include_directories(${NANOPB_INCLUDE_DIRS})
 
 add_library(sel4nanopb EXCLUDE_FROM_ALL src/common.c)
 target_include_directories(sel4nanopb PUBLIC include)
-target_link_libraries(sel4nanopb Configuration muslc utils sel4 nanopb)
+target_link_libraries(sel4nanopb muslc utils sel4 nanopb)

@@ -13,6 +13,8 @@
 #define SEL4ARM_VMM_DEVICES_VUSB_H
 
 #include <autoconf.h>
+#include <sel4arm-vmm/gen_config.h>
+#include <usbdrivers/gen_config.h>
 #ifdef CONFIG_LIB_USB
 
 #include <usb/usb_host.h>
