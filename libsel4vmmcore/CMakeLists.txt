@@ -16,8 +16,25 @@ project(libsel4vmmcore C)
 
 add_compile_options(-std=gnu99)
 
-set(sources src/drivers/virtio_net/virtio_net.c src/util/io.c)
+set(
+    sources
+    src/drivers/virtio_net/virtio_net.c
+    src/drivers/virtio_console/virtio_con.c
+    src/util/io.c
+)
 
 add_library(sel4vmmcore STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4vmmcore PUBLIC include)
-target_link_libraries(sel4vmmcore Configuration muslc sel4 utils sel4utils platsupport pci ethdrivers sel4pci pci)
+target_link_libraries(
+    sel4vmmcore
+    Configuration
+    muslc
+    sel4
+    utils
+    sel4utils
+    platsupport
+    pci
+    ethdrivers
+    sel4pci
+    pci
+)
