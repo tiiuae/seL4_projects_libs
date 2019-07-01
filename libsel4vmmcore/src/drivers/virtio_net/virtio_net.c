@@ -29,7 +29,7 @@ static ps_io_ops_t ops;
 
 static int virtio_net_io_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result)
 {
-    virtio_net_t *net = (virtio_net_t*)cookie;
+    virtio_net_t *net = (virtio_net_t *)cookie;
     unsigned int offset = port_no - net->iobase;
     unsigned int val;
     int err = net->emul->io_in(net->emul, offset, size, &val);
@@ -43,7 +43,7 @@ static int virtio_net_io_in(void *cookie, unsigned int port_no, unsigned int siz
 static int virtio_net_io_out(void *cookie, unsigned int port_no, unsigned int size, unsigned int value)
 {
     int ret;
-    virtio_net_t *net = (virtio_net_t*)cookie;
+    virtio_net_t *net = (virtio_net_t *)cookie;
     unsigned int offset = port_no - net->iobase;
     ret = net->emul->io_out(net->emul, offset, size, value);
     return ret;
@@ -69,7 +69,7 @@ static void emul_low_level_init(struct eth_driver *driver, uint8_t *mac, int *mt
     ZF_LOGF("not implemented");
 }
 
-static void emul_print_state(struct eth_driver* driver)
+static void emul_print_state(struct eth_driver *driver)
 {
     ZF_LOGF("not implemented");
 }
@@ -84,7 +84,7 @@ static struct raw_iface_funcs emul_driver_funcs = {
 
 static int emul_driver_init(struct eth_driver *driver, ps_io_ops_t io_ops, void *config)
 {
-    virtio_net_t *net = (virtio_net_t*)config;
+    virtio_net_t *net = (virtio_net_t *)config;
     driver->eth_data = config;
     driver->dma_alignment = sizeof(uintptr_t);
     driver->i_fn = net->emul_driver_funcs;
@@ -92,7 +92,7 @@ static int emul_driver_init(struct eth_driver *driver, ps_io_ops_t io_ops, void 
     return 0;
 }
 
-static void* malloc_dma_alloc(void *cookie, size_t size, int align, int cached, ps_mem_flags_t flags)
+static void *malloc_dma_alloc(void *cookie, size_t size, int align, int cached, ps_mem_flags_t flags)
 {
     assert(cached);
     int error;
@@ -139,8 +139,8 @@ static vmm_pci_entry_t vmm_virtio_net_pci_bar(unsigned int iobase,
         .device_id = VIRTIO_NET_PCI_DEVICE_ID,
         .command = PCI_COMMAND_IO | PCI_COMMAND_MEMORY,
         .header_type = PCI_HEADER_TYPE_NORMAL,
-        .subsystem_vendor_id	= VIRTIO_PCI_SUBSYSTEM_VENDOR_ID,
-        .subsystem_id		= VIRTIO_ID_NET,
+        .subsystem_vendor_id    = VIRTIO_PCI_SUBSYSTEM_VENDOR_ID,
+        .subsystem_id       = VIRTIO_ID_NET,
         .interrupt_pin = interrupt_pin,
         .interrupt_line = interrupt_line,
         .bar0 = iobase | PCI_BASE_ADDRESS_SPACE_IO,
@@ -157,17 +157,17 @@ static vmm_pci_entry_t vmm_virtio_net_pci_bar(unsigned int iobase,
     };
 
     vmm_pci_bar_t bars[1] = {{
-        .mem_type = NON_MEM,
-        .address = iobase,
-        .size_bits = iobase_size_bits
+            .mem_type = NON_MEM,
+            .address = iobase,
+            .size_bits = iobase_size_bits
         }
     };
     return vmm_pci_create_passthrough_bar_emulation(entry, 1, bars);
 }
 
 virtio_net_t *common_make_virtio_net(virtio_emul_vm_t *emul_vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
-        unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
-        struct raw_iface_funcs backend)
+                                     unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
+                                     struct raw_iface_funcs backend)
 {
     size_t iobase_size_bits = BYTES_TO_SIZE_BITS(iobase_size);
     int err = ps_new_stdlib_malloc_ops(&ops.malloc_ops);

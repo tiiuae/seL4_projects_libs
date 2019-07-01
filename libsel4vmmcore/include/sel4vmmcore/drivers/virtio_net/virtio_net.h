@@ -46,8 +46,8 @@ typedef struct virtio_net {
  * @return pointer to an initialised virtio_net_t, NULL if error.
  */
 virtio_net_t *common_make_virtio_net(virtio_emul_vm_t *emul_vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
-        unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
-        struct raw_iface_funcs backend);
+                                     unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
+                                     struct raw_iface_funcs backend);
 
 /**
 * @return a struct with a default virtio_net backend. It is the responsibility of the caller to

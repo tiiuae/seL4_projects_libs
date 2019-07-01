@@ -16,32 +16,30 @@
 #include <sel4pci/pci.h>
 #include <sel4pci/virtio_emul.h>
 
-/* Virtio net driver interface */
+/* Virtio console driver interface */
 typedef struct virtio_con {
-    /* IO Port base for Virtio net device */
+    /* IO Port base for virtio con device */
     unsigned int iobase;
-    /* Virtio Ethernet emulation interface: VMM <-> Guest */
+    /* Virtio console emulation interface: VMM <-> Guest */
     virtio_emul_t *emul;
-    /* Virtio Ethernet emulation functions: VMM <-> Guest */
+    /* Virtio console emulation functions: VMM <-> Guest */
     struct console_passthrough emul_driver_funcs;
-    /* ioops for dma management */
     ps_io_ops_t ioops;
 } virtio_con_t;
 
 /**
- * Initialise a new virtio_net device with Base Address Registers (BARs) starting at iobase and backend functions
- *
- * specified by the raw_iface_funcs struct.
+ * Initialise a new virtio_con device with Base Address Registers (BARs) starting at iobase and backend functions
+ * specified by the console_passthrough struct.
  * @param emul_vm arch specfic vm cookie
- * @param pci PCI library instance to register virtio net device
- * @param ioport IOPort library instance to register virtio net ioport
+ * @param pci PCI library instance to register virtio con device
+ * @param ioport IOPort library instance to register virtio con ioport
  * @param iobase starting BAR port for front end emulation to start from
  * @param iosize size of starting BAR port for front end emulation
  * @param interrupt_pin PCI interrupt pin e.g. INTA = 1, INTB = 2 ,...
- * @param interrupt_line PCI interrupt line for virtio net IRQS
+ * @param interrupt_line PCI interrupt line for virtio con IRQS
  * @param backend function pointers to backend implementation. Can be initialised by
- *  virtio_net_default_backend for default methods.
- * @return pointer to an initialised virtio_net_t, NULL if error.
+ *  virtio_con_default_backend for default methods.
+ * @return pointer to an initialised virtio_con_t, NULL if error.
  */
 virtio_con_t *common_make_virtio_con(virtio_emul_vm_t *emul_vm,
                                      vmm_pci_space_t *pci,
