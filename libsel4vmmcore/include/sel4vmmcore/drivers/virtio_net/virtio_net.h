@@ -21,7 +21,7 @@ typedef struct virtio_net {
     /* IO Port base for Virtio net device */
     unsigned int iobase;
     /* Virtio Ethernet emulation interface: VMM <-> Guest */
-    ethif_virtio_emul_t *emul;
+    virtio_emul_t *emul;
     /* Backend  Ethernet driver interface: VMM <-> Ethernet driver */
     struct eth_driver *emul_driver;
     /* Virtio Ethernet emulation functions: VMM <-> Guest */

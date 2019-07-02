@@ -12,25 +12,68 @@
 
 #pragma once
 
+#include <autoconf.h>
+#include <string.h>
 #include <platsupport/io.h>
 #include <ethdrivers/raw.h>
+#include "con_forward.h"
 #include <sel4pci/vmm_virtio_emul.h>
+#include <ethdrivers/virtio/virtio_ring.h>
+#include <ethdrivers/virtio/virtio_pci.h>
+#include <ethdrivers/virtio/virtio_net.h>
+#include <ethdrivers/virtio/virtio_config.h>
 
-struct ethif_virtio_emul_internal;
+#define RX_QUEUE 0
+#define TX_QUEUE 1
 
-typedef struct ethif_virtio_emul {
+typedef enum virtio_pci_devices {
+    VIRTIO_NET,
+    VIRTIO_CONSOLE,
+} virtio_pci_devices_t;
+
+typedef struct v_queue {
+    int status;
+    uint16_t queue;
+    struct vring vring[2];
+    uint16_t queue_size[2];
+    uint32_t queue_pfn[2];
+    uint16_t last_idx[2];
+} vqueue_t;
+
+typedef struct virtio_emul {
     /* pointer to internal information */
-    struct ethif_virtio_emul_internal *internal;
-    /* io port interface functions */
-    int (*io_in)(struct ethif_virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int *result);
-    int (*io_out)(struct ethif_virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int value);
+    void *internal;
+    /* generic io port interface functions */
+    int (*io_in)(struct virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int *result);
+    int (*io_out)(struct virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int value);
     /* notify of a status change in the underlying driver.
      * typically this would be due to link coming up
      * meaning that transmits can finally happen */
-    int (*notify)(struct ethif_virtio_emul *emul);
-} ethif_virtio_emul_t;
+    int (*notify)(struct virtio_emul *emul);
+    /* device specific io port interface functions*/
+    int (*device_io_in)(struct virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int *result);
+    int (*device_io_out)(struct virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int *result);
+    /* generic virtqueue structure */
+    vqueue_t virtq;
+    virtio_emul_vm_t *emul_vm;
+} virtio_emul_t;
 
-ethif_virtio_emul_t *ethif_virtio_emul_init(ps_io_ops_t io_ops, int queue_size, virtio_emul_vm_t *emul_vm, ethif_driver_init driver, void *config);
+virtio_emul_t *virtio_emul_init(ps_io_ops_t io_ops, int queue_size, virtio_emul_vm_t *emul_vm, void *driver,
+                                void *config, virtio_pci_devices_t device);
 
 int vm_guest_write_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size);
+
 int vm_guest_read_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size);
+
+void ring_used_add(virtio_emul_t *emul, struct vring *vring, struct vring_used_elem elem);
+
+struct vring_desc ring_desc(virtio_emul_t *emul, struct vring *vring, uint16_t idx);
+
+uint16_t ring_avail_idx(virtio_emul_t *emul, struct vring *vring);
+
+uint16_t ring_avail(virtio_emul_t *emul, struct vring *vring, uint16_t idx);
+
+void *net_virtio_emul_init(virtio_emul_t *emul, ps_io_ops_t io_ops, ethif_driver_init driver, void *config);
+
+void *console_virtio_emul_init(virtio_emul_t *emul, ps_io_ops_t io_ops, console_driver_init driver, void *config);
+

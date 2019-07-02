@@ -16,7 +16,8 @@
 
 #include <platsupport/io.h>
 
-#include <sel4vmmcore/drivers/virtio_net/virtio.h>
+#include <sel4vmmcore/drivers/virtio.h>
+
 #include <sel4vmmcore/drivers/virtio_net/virtio_net.h>
 
 #include <pci/helper.h>
@@ -171,6 +172,7 @@ virtio_net_t *common_make_virtio_net(virtio_emul_vm_t *emul_vm, vmm_pci_space_t 
     size_t iobase_size_bits = BYTES_TO_SIZE_BITS(iobase_size);
     int err = ps_new_stdlib_malloc_ops(&ops.malloc_ops);
     ZF_LOGF_IF(err, "Failed to get malloc ops");
+    /* TODO: Bug with 2 pci devices below here */
     vmm_pci_entry_t entry = vmm_virtio_net_pci_bar(iobase, iobase_size_bits, interrupt_pin, interrupt_line);
     vmm_pci_add_entry(pci, entry, NULL);
 
@@ -195,7 +197,7 @@ virtio_net_t *common_make_virtio_net(virtio_emul_vm_t *emul_vm, vmm_pci_space_t 
     };
 
     net->emul_driver_funcs = backend;
-    net->emul = ethif_virtio_emul_init(ioops, QUEUE_SIZE, emul_vm, emul_driver_init, net);
+    net->emul = virtio_emul_init(ioops, QUEUE_SIZE, emul_vm, emul_driver_init, net, VIRTIO_NET);
 
     assert(net->emul);
     return net;
