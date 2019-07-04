@@ -270,7 +270,7 @@ void *net_virtio_emul_init(virtio_emul_t *emul, ps_io_ops_t io_ops, ethif_driver
         goto error;
     }
     memset(internal, 0, sizeof(*internal));
-    emul->notify = emul_notify;
+    emul->notify = emul_notify_tx;
     emul->device_io_in = net_device_emul_io_in;
     emul->device_io_out = net_device_emul_io_out;
     internal->driver.cb_cookie = emul;
