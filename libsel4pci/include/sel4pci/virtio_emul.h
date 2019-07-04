@@ -49,10 +49,10 @@ typedef struct virtio_emul {
     /* notify of a status change in the underlying driver.
      * typically this would be due to link coming up
      * meaning that transmits can finally happen */
-    int (*notify)(struct virtio_emul *emul);
+    void (*notify)(struct virtio_emul *emul);
     /* device specific io port interface functions*/
-    int (*device_io_in)(struct virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int *result);
-    int (*device_io_out)(struct virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int *result);
+    bool (*device_io_in)(struct virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int *result);
+    bool (*device_io_out)(struct virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int result);
     /* generic virtqueue structure */
     vqueue_t virtq;
     virtio_emul_vm_t *emul_vm;

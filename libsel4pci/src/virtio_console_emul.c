@@ -87,7 +87,7 @@ void virtio_console_putchar(virtio_emul_t *con, char *buf, int len)
     emul_con_rx_complete((void *)con, buf, len);
 }
 
-void emul_con_notify_tx(virtio_emul_t *emul)
+static void emul_con_notify_tx(virtio_emul_t *emul)
 {
     console_internal_t *con = emul->internal;
     vqueue_t *virtq = &emul->virtq;
