@@ -16,6 +16,7 @@
 #include <simple/simple.h>
 #include <vka/vka.h>
 #include <vka/object.h>
+#include <vka/capops.h>
 #include <rpc.pb.h>
 #include <pb_encode.h>
 #include <pb_decode.h>
@@ -46,6 +47,7 @@ static int sel4rpc_handle_memory(sel4rpc_server_env_t *env, RpcMessage *rpcMsg)
     seL4_SetCap(0, path.capPtr);
     int ret = sel4rpc_server_reply(env, 1, 0);
 
+    vka_cnode_delete(&path);
     vka_cspace_free_path(env->vka, path);
     return ret;
 }
@@ -72,6 +74,7 @@ static int sel4rpc_handle_ioport(sel4rpc_server_env_t *env, RpcMessage *rpcMsg)
     seL4_SetCap(0, path.capPtr);
     int ret = sel4rpc_server_reply(env, 1, 0);
 
+    vka_cnode_delete(&path);
     vka_cspace_free_path(env->vka, path);
     return ret;
 }
@@ -136,6 +139,7 @@ static int sel4rpc_handle_irq(sel4rpc_server_env_t *env, RpcMessage *rpcMsg)
     seL4_SetCap(0, path.capPtr);
     int ret = sel4rpc_server_reply(env, 1, 0);
 
+    vka_cnode_delete(&path);
     vka_cspace_free_path(env->vka, path);
     return ret;
 }
