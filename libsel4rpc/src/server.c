@@ -28,29 +28,37 @@ static int sel4rpc_handle_memory(sel4rpc_server_env_t *env, RpcMessage *rpcMsg)
 {
     cspacepath_t path;
     int error;
-    error = vka_cspace_alloc_path(env->vka, &path);
-    if (error) {
-        ZF_LOGE("Failed to alloc path: %d\n", error);
-        sel4rpc_server_reply(env, 0, 1);
-        return -1;
-    }
+    if (rpcMsg->msg.memory.action == Action_ALLOCATE) {
+        error = vka_cspace_alloc_path(env->vka, &path);
+        if (error) {
+            ZF_LOGE("Failed to alloc path: %d\n", error);
+            sel4rpc_server_reply(env, 0, 1, 0);
+            return -1;
+        }
 
-    uintptr_t cookie;
-    error = vka_utspace_alloc_at(env->vka, &path, rpcMsg->msg.memory.type, rpcMsg->msg.memory.size_bits,
-                                 rpcMsg->msg.memory.address, &cookie);
-    if (error) {
-        ZF_LOGE("Failed to alloc at: %d\n", error);
+        uintptr_t cookie;
+        error = vka_utspace_alloc_at(env->vka, &path, rpcMsg->msg.memory.type, rpcMsg->msg.memory.size_bits,
+                                     rpcMsg->msg.memory.address, &cookie);
+        if (error) {
+            ZF_LOGE("Failed to alloc at: %d\n", error);
+            vka_cspace_free_path(env->vka, path);
+            sel4rpc_server_reply(env, 0, 1, 0);
+            return -1;
+        }
+
+        seL4_SetCap(0, path.capPtr);
+        int ret = sel4rpc_server_reply(env, 1, 0, cookie);
+
+        vka_cnode_delete(&path);
         vka_cspace_free_path(env->vka, path);
-        sel4rpc_server_reply(env, 0, 1);
-        return -1;
+
+        return ret;
+    } else {
+        vka_utspace_free(env->vka, rpcMsg->msg.memory.type, rpcMsg->msg.memory.size_bits,
+                         rpcMsg->msg.memory.address);
+
+        return sel4rpc_server_reply(env, 0, 0, 0);
     }
-
-    seL4_SetCap(0, path.capPtr);
-    int ret = sel4rpc_server_reply(env, 1, 0);
-
-    vka_cnode_delete(&path);
-    vka_cspace_free_path(env->vka, path);
-    return ret;
 }
 
 static int sel4rpc_handle_ioport(sel4rpc_server_env_t *env, RpcMessage *rpcMsg)
@@ -60,7 +68,7 @@ static int sel4rpc_handle_ioport(sel4rpc_server_env_t *env, RpcMessage *rpcMsg)
     error = vka_cspace_alloc_path(env->vka, &path);
     if (error) {
         ZF_LOGE("Failed to alloc path: %d\n", error);
-        sel4rpc_server_reply(env, 0, 1);
+        sel4rpc_server_reply(env, 0, 1, 0);
         return -1;
     }
 
@@ -68,12 +76,12 @@ static int sel4rpc_handle_ioport(sel4rpc_server_env_t *env, RpcMessage *rpcMsg)
                                            path.root, path.capPtr, path.capDepth);
     if (err != seL4_NoError) {
         vka_cspace_free_path(env->vka, path);
-        sel4rpc_server_reply(env, 0, 1);
+        sel4rpc_server_reply(env, 0, 1, 0);
         return err;
     }
 
     seL4_SetCap(0, path.capPtr);
-    int ret = sel4rpc_server_reply(env, 1, 0);
+    int ret = sel4rpc_server_reply(env, 1, 0, 0);
 
     vka_cnode_delete(&path);
     vka_cspace_free_path(env->vka, path);
@@ -87,7 +95,7 @@ static int sel4rpc_handle_irq(sel4rpc_server_env_t *env, RpcMessage *rpcMsg)
     error = vka_cspace_alloc_path(env->vka, &path);
     if (error) {
         ZF_LOGE("Failed to alloc path: %d\n", error);
-        sel4rpc_server_reply(env, 0, 1);
+        sel4rpc_server_reply(env, 0, 1, 0);
         return -1;
     }
 
@@ -114,7 +122,7 @@ static int sel4rpc_handle_irq(sel4rpc_server_env_t *env, RpcMessage *rpcMsg)
     case IrqAllocMessage_simple_tag: {
         /* Simple IRQ */
         IrqAllocMessageSimple *simple = &rpcMsg->msg.irq.type.simple;
-#ifdef CONFIG_ARCH_simple
+#ifdef CONFIG_ARCH_ARM
         if (simple->setTrigger) {
             err = arch_simple_get_IRQ_trigger(&env->simple->arch_simple, simple->irq,
                                               simple->trigger, path);
@@ -133,12 +141,12 @@ static int sel4rpc_handle_irq(sel4rpc_server_env_t *env, RpcMessage *rpcMsg)
 
     if (err != seL4_NoError) {
         vka_cspace_free_path(env->vka, path);
-        sel4rpc_server_reply(env, 0, 1);
+        sel4rpc_server_reply(env, 0, 1, 0);
         return err;
     }
 
     seL4_SetCap(0, path.capPtr);
-    int ret = sel4rpc_server_reply(env, 1, 0);
+    int ret = sel4rpc_server_reply(env, 1, 0, 0);
 
     vka_cnode_delete(&path);
     vka_cspace_free_path(env->vka, path);
@@ -174,12 +182,13 @@ int sel4rpc_server_init(sel4rpc_server_env_t *env, vka_t *vka,
     return 0;
 }
 
-int sel4rpc_server_reply(sel4rpc_server_env_t *env, int caps, int errorCode)
+int sel4rpc_server_reply(sel4rpc_server_env_t *env, int caps, int errorCode, int cookie)
 {
     pb_ostream_t ostream = pb_ostream_from_IPC(0);
     RpcMessage rpcMsg;
-    rpcMsg.which_msg = RpcMessage_errorCode_tag;
-    rpcMsg.msg.errorCode = errorCode;
+    rpcMsg.which_msg = RpcMessage_ret_tag;
+    rpcMsg.msg.ret.errorCode = errorCode;
+    rpcMsg.msg.ret.cookie = cookie;
 
     bool ret = pb_encode_delimited(&ostream, &RpcMessage_msg, &rpcMsg);
     if (!ret) {

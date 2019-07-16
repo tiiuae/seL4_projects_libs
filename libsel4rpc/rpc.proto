@@ -11,11 +11,17 @@
  */
 syntax = "proto3";
 
+enum Action {
+    ALLOCATE = 0;
+    FREE = 1;
+};
+
 /* allocate a memory region */
 message MemoryAllocMessage {
     uint64 address = 1;
     uint64 size_bits = 2;
     uint64 type = 3;
+    Action action = 4;
 };
 
 /* allocate IRQs */
@@ -59,6 +65,11 @@ message IOPortMessage {
     uint32 end = 2;
 };
 
+message ReturnMessage {
+    uint32 errorCode = 1;
+    uint64 cookie = 2;
+};
+
 /*
  * this is the only message type that's actually sent,
  * all the other messages are just contained within
@@ -66,7 +77,7 @@ message IOPortMessage {
  */
 message RpcMessage {
     oneof msg {
-        uint32 errorCode = 1;
+        ReturnMessage ret = 1;
         MemoryAllocMessage memory = 2;
         IrqAllocMessage irq = 3;
         IOPortMessage ioport = 4;
