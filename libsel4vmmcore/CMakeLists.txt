@@ -25,15 +25,4 @@ set(
 
 add_library(sel4vmmcore STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4vmmcore PUBLIC include)
-target_link_libraries(
-    sel4vmmcore
-    muslc
-    sel4
-    utils
-    sel4utils
-    platsupport
-    pci
-    ethdrivers
-    sel4pci
-    pci
-)
+target_link_libraries(sel4vmmcore muslc sel4 utils sel4utils platsupport pci ethdrivers sel4pci pci)

@@ -78,7 +78,7 @@
 struct sel4urbt {
     uintptr_t paddr;
     uint32_t param;
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 struct sel4urb {
     uint32_t epaddr;
@@ -87,7 +87,7 @@ struct sel4urb {
     uint16_t urb_bytes_remaining;
     uint16_t nxact;
     struct sel4urbt desc[2];
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 typedef struct usb_data_regs {
     struct sel4urb sel4urb[MAX_ACTIVE_URB];
@@ -106,33 +106,31 @@ typedef struct usb_ctrl_regs {
 struct vframe {
     vka_object_t obj;
     cspacepath_t vm_cap_path, vmm_cap_path;
-    void* base;
+    void *base;
 };
 
 struct vusb_device {
-    vm_t* vm;
+    vm_t *vm;
     virq_handle_t virq;
-    usb_host_t* hcd;
+    usb_host_t *hcd;
     struct xact int_xact;
     uint32_t rh_port_status;
-    usb_data_regs_t* data_regs;
-    usb_ctrl_regs_t* ctrl_regs;
+    usb_data_regs_t *data_regs;
+    usb_ctrl_regs_t *ctrl_regs;
     struct xact_token {
-        struct vusb_device* vusb;
+        struct vusb_device *vusb;
         int idx;
     } token[MAX_ACTIVE_URB];
     int int_pending;
 };
 
 
-static inline vusb_device_t*
-device_to_vusb_dev_data(struct device* d)
+static inline vusb_device_t *device_to_vusb_dev_data(struct device *d)
 {
-    return (vusb_device_t*)d->priv;
+    return (vusb_device_t *)d->priv;
 }
 
-static inline void
-surb_epaddr_change_state(struct sel4urb *u, uint32_t s)
+static inline void surb_epaddr_change_state(struct sel4urb *u, uint32_t s)
 {
     uint32_t e;
     e = u->epaddr;
@@ -141,8 +139,7 @@ surb_epaddr_change_state(struct sel4urb *u, uint32_t s)
     u->epaddr = e;
 }
 
-static void
-vusb_inject_irq(vusb_device_t* vusb)
+static void vusb_inject_irq(vusb_device_t *vusb)
 {
     vusb->ctrl_regs->intr = 1;
     if (vusb->int_pending == 0) {
@@ -151,8 +148,7 @@ vusb_inject_irq(vusb_device_t* vusb)
     }
 }
 
-static int
-desc_to_xact(vm_t* vm, struct sel4urbt* desc, struct xact* xact)
+static int desc_to_xact(vm_t *vm, struct sel4urbt *desc, struct xact *xact)
 {
     switch (SURBT_PARAM_GET_TYPE(desc->param)) {
     case 0:
@@ -169,12 +165,11 @@ desc_to_xact(vm_t* vm, struct sel4urbt* desc, struct xact* xact)
     }
     xact->len = SURBT_PARAM_GET_SIZE(desc->param);
     xact->paddr = vm_ipa_to_pa(vm, desc->paddr, xact->len);
-    xact->vaddr = (void*)0xdeadbeef;
+    xact->vaddr = (void *)0xdeadbeef;
     return xact->paddr == 0;
 }
 
-static int
-sel4urb_to_xact(vm_t* vm, struct sel4urb* surb, struct xact* xact)
+static int sel4urb_to_xact(vm_t *vm, struct sel4urb *surb, struct xact *xact)
 {
     int nxact;
     int err;
@@ -220,15 +215,14 @@ sel4urb_to_xact(vm_t* vm, struct sel4urb* surb, struct xact* xact)
     return nxact;
 }
 
-static int
-ctrl_to_xact(usb_ctrl_regs_t* ctrl, struct xact* xact)
+static int ctrl_to_xact(usb_ctrl_regs_t *ctrl, struct xact *xact)
 {
     xact[0].len = sizeof(struct usbreq);
-    xact[0].vaddr = (void*)&ctrl->req;
+    xact[0].vaddr = (void *)&ctrl->req;
     xact[0].paddr = 0xdeadbeef;
     xact[0].type = PID_SETUP;
     xact[1].len = ctrl->req.wLength;
-    xact[1].vaddr = (void*)&ctrl->req_reply;
+    xact[1].vaddr = (void *)&ctrl->req_reply;
     xact[1].paddr = 0xdeadbeef;
     if (ctrl->req.bmRequestType & BIT(7)) {
         /* Device to host */
@@ -240,7 +234,7 @@ ctrl_to_xact(usb_ctrl_regs_t* ctrl, struct xact* xact)
     return 0;
 }
 
-static int root_hub_ctrl_start(usb_host_t* hcd, usb_ctrl_regs_t* ctrl)
+static int root_hub_ctrl_start(usb_host_t *hcd, usb_ctrl_regs_t *ctrl)
 {
     struct xact xact[2];
     struct endpoint ep;
@@ -258,27 +252,25 @@ static int root_hub_ctrl_start(usb_host_t* hcd, usb_ctrl_regs_t* ctrl)
     return len;
 }
 
-static void
-vm_vusb_cancel(vusb_device_t* vusb, uint32_t surb_idx)
+static void vm_vusb_cancel(vusb_device_t *vusb, uint32_t surb_idx)
 {
     if (surb_idx < MAX_ACTIVE_URB) {
         usb_hcd_cancel(vusb->hcd, &vusb->token[surb_idx]);
     }
 }
 
-static int
-handle_vusb_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_vusb_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
-    vusb_device_t* vusb;
+    vusb_device_t *vusb;
     usb_ctrl_regs_t *ctrl_regs;
-    uint32_t* reg;
+    uint32_t *reg;
     int offset;
 
     assert(d->priv);
     offset = fault_get_address(fault) - d->pstart - 0x1000;
     vusb = device_to_vusb_dev_data(d);
     ctrl_regs = vusb->ctrl_regs;
-    reg = (uint32_t*)((void*)ctrl_regs + (offset & ~0x3));
+    reg = (uint32_t *)((void *)ctrl_regs + (offset & ~0x3));
     if (fault_is_read(fault)) {
         if (reg != &ctrl_regs->status) {
             fault_set_data(fault, *reg);
@@ -296,7 +288,7 @@ handle_vusb_fault(struct device* d, vm_t* vm, fault_t* fault)
         } else if (reg == &ctrl_regs->cancel_transaction) {
             /* Manual notification */
             vm_vusb_cancel(vusb, fault_get_data(fault));
-        } else if ((void*)reg >= (void*)&ctrl_regs->req) {
+        } else if ((void *)reg >= (void *)&ctrl_regs->req) {
             /* Fill out the root hub USB request */
             *reg = fault_emulate(fault, *reg);
         }
@@ -314,10 +306,9 @@ const struct device dev_vusb = {
 };
 
 /* Called by the VM to ACK a virtual IRQ */
-static void
-vusb_ack(void* token)
+static void vusb_ack(void *token)
 {
-    vusb_device_t* vusb = token;
+    vusb_device_t *vusb = token;
     if (vusb->ctrl_regs->intr) {
         /* Another IRQ occured */
         vm_inject_IRQ(vusb->virq);
@@ -327,21 +318,19 @@ vusb_ack(void* token)
 }
 
 /* Callback for root hub status changes */
-static int
-usb_sts_change(void* token, enum usb_xact_status stat, int rbytes)
+static int usb_sts_change(void *token, enum usb_xact_status stat, int rbytes)
 {
-    vusb_device_t* vusb = (vusb_device_t*)token;
-    vusb->ctrl_regs->status = *(uint32_t*)vusb->int_xact.vaddr;
+    vusb_device_t *vusb = (vusb_device_t *)token;
+    vusb->ctrl_regs->status = *(uint32_t *)vusb->int_xact.vaddr;
     return 1;
 }
 
-static int
-vusb_complete_cb(void* token, enum usb_xact_status stat, int rbytes)
+static int vusb_complete_cb(void *token, enum usb_xact_status stat, int rbytes)
 {
-    struct xact_token* t = (struct xact_token*)token;
-    vusb_device_t* vusb = t->vusb;
+    struct xact_token *t = (struct xact_token *)token;
+    vusb_device_t *vusb = t->vusb;
     int surb_idx = t->idx;
-    struct sel4urb* surb = &vusb->data_regs->sel4urb[surb_idx];
+    struct sel4urb *surb = &vusb->data_regs->sel4urb[surb_idx];
     uint32_t status;
 
     DVUSB("packet completion callback %d\n", surb_idx);
@@ -367,8 +356,7 @@ vusb_complete_cb(void* token, enum usb_xact_status stat, int rbytes)
     return 0;
 }
 
-void
-vm_vusb_notify(vusb_device_t* vusb)
+void vm_vusb_notify(vusb_device_t *vusb)
 {
     struct sel4urb *u;
     struct xact xact[3];
@@ -378,7 +366,7 @@ vm_vusb_notify(vusb_device_t* vusb)
     int nxact;
     int i;
     for (i = 0; i < MAX_ACTIVE_URB; i++) {
-        struct xact_token* t;
+        struct xact_token *t;
         u = &vusb->data_regs->sel4urb[i];
         if (SURB_EPADDR_GET_STATE(u->epaddr) != SURB_EPADDR_STATE_PENDING) {
             continue;
@@ -422,11 +410,10 @@ vm_vusb_notify(vusb_device_t* vusb)
     }
 }
 
-vusb_device_t*
-vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
-                seL4_CPtr vmm_ncap, seL4_CPtr vm_ncap, int badge)
+vusb_device_t *vm_install_vusb(vm_t *vm, usb_host_t *hcd, uintptr_t pbase, int virq,
+                               seL4_CPtr vmm_ncap, seL4_CPtr vm_ncap, int badge)
 {
-    vusb_device_t* vusb;
+    vusb_device_t *vusb;
     struct device d;
     struct endpoint ep;
     int err;
@@ -484,7 +471,7 @@ vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase, int virq,
     vusb->int_xact.type = PID_IN;
     vusb->int_xact.len = (vusb->ctrl_regs->nPorts + 7) / 8;
     vusb->int_xact.paddr = 0xdeadbeef;
-    vusb->int_xact.vaddr = (void*)&vusb->rh_port_status;
+    vusb->int_xact.vaddr = (void *)&vusb->rh_port_status;
     ep.num = 1;
     ep.max_pkt = 2;
     ep.interval = 10;

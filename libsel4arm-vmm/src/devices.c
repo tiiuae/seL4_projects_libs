@@ -30,10 +30,9 @@
 #endif
 
 
-static int
-generic_map_page(vka_t* vka, vspace_t* vmm_vspace, vspace_t* vm_vspace,
-                 uintptr_t ipa, size_t size, seL4_CapRights_t vm_rights,
-                 int cached, void** vmm_vaddr)
+static int generic_map_page(vka_t *vka, vspace_t *vmm_vspace, vspace_t *vm_vspace,
+                            uintptr_t ipa, size_t size, seL4_CapRights_t vm_rights,
+                            int cached, void **vmm_vaddr)
 {
     vka_object_t frame_obj;
     cspacepath_t frame[2];
@@ -75,7 +74,7 @@ generic_map_page(vka_t* vka, vspace_t* vmm_vspace, vspace_t* vm_vspace,
     /* Map into the vspace of the VM, or copy the cap to the VMM slot */
     if (vm_vspace != NULL) {
         seL4_CPtr cap = frame[0].capPtr;
-        void* addr = (void*)ipa;
+        void *addr = (void *)ipa;
         reservation_t res;
         /* Map the frame to the VM */
         res = vspace_reserve_range_at(vm_vspace, addr, size, vm_rights, cached);
@@ -111,7 +110,7 @@ generic_map_page(vka_t* vka, vspace_t* vmm_vspace, vspace_t* vm_vspace,
         if (addr == NULL) {
             printf("Failed to provide memory\n");
             if (vm_vspace) {
-                vspace_unmap_pages(vm_vspace, (void*)ipa, 1, 12, vka);
+                vspace_unmap_pages(vm_vspace, (void *)ipa, 1, 12, vka);
                 vka_cspace_free(vka, frame[1].capPtr);
             }
             vka_free_object(vka, &frame_obj);
@@ -124,16 +123,15 @@ generic_map_page(vka_t* vka, vspace_t* vmm_vspace, vspace_t* vm_vspace,
 }
 
 
-void*
-map_device(vspace_t *vspace, vka_t* vka, simple_t* simple, uintptr_t paddr,
-           uintptr_t _vaddr, seL4_CapRights_t rights)
+void *map_device(vspace_t *vspace, vka_t *vka, simple_t *simple, uintptr_t paddr,
+                 uintptr_t _vaddr, seL4_CapRights_t rights)
 {
     cspacepath_t frame;
-    void* vaddr;
+    void *vaddr;
     int err;
 
     paddr &= ~0xfff;
-    vaddr = (void*)(_vaddr &= ~0xfff);
+    vaddr = (void *)(_vaddr &= ~0xfff);
 
     /* Alocate a slot */
     err = vka_cspace_alloc_path(vka, &frame);
@@ -147,7 +145,7 @@ map_device(vspace_t *vspace, vka_t* vka, simple_t* simple, uintptr_t paddr,
     seL4_Word cookie;
     err = vka_utspace_alloc_at(vka, &frame, kobject_get_type(KOBJECT_FRAME, 12), 12, paddr, &cookie);
     if (err) {
-        err = simple_get_frame_cap(simple, (void*)paddr, 12, &frame);
+        err = simple_get_frame_cap(simple, (void *)paddr, 12, &frame);
         if (err) {
             printf("Failed to find device cap for 0x%x\n", (uint32_t)paddr);
             //vka_cspace_free(vka, frame.capPtr);
@@ -182,26 +180,24 @@ map_device(vspace_t *vspace, vka_t* vka, simple_t* simple, uintptr_t paddr,
     return vaddr;
 }
 
-void*
-map_vm_device(vm_t* vm, uintptr_t pa, uintptr_t va, seL4_CapRights_t rights)
+void *map_vm_device(vm_t *vm, uintptr_t pa, uintptr_t va, seL4_CapRights_t rights)
 {
     return map_device(vm_get_vspace(vm), vm->vka, vm->simple, pa, va, rights);
 }
 
-void*
-map_emulated_device(vm_t* vm, const struct device *d)
+void *map_emulated_device(vm_t *vm, const struct device *d)
 {
     cspacepath_t vm_frame, vmm_frame;
     vspace_t *vm_vspace, *vmm_vspace;
-    void* vm_addr, *vmm_addr;
+    void *vm_addr, *vmm_addr;
     reservation_t res;
     vka_object_t frame;
-    vka_t* vka;
+    vka_t *vka;
     size_t size;
     int err;
 
     vka = vm->vka;
-    vm_addr = (void*)d->pstart;
+    vm_addr = (void *)d->pstart;
     size = d->size;
     vm_vspace = vm_get_vspace(vm);
     vmm_vspace = vm->vmm_vspace;
@@ -261,17 +257,16 @@ map_emulated_device(vm_t* vm, const struct device *d)
     return vmm_addr;
 }
 
-void*
-map_ram(vspace_t *vspace, vspace_t *vmm_vspace, vka_t* vka, uintptr_t vaddr)
+void *map_ram(vspace_t *vspace, vspace_t *vmm_vspace, vka_t *vka, uintptr_t vaddr)
 {
     vka_object_t frame_obj;
     cspacepath_t frame[2];
 
     reservation_t res;
-    void* addr;
+    void *addr;
     int err;
 
-    addr = (void*)(vaddr & ~0xfff);
+    addr = (void *)(vaddr & ~0xfff);
 
     /* reserve vspace */
     res = vspace_reserve_range_at(vspace, addr, 0x1000, seL4_AllRights, 1);
@@ -325,41 +320,39 @@ map_ram(vspace_t *vspace, vspace_t *vmm_vspace, vka_t* vka, uintptr_t vaddr)
     vmm_addr = vspace_map_pages(vmm_vspace, &cap, NULL, rights, 1, 12, true);
     if (vmm_addr == NULL) {
         ZF_LOGF("Failed vspace_map_pages");
-        vspace_unmap_pages(vspace, (void*)addr, 1, 12, vka);
+        vspace_unmap_pages(vspace, (void *)addr, 1, 12, vka);
         vka_cspace_free(vka, frame[1].capPtr);
         vka_free_object(vka, &frame_obj);
         return NULL;
     }
     memset(vmm_addr, 0, PAGE_SIZE_4K);
     /* This also frees the cspace slot we made.  */
-    vspace_unmap_pages(vmm_vspace, (void*)vmm_addr, 1, 12, vka);
+    vspace_unmap_pages(vmm_vspace, (void *)vmm_addr, 1, 12, vka);
 
     return addr;
 }
 
-void*
-map_vm_ram(vm_t* vm, uintptr_t vaddr)
+void *map_vm_ram(vm_t *vm, uintptr_t vaddr)
 {
     return map_ram(vm_get_vspace(vm), vm->vmm_vspace, vm->vka, vaddr);
 }
 
-void*
-map_shared_page(vm_t* vm, uintptr_t ipa, seL4_CapRights_t rights)
+void *map_shared_page(vm_t *vm, uintptr_t ipa, seL4_CapRights_t rights)
 {
-    void* addr = NULL;
+    void *addr = NULL;
     int ret;
     ret = generic_map_page(vm->vka, vm->vmm_vspace, &vm->vm_vspace, ipa, BIT(12), rights, 0, &addr);
     return ret ? NULL : addr;
 }
 
-int
-vm_install_ram_only_device(vm_t *vm, const struct device* device) {
+int vm_install_ram_only_device(vm_t *vm, const struct device *device)
+{
     struct device d;
     uintptr_t paddr;
     int err;
     d = *device;
     for (paddr = d.pstart; paddr - d.pstart < d.size; paddr += 0x1000) {
-        void* addr;
+        void *addr;
         addr = map_vm_ram(vm, paddr);
         if (!addr) {
             return -1;
@@ -370,15 +363,14 @@ vm_install_ram_only_device(vm_t *vm, const struct device* device) {
     return err;
 }
 
-int
-vm_install_passthrough_device(vm_t* vm, const struct device* device)
+int vm_install_passthrough_device(vm_t *vm, const struct device *device)
 {
     struct device d;
     uintptr_t paddr;
     int err;
     d = *device;
     for (paddr = d.pstart; paddr - d.pstart < d.size; paddr += 0x1000) {
-        void* addr;
+        void *addr;
         addr = map_vm_device(vm, paddr, paddr, seL4_AllRights);
 #ifdef PLAT_EXYNOS5
         if (addr == NULL && paddr == MCT_ADDR) {
@@ -400,10 +392,9 @@ vm_install_passthrough_device(vm_t* vm, const struct device* device)
     return err;
 }
 
-int
-vm_map_frame(vm_t *vm, seL4_CPtr cap, uintptr_t ipa, size_t size_bits, int cached, seL4_CapRights_t vm_rights)
+int vm_map_frame(vm_t *vm, seL4_CPtr cap, uintptr_t ipa, size_t size_bits, int cached, seL4_CapRights_t vm_rights)
 {
-    void* addr = (void*)ipa;
+    void *addr = (void *)ipa;
     reservation_t res;
     vspace_t *vm_vspace = vm_get_vspace(vm);
     int err;
@@ -425,19 +416,18 @@ vm_map_frame(vm_t *vm, seL4_CPtr cap, uintptr_t ipa, size_t size_bits, int cache
     return 0;
 }
 
-static int
-handle_listening_fault(struct device* d, vm_t* vm,
-                       fault_t* fault)
+static int handle_listening_fault(struct device *d, vm_t *vm,
+                                  fault_t *fault)
 {
     volatile uint32_t *reg;
     int offset;
-    void** map;
+    void **map;
 
     assert(d->priv);
-    map = (void**)d->priv;
+    map = (void **)d->priv;
     offset = fault_get_address(fault) - d->pstart;
 
-    reg = (volatile uint32_t*)(map[offset >> 12] + (offset & MASK(12)));
+    reg = (volatile uint32_t *)(map[offset >> 12] + (offset & MASK(12)));
 
     printf("[Listener/%s] ", d->name);
     if (fault_is_read(fault)) {
@@ -455,19 +445,18 @@ handle_listening_fault(struct device* d, vm_t* vm,
 }
 
 
-int
-vm_install_listening_device(vm_t* vm, const struct device* dev_listening)
+int vm_install_listening_device(vm_t *vm, const struct device *dev_listening)
 {
     struct device d;
     int pages;
     int i;
-    void** map;
+    void **map;
     int err;
     pages = dev_listening->size >> 12;
     d = *dev_listening;
     d.handle_page_fault = handle_listening_fault;
     /* Build device memory map */
-    map = (void**)malloc(sizeof(void*) * pages);
+    map = (void **)malloc(sizeof(void *) * pages);
     if (map == NULL) {
         return -1;
     }
@@ -481,8 +470,7 @@ vm_install_listening_device(vm_t* vm, const struct device* dev_listening)
 }
 
 
-static int
-handle_listening_ram_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_listening_ram_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
     volatile uint32_t *reg;
     int offset;
@@ -490,7 +478,7 @@ handle_listening_ram_fault(struct device* d, vm_t* vm, fault_t* fault)
     assert(d->priv);
     offset = fault_get_address(fault) - d->pstart;
 
-    reg = (volatile uint32_t*)(d->priv + offset);
+    reg = (volatile uint32_t *)(d->priv + offset);
 
     if (fault_is_read(fault)) {
         fault_set_data(fault, *reg);
@@ -498,9 +486,9 @@ handle_listening_ram_fault(struct device* d, vm_t* vm, fault_t* fault)
         *reg = fault_emulate(fault, *reg);
     }
     printf("Listener pc%p| %s%p:%p\n", (void *) fault_get_ctx(fault)->pc,
-                                       fault_is_read(fault) ? "r" : "w",
-                                       (void *) fault_get_address(fault),
-                                       (void *) fault_get_data(fault));
+           fault_is_read(fault) ? "r" : "w",
+           (void *) fault_get_address(fault),
+           (void *) fault_get_data(fault));
     return advance_fault(fault);
 }
 
@@ -515,8 +503,7 @@ const struct device dev_listening_ram = {
 };
 
 
-int
-vm_install_listening_ram(vm_t* vm, uintptr_t addr, size_t size)
+int vm_install_listening_ram(vm_t *vm, uintptr_t addr, size_t size)
 {
     struct device d;
     int err;

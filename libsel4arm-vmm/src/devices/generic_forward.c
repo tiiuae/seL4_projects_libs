@@ -20,10 +20,9 @@ struct gf_device_priv {
     struct generic_forward_cfg cfg;
 };
 
-static int
-handle_gf_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_gf_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
-    struct gf_device_priv* gf_device_priv = (struct gf_device_priv*)d->priv;
+    struct gf_device_priv *gf_device_priv = (struct gf_device_priv *)d->priv;
 
     /* Gather fault information */
     uint32_t offset = fault_get_address(fault) - d->pstart;
@@ -51,16 +50,15 @@ handle_gf_fault(struct device* d, vm_t* vm, fault_t* fault)
 }
 
 
-int
-vm_install_generic_forward_device(vm_t* vm, const struct device* d,
-                                       struct generic_forward_cfg cfg)
+int vm_install_generic_forward_device(vm_t *vm, const struct device *d,
+                                      struct generic_forward_cfg cfg)
 {
-    struct gf_device_priv* gf_device_priv;
+    struct gf_device_priv *gf_device_priv;
     struct device dev;
     int err;
 
     /* initialise private data */
-    gf_device_priv = (struct gf_device_priv*)malloc(sizeof(*gf_device_priv));
+    gf_device_priv = (struct gf_device_priv *)malloc(sizeof(*gf_device_priv));
     if (gf_device_priv == NULL) {
         ZF_LOGE("error malloc returned null");
         return -1;

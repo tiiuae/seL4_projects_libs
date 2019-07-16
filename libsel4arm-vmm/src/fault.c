@@ -59,8 +59,7 @@
 /*************************
  *** Primary functions ***
  *************************/
-static inline int
-thumb_is_32bit_instruction(seL4_Word instruction)
+static inline int thumb_is_32bit_instruction(seL4_Word instruction)
 {
     switch ((instruction >> 11) & 0x1f) {
     case 0b11101:
@@ -72,8 +71,7 @@ thumb_is_32bit_instruction(seL4_Word instruction)
     }
 }
 
-static int
-maybe_fetch_fault_instruction(fault_t* f)
+static int maybe_fetch_fault_instruction(fault_t *f)
 {
     if ((f->content & CONTENT_INST) == 0) {
         seL4_Word inst = 0;
@@ -103,8 +101,7 @@ maybe_fetch_fault_instruction(fault_t* f)
     return 0;
 }
 
-static int
-errata766422_get_rt(fault_t* f, seL4_Word hsr)
+static int errata766422_get_rt(fault_t *f, seL4_Word hsr)
 {
     seL4_Word inst;
     int err;
@@ -151,8 +148,7 @@ errata766422_get_rt(fault_t* f, seL4_Word hsr)
     }
 }
 
-static int
-decode_instruction(fault_t* f)
+static int decode_instruction(fault_t *f)
 {
     seL4_Word inst;
     maybe_fetch_fault_instruction(f);
@@ -239,8 +235,7 @@ decode_instruction(fault_t* f)
     }
 }
 
-static int
-get_rt(fault_t *f)
+static int get_rt(fault_t *f)
 {
 
     /* Save processor mode in fault struct */
@@ -270,12 +265,11 @@ get_rt(fault_t *f)
     return rt;
 }
 
-fault_t*
-fault_init(vm_t* vm)
+fault_t *fault_init(vm_t *vm)
 {
     fault_t *fault;
     int err;
-    fault = (fault_t*)malloc(sizeof(*fault));
+    fault = (fault_t *)malloc(sizeof(*fault));
     if (fault != NULL) {
         fault->vm = vm;
         /* Reserve a slot for saving reply caps */
@@ -288,8 +282,7 @@ fault_init(vm_t* vm)
     return fault;
 }
 
-int
-new_wfi_fault(fault_t *fault)
+int new_wfi_fault(fault_t *fault)
 {
     int err;
     assert(fault_handled(fault));
@@ -308,8 +301,7 @@ new_wfi_fault(fault_t *fault)
     return err;
 }
 
-int
-new_fault(fault_t* fault)
+int new_fault(fault_t *fault)
 {
     seL4_Word ip, addr, fsr;
     seL4_Word is_prefetch;
@@ -362,7 +354,7 @@ new_fault(fault_t* fault)
     return err;
 }
 
-int abandon_fault(fault_t* fault)
+int abandon_fault(fault_t *fault)
 {
     /* Nothing to do here */
     DFAULT("%s: Release fault @ 0x%x from PC 0x%x\n",
@@ -371,7 +363,7 @@ int abandon_fault(fault_t* fault)
 }
 
 
-int restart_fault(fault_t* fault)
+int restart_fault(fault_t *fault)
 {
     /* Send the reply */
     fault->stage = 0;
@@ -384,7 +376,7 @@ int restart_fault(fault_t* fault)
     return abandon_fault(fault);
 }
 
-int ignore_fault(fault_t* fault)
+int ignore_fault(fault_t *fault)
 {
     seL4_UserContext *regs;
     int err;
@@ -404,7 +396,7 @@ int ignore_fault(fault_t* fault)
     return restart_fault(fault);
 }
 
-int advance_fault(fault_t* fault)
+int advance_fault(fault_t *fault)
 {
     /* If data was to be read, load it into the user context */
     if (fault_is_data(fault) && fault_is_read(fault)) {
@@ -415,19 +407,19 @@ int advance_fault(fault_t* fault)
         int reg = decode_vcpu_reg(rt, fault);
         if (reg == seL4_VCPUReg_Num) {
             /* register is not banked, use seL4_UserContext */
-            seL4_Word* reg_ctx = decode_rt(rt, fault_get_ctx(fault));
+            seL4_Word *reg_ctx = decode_rt(rt, fault_get_ctx(fault));
             *reg_ctx = fault_emulate(fault, *reg_ctx);
         } else {
             /* register is banked, use vcpu invocations */
             seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(vm_get_vcpu(fault->vm), reg);
             if (res.error) {
-              ZF_LOGF("Read registers failed");
-              return -1;
+                ZF_LOGF("Read registers failed");
+                return -1;
             }
             int error = seL4_ARM_VCPU_WriteRegs(vm_get_vcpu(fault->vm), reg, fault_emulate(fault, res.value));
             if (error) {
-              ZF_LOGF("Write registers failed");
-              return -1;
+                ZF_LOGF("Write registers failed");
+                return -1;
             }
         }
     }
@@ -445,7 +437,7 @@ int advance_fault(fault_t* fault)
     }
 }
 
-seL4_Word fault_emulate(fault_t* f, seL4_Word o)
+seL4_Word fault_emulate(fault_t *f, seL4_Word o)
 {
     seL4_Word n, m, s;
     s = (f->addr & 0x3) * 8;
@@ -460,7 +452,7 @@ seL4_Word fault_emulate(fault_t* f, seL4_Word o)
     }
 }
 
-void print_fault(fault_t* fault)
+void print_fault(fault_t *fault)
 {
     printf("--------\n");
     printf(ANSI_COLOR(RED, BOLD));
@@ -478,7 +470,7 @@ void print_fault(fault_t* fault)
     printf("--------\n");
 }
 
-seL4_Word fault_get_data_mask(fault_t* f)
+seL4_Word fault_get_data_mask(fault_t *f)
 {
     seL4_Word mask = 0;
     seL4_Word addr = f->addr;
@@ -509,8 +501,7 @@ seL4_Word fault_get_data_mask(fault_t* f)
  *** Getters / Setters ***
  *************************/
 
-seL4_Word
-fault_get_data(fault_t* f)
+seL4_Word fault_get_data(fault_t *f)
 {
     if ((f->content & CONTENT_DATA) == 0) {
         /* Get register opearand */
@@ -526,7 +517,7 @@ fault_get_data(fault_t* f)
             /* Banked, use VCPU invocations */
             seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(vm_get_vcpu(f->vm), reg);
             if (res.error) {
-              ZF_LOGF("Read registers failed");
+                ZF_LOGF("Read registers failed");
             }
             data = res.value;
         }
@@ -535,27 +526,23 @@ fault_get_data(fault_t* f)
     return f->data;
 }
 
-void
-fault_set_data(fault_t* f, seL4_Word data)
+void fault_set_data(fault_t *f, seL4_Word data)
 {
     f->data = data;
     f->content |= CONTENT_DATA;
 }
 
-seL4_Word
-fault_get_address(fault_t* f)
+seL4_Word fault_get_address(fault_t *f)
 {
     return f->addr;
 }
 
-seL4_Word
-fault_get_fsr(fault_t* f)
+seL4_Word fault_get_fsr(fault_t *f)
 {
     return f->fsr;
 }
 
-seL4_UserContext*
-fault_get_ctx(fault_t *f)
+seL4_UserContext *fault_get_ctx(fault_t *f)
 {
     if ((f->content & CONTENT_REGS) == 0) {
         int err;
@@ -568,21 +555,22 @@ fault_get_ctx(fault_t *f)
     return &f->regs;
 }
 
-int fault_handled(fault_t* f)
+int fault_handled(fault_t *f)
 {
     return f->stage == 0;
 }
 
-int fault_is_prefetch(fault_t* f)
+int fault_is_prefetch(fault_t *f)
 {
     return f->is_prefetch;
 }
 
-int fault_is_wfi(fault_t *f) {
+int fault_is_wfi(fault_t *f)
+{
     return f->is_wfi;
 }
 
-int fault_is_32bit_instruction(fault_t* f)
+int fault_is_32bit_instruction(fault_t *f)
 {
     if (fault_is_wfi(f)) {
         return !sel4arch_fault_is_thumb(f);
@@ -594,13 +582,13 @@ int fault_is_32bit_instruction(fault_t* f)
     return fault_get_fsr(f) & BIT(25);
 }
 
-enum fault_width fault_get_width(fault_t* f)
+enum fault_width fault_get_width(fault_t *f)
 {
     if ((f->content & CONTENT_WIDTH) == 0) {
         if (HSR_IS_SYNDROME_VALID(f->fsr)) {
             switch (HSR_SYNDROME_WIDTH(f->fsr)) {
             case 0:
-                f->width = WIDTH_BYTE;
+                        f->width = WIDTH_BYTE;
                 break;
             case 1:
                 f->width = WIDTH_HALFWORD;

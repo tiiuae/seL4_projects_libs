@@ -32,7 +32,7 @@ int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_
             /* Need to map into the VMM. Make sure it is aligned */
             uintptr_t addr = vmm_map_guest_device(vmm, cfg->base_addr[i], size, BIT(size_bits));
             if (addr == 0) {
-                ZF_LOGE("Failed to map PCI bar %p size %zu", (void*)(uintptr_t)cfg->base_addr[i], size);
+                ZF_LOGE("Failed to map PCI bar %p size %zu", (void *)(uintptr_t)cfg->base_addr[i], size);
                 return -1;
             }
             bars[bar].address = addr;
@@ -43,7 +43,8 @@ int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_
             }
         } else {
             /* Need to add the IO port range */
-            int error = vmm_io_port_add_passthrough(&vmm->io_port, cfg->base_addr[i], cfg->base_addr[i] + size - 1, "PCI Passthrough Device");
+            int error = vmm_io_port_add_passthrough(&vmm->io_port, cfg->base_addr[i], cfg->base_addr[i] + size - 1,
+                                                    "PCI Passthrough Device");
             if (error) {
                 return error;
             }

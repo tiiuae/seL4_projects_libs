@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_GPL)
  */
-#ifndef __VCHAN_COMPONENT
-#define __VCHAN_COMPONENT
+#pragma once
 
 #include "libvchan.h"
 #include "vchan_sharemem.h"
@@ -51,5 +50,3 @@ struct libvchan {
 
 libvchan_t *link_vchan_comp(libvchan_t *ctrl, camkes_vchan_con_t *vchan_com);
 vchan_buf_t *get_vchan_buf(vchan_ctrl_t *args, camkes_vchan_con_t *c, int action);
-
-#endif

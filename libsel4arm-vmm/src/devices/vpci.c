@@ -40,7 +40,7 @@ static int width_to_size(enum fault_width fw)
     return 0;
 }
 
-static void pci_cfg_read_fault(struct device* d, vm_t *vm, fault_t* fault, vmm_pci_address_t pci_addr,
+static void pci_cfg_read_fault(struct device *d, vm_t *vm, fault_t *fault, vmm_pci_address_t pci_addr,
                                uint8_t offset, vmm_pci_entry_t *dev)
 {
     seL4_Word data = 0;
@@ -55,7 +55,7 @@ static void pci_cfg_read_fault(struct device* d, vm_t *vm, fault_t* fault, vmm_p
     fault_set_data(fault, data << s);
 }
 
-static void pci_cfg_write_fault(struct device* d, vm_t *vm, fault_t* fault, vmm_pci_address_t pci_addr,
+static void pci_cfg_write_fault(struct device *d, vm_t *vm, fault_t *fault, vmm_pci_address_t pci_addr,
                                 uint8_t offset, vmm_pci_entry_t *dev)
 {
     uint32_t mask;
@@ -81,8 +81,7 @@ static void pci_cfg_write_fault(struct device* d, vm_t *vm, fault_t* fault, vmm_
     }
 }
 
-static int
-pci_cfg_fault_handler(struct device* d, vm_t *vm, fault_t* fault)
+static int pci_cfg_fault_handler(struct device *d, vm_t *vm, fault_t *fault)
 {
     uint32_t addr;
     uint8_t offset;
@@ -110,8 +109,7 @@ pci_cfg_fault_handler(struct device* d, vm_t *vm, fault_t* fault)
     return advance_fault(fault);
 }
 
-static int
-pci_cfg_io_fault_handler(struct device* d, vm_t *vm, fault_t* fault)
+static int pci_cfg_io_fault_handler(struct device *d, vm_t *vm, fault_t *fault)
 {
     /* Get CFG Port address */
     uint16_t cfg_port = (fault_get_address(fault) - d->pstart) & USHRT_MAX;
@@ -184,7 +182,8 @@ int vm_install_vpci(vm_t *vm)
     ioport_interface_t config_data_interface = {&vm->pci, vmm_pci_io_port_in, vmm_pci_io_port_out, "PCI_CONF_PORT_DATA"};
     err = vmm_io_port_add_handler(vm->io_port, config_data_range, config_data_interface);
     if (err) {
-        ZF_LOGE("Failed to register IOPort handler for PCI_CONF_PORT_DATA (Port: 0x%x-0x%x)", PCI_CONF_PORT_DATA, PCI_CONF_PORT_DATA_END);
+        ZF_LOGE("Failed to register IOPort handler for PCI_CONF_PORT_DATA (Port: 0x%x-0x%x)", PCI_CONF_PORT_DATA,
+                PCI_CONF_PORT_DATA_END);
         return -1;
     }
     /* PCI_CONFIG_ADDRESS */
@@ -192,7 +191,8 @@ int vm_install_vpci(vm_t *vm)
     ioport_interface_t config_address_interface = {&vm->pci, vmm_pci_io_port_in, vmm_pci_io_port_out, "PCI_CONF_PORT_ADDR"};
     err = vmm_io_port_add_handler(vm->io_port, config_address_range, config_address_interface);
     if (err) {
-        ZF_LOGE("Failed to register IOPort handler for PCI_CONF_PORT_ADDR (Port: 0x%x-0x%x)", PCI_CONF_PORT_ADDR, PCI_CONF_PORT_ADDR_END);
+        ZF_LOGE("Failed to register IOPort handler for PCI_CONF_PORT_ADDR (Port: 0x%x-0x%x)", PCI_CONF_PORT_ADDR,
+                PCI_CONF_PORT_ADDR_END);
         return -1;
     }
 

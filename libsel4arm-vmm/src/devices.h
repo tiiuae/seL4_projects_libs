@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef DEVICES_H
-#define DEVICES_H
+#pragma once
 
 #include <autoconf.h>
 #include <sel4arm-vmm/gen_config.h>
@@ -28,7 +27,7 @@
  * @param[in] rights  Rights to use for the mapping
  * @return            The virtual address of the mapping
  */
-void* map_device(vspace_t *vspace, vka_t* vka, simple_t* simple,
+void *map_device(vspace_t *vspace, vka_t *vka, simple_t *simple,
                  uintptr_t pa, uintptr_t va, seL4_CapRights_t rights);
 
 /**
@@ -39,7 +38,7 @@ void* map_device(vspace_t *vspace, vka_t* vka, simple_t* simple,
  * @param[in] rights  Rights to use for the mapping
  * @return            The virtual address of the mapping
  */
-void* map_vm_device(vm_t* vm, uintptr_t pa, uintptr_t va, seL4_CapRights_t rights);
+void *map_vm_device(vm_t *vm, uintptr_t pa, uintptr_t va, seL4_CapRights_t rights);
 
 /**
  * Map RAM with full access rights
@@ -49,7 +48,7 @@ void* map_vm_device(vm_t* vm, uintptr_t pa, uintptr_t va, seL4_CapRights_t right
  * @param[in] va      The VA (or IPA) to map to, or 0 to let the system choose
  * @return            The virtual address of the mapping
  */
-void* map_ram(vspace_t *vspace, vspace_t *vmm_vspace, vka_t* vka, uintptr_t vaddr);
+void *map_ram(vspace_t *vspace, vspace_t *vmm_vspace, vka_t *vka, uintptr_t vaddr);
 
 /**
  * Map RAM with full access rights into a VM
@@ -57,7 +56,7 @@ void* map_ram(vspace_t *vspace, vspace_t *vmm_vspace, vka_t* vka, uintptr_t vadd
  * @param[in] va      The VA (or IPA) to map to, or 0 to let the system choose
  * @return            The virtual address of the mapping
  */
-void* map_vm_ram(vm_t* vm, uintptr_t va);
+void *map_vm_ram(vm_t *vm, uintptr_t va);
 
 /**
  * Map a shared page between VM and VMM. The page will not be mapped cacheable
@@ -67,7 +66,7 @@ void* map_vm_ram(vm_t* vm, uintptr_t va);
  * @param[in] rights The Access permissions of the mapping for the VM
  * @return           The VMM virtual address off the mapping
  */
-void* map_shared_page(vm_t* vm, uintptr_t ipa, seL4_CapRights_t rights);
+void *map_shared_page(vm_t *vm, uintptr_t ipa, seL4_CapRights_t rights);
 
 /**
  * Map a device ready for emulation
@@ -80,7 +79,7 @@ void* map_shared_page(vm_t* vm, uintptr_t ipa, seL4_CapRights_t rights);
  * @param[in] d    A description of the device.
  * @return         The virtual address of the mapping to the VMM
  */
-void* map_emulated_device(vm_t* vm, const struct device *d);
+void *map_emulated_device(vm_t *vm, const struct device *d);
 
 
 /**
@@ -89,9 +88,7 @@ void* map_emulated_device(vm_t* vm, const struct device *d);
  * @param[in] d    A description of the device to check
  * @return         non-zero if the address belongs to the device
  */
-static inline int dev_paddr_in_range(uint32_t addr, const struct device* d)
+static inline int dev_paddr_in_range(uint32_t addr, const struct device *d)
 {
-    return ( (addr >= d->pstart) && addr < (d->pstart + d->size) );
+    return ((addr >= d->pstart) && addr < (d->pstart + d->size));
 }
-
-#endif /* DEVICES_H */

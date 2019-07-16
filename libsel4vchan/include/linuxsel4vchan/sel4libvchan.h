@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_GPL)
  */
-#ifndef _LIBVCHAN_SEL4_H
-#define _LIBVCHAN_SEL4_H
+#pragma once
 
 
 #define DEF_READ_SIZE  1024
@@ -35,5 +34,3 @@ void libsel4vchan_close(struct libsel4vchan *vchan);
 int libsel4vchan_is_open(struct libsel4vchan *vchan);
 int libsel4vchan_data_ready(struct libsel4vchan *vchan);
 int libsel4vchan_buffer_space(struct libsel4vchan *vchan);
-
-#endif

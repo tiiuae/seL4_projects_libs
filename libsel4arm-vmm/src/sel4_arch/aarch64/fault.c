@@ -14,7 +14,7 @@
 #include <assert.h>
 
 static seL4_Word wzr = 0;
-seL4_Word *decode_rt(int reg, seL4_UserContext* c)
+seL4_Word *decode_rt(int reg, seL4_UserContext *c)
 {
     switch (reg) {
     case  0:
@@ -134,7 +134,7 @@ int decode_vcpu_reg(int rt, fault_t *f)
     return seL4_VCPUReg_Num;
 }
 
-void fault_print_data(fault_t* fault)
+void fault_print_data(fault_t *fault)
 {
     seL4_Word data;
     data = fault_get_data(fault) & fault_get_data_mask(fault);

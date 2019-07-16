@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_GPL)
  */
-#ifndef __VCHAN_COPY
-#define __VCHAN_COPY
+#pragma once
 
 #include "libvchan.h"
 
@@ -70,5 +69,3 @@ typedef struct vchan_connect {
 } vchan_connect_t;
 
 int libvchan_readwrite(libvchan_t *ctrl, void *data, size_t size, int cmd, int stream);
-
-#endif

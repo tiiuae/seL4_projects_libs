@@ -68,10 +68,9 @@
 
 extern char _cpio_archive[];
 
-static int
-handle_page_fault(vm_t* vm, fault_t* fault)
+static int handle_page_fault(vm_t *vm, fault_t *fault)
 {
-    struct device* d;
+    struct device *d;
 
     /* See if the device is already in our address space */
     d = vm_find_device_by_ipa(vm, fault_get_address(fault));
@@ -89,7 +88,7 @@ handle_page_fault(vm_t* vm, fault_t* fault)
     } else {
 #ifdef CONFIG_ONDEMAND_DEVICE_INSTALL
         uintptr_t addr = fault_get_address(fault) & ~0xfff;
-        void* mapped;
+        void *mapped;
         switch (addr) {
         case 0:
             print_fault(fault);
@@ -118,7 +117,7 @@ handle_page_fault(vm_t* vm, fault_t* fault)
     }
 }
 
-static int handle_exception(vm_t* vm, seL4_Word ip)
+static int handle_exception(vm_t *vm, seL4_Word ip)
 {
     seL4_UserContext regs;
     seL4_CPtr tcb = vm_get_tcb(vm);
@@ -131,12 +130,11 @@ static int handle_exception(vm_t* vm, seL4_Word ip)
     return 1;
 }
 
-int
-vm_create(const char* name, int priority,
-          seL4_CPtr vmm_endpoint, seL4_Word vm_badge,
-          vka_t *vka, simple_t *simple, vspace_t *vmm_vspace,
-          ps_io_ops_t* io_ops,
-          vm_t* vm)
+int vm_create(const char *name, int priority,
+              seL4_CPtr vmm_endpoint, seL4_Word vm_badge,
+              vka_t *vka, simple_t *simple, vspace_t *vmm_vspace,
+              ps_io_ops_t *io_ops,
+              vm_t *vm)
 {
 
     seL4_Word null_cap_data = seL4_NilData;
@@ -216,8 +214,7 @@ vm_create(const char* name, int priority,
 }
 
 
-int
-vm_set_bootargs(vm_t* vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags)
+int vm_set_bootargs(vm_t *vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags)
 {
     seL4_UserContext regs;
     seL4_CPtr tcb;
@@ -233,21 +230,18 @@ vm_set_bootargs(vm_t* vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags)
     return err;
 }
 
-int
-vm_start(vm_t* vm)
+int vm_start(vm_t *vm)
 {
     return seL4_TCB_Resume(vm_get_tcb(vm));
 }
 
-int
-vm_stop(vm_t* vm)
+int vm_stop(vm_t *vm)
 {
     return seL4_TCB_Suspend(vm_get_tcb(vm));
 }
 
 
-static void
-sys_pa_to_ipa(vm_t* vm, seL4_UserContext* regs)
+static void sys_pa_to_ipa(vm_t *vm, seL4_UserContext *regs)
 {
     uint32_t pa;
 #ifdef CONFIG_ARCH_AARCH64
@@ -263,8 +257,7 @@ sys_pa_to_ipa(vm_t* vm, seL4_UserContext* regs)
 }
 
 
-static void
-sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
+static void sys_ipa_to_pa(vm_t *vm, seL4_UserContext *regs)
 {
     seL4_ARM_Page_GetAddress_t ret;
     long ipa;
@@ -273,15 +266,15 @@ sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
 #else
     ipa = regs->r0;
 #endif
-    cap = vspace_get_cap(vm_get_vspace(vm), (void*)ipa);
+    cap = vspace_get_cap(vm_get_vspace(vm), (void *)ipa);
     if (cap == seL4_CapNull) {
-        void* mapped_address;
+        void *mapped_address;
         mapped_address = map_vm_ram(vm, ipa);
         if (mapped_address == NULL) {
             printf("Could not map address for IPA translation\n");
             return;
         }
-        cap = vspace_get_cap(vm_get_vspace(vm), (void*)ipa);
+        cap = vspace_get_cap(vm_get_vspace(vm), (void *)ipa);
         assert(cap != seL4_CapNull);
     }
 
@@ -295,14 +288,12 @@ sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
 #endif
 }
 
-static void
-sys_nop(vm_t* vm, seL4_UserContext* regs)
+static void sys_nop(vm_t *vm, seL4_UserContext *regs)
 {
     DSTRACE("NOP syscall from [%s]\n", vm->name);
 }
 
-static int
-handle_syscall(vm_t* vm, seL4_Word length)
+static int handle_syscall(vm_t *vm, seL4_Word length)
 {
     seL4_Word syscall, ip;
     seL4_UserContext regs;
@@ -338,8 +329,7 @@ handle_syscall(vm_t* vm, seL4_Word length)
     return 0;
 }
 
-int
-vm_event(vm_t* vm, seL4_MessageInfo_t tag)
+int vm_event(vm_t *vm, seL4_MessageInfo_t tag)
 {
     seL4_Word label;
     seL4_Word length;
@@ -350,7 +340,7 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     switch (label) {
     case seL4_Fault_VMFault: {
         int err;
-        fault_t* fault;
+        fault_t *fault;
         fault = vm->fault;
         err = new_fault(fault);
         assert(!err);
@@ -413,12 +403,12 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
         seL4_MessageInfo_t reply;
         uint32_t hsr;
         int err;
-        fault_t* fault;
+        fault_t *fault;
         fault = vm->fault;
         assert(length == seL4_VCPUFault_Length);
         hsr = seL4_GetMR(seL4_UnknownSyscall_ARG0);
         /* check if the exception class (bits 26-31) of the HSR indicate WFI/WFE */
-        if ( (hsr >> 26) == 1) {
+        if ((hsr >> 26) == 1) {
             /* generate a new WFI fault */
             new_wfi_fault(fault);
             return 0;
@@ -430,10 +420,10 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
                 regs = fault_get_ctx(fault);
                 regs->pc += 4;
                 seL4_TCB_WriteRegisters(vm_get_tcb(vm), false, 0,
-                        sizeof(*regs) / sizeof(regs->pc), regs);
+                                        sizeof(*regs) / sizeof(regs->pc), regs);
                 restart_fault(fault);
                 return 0;
-                }
+            }
             return -1;
         }
     }
@@ -447,20 +437,19 @@ vm_event(vm_t* vm, seL4_MessageInfo_t tag)
     return 0;
 }
 
-int
-vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
+int vm_copyout_atags(vm_t *vm, struct atag_list *atags, uint32_t addr)
 {
     vspace_t *vm_vspace, *vmm_vspace;
-    void* vm_addr, *vmm_addr, *buf;
+    void *vm_addr, *vmm_addr, *buf;
     reservation_t res;
-    vka_t* vka;
+    vka_t *vka;
     vka_object_t frame;
     size_t size;
-    struct atag_list* atag_cur;
+    struct atag_list *atag_cur;
     int err;
 
     vka = vm->vka;
-    vm_addr = (void*)(addr & ~0xffflu);
+    vm_addr = (void *)(addr & ~0xffflu);
     vm_vspace = vm_get_vspace(vm);
     vmm_vspace = vm->vmm_vspace;
 
@@ -514,8 +503,7 @@ vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
     return 0;
 }
 
-int
-vm_add_device(vm_t* vm, const struct device* d)
+int vm_add_device(vm_t *vm, const struct device *d)
 {
     assert(d != NULL);
     if (vm->ndevices < MAX_DEVICES_PER_VM) {
@@ -526,18 +514,19 @@ vm_add_device(vm_t* vm, const struct device* d)
     }
 }
 
-static int cmp_id(struct device* d, void* data)
+static int cmp_id(struct device *d, void *data)
 {
-    return !(d->devid == *((enum devid*)data));
+    return !(d->devid == *((enum devid *)data));
 }
 
-static int cmp_ipa(struct device* d, void* data)
+static int cmp_ipa(struct device *d, void *data)
 {
-    return !dev_paddr_in_range(*(uintptr_t*)data, d);
+    return !dev_paddr_in_range(*(uintptr_t *)data, d);
 }
 
-struct device*
-vm_find_device(vm_t* vm, int (*cmp)(struct device* d, void* data), void* data) {
+struct device *
+vm_find_device(vm_t *vm, int (*cmp)(struct device *d, void *data), void *data)
+{
     struct device *ret;
     int i;
     for (i = 0, ret = vm->devices; i < vm->ndevices; i++, ret++) {
@@ -548,28 +537,29 @@ vm_find_device(vm_t* vm, int (*cmp)(struct device* d, void* data), void* data) {
     return NULL;
 }
 
-struct device*
-vm_find_device_by_id(vm_t* vm, enum devid id) {
+struct device *
+vm_find_device_by_id(vm_t *vm, enum devid id)
+{
     return vm_find_device(vm, &cmp_id, &id);
 }
 
-struct device*
-vm_find_device_by_ipa(vm_t* vm, uintptr_t ipa) {
+struct device *
+vm_find_device_by_ipa(vm_t *vm, uintptr_t ipa)
+{
     return vm_find_device(vm, &cmp_ipa, &ipa);
 }
 
-vspace_t* vm_get_vspace(vm_t* vm)
+vspace_t *vm_get_vspace(vm_t *vm)
 {
     return &vm->vm_vspace;
 }
 
-vspace_t* vm_get_vmm_vspace(vm_t* vm)
+vspace_t *vm_get_vmm_vspace(vm_t *vm)
 {
     return vm->vmm_vspace;
 }
 
-int
-vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t b)
+int vm_install_service(vm_t *vm, seL4_CPtr service, int index, uint32_t b)
 {
     cspacepath_t src, dst;
     seL4_Word badge = b;
@@ -582,8 +572,7 @@ vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t b)
     return err;
 }
 
-uintptr_t
-vm_ipa_to_pa(vm_t* vm, uintptr_t ipa_base, size_t size)
+uintptr_t vm_ipa_to_pa(vm_t *vm, uintptr_t ipa_base, size_t size)
 {
     seL4_ARM_Page_GetAddress_t ret;
     uintptr_t pa_base = 0;
@@ -595,12 +584,12 @@ vm_ipa_to_pa(vm_t* vm, uintptr_t ipa_base, size_t size)
         seL4_CPtr cap;
         int bits;
         /* Find the cap */
-        cap = vspace_get_cap(vspace, (void*)ipa);
+        cap = vspace_get_cap(vspace, (void *)ipa);
         if (cap == seL4_CapNull) {
             return 0;
         }
         /* Find mapping size */
-        bits = vspace_get_cookie(vspace, (void*)ipa);
+        bits = vspace_get_cookie(vspace, (void *)ipa);
         assert(bits == 12 || bits == 21);
         /* Find the physical address */
         ret = seL4_ARM_Page_GetAddress(cap);
@@ -623,7 +612,8 @@ vm_ipa_to_pa(vm_t* vm, uintptr_t ipa_base, size_t size)
     return pa_base;
 }
 
-int vm_register_reboot_callback(vm_t *vm, reboot_hook_fn hook, void *token) {
+int vm_register_reboot_callback(vm_t *vm, reboot_hook_fn hook, void *token)
+{
     if (hook == NULL) {
         ZF_LOGE("hook is NULL");
         return -1;
@@ -641,7 +631,8 @@ int vm_register_reboot_callback(vm_t *vm, reboot_hook_fn hook, void *token) {
 
 }
 
-int vm_process_reboot_callbacks(vm_t *vm) {
+int vm_process_reboot_callbacks(vm_t *vm)
+{
     for (int i = 0; i < vm->nhooks; i++) {
         struct reboot_hooks rb = vm->rb_hooks[i];
         if (rb.fn == NULL) {

@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4ARM_VMM_FAULT_H
-#define SEL4ARM_VMM_FAULT_H
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -75,7 +74,7 @@ typedef struct fault fault_t;
  * @param[in] vm    The VM that the fault structure should be bound to
  * @return          An initialised fault structure handle or NULL on failure
  */
-fault_t* fault_init(vm_t* vm);
+fault_t *fault_init(vm_t *vm);
 
 /**
  * Populate an initialised fault structure with fault data obtained from
@@ -93,7 +92,7 @@ int new_wfi_fault(fault_t *fault);
  * @param[in] fault  A handle to a fault structure
  * @return           0 on success;
  */
-int new_fault(fault_t* fault);
+int new_fault(fault_t *fault);
 
 /**
  * Abandon the fault.
@@ -102,7 +101,7 @@ int new_fault(fault_t* fault);
  * @param[in] fault  A handle to a fault structure
  * @return           0 on success;
  */
-int abandon_fault(fault_t* fault);
+int abandon_fault(fault_t *fault);
 
 /**
  * Restart the fault
@@ -112,7 +111,7 @@ int abandon_fault(fault_t* fault);
  * @param[in] fault  A handle to a fault structure
  * @return           0 on success;
  */
-int restart_fault(fault_t* fault);
+int restart_fault(fault_t *fault);
 
 
 /**
@@ -122,7 +121,7 @@ int restart_fault(fault_t* fault);
  * @param[in] fault  A handle to a fault structure
  * @return           0 on success;
  */
-int ignore_fault(fault_t* fault);
+int ignore_fault(fault_t *fault);
 
 
 /**
@@ -133,7 +132,7 @@ int ignore_fault(fault_t* fault);
  * @param[in] data   The data word that the VM was attempting to access
  * @return           0 on success;
  */
-int advance_fault(fault_t* fault);
+int advance_fault(fault_t *fault);
 
 
 /**
@@ -146,7 +145,7 @@ int advance_fault(fault_t* fault);
  * @return           The updated data based on the operation that the VM
  *                   was attempting to perform.
  */
-seL4_Word fault_emulate(fault_t* fault, seL4_Word data);
+seL4_Word fault_emulate(fault_t *fault, seL4_Word data);
 
 /**
  * Determine if a fault has been handled. This is useful for multi-stage faults
@@ -154,7 +153,7 @@ seL4_Word fault_emulate(fault_t* fault, seL4_Word data);
  * @return           0 if the fault has not yet been handled, otherwise, further
  *                   action is required
  */
-int fault_handled(fault_t* fault);
+int fault_handled(fault_t *fault);
 
 /**
  * Retrieve the data that the faulting thread is trying to write or the data
@@ -165,7 +164,7 @@ int fault_handled(fault_t* fault);
  *                   to the thread when the fault is advanced. Otherwise, returns
  *                   the data that the thread was attempting to write.
  */
-seL4_Word fault_get_data(fault_t* fault);
+seL4_Word fault_get_data(fault_t *fault);
 
 /**
  * Set the data that will be returned to the thread when the fault is advanced.
@@ -173,7 +172,7 @@ seL4_Word fault_get_data(fault_t* fault);
  * @param[in] fault  A handle to the fault
  * @param[in] data   The data to return to the thread.
  */
-void fault_set_data(fault_t* fault, seL4_Word data);
+void fault_set_data(fault_t *fault, seL4_Word data);
 
 /**
  * Retrieve a mask for the data within the aligned word that the fault is
@@ -182,14 +181,14 @@ void fault_set_data(fault_t* fault, seL4_Word data);
  * @return           A mask for the data within the aligned word that the fault is
  *                   attempting to access
  */
-seL4_Word fault_get_data_mask(fault_t* fault);
+seL4_Word fault_get_data_mask(fault_t *fault);
 
 /**
  * Get the faulting address
  * @param[in] fault  A handle to the fault
  * @return           The address that the faulting thread was attempting to access
  */
-seL4_Word fault_get_address(fault_t* fault);
+seL4_Word fault_get_address(fault_t *fault);
 
 /**
  * Get the access width of the fault
@@ -197,7 +196,7 @@ seL4_Word fault_get_address(fault_t* fault);
  * @param[in] fault  A handle to the fault
  * @return           The access width of the fault
  */
-enum fault_width fault_get_width(fault_t* f);
+enum fault_width fault_get_width(fault_t *f);
 
 /**
  * Get the context of a fault
@@ -220,7 +219,7 @@ seL4_Word fault_get_fsr(fault_t *fault);
  * @return           0 if the fault is a data fault, otherwise, it is a prefetch
  *                   fault
  */
-int fault_is_prefetch(fault_t* fault);
+int fault_is_prefetch(fault_t *fault);
 
 /**
  * Determine if we should wait for an interrupt before
@@ -234,33 +233,33 @@ int fault_is_wfi(fault_t *fault);
  * @param[in] fault  A handle to the fault
  * @return           0 if it is a 16 bit instruction, otherwise, it is 32bit
  */
-int fault_is_32bit_instruction(fault_t* f);
+int fault_is_32bit_instruction(fault_t *f);
 
 /****************
  ***  Helpers ***
  ****************/
 
-static inline int fault_is_16bit_instruction(fault_t* f)
+static inline int fault_is_16bit_instruction(fault_t *f)
 {
     return !fault_is_32bit_instruction(f);
 }
 
-static inline int fault_is_data(fault_t* f)
+static inline int fault_is_data(fault_t *f)
 {
     return !fault_is_prefetch(f);
 }
 
-static inline int fault_is_write(fault_t* f)
+static inline int fault_is_write(fault_t *f)
 {
     return (fault_get_fsr(f) & (1U << 6));
 }
 
-static inline int fault_is_read(fault_t* f)
+static inline int fault_is_read(fault_t *f)
 {
     return !fault_is_write(f);
 }
 
-static inline seL4_Word fault_get_addr_word(fault_t* f)
+static inline seL4_Word fault_get_addr_word(fault_t *f)
 {
     return fault_get_address(f) & ~(0x3U);
 }
@@ -277,14 +276,10 @@ void fault_print_data(fault_t *fault);
  * Prints a fault to the console
  * @param[in] fault  A handle to a fault structure
  */
-void print_fault(fault_t* fault);
+void print_fault(fault_t *fault);
 
 /**
  * Prints contents of context registers to the console
  * @param[in] regs   A handle to the VM registers to print
  */
-void print_ctx_regs(seL4_UserContext * regs);
-
-
-
-#endif /* SEL4ARM_VMM_FAULT_H */
+void print_ctx_regs(seL4_UserContext *regs);

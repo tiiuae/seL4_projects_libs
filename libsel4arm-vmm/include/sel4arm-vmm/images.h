@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4ARM_VMM_IMAGES_H
-#define SEL4ARM_VMM_IMAGES_H
+#pragma once
 
 #include <stdint.h>
 
@@ -37,7 +36,7 @@ enum img_type {
  * @return          The image type. IMG_BIN is return if the type could
  *                  not be identified
  */
-enum img_type image_get_type(void* file);
+enum img_type image_get_type(void *file);
 
 /**
  * Retrieve the load address of a zImage from the zImage header
@@ -46,6 +45,4 @@ enum img_type image_get_type(void* file);
  * @return              0 on error, otherwise, returns the load address of the
  *                      zImage
  */
-uintptr_t zImage_get_load_address(void* file, uintptr_t ram_base);
-
-#endif /* SEL4ARM_VMM_IMAGES_H */
+uintptr_t zImage_get_load_address(void *file, uintptr_t ram_base);

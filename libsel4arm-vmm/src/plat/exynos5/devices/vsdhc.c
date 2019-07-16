@@ -33,23 +33,22 @@ struct sdhc_priv {
 /// The VM associated with this device
     vm_t *vm;
 /// Physical registers of the SDHC
-    void* regs;
+    void *regs;
 /// Residual for 64 bit atomic access to FIFO
     uint32_t a64;
 };
 
-static int
-handle_sdhc_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_sdhc_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
-    struct sdhc_priv* sdhc_data = (struct sdhc_priv*)d->priv;
+    struct sdhc_priv *sdhc_data = (struct sdhc_priv *)d->priv;
     volatile uint32_t *reg;
     int offset;
 
     /* Gather fault information */
     offset = fault_get_address(fault) - d->pstart;
-    reg = (uint32_t*)(sdhc_data->regs + offset);
+    reg = (uint32_t *)(sdhc_data->regs + offset);
     /* Handle the fault */
-    reg = (volatile uint32_t*)(sdhc_data->regs + offset);
+    reg = (volatile uint32_t *)(sdhc_data->regs + offset);
     if (fault_is_read(fault)) {
         if (fault_get_width(fault) == WIDTH_DOUBLEWORD) {
             if (offset & 0x4) {
@@ -58,7 +57,7 @@ handle_sdhc_fault(struct device* d, vm_t* vm, fault_t* fault)
             } else {
                 /* Aligned access: Read in and store residual */
                 uint64_t v;
-                v = *(volatile uint64_t*)reg;
+                v = *(volatile uint64_t *)reg;
                 fault_set_data(fault, v);
                 sdhc_data->a64 = v >> 32;
             }
@@ -81,7 +80,7 @@ handle_sdhc_fault(struct device* d, vm_t* vm, fault_t* fault)
                     /* Unaligned acces: store data and residual */
                     uint64_t v;
                     v = ((uint64_t)fault_get_data(fault) << 32) | sdhc_data->a64;
-                    *(volatile uint64_t*)reg = v;
+                    *(volatile uint64_t *)reg = v;
                 } else {
                     /* Aligned access: record residual */
                     sdhc_data->a64 = fault_get_data(fault);
@@ -117,12 +116,11 @@ const struct device dev_msh2 = {
     .priv = NULL
 };
 
-static int
-vm_install_nodma_sdhc(vm_t* vm, int idx)
+static int vm_install_nodma_sdhc(vm_t *vm, int idx)
 {
     struct sdhc_priv *sdhc_data;
     struct device d;
-    vspace_t* vmm_vspace;
+    vspace_t *vmm_vspace;
     int err;
     switch (idx) {
     case 0:
@@ -165,12 +163,12 @@ vm_install_nodma_sdhc(vm_t* vm, int idx)
     return 0;
 }
 
-int vm_install_nodma_sdhc0(vm_t* vm)
+int vm_install_nodma_sdhc0(vm_t *vm)
 {
     return vm_install_nodma_sdhc(vm, 0);
 }
 
-int vm_install_nodma_sdhc2(vm_t* vm)
+int vm_install_nodma_sdhc2(vm_t *vm)
 {
     return vm_install_nodma_sdhc(vm, 2);
 }

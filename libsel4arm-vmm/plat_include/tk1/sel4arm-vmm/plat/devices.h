@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4ARM_VMM_TK1_DEVICES_H
-#define SEL4ARM_VMM_TK1_DEVICES_H
+#pragma once
 
 #include <sel4arm-vmm/plat/device_map.h>
 #include <sel4arm-vmm/vm.h>
@@ -37,10 +36,8 @@ extern const struct device dev_apb_misc;
 extern const struct device dev_fuse;
 extern const struct device dev_gpios;
 
-typedef int (*vm_power_cb)(vm_t* vm, void* token);
-int vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
-                      vm_power_cb reboot_cb, void* reboot_token);
+typedef int (*vm_power_cb)(vm_t *vm, void *token);
+int vm_install_vpower(vm_t *vm, vm_power_cb shutdown_cb, void *shutdown_token,
+                      vm_power_cb reboot_cb, void *reboot_token);
 
 int vm_install_tk1_usb_passthrough_device(vm_t *vm);
-
-#endif /* SEL4ARM_VMM_EXYNOS_DEVICES_H */

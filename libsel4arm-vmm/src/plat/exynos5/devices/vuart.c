@@ -37,18 +37,18 @@
 
 
 struct vuart_priv {
-    void* regs;
+    void *regs;
     char buffer[VUART_BUFLEN];
     int buf_pos;
-    vm_t* vm;
+    vm_t *vm;
 };
 
-static inline void* vuart_priv_get_regs(struct device* d)
+static inline void *vuart_priv_get_regs(struct device *d)
 {
-    return ((struct vuart_priv*)d->priv)->regs;
+    return ((struct vuart_priv *)d->priv)->regs;
 }
 
-static void vuart_reset(struct device* d)
+static void vuart_reset(struct device *d)
 {
     const uint32_t reset_data[] = {
         0x00000003, 0x000003c5, 0x00000111, 0x00000000,
@@ -60,14 +60,13 @@ static void vuart_reset(struct device* d)
     memcpy(vuart_priv_get_regs(d), reset_data, sizeof(reset_data));
 }
 
-static void
-flush_vconsole_device(struct device* d)
+static void flush_vconsole_device(struct device *d)
 {
     struct vuart_priv *vuart_data;
-    char* buf;
+    char *buf;
     int i;
     assert(d->priv);
-    vuart_data = (struct vuart_priv*)d->priv;
+    vuart_data = (struct vuart_priv *)d->priv;
     buf = vuart_data->buffer;
     for (i = 0; i < vuart_data->buf_pos; i++) {
         if (buf[i] != '\033') {
@@ -81,12 +80,11 @@ flush_vconsole_device(struct device* d)
     vuart_data->buf_pos = 0;
 }
 
-static void
-vuart_putchar(struct device* d, char c)
+static void vuart_putchar(struct device *d, char c)
 {
     struct vuart_priv *vuart_data;
     assert(d->priv);
-    vuart_data = (struct vuart_priv*)d->priv;
+    vuart_data = (struct vuart_priv *)d->priv;
 
     if (vuart_data->buf_pos == VUART_BUFLEN) {
         flush_vconsole_device(d);
@@ -99,8 +97,7 @@ vuart_putchar(struct device* d, char c)
     }
 }
 
-static int
-handle_vuart_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_vuart_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
     uint32_t *reg;
     int offset;
@@ -108,7 +105,7 @@ handle_vuart_fault(struct device* d, vm_t* vm, fault_t* fault)
 
     /* Gather fault information */
     offset = fault_get_address(fault) - d->pstart;
-    reg = (uint32_t*)(vuart_priv_get_regs(d) + offset);
+    reg = (uint32_t *)(vuart_priv_get_regs(d) + offset);
     mask = fault_get_data_mask(fault);
     /* Handle the fault */
     if (offset < 0 || UART_SIZE <= offset) {
@@ -174,7 +171,7 @@ const struct device dev_uart3 = {
 };
 
 
-int vm_install_vconsole(vm_t* vm)
+int vm_install_vconsole(vm_t *vm)
 {
     struct vuart_priv *vuart_data;
     struct device d;
@@ -207,12 +204,11 @@ int vm_install_vconsole(vm_t* vm)
 }
 
 
-int
-vm_install_ac_uart(vm_t* vm, const struct device* d)
+int vm_install_ac_uart(vm_t *vm, const struct device *d)
 {
     int err;
     int mask_size = UART_SIZE;
-    uint32_t* mask = (uint32_t*)malloc(mask_size);
+    uint32_t *mask = (uint32_t *)malloc(mask_size);
     err = vm_install_generic_ac_device(vm, d, mask, mask_size, VACDEV_MASK_ONLY);
     if (err) {
         free(mask);

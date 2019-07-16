@@ -11,8 +11,7 @@
  */
 /* Author: alex.kroh@nicta.com.au */
 
-#ifndef _DMA_DMA_H_
-#define _DMA_DMA_H_
+#pragma once
 
 #include <stdint.h>
 #include <stddef.h>
@@ -20,9 +19,9 @@
 #include <platsupport/io.h>
 
 struct dma_allocator;
-typedef struct dma_mem* dma_mem_t;
+typedef struct dma_mem *dma_mem_t;
 
-typedef void* vaddr_t;
+typedef void *vaddr_t;
 typedef uintptr_t paddr_t;
 
 /**
@@ -40,9 +39,9 @@ struct dma_mem_descriptor {
     /// The size of each frame (2^frame_size_bits bytes)
     int       size_bits;
     /// This field is unused and may be used by the bulk allocator
-    void*     alloc_cookie;
+    void     *alloc_cookie;
     /// This field is unused and may be used by the application.
-    void*     cookie;
+    void     *cookie;
 };
 
 
@@ -77,7 +76,7 @@ enum dma_flags {
  * @return              0 on success
  */
 typedef int (*dma_morecore_fn)(size_t min_size, int cached,
-                               struct dma_mem_descriptor* dma_desc);
+                               struct dma_mem_descriptor *dma_desc);
 
 /**
  * Initialises a new DMA allocator for use with io_ops.
@@ -97,7 +96,7 @@ int dma_dmaman_init(dma_morecore_fn morecore, ps_dma_cache_op_fn_t cache_ops,
  * @param[in] dma_desc A description of the memory provided.
  * @return             0 on success
  */
-int dma_provide_mem(struct dma_allocator* allocator,
+int dma_provide_mem(struct dma_allocator *allocator,
                     struct dma_mem_descriptor dma_desc);
 
 /**
@@ -109,8 +108,8 @@ int dma_provide_mem(struct dma_allocator* allocator,
  * @return               0 on success, non-zero indicates that a suitable
  *                       reclaim candidate could not be found.
  */
-int dma_reclaim_mem(struct dma_allocator* allocator,
-                    struct dma_mem_descriptor* dma_desc);
+int dma_reclaim_mem(struct dma_allocator *allocator,
+                    struct dma_mem_descriptor *dma_desc);
 
 
 
@@ -125,7 +124,7 @@ int dma_reclaim_mem(struct dma_allocator* allocator,
  *                     memory.
  * @return             A reference to a new DMA allocator instance.
  */
-struct dma_allocator* dma_allocator_init(dma_morecore_fn morecore);
+struct dma_allocator *dma_allocator_init(dma_morecore_fn morecore);
 
 /**
  * Retrieve the virtual address of allocated DMA memory.
@@ -180,8 +179,8 @@ void dma_cleaninvalidate(dma_mem_t dma_mem, vaddr_t vstart, vaddr_t vend);
  * @return               The virtual address of the allocated DMA memory, NULL
  *                       on failure.
  */
-vaddr_t dma_alloc(struct dma_allocator* allocator, size_t size, int align,
-                  enum dma_flags flags, dma_mem_t* dma_mem);
+vaddr_t dma_alloc(struct dma_allocator *allocator, size_t size, int align,
+                  enum dma_flags flags, dma_mem_t *dma_mem);
 
 /**
  * Free DMA memory by virtual address.
@@ -200,7 +199,7 @@ void dma_free(dma_mem_t dma_mem);
  *                      provided physical address. NULL if the physical
  *                      address is not managed by the provided allocator.
  */
-dma_mem_t dma_plookup(struct dma_allocator* allocator, paddr_t paddr);
+dma_mem_t dma_plookup(struct dma_allocator *allocator, paddr_t paddr);
 
 /**
  * Retrieve the DMA memory handle from a given virtual address.
@@ -212,8 +211,4 @@ dma_mem_t dma_plookup(struct dma_allocator* allocator, paddr_t paddr);
  *                      provided virtual address. NULL if the physical
  *                      address is not managed by the provided allocator.
  */
-dma_mem_t dma_vlookup(struct dma_allocator* allocator, vaddr_t vaddr);
-
-
-
-#endif /* _DMA_DMA_H_ */
+dma_mem_t dma_vlookup(struct dma_allocator *allocator, vaddr_t vaddr);

@@ -20,8 +20,7 @@
  *
  */
 
-#ifndef _LIBVCHAN_H
-#define _LIBVCHAN_H
+#pragma once
 
 #include <stddef.h>
 
@@ -49,7 +48,7 @@ libvchan_t *libvchan_client_init(int domain, int port);
 */
 int libvchan_wait(libvchan_t *ctrl);
 
- /** Amount of data ready to read, in bytes */
+/** Amount of data ready to read, in bytes */
 int libvchan_data_ready(libvchan_t *ctrl);
 
 /** Amount of data it is possible to send without blocking */
@@ -117,5 +116,3 @@ int libvchan_fd_for_select(libvchan_t *ctrl);
  * Notify the peer of closing.
  */
 void libvchan_close(libvchan_t *ctrl);
-
-#endif /* _LIBVCHAN_H */

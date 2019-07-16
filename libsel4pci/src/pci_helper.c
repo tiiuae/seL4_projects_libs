@@ -112,7 +112,7 @@ void define_pci_host_bridge(vmm_pci_device_def_t *bridge)
 
 static int passthrough_pci_config_ioread(void *cookie, int offset, int size, uint32_t *result)
 {
-    pci_passthrough_device_t *dev = (pci_passthrough_device_t*)cookie;
+    pci_passthrough_device_t *dev = (pci_passthrough_device_t *)cookie;
     switch (size) {
     case 1:
         *result = dev->config.ioread8(dev->config.cookie, dev->addr, offset);
@@ -131,7 +131,7 @@ static int passthrough_pci_config_ioread(void *cookie, int offset, int size, uin
 
 static int passthrough_pci_config_iowrite(void *cookie, int offset, int size, uint32_t val)
 {
-    pci_passthrough_device_t *dev = (pci_passthrough_device_t*)cookie;
+    pci_passthrough_device_t *dev = (pci_passthrough_device_t *)cookie;
     switch (size) {
     case 1:
         dev->config.iowrite8(dev->config.cookie, dev->addr, offset, val);
@@ -176,7 +176,7 @@ static uint32_t pci_make_bar(pci_bar_emulation_t *emul, int bar)
 
 static int pci_irq_emul_read(void *cookie, int offset, int size, uint32_t *result)
 {
-    pci_irq_emulation_t *emul = (pci_irq_emulation_t*)cookie;
+    pci_irq_emulation_t *emul = (pci_irq_emulation_t *)cookie;
     if (offset <= PCI_INTERRUPT_LINE && offset + size > PCI_INTERRUPT_LINE) {
         /* do the regular read, then patch in our value */
         int ret = emul->passthrough.ioread(emul->passthrough.cookie, offset, size, result);
@@ -194,7 +194,7 @@ static int pci_irq_emul_read(void *cookie, int offset, int size, uint32_t *resul
 
 static int pci_irq_emul_write(void *cookie, int offset, int size, uint32_t value)
 {
-    pci_irq_emulation_t *emul = (pci_irq_emulation_t*)cookie;
+    pci_irq_emulation_t *emul = (pci_irq_emulation_t *)cookie;
     if (offset == PCI_INTERRUPT_LINE && size == 1) {
         /* ignore */
         return 0;
@@ -208,7 +208,7 @@ static int pci_irq_emul_write(void *cookie, int offset, int size, uint32_t value
 
 static int pci_bar_emul_read(void *cookie, int offset, int size, uint32_t *result)
 {
-    pci_bar_emulation_t *emul = (pci_bar_emulation_t*)cookie;
+    pci_bar_emulation_t *emul = (pci_bar_emulation_t *)cookie;
     if (pci_bar_emul_check_range(offset, size)) {
         return emul->passthrough.ioread(emul->passthrough.cookie, offset, size, result);
     }
@@ -216,7 +216,7 @@ static int pci_bar_emul_read(void *cookie, int offset, int size, uint32_t *resul
     int bar = (offset - PCI_BASE_ADDRESS_0) / 4;
     int bar_offset = offset & 3;
     uint32_t bar_raw = pci_make_bar(emul, bar);
-    char *barp = (char*)&bar_raw;
+    char *barp = (char *)&bar_raw;
     *result = 0;
     memcpy(result, barp + bar_offset, size);
     return 0;
@@ -224,27 +224,27 @@ static int pci_bar_emul_read(void *cookie, int offset, int size, uint32_t *resul
 
 static int pci_bar_emul_write(void *cookie, int offset, int size, uint32_t value)
 {
-    pci_bar_emulation_t *emul = (pci_bar_emulation_t*)cookie;
+    pci_bar_emulation_t *emul = (pci_bar_emulation_t *)cookie;
     if (pci_bar_emul_check_range(offset, size)) {
         return emul->passthrough.iowrite(emul->passthrough.cookie, offset, size, value);
     }
     /* Construct the bar value */
     int bar = (offset - PCI_BASE_ADDRESS_0) / 4;
     int bar_offset = offset & 3;
-    char *barp = (char*)&emul->bar_writes[bar];
+    char *barp = (char *)&emul->bar_writes[bar];
     memcpy(barp + bar_offset, &value, size);
     return 0;
 }
 
 static int pci_bar_passthrough_emul_read(void *cookie, int offset, int size, uint32_t *result)
 {
-    pci_bar_emulation_t *emul = (pci_bar_emulation_t*)cookie;
+    pci_bar_emulation_t *emul = (pci_bar_emulation_t *)cookie;
     return emul->passthrough.ioread(emul->passthrough.cookie, offset, size, result);
 }
 
 static int pci_bar_passthrough_emul_write(void *cookie, int offset, int size, uint32_t value)
 {
-    pci_bar_emulation_t *emul = (pci_bar_emulation_t*)cookie;
+    pci_bar_emulation_t *emul = (pci_bar_emulation_t *)cookie;
     return emul->passthrough.iowrite(emul->passthrough.cookie, offset, size, value);
 }
 
@@ -299,7 +299,7 @@ vmm_pci_entry_t vmm_pci_create_passthrough(vmm_pci_address_t addr, vmm_pci_confi
 
 static int pci_cap_emul_read(void *cookie, int offset, int size, uint32_t *result)
 {
-    pci_cap_emulation_t *emul = (pci_cap_emulation_t*)cookie;
+    pci_cap_emulation_t *emul = (pci_cap_emulation_t *)cookie;
     if (offset <= PCI_STATUS && offset + size > PCI_STATUS) {
         /* do the regular read, then patch in our value */
         int ret = emul->passthrough.ioread(emul->passthrough.cookie, offset, size, result);
@@ -330,7 +330,8 @@ static int pci_cap_emul_read(void *cookie, int offset, int size, uint32_t *resul
     for (i = 0; i < emul->num_ignore; i++) {
         if (offset <= emul->ignore_start[i] && offset + size > emul->ignore_end[i]) {
             /* who cares about the size, just ignore everything */
-            ZF_LOGI("Attempted read at 0x%x of size %d from region 0x%x-0x%x", offset, size, emul->ignore_start[i], emul->ignore_end[i]);
+            ZF_LOGI("Attempted read at 0x%x of size %d from region 0x%x-0x%x", offset, size, emul->ignore_start[i],
+                    emul->ignore_end[i]);
             *result = 0;
             return 0;
         }
@@ -357,20 +358,22 @@ static int pci_cap_emul_read(void *cookie, int offset, int size, uint32_t *resul
 
 static int pci_cap_emul_write(void *cookie, int offset, int size, uint32_t value)
 {
-    pci_cap_emulation_t *emul = (pci_cap_emulation_t*)cookie;
+    pci_cap_emulation_t *emul = (pci_cap_emulation_t *)cookie;
     /* Prevents writes to our ignored ranges. but let anything else through */
     int i;
     for (i = 0; i < emul->num_ignore; i++) {
         if (offset <= emul->ignore_start[i] && offset + size > emul->ignore_end[i]) {
             /* who cares about the size, just ignore everything */
-            ZF_LOGI("Attempted write at 0x%x of size %d from region 0x%x-0x%x", offset, size, emul->ignore_start[i], emul->ignore_end[i]);
+            ZF_LOGI("Attempted write at 0x%x of size %d from region 0x%x-0x%x", offset, size, emul->ignore_start[i],
+                    emul->ignore_end[i]);
             return 0;
         }
     }
     return emul->passthrough.iowrite(emul->passthrough.cookie, offset, size, value);
 }
 
-vmm_pci_entry_t vmm_pci_create_cap_emulation(vmm_pci_entry_t existing, int num_caps, uint8_t *caps, int num_ranges, uint8_t *range_starts, uint8_t *range_ends)
+vmm_pci_entry_t vmm_pci_create_cap_emulation(vmm_pci_entry_t existing, int num_caps, uint8_t *caps, int num_ranges,
+                                             uint8_t *range_starts, uint8_t *range_ends)
 {
     pci_cap_emulation_t *emul = malloc(sizeof(*emul));
     emul->passthrough = existing;
@@ -401,11 +404,11 @@ vmm_pci_entry_t vmm_pci_no_msi_cap_emulation(vmm_pci_entry_t existing)
     value = 0;
     error = existing.ioread(existing.cookie, PCI_HEADER_TYPE, 1, &value);
     assert(!error);
-    assert( (value & (~BIT(7))) == PCI_HEADER_TYPE_NORMAL);
+    assert((value & (~BIT(7))) == PCI_HEADER_TYPE_NORMAL);
     /* Check if it has capability space */
     error = existing.ioread(existing.cookie, PCI_STATUS, 1, &value);
     assert(!error);
-    if (! (value & PCI_STATUS_CAP_LIST)) {
+    if (!(value & PCI_STATUS_CAP_LIST)) {
         return existing;
     }
     /* First we need to scan the capability space, and detect any PCI caps

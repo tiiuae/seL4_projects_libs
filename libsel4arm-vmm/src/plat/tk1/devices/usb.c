@@ -31,7 +31,8 @@ const struct device dev_usb = {
     .priv = NULL
 };
 
-static int usb_vm_reboot_hook(vm_t* vm, void *token) {
+static int usb_vm_reboot_hook(vm_t *vm, void *token)
+{
     void *usb_cmd_register = token + USB2_CONTROLLER_USB2D_USBCMD_0_OFFSET;
     uint32_t reg = RAW_READ32(usb_cmd_register);
     RAW_WRITE32(reg | USB2D_USB_COMMAND_REGISTER_RESET_BIT, usb_cmd_register);
@@ -40,8 +41,7 @@ static int usb_vm_reboot_hook(vm_t* vm, void *token) {
 
 
 
-int
-vm_install_tk1_usb_passthrough_device(vm_t* vm)
+int vm_install_tk1_usb_passthrough_device(vm_t *vm)
 {
 
     /* Add the device */
@@ -51,7 +51,7 @@ vm_install_tk1_usb_passthrough_device(vm_t* vm)
         return -1;
     }
     void *vmm_addr = vspace_share_mem(vm_get_vspace(vm), vm_get_vmm_vspace(vm), addr, 1,
-    seL4_PageBits, seL4_AllRights, 0);
+                                      seL4_PageBits, seL4_AllRights, 0);
     if (vmm_addr == NULL) {
         ZF_LOGE("vspace_share_mem returned NULL");
         return -1;

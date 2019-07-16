@@ -52,11 +52,11 @@ struct dma_memd_node {
     /* Number of frames in this region */
     int nframes;
     /* Caps to the underlying frames */
-    void** alloc_cookies;
+    void **alloc_cookies;
     /* Head of linked list of regions */
     dma_mem_t dma_mem_head;
     /* Chain */
-    struct dma_memd_node * next;
+    struct dma_memd_node *next;
 };
 
 /* Linked list of memory regions */
@@ -66,35 +66,32 @@ struct dma_mem {
     /* Flags */
     int flags;
     /* Parent node */
-    struct dma_memd_node* node;
+    struct dma_memd_node *node;
     /* Chain */
     dma_mem_t next;
 };
 
 struct dma_allocator {
     dma_morecore_fn morecore;
-    struct dma_memd_node * head;
+    struct dma_memd_node *head;
 };
 
 
 /*** Helpers ***/
 
-static inline int
-_is_free(dma_mem_t m)
+static inline int _is_free(dma_mem_t m)
 {
     return !(m->flags & DMFLAG_ALLOCATED);
 }
 
-static inline size_t
-_node_size(struct dma_memd_node *n)
+static inline size_t _node_size(struct dma_memd_node *n)
 {
     return n->nframes << n->desc.size_bits;
 }
 
-static inline size_t
-_mem_size(dma_mem_t m)
+static inline size_t _mem_size(dma_mem_t m)
 {
-    struct dma_memd_node* n = m->node;
+    struct dma_memd_node *n = m->node;
     size_t s;
     if (m->next == NULL) {
         s = _node_size(n);;
@@ -105,8 +102,7 @@ _mem_size(dma_mem_t m)
 }
 
 /* @pre the offset must be contained within the node provided node */
-static inline dma_mem_t
-_find_mem(struct dma_memd_node *n, uintptr_t offset)
+static inline dma_mem_t _find_mem(struct dma_memd_node *n, uintptr_t offset)
 {
     dma_mem_t m;
     assert(n);
@@ -118,8 +114,7 @@ _find_mem(struct dma_memd_node *n, uintptr_t offset)
     return m;
 }
 
-static void
-_mem_compact(dma_mem_t m)
+static void _mem_compact(dma_mem_t m)
 {
     while (m->next != NULL && _is_free(m->next)) {
         dma_mem_t compact = m->next;
@@ -131,16 +126,14 @@ _mem_compact(dma_mem_t m)
 
 /*** Debug ***/
 
-static void
-print_dma_mem(dma_mem_t m, const char* prefix)
+static void print_dma_mem(dma_mem_t m, const char *prefix)
 {
     dprintf("%s{p0x%08x, v0x%08x, s0x%x %s}\n", prefix,
             (uint32_t)dma_paddr(m), (uint32_t)dma_vaddr(m), _mem_size(m),
             _is_free(m) ? "FREE" : "USED");
 }
 
-static void
-print_dma_node(struct dma_memd_node* n)
+static void print_dma_node(struct dma_memd_node *n)
 {
     dma_mem_t m;
     dprintf("NODE:\n");
@@ -149,10 +142,9 @@ print_dma_node(struct dma_memd_node* n)
     }
 }
 
-static void
-print_dma_allocator(struct dma_allocator* a)
+static void print_dma_allocator(struct dma_allocator *a)
 {
-    struct dma_memd_node* n;
+    struct dma_memd_node *n;
     dprintf("ALLOC:\n");
     for (n = a->head; n != NULL; n = n->next) {
         print_dma_node(n);
@@ -162,10 +154,10 @@ print_dma_allocator(struct dma_allocator* a)
 /*** Interface ***/
 
 
-static struct dma_memd_node *
-do_dma_provide_mem(struct dma_allocator* allocator,
-                   struct dma_mem_descriptor* dma_desc) {
-    struct dma_memd_node * n;
+static struct dma_memd_node *do_dma_provide_mem(struct dma_allocator *allocator,
+                                                struct dma_mem_descriptor *dma_desc)
+{
+    struct dma_memd_node *n;
     dma_mem_t m;
 
     /* The memory size must be sane */
@@ -176,7 +168,7 @@ do_dma_provide_mem(struct dma_allocator* allocator,
         return NULL;
     }
     /* We do not attempt to tack this region onto an existing node */
-    n = (struct dma_memd_node*)_malloc(sizeof(*n));
+    n = (struct dma_memd_node *)_malloc(sizeof(*n));
     if (n == NULL) {
         _free(m);
         return NULL;
@@ -208,10 +200,11 @@ do_dma_provide_mem(struct dma_allocator* allocator,
 
 
 
-struct dma_allocator*
-dma_allocator_init(dma_morecore_fn morecore) {
-    struct dma_allocator* alloc;
-    alloc = (struct dma_allocator*)_malloc(sizeof(*alloc));
+struct dma_allocator *
+dma_allocator_init(dma_morecore_fn morecore)
+{
+    struct dma_allocator *alloc;
+    alloc = (struct dma_allocator *)_malloc(sizeof(*alloc));
     if (alloc == NULL) {
         return NULL;
     }
@@ -221,17 +214,15 @@ dma_allocator_init(dma_morecore_fn morecore) {
 }
 
 
-int
-dma_provide_mem(struct dma_allocator* allocator,
-                struct dma_mem_descriptor dma_desc)
+int dma_provide_mem(struct dma_allocator *allocator,
+                    struct dma_mem_descriptor dma_desc)
 {
-    struct dma_memd_node * n;
+    struct dma_memd_node *n;
     n = do_dma_provide_mem(allocator, &dma_desc);
     return n == NULL;
 }
 
-static dma_mem_t
-dma_memd_alloc(struct dma_memd_node* n, size_t size, int align)
+static dma_mem_t dma_memd_alloc(struct dma_memd_node *n, size_t size, int align)
 {
     dma_mem_t m;
     dprintf("Allocating 0x%x aligned to 0x%x\n", size, align);
@@ -276,12 +267,11 @@ dma_memd_alloc(struct dma_memd_node* n, size_t size, int align)
     return NULL;
 }
 
-vaddr_t
-dma_alloc(struct dma_allocator* allocator, size_t size, int align,
-          enum dma_flags flags, dma_mem_t* ret_mem)
+vaddr_t dma_alloc(struct dma_allocator *allocator, size_t size, int align,
+                  enum dma_flags flags, dma_mem_t *ret_mem)
 {
     int cached;
-    struct dma_memd_node * n;
+    struct dma_memd_node *n;
     assert(allocator);
 
     if (align < DMA_MINALIGN_BYTES) {
@@ -311,7 +301,7 @@ dma_alloc(struct dma_allocator* allocator, size_t size, int align,
     /* Out of memory! Allocate more if we have the ability */
     if (allocator->morecore) {
         struct dma_mem_descriptor dma_desc;
-        struct dma_memd_node * n;
+        struct dma_memd_node *n;
         dma_mem_t m;
         int err;
         dprintf("Morecore called for %d bytes\n", size);
@@ -344,12 +334,11 @@ dma_alloc(struct dma_allocator* allocator, size_t size, int align,
     return NULL;
 }
 
-int
-dma_reclaim_mem(struct dma_allocator* allocator,
-                struct dma_mem_descriptor* dma_desc)
+int dma_reclaim_mem(struct dma_allocator *allocator,
+                    struct dma_mem_descriptor *dma_desc)
 {
     struct dma_memd_node *n;
-    struct dma_memd_node** nptr = &allocator->head;
+    struct dma_memd_node **nptr = &allocator->head;
     for (n = allocator->head; n != NULL; n = n->next) {
         dma_mem_t m = n->dma_mem_head;
         _mem_compact(m);
@@ -370,8 +359,7 @@ dma_reclaim_mem(struct dma_allocator* allocator,
     return -1;
 }
 
-void
-dma_free(dma_mem_t m)
+void dma_free(dma_mem_t m)
 {
     if (m) {
         m->flags &= ~DMFLAG_ALLOCATED;
@@ -381,8 +369,7 @@ dma_free(dma_mem_t m)
 
 /*** Address translation ***/
 
-vaddr_t
-dma_vaddr(dma_mem_t m)
+vaddr_t dma_vaddr(dma_mem_t m)
 {
     if (m) {
         assert(m->node);
@@ -392,8 +379,7 @@ dma_vaddr(dma_mem_t m)
     }
 }
 
-paddr_t
-dma_paddr(dma_mem_t m)
+paddr_t dma_paddr(dma_mem_t m)
 {
     if (m) {
         assert(m->node);
@@ -403,8 +389,7 @@ dma_paddr(dma_mem_t m)
     }
 }
 
-dma_mem_t
-dma_plookup(struct dma_allocator* dma_allocator, paddr_t paddr)
+dma_mem_t dma_plookup(struct dma_allocator *dma_allocator, paddr_t paddr)
 {
     struct dma_memd_node *n;
     uintptr_t offs;
@@ -423,8 +408,7 @@ dma_plookup(struct dma_allocator* dma_allocator, paddr_t paddr)
     }
 }
 
-dma_mem_t
-dma_vlookup(struct dma_allocator* dma_allocator, vaddr_t vaddr)
+dma_mem_t dma_vlookup(struct dma_allocator *dma_allocator, vaddr_t vaddr)
 {
     struct dma_memd_node *n;
     uintptr_t offs;
@@ -449,8 +433,7 @@ dma_vlookup(struct dma_allocator* dma_allocator, vaddr_t vaddr)
 
 /*** Cache ops ***/
 
-void
-dma_clean(dma_mem_t m, vaddr_t vstart, vaddr_t vend)
+void dma_clean(dma_mem_t m, vaddr_t vstart, vaddr_t vend)
 {
     (void)m;
     (void)vstart;
@@ -458,16 +441,14 @@ dma_clean(dma_mem_t m, vaddr_t vstart, vaddr_t vend)
 }
 
 
-void
-dma_invalidate(dma_mem_t m, vaddr_t vstart, vaddr_t vend)
+void dma_invalidate(dma_mem_t m, vaddr_t vstart, vaddr_t vend)
 {
     (void)m;
     (void)vstart;
     (void)vend;
 }
 
-void
-dma_cleaninvalidate(dma_mem_t m, vaddr_t vstart, vaddr_t vend)
+void dma_cleaninvalidate(dma_mem_t m, vaddr_t vstart, vaddr_t vend)
 {
     (void)m;
     (void)vstart;
@@ -476,14 +457,13 @@ dma_cleaninvalidate(dma_mem_t m, vaddr_t vstart, vaddr_t vend)
 
 /******** libplatsupport adapter ********/
 
-static void*
-dma_dma_alloc(void *cookie, size_t size, int align, int cached, ps_mem_flags_t flags)
+static void *dma_dma_alloc(void *cookie, size_t size, int align, int cached, ps_mem_flags_t flags)
 {
-    struct dma_allocator* dalloc;
+    struct dma_allocator *dalloc;
     vaddr_t vaddr;
     enum dma_flags dma_flags;
     assert(cookie);
-    dalloc = (struct dma_allocator*)cookie;
+    dalloc = (struct dma_allocator *)cookie;
 
     if (cached) {
         dma_flags = DMAF_COHERENT;
@@ -507,38 +487,34 @@ dma_dma_alloc(void *cookie, size_t size, int align, int cached, ps_mem_flags_t f
     return vaddr;
 }
 
-static void
-dma_dma_free(void *cookie, void *addr, size_t size)
+static void dma_dma_free(void *cookie, void *addr, size_t size)
 {
-    struct dma_allocator* dalloc;
+    struct dma_allocator *dalloc;
     assert(cookie);
-    dalloc = (struct dma_allocator*)cookie;
+    dalloc = (struct dma_allocator *)cookie;
     dma_free(dma_vlookup(dalloc, addr));
 }
 
 
-static uintptr_t
-dma_dma_pin(void *cookie, void *addr, size_t size)
+static uintptr_t dma_dma_pin(void *cookie, void *addr, size_t size)
 {
-    struct dma_allocator* dalloc;
+    struct dma_allocator *dalloc;
     assert(cookie);
     /* DMA memory is pinned when allocated */
-    dalloc = (struct dma_allocator*)cookie;
+    dalloc = (struct dma_allocator *)cookie;
     return dma_paddr(dma_vlookup(dalloc, addr));
 }
 
-static void
-dma_dma_unpin(void *cookie UNUSED, void *addr UNUSED, size_t size UNUSED)
+static void dma_dma_unpin(void *cookie UNUSED, void *addr UNUSED, size_t size UNUSED)
 {
     /* DMA memory is unpinned when freed */
 }
 
 
-int
-dma_dmaman_init(dma_morecore_fn morecore, ps_dma_cache_op_fn_t cache_ops,
-                ps_dma_man_t *dma_man)
+int dma_dmaman_init(dma_morecore_fn morecore, ps_dma_cache_op_fn_t cache_ops,
+                    ps_dma_man_t *dma_man)
 {
-    struct dma_allocator* dalloc;
+    struct dma_allocator *dalloc;
     assert(dma_man);
 
     dalloc = dma_allocator_init(morecore);

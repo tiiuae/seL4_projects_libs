@@ -45,17 +45,17 @@
 #define NPINS_PER_PORT  (8)
 #define NPINS_PER_BANK (NPORTS_PER_BANK * NPINS_PER_PORT)
 
-static int handle_vgpio_right_fault(struct device* d, vm_t* vm, fault_t* fault);
-static int handle_vgpio_left_fault(struct device* d, vm_t* vm, fault_t* fault);
+static int handle_vgpio_right_fault(struct device *d, vm_t *vm, fault_t *fault);
+static int handle_vgpio_left_fault(struct device *d, vm_t *vm, fault_t *fault);
 
 struct gpio_device {
     vm_t *vm;
     enum vacdev_action action;
-    void* regs[GPIO_NBANKS];
+    void *regs[GPIO_NBANKS];
     uint8_t granted_bf[GPIO_NBANKS][((NPINS_PER_BANK - 1 / 8) + 1)];
 };
 
-static const struct device* gpio_devices[] = {
+static const struct device *gpio_devices[] = {
     [GPIO_LEFT_BANK]  = &dev_gpio_left,
     [GPIO_RIGHT_BANK] = &dev_gpio_right,
     [GPIO_C2C_BANK]   = NULL,
@@ -81,8 +81,7 @@ const struct device dev_gpio_right = {
     .priv = NULL
 };
 
-static uint32_t
-_create_mask(uint8_t ac, int bits)
+static uint32_t _create_mask(uint8_t ac, int bits)
 {
     uint32_t mask = 0;
     while (ac) {
@@ -93,10 +92,9 @@ _create_mask(uint8_t ac, int bits)
     return mask;
 }
 
-static int
-handle_vgpio_fault(struct device* d, vm_t* vm, fault_t* fault, int bank)
+static int handle_vgpio_fault(struct device *d, vm_t *vm, fault_t *fault, int bank)
 {
-    struct gpio_device* gpio_device = (struct gpio_device*)d->priv;
+    struct gpio_device *gpio_device = (struct gpio_device *)d->priv;
     volatile uint32_t *reg;
     int offset;
     if (gpio_device->regs[bank] == NULL) {
@@ -109,7 +107,7 @@ handle_vgpio_fault(struct device* d, vm_t* vm, fault_t* fault, int bank)
 
     /* Gather fault information */
     offset = fault_get_address(fault) - d->pstart;
-    reg = (volatile uint32_t*)(gpio_device->regs[bank] + offset);
+    reg = (volatile uint32_t *)(gpio_device->regs[bank] + offset);
     if (fault_is_read(fault)) {
         fault_set_data(fault, *reg);
         DGPIO("[%s] pc 0x%08x | r 0x%08x:0x%08x\n", gpio_devices[bank]->name,
@@ -175,28 +173,27 @@ handle_vgpio_fault(struct device* d, vm_t* vm, fault_t* fault, int bank)
     return advance_fault(fault);
 }
 
-static int
-handle_vgpio_right_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_vgpio_right_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
     return handle_vgpio_fault(d, vm, fault, GPIO_RIGHT_BANK);
 }
 
-static int
-handle_vgpio_left_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_vgpio_left_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
     return handle_vgpio_fault(d, vm, fault, GPIO_LEFT_BANK);
 }
 
 
-struct gpio_device*
-vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac, enum vacdev_action action) {
-    struct gpio_device* gpio_device;
-    vspace_t* vmm_vspace;
+struct gpio_device *
+vm_install_ac_gpio(vm_t *vm, enum vacdev_default default_ac, enum vacdev_action action)
+{
+    struct gpio_device *gpio_device;
+    vspace_t *vmm_vspace;
     vmm_vspace = vm->vmm_vspace;
     uint8_t ac = (default_ac == VACDEV_DEFAULT_ALLOW) ? 0xff : 0x00;
     int i;
 
-    gpio_device = (struct gpio_device*)malloc(sizeof(*gpio_device));
+    gpio_device = (struct gpio_device *)malloc(sizeof(*gpio_device));
     if (gpio_device == NULL) {
         return NULL;
     }
@@ -227,8 +224,7 @@ vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac, enum vacdev_action 
     return gpio_device;
 }
 
-static int
-vm_gpio_config(struct gpio_device* gpio_device, gpio_id_t gpio_id, int provide)
+static int vm_gpio_config(struct gpio_device *gpio_device, gpio_id_t gpio_id, int provide)
 {
     int gpioport;
     int port, pin, bank;
@@ -245,14 +241,12 @@ vm_gpio_config(struct gpio_device* gpio_device, gpio_id_t gpio_id, int provide)
     return 0;
 }
 
-int
-vm_gpio_provide(struct gpio_device* gpio_device, gpio_id_t gpio_id)
+int vm_gpio_provide(struct gpio_device *gpio_device, gpio_id_t gpio_id)
 {
     return vm_gpio_config(gpio_device, gpio_id, 1);
 }
 
-int
-vm_gpio_restrict(struct gpio_device* gpio_device, gpio_id_t gpio_id)
+int vm_gpio_restrict(struct gpio_device *gpio_device, gpio_id_t gpio_id)
 {
     return vm_gpio_config(gpio_device, gpio_id, 0);
 }

@@ -10,8 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
-#ifndef SEL4ARM_VMM_TX1_DEVICES_H
-#define SEL4ARM_VMM_TX1_DEVICES_H
+#pragma once
 
 #include <sel4arm-vmm/plat/device_map.h>
 #include <sel4arm-vmm/vm.h>
@@ -19,5 +18,3 @@
 #define GIC_PADDR   0x50040000
 #define MAX_VIRQS   200
 extern const struct device dev_vram;
-
-#endif /* SEL4ARM_VMM_TX1_DEVICES_H */

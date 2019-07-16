@@ -29,5 +29,5 @@ struct generic_forward_cfg {
     forward_read_fn read_fn;
 };
 
- int vm_install_generic_forward_device(vm_t* vm, const struct device* d,
-                                        struct generic_forward_cfg cfg);
+int vm_install_generic_forward_device(vm_t *vm, const struct device *d,
+                                      struct generic_forward_cfg cfg);

@@ -38,7 +38,7 @@ typedef enum processor_mode {
 #define seL4_UnknownSyscall_ARG0 seL4_UnknownSyscall_R0
 
 static inline void sel4arch_set_bootargs(seL4_UserContext *regs, seL4_Word pc,
-                                        seL4_Word mach_type, seL4_Word atags)
+                                         seL4_Word mach_type, seL4_Word atags)
 {
     regs->r0 = 0;
     regs->r1 = mach_type;

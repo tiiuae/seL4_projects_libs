@@ -37,7 +37,7 @@ struct clock_reg {
 
 struct clock_data {
     int nregs;
-    struct clock_reg* regs;
+    struct clock_reg *regs;
 };
 
 struct clock_reg sclkmpll_data[] = {
@@ -288,7 +288,7 @@ const struct device dev_cmu_mem = {
     .priv = NULL
 };
 
-static const struct device* clock_devices[] = {
+static const struct device *clock_devices[] = {
     [CLKREGS_CPU  ] = &dev_cmu_cpu,
     [CLKREGS_CORE ] = &dev_cmu_core,
     [CLKREGS_ACP  ] = &dev_cmu_acp,
@@ -302,17 +302,18 @@ static const struct device* clock_devices[] = {
 };
 
 struct clock_device {
-    void* mask[NCLKREGS];
+    void *mask[NCLKREGS];
 };
 
 
-struct clock_device*
-vm_install_ac_clock(vm_t* vm, enum vacdev_default default_ac, enum vacdev_action action) {
-    struct clock_device* clkd;
+struct clock_device *
+vm_install_ac_clock(vm_t *vm, enum vacdev_default default_ac, enum vacdev_action action)
+{
+    struct clock_device *clkd;
     int i;
     uint8_t ac = (default_ac == VACDEV_DEFAULT_ALLOW) ? 0xff : 0x00;
     /* Initialise private data */
-    clkd = (struct clock_device*)malloc(sizeof(*clkd));
+    clkd = (struct clock_device *)malloc(sizeof(*clkd));
     if (clkd == NULL) {
         return NULL;
     }
@@ -338,17 +339,16 @@ vm_install_ac_clock(vm_t* vm, enum vacdev_default default_ac, enum vacdev_action
     return clkd;
 }
 
-int
-vm_clock_config(struct clock_device* clkd, enum clk_id clk_id, int grant)
+int vm_clock_config(struct clock_device *clkd, enum clk_id clk_id, int grant)
 {
-    struct clock_data* data = &clock_data[clk_id];
+    struct clock_data *data = &clock_data[clk_id];
     int i;
     assert(data);
     assert(data->nregs);
     for (i = 0; i < data->nregs; i++) {
         uint32_t *mask;
         uint32_t mask_val;
-        mask = (uint32_t*)(clkd->mask[data->regs[i].bank] + data->regs[i].offset);
+        mask = (uint32_t *)(clkd->mask[data->regs[i].bank] + data->regs[i].offset);
         /* MASK(x) does not handle 32 bit masks */
         mask_val = ((1UL << data->regs[i].bits) - 1) << data->regs[i].shift;
         if (grant) {
@@ -360,14 +360,12 @@ vm_clock_config(struct clock_device* clkd, enum clk_id clk_id, int grant)
     return 0;
 }
 
-int
-vm_clock_provide(struct clock_device* clkd, enum clk_id clk_id)
+int vm_clock_provide(struct clock_device *clkd, enum clk_id clk_id)
 {
     return vm_clock_config(clkd, clk_id, 1);
 }
 
-int
-vm_clock_restrict(struct clock_device* clkd, enum clk_id clk_id)
+int vm_clock_restrict(struct clock_device *clkd, enum clk_id clk_id)
 {
     return vm_clock_config(clkd, clk_id, 0);
 }

@@ -21,7 +21,7 @@
 static int io_port_compare_by_range(const void *pkey, const void *pelem)
 {
     unsigned int key = (unsigned int)pkey;
-    const ioport_entry_t *entry = (const ioport_entry_t*)pelem;
+    const ioport_entry_t *entry = (const ioport_entry_t *)pelem;
     const ioport_range_t *elem = &entry->range;
     if (key < elem->start) {
         return -1;
@@ -32,22 +32,23 @@ static int io_port_compare_by_range(const void *pkey, const void *pelem)
     return 0;
 }
 
-static int io_port_compare_by_start (const void *a, const void *b)
+static int io_port_compare_by_start(const void *a, const void *b)
 {
-    const ioport_entry_t *a_entry = (const ioport_entry_t*)a;
+    const ioport_entry_t *a_entry = (const ioport_entry_t *)a;
     const ioport_range_t *a_range = &a_entry->range;
-    const ioport_entry_t *b_entry = (const ioport_entry_t*)b;
+    const ioport_entry_t *b_entry = (const ioport_entry_t *)b;
     const ioport_range_t *b_range = &b_entry->range;
     return a_range->start - b_range->start;
 }
 
 static ioport_entry_t *search_port(vmm_io_port_list_t *io_port, unsigned int port_no)
 {
-    return (ioport_entry_t*)bsearch((void*)(uintptr_t)port_no, io_port->ioports, io_port->num_ioports, sizeof(ioport_entry_t), io_port_compare_by_range);
+    return (ioport_entry_t *)bsearch((void *)(uintptr_t)port_no, io_port->ioports, io_port->num_ioports,
+                                     sizeof(ioport_entry_t), io_port_compare_by_range);
 }
 
 /* Debug helper function for port no. */
-static const char* vmm_debug_io_portno_desc(vmm_io_port_list_t *io_port, int port_no)
+static const char *vmm_debug_io_portno_desc(vmm_io_port_list_t *io_port, int port_no)
 {
     ioport_entry_t *port = search_port(io_port, port_no);
     return port ? port->interface.desc : "Unknown IO Port";
@@ -105,7 +106,9 @@ static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_entry_t port)
     for (int i = 0; i < io_list->num_ioports; i++) {
         if (io_list->ioports[i].range.end > port.range.start && io_list->ioports[i].range.start < port.range.end) {
             ZF_LOGE("Requested ioport range 0x%x-0x%x for %s overlaps with existing range 0x%x-0x%x for %s",
-                    port.range.start, port.range.end, port.interface.desc ? port.interface.desc : "Unknown IO Port", io_list->ioports[i].range.start, io_list->ioports[i].range.end, io_list->ioports[i].interface.desc ? io_list->ioports[i].interface.desc : "Unknown IO Port");
+                    port.range.start, port.range.end, port.interface.desc ? port.interface.desc : "Unknown IO Port",
+                    io_list->ioports[i].range.start, io_list->ioports[i].range.end,
+                    io_list->ioports[i].interface.desc ? io_list->ioports[i].interface.desc : "Unknown IO Port");
             return -1;
         }
     }

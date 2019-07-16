@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4ARM_VMM_ATAGS_H
-#define SEL4ARM_VMM_ATAGS_H
+#pragma once
 
 #include <stdint.h>
 
@@ -43,9 +42,9 @@ struct atag_hdr {
  */
 struct atag_list {
 /// The location of the atag in memory
-    struct atag_hdr* hdr;
+    struct atag_hdr *hdr;
 /// Next atag in the list
-    struct atag_list* next;
+    struct atag_list *next;
 };
 
 /**
@@ -53,14 +52,14 @@ struct atag_list {
  * @return An initialised list of atags.
  *         The list Will contain a structureless CORE tag
  */
-struct atag_list* atags_new(void);
+struct atag_list *atags_new(void);
 
 /**
  * Retrieve the size of an atag in bytes
  * @param[in] atag  The atag in question
  * @return          The size (in bytes) of the provided atag
  */
-int atags_size_bytes(struct atag_list* atag);
+int atags_size_bytes(struct atag_list *atag);
 
 /**
  * Adds the CORE atag.
@@ -73,7 +72,7 @@ int atags_size_bytes(struct atag_list* atag);
  * @param[in] rootdev  atag member data: The device that hold the root filesystem
  * @return             0 on success
  */
-int atags_add_core(struct atag_list* atags,
+int atags_add_core(struct atag_list *atags,
                    uint32_t flags, uint32_t pagesize, uint32_t rootdev);
 
 /**
@@ -83,7 +82,7 @@ int atags_add_core(struct atag_list* atags,
  * @param[in] arg      a string to add to the command line arguments
  * @return             0 on success
  */
-int atags_append_cmdline(struct atag_list* atags, const char* arg);
+int atags_append_cmdline(struct atag_list *atags, const char *arg);
 
 /**
  * Adds a memory region to the atags
@@ -92,7 +91,4 @@ int atags_append_cmdline(struct atag_list* atags, const char* arg);
  * @param[in] start    atag member data: The start address of memory
  * @return             0 on success
  */
-int atags_add_mem(struct atag_list* atags, uint32_t size, uint32_t start);
-
-
-#endif /* SEL4ARM_VMM_ATAGS_H */
+int atags_add_mem(struct atag_list *atags, uint32_t size, uint32_t start);

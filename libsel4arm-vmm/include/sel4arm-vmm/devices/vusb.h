@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4ARM_VMM_DEVICES_VUSB_H
-#define SEL4ARM_VMM_DEVICES_VUSB_H
+#pragma once
 
 #include <autoconf.h>
 #include <sel4arm-vmm/gen_config.h>
@@ -39,7 +38,7 @@ typedef struct vusb_device vusb_device_t;
  *                     notification capability.
  * @return             A handle to the virtual usb device, or NULL on failure
  */
-vusb_device_t* vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase,
+vusb_device_t *vm_install_vusb(vm_t *vm, usb_host_t *hcd, uintptr_t pbase,
                                int virq, seL4_CPtr vmm_ncap, seL4_CPtr vm_ncap,
                                int badge);
 
@@ -51,7 +50,6 @@ vusb_device_t* vm_install_vusb(vm_t* vm, usb_host_t* hcd, uintptr_t pbase,
  * vm_install_vusb function.
  * @param[in] vusb  A handle to a virtual usb device
  */
-void vm_vusb_notify(vusb_device_t* vusb);
+void vm_vusb_notify(vusb_device_t *vusb);
 
 #endif /* CONFIG_LIB_USB */
-#endif /* SEL4ARM_VMM_DEVICES_VUSB_H */

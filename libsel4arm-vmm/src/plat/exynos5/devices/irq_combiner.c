@@ -43,31 +43,31 @@ struct irq_combiner_map {
 
 struct irq_group_data {
     combiner_irq_handler_fn cb;
-    void* priv;
+    void *priv;
 };
 
 struct combiner_data {
     irq_combiner_t pcombiner;
-    struct irq_group_data* data[32];
+    struct irq_group_data *data[32];
 };
 
 /* For virtualisation */
 struct virq_combiner {
     /* What the VM reads */
-    struct irq_combiner_map* vregs;
+    struct irq_combiner_map *vregs;
 };
 
 struct combiner_data _combiner;
 
-static inline struct virq_combiner* vcombiner_priv_get_vcombiner(void* priv) {
-    return (struct virq_combiner*)priv;
+static inline struct virq_combiner *vcombiner_priv_get_vcombiner(void *priv)
+{
+    return (struct virq_combiner *)priv;
 }
 
-void
-vm_combiner_irq_handler(vm_t* vm, int irq)
+void vm_combiner_irq_handler(vm_t *vm, int irq)
 {
-    struct combiner_data* combiner = &_combiner;
-    struct combiner_irq* cirq;
+    struct combiner_data *combiner = &_combiner;
+    struct combiner_irq *cirq;
     uint32_t imsr;
     int i, g;
 
@@ -79,7 +79,7 @@ vm_combiner_irq_handler(vm_t* vm, int irq)
     irq_combiner_enable_irq(&combiner->pcombiner, COMBINER_IRQ(g, i));
 
     /* Allocate a combiner IRQ structure */
-    cirq = (struct combiner_irq*)malloc(sizeof(*cirq));
+    cirq = (struct combiner_irq *)malloc(sizeof(*cirq));
     assert(cirq);
     if (!cirq) {
         printf("No memory to allocate combiner IRQ\n");
@@ -94,13 +94,12 @@ vm_combiner_irq_handler(vm_t* vm, int irq)
     combiner->data[g][i].cb(cirq);
 }
 
-void
-combiner_irq_ack(struct combiner_irq* cirq)
+void combiner_irq_ack(struct combiner_irq *cirq)
 {
-    struct combiner_data* combiner;
+    struct combiner_data *combiner;
     int g, i;
     assert(cirq->combiner_priv);
-    combiner = (struct combiner_data*)cirq->combiner_priv;
+    combiner = (struct combiner_data *)cirq->combiner_priv;
     g = cirq->group;
     i = cirq->index;
     /* Re-enable the IRQ */
@@ -109,10 +108,9 @@ combiner_irq_ack(struct combiner_irq* cirq)
 }
 
 
-int
-vmm_register_combiner_irq(int group, int idx, combiner_irq_handler_fn cb, void* priv)
+int vmm_register_combiner_irq(int group, int idx, combiner_irq_handler_fn cb, void *priv)
 {
-    struct combiner_data* combiner = &_combiner;
+    struct combiner_data *combiner = &_combiner;
     assert(0 <= group && group < 32);
     assert(0 <= idx && idx < 8);
 
@@ -127,7 +125,7 @@ vmm_register_combiner_irq(int group, int idx, combiner_irq_handler_fn cb, void* 
         }
 
         memset(addr, 0, sizeof(struct irq_group_data) * 8);
-        combiner->data[group] = (struct irq_group_data*)addr;
+        combiner->data[group] = (struct irq_group_data *)addr;
 
         DCOMBINER("Registered combiner IRQ (%d, %d)\n", group, idx);
     }
@@ -141,10 +139,9 @@ vmm_register_combiner_irq(int group, int idx, combiner_irq_handler_fn cb, void* 
     return 0;
 }
 
-static int
-vcombiner_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int vcombiner_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
-    struct virq_combiner* vcombiner;
+    struct virq_combiner *vcombiner;
     int offset;
     int gidx;
     uint32_t mask;
@@ -154,7 +151,7 @@ vcombiner_fault(struct device* d, vm_t* vm, fault_t* fault)
     vcombiner = vcombiner_priv_get_vcombiner(d->priv);
     mask = fault_get_data_mask(fault);
     offset = fault_get_address(fault) - d->pstart;
-    reg = (uint32_t*)( (uintptr_t)vcombiner->vregs + offset );
+    reg = (uint32_t *)((uintptr_t)vcombiner->vregs + offset);
     gidx = offset / sizeof(struct combiner_gmap);
     assert(offset >= 0 && offset < sizeof(*vcombiner->vregs));
 
@@ -194,7 +191,7 @@ vcombiner_fault(struct device* d, vm_t* vm, fault_t* fault)
             return ignore_fault(fault);
         case 2:
         case 3:
-            /* Read only registers */
+        /* Read only registers */
         default:
             DCOMBINER("Error handling register access at offset 0x%x\n", offset);
         }
@@ -216,12 +213,11 @@ const struct device dev_irq_combiner = {
     .priv = NULL
 };
 
-int
-vm_install_vcombiner(vm_t* vm)
+int vm_install_vcombiner(vm_t *vm)
 {
     struct device combiner;
-    struct virq_combiner* vcombiner;
-    void* addr;
+    struct virq_combiner *vcombiner;
+    void *addr;
     int err;
 
     err = irq_combiner_init(IRQ_COMBINER0, vm->io_ops, &_combiner.pcombiner);
@@ -243,8 +239,8 @@ vm_install_vcombiner(vm_t* vm)
         return -1;
     }
     memset(addr, 0, 0x1000);
-    vcombiner->vregs = (struct irq_combiner_map*)addr;
-    combiner.priv = (void*)vcombiner;
+    vcombiner->vregs = (struct irq_combiner_map *)addr;
+    combiner.priv = (void *)vcombiner;
     err = vm_add_device(vm, &combiner);
     if (err) {
         free(vcombiner);

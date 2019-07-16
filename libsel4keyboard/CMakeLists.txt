@@ -16,7 +16,7 @@ project(libsel4keyboard C)
 
 # Exclude this project in ARM builds as it will have no sources and thus not be a valid library
 
-if (KernelArchX86)
+if(KernelArchX86)
 
     set(deps src/arch-x86/keyboard.c src/codes.c)
 

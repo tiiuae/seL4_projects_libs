@@ -34,9 +34,9 @@ typedef struct guest_vspace {
 #endif
 } guest_vspace_t;
 
-static int
-guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_CapRights_t rights,
-        int cacheable, size_t size_bits) {
+static int guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_CapRights_t rights,
+                            int cacheable, size_t size_bits)
+{
     int error;
     /* perfrom the guest mapping */
     error = sel4utils_map_page_pd(vspace, cap, vaddr, rights, cacheable, size_bits);
@@ -48,7 +48,7 @@ guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_CapRights_t 
     /* this type cast works because the alloc data was at the start of the struct
      * so it has the same address.
      * This conversion is guaranteed to work by the C standard */
-    guest_vspace_t *guest_vspace = (guest_vspace_t*) data;
+    guest_vspace_t *guest_vspace = (guest_vspace_t *) data;
     /* set the mapping bit */
     guest_vspace->done_mapping = 1;
     cspacepath_t orig_path;
@@ -113,7 +113,7 @@ int vmm_get_guest_vspace(vspace_t *loader, vspace_t *new_vspace, vka_t *vka, seL
 int vmm_guest_vspace_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr iospace)
 {
     struct sel4utils_alloc_data *data = get_alloc_data(vspace);
-    guest_vspace_t *guest_vspace = (guest_vspace_t*) data;
+    guest_vspace_t *guest_vspace = (guest_vspace_t *) data;
 
     assert(!guest_vspace->done_mapping);
 

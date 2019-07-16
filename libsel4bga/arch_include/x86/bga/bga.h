@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef _LIBGA_BGA_H_
-#define _LIBGA_BGA_H_
+#pragma once
 
 #include <stdint.h>
 
@@ -27,8 +26,8 @@ typedef struct bga *bga_p;
  *  ioport_read - Callback for reading from an IO port.
  */
 bga_p bga_init(void *framebuffer,
-    void (*ioport_write)(uint16_t port, uint16_t value),
-    uint16_t (*ioport_read)(uint16_t port));
+               void (*ioport_write)(uint16_t port, uint16_t value),
+               uint16_t (*ioport_read)(uint16_t port));
 
 /* Destroy and clean up resources associated with an initialised device.
  * Returns 0 on success, non-zero on failure.
@@ -45,7 +44,7 @@ uint16_t bga_version(bga_p device);
  *  bpp - The bits per pixel.
  */
 int bga_set_mode(bga_p device, unsigned int width, unsigned int height,
-    unsigned int bpp);
+                 unsigned int bpp);
 
 /* Set the value of the pixel at (x, y). How value is interpreted is dependent
  * on the current bits per pixel configuration. To know how to pass this value
@@ -65,5 +64,3 @@ int bga_set_pixel(bga_p device, unsigned int x, unsigned int y, char *value);
  * Bochs documentation for formatting details.
  */
 void *bga_get_framebuffer(bga_p device);
-
-#endif /* !_LIBBGA_BGA_H_ */

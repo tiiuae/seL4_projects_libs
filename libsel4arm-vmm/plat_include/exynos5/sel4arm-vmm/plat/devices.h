@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4ARM_VMM_EXYNOS_DEVICES_H
-#define SEL4ARM_VMM_EXYNOS_DEVICES_H
+#pragma once
 
 #include <sel4arm-vmm/plat/device_map.h>
 #include <sel4arm-vmm/vm.h>
@@ -25,20 +24,20 @@ extern const struct device dev_vram;
  * The caller is responsible for acknowledging the IRQ once this function
  * returns
  */
-int vm_install_vcombiner(vm_t* vm);
-void vm_combiner_irq_handler(vm_t* vm, int irq);
+int vm_install_vcombiner(vm_t *vm);
+void vm_combiner_irq_handler(vm_t *vm, int irq);
 
-typedef int (*vm_power_cb)(vm_t* vm, void* token);
-int vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
-                      vm_power_cb reboot_cb, void* reboot_token);
+typedef int (*vm_power_cb)(vm_t *vm, void *token);
+int vm_install_vpower(vm_t *vm, vm_power_cb shutdown_cb, void *shutdown_token,
+                      vm_power_cb reboot_cb, void *reboot_token);
 
-int vm_install_vsysreg(vm_t* vm);
-int vm_install_vcmu_top(vm_t* vm);
-int vm_install_vgpio_left(vm_t* vm);
-int vm_install_vgpio_right(vm_t* vm);
+int vm_install_vsysreg(vm_t *vm);
+int vm_install_vcmu_top(vm_t *vm);
+int vm_install_vgpio_left(vm_t *vm);
+int vm_install_vgpio_right(vm_t *vm);
 
 extern const struct device dev_vmct_timer;
-int vm_install_vmct(vm_t* vm);
+int vm_install_vmct(vm_t *vm);
 
 const struct device dev_msh0;
 const struct device dev_msh2;
@@ -58,7 +57,7 @@ extern const struct device dev_uart3;
  * @param[in] d   A description of the UART device
  * @return        0 on success
  */
-int vm_install_ac_uart(vm_t* vm, const struct device* d);
+int vm_install_ac_uart(vm_t *vm, const struct device *d);
 
 /**
  * Installs the default console device. Characters written to the
@@ -67,7 +66,7 @@ int vm_install_ac_uart(vm_t* vm, const struct device* d);
  * @param[in] vm The VM in which to install the vconsole device
  * @return       0 on success
  */
-int vm_install_vconsole(vm_t* vm);
+int vm_install_vconsole(vm_t *vm);
 
 extern const struct device dev_acp;
 extern const struct device dev_i2c1;
@@ -105,5 +104,3 @@ extern const struct device dev_ps_mdma0;
 extern const struct device dev_ps_mdma1;
 extern const struct device dev_ps_pwm_timer;
 extern const struct device dev_ps_wdt_timer;
-
-#endif /* SEL4ARM_VMM_EXYNOS_DEVICES_H */

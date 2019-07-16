@@ -14,7 +14,7 @@ cmake_minimum_required(VERSION 3.7.2)
 
 # Exclude this project in ARM builds as it will have no sources and thus not be a valid library
 
-if (KernelArchX86)
+if(KernelArchX86)
 
     project(libsel4bga C)
 

@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_GPL)
  */
-#ifndef __VMM_VCHAN_COMMON_INTF
-#define __VMM_VCHAN_COMMON_INTF
+#pragma once
 
 #define VMM_MAGIC 'V'
 #define NUM_VMM_OPS 50
@@ -70,5 +69,3 @@ typedef struct vmm_args {
     char ret_data[DRIVER_ARGS_MAX_SIZE];
     vmm_datatype_t datatype;
 } vmm_args_t;
-
-#endif

@@ -9,11 +9,8 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4ARM_VMM_DEVICES_VGIC_H
-#define SEL4ARM_VMM_DEVICES_VGIC_H
+#pragma once
 
 #include <sel4arm-vmm/vm.h>
 
-int vm_install_vgic(vm_t* vm);
-
-#endif /* SEL4ARM_VMM_DEVICES_VGIC_H */
+int vm_install_vgic(vm_t *vm);

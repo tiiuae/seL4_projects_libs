@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_GPL)
  */
-#ifndef _VMM_DRIVER
-#define _VMM_DRIVER
+#pragma once
 
 #include <linux/init.h>
 #include <linux/module.h>
@@ -49,5 +48,3 @@ int new_event_instance(int domain, int port, int eventfd, vchan_alert_t *event_m
 void rem_event_instance(int domain, int port);
 
 int wait_for_event(int domain, int port, int type, size_t request_size);
-
-#endif

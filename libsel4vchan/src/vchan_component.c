@@ -21,9 +21,11 @@ static libvchan_t *vchan_init(int domain, int port, int server);
     Set up the vchan connection interface
     Currently, the number of vchan connection interfaces allowed is hardcoded to 1 per component
 */
-libvchan_t *link_vchan_comp(libvchan_t *ctrl, camkes_vchan_con_t *vchan_com) {
-    if(ctrl == NULL)
+libvchan_t *link_vchan_comp(libvchan_t *ctrl, camkes_vchan_con_t *vchan_com)
+{
+    if (ctrl == NULL) {
         return NULL;
+    }
 
     int res;
     ctrl->con = vchan_com;
@@ -36,7 +38,7 @@ libvchan_t *link_vchan_comp(libvchan_t *ctrl, camkes_vchan_con_t *vchan_com) {
     };
 
     res = ctrl->con->connect(t);
-    if(res < 0) {
+    if (res < 0) {
         free(ctrl);
         return NULL;
     }
@@ -46,23 +48,26 @@ libvchan_t *link_vchan_comp(libvchan_t *ctrl, camkes_vchan_con_t *vchan_com) {
 /*
     Create a new vchan server instance
 */
-libvchan_t *libvchan_server_init(int domain, int port, size_t read_min, size_t write_min) {
+libvchan_t *libvchan_server_init(int domain, int port, size_t read_min, size_t write_min)
+{
     return vchan_init(domain, port, 1);
 }
 
 /*
     Create a new vchan client instance
 */
-libvchan_t *libvchan_client_init(int domain, int port) {
+libvchan_t *libvchan_client_init(int domain, int port)
+{
     return vchan_init(domain, port, 0);
 }
 
 /*
     Create a new client/server instance
 */
-libvchan_t *vchan_init(int domain, int port, int server) {
+libvchan_t *vchan_init(int domain, int port, int server)
+{
     libvchan_t *new_connection = malloc(sizeof(libvchan_t));
-    if(new_connection == NULL) {
+    if (new_connection == NULL) {
         return NULL;
     }
 
@@ -78,39 +83,44 @@ libvchan_t *vchan_init(int domain, int port, int server) {
 /*
     Reading and writing to the vchan
 */
-int libvchan_write(libvchan_t *ctrl, const void *data, size_t size) {
+int libvchan_write(libvchan_t *ctrl, const void *data, size_t size)
+{
     return libvchan_readwrite(ctrl, (void *) data, size, VCHAN_SEND, VCHAN_STREAM);
 }
 
-int libvchan_read(libvchan_t *ctrl, void *data, size_t size) {
+int libvchan_read(libvchan_t *ctrl, void *data, size_t size)
+{
     return libvchan_readwrite(ctrl, data, size, VCHAN_RECV, VCHAN_STREAM);
 }
 
-int libvchan_send(libvchan_t *ctrl, const void *data, size_t size) {
+int libvchan_send(libvchan_t *ctrl, const void *data, size_t size)
+{
     return libvchan_readwrite(ctrl, (void *) data, size, VCHAN_SEND, VCHAN_NOSTREAM);
 }
 
-int libvchan_recv(libvchan_t *ctrl, void *data, size_t size) {
+int libvchan_recv(libvchan_t *ctrl, void *data, size_t size)
+{
     return libvchan_readwrite(ctrl, data, size, VCHAN_RECV, VCHAN_NOSTREAM);
 }
 
 /*
     Return correct buffer for given vchan read/write action
 */
-vchan_buf_t *get_vchan_buf(vchan_ctrl_t *args, camkes_vchan_con_t *c, int action) {
+vchan_buf_t *get_vchan_buf(vchan_ctrl_t *args, camkes_vchan_con_t *c, int action)
+{
     intptr_t buf_pos = c->get_buf(*args, action);
     /* Check that a buffer was retrieved */
-    if(buf_pos == 0) {
+    if (buf_pos == 0) {
         return NULL;
     }
 
-    if(c->data_buf == NULL) {
+    if (c->data_buf == NULL) {
         return NULL;
     }
 
     void *addr = c->data_buf;
     addr += buf_pos;
-    vchan_buf_t *b = (vchan_buf_t *) (addr);
+    vchan_buf_t *b = (vchan_buf_t *)(addr);
 
     return b;
 }
@@ -119,7 +129,8 @@ vchan_buf_t *get_vchan_buf(vchan_ctrl_t *args, camkes_vchan_con_t *c, int action
     Helper function
     Allows connected components to get correct vchan buffer for read/write
 */
-vchan_buf_t *get_vchan_ctrl_databuf(libvchan_t *ctrl, int action) {
+vchan_buf_t *get_vchan_ctrl_databuf(libvchan_t *ctrl, int action)
+{
     vchan_ctrl_t args = {
         .domain = ctrl->con->source_dom_number,
         .dest = ctrl->domain_num,
@@ -129,23 +140,26 @@ vchan_buf_t *get_vchan_ctrl_databuf(libvchan_t *ctrl, int action) {
     return get_vchan_buf(&args, ctrl->con, action);
 }
 
-static size_t get_actionsize(int type, size_t size, vchan_buf_t *buf) {
+static size_t get_actionsize(int type, size_t size, vchan_buf_t *buf)
+{
     assert(buf != NULL);
     size_t filled = abs(buf->write_pos - buf->read_pos);
-    if(type == VCHAN_SEND)
+    if (type == VCHAN_SEND) {
         return MIN(VCHAN_BUF_SIZE - filled, size);
-    else
+    } else {
         return MIN(filled, size);
+    }
 }
 
 /*
     Perform a vchan read/write action into a given buffer
      This function is intended for non Init components, Init components have a different method
 */
-int libvchan_readwrite(libvchan_t *ctrl, void *data, size_t size, int cmd, int stream) {
+int libvchan_readwrite(libvchan_t *ctrl, void *data, size_t size, int cmd, int stream)
+{
     int *update;
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, cmd);
-    if(b == NULL) {
+    if (b == NULL) {
         return -1;
     }
 
@@ -160,7 +174,7 @@ int libvchan_readwrite(libvchan_t *ctrl, void *data, size_t size, int cmd, int s
         Amount of bytes in buffer is given by the difference between read_pos and write_pos
             if write_pos > read_pos, there is data yet to be read
     */
-    if(cmd == VCHAN_SEND) {
+    if (cmd == VCHAN_SEND) {
         update = &b->write_pos;
     } else {
         update = &b->read_pos;
@@ -168,10 +182,10 @@ int libvchan_readwrite(libvchan_t *ctrl, void *data, size_t size, int cmd, int s
 
 
     size_t data_sz = size;
-    while(data_sz > 0) {
+    while (data_sz > 0) {
         size_t call_size = MIN(data_sz, VCHAN_BUF_SIZE);
         size_t ssize = get_actionsize(cmd, call_size, b);
-        while(ssize == 0) {
+        while (ssize == 0) {
             ctrl->con->wait();
             ssize = get_actionsize(cmd, call_size, b);
         }
@@ -187,14 +201,14 @@ int libvchan_readwrite(libvchan_t *ctrl, void *data, size_t size, int cmd, int s
         off_t start = (*update % VCHAN_BUF_SIZE);
         off_t remain = 0;
 
-        if(start + call_size > VCHAN_BUF_SIZE) {
+        if (start + call_size > VCHAN_BUF_SIZE) {
             remain = (start + call_size) - VCHAN_BUF_SIZE;
             call_size -= remain;
         }
 
         void *dbuf = &b->sync_data;
 
-        if(cmd == VCHAN_SEND) {
+        if (cmd == VCHAN_SEND) {
             /*
                 src = address given by function caller
                 dest = vchan dataport
@@ -220,7 +234,7 @@ int libvchan_readwrite(libvchan_t *ctrl, void *data, size_t size, int cmd, int s
             If stream, we have written as much data as we can in one pass.
                 Otherwise, continue to write data and block block if the buffer is full
         */
-        if(stream) {
+        if (stream) {
             ctrl->con->alert();
             return (call_size + remain);
         } else {
@@ -238,11 +252,12 @@ int libvchan_readwrite(libvchan_t *ctrl, void *data, size_t size, int cmd, int s
 /*
     Wait for data to arrive to a component from a given vchan
 */
-int libvchan_wait(libvchan_t *ctrl) {
+int libvchan_wait(libvchan_t *ctrl)
+{
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
     assert(b != NULL);
     size_t filled = abs(b->write_pos - b->read_pos);
-    while(filled == 0) {
+    while (filled == 0) {
         ctrl->con->wait();
         b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
         filled = abs(b->write_pos - b->read_pos);
@@ -251,7 +266,8 @@ int libvchan_wait(libvchan_t *ctrl) {
     return 0;
 }
 
-void libvchan_close(libvchan_t *ctrl) {
+void libvchan_close(libvchan_t *ctrl)
+{
     vchan_connect_t t = {
         .v.domain = ctrl->con->source_dom_number,
         .v.dest = ctrl->domain_num,
@@ -262,7 +278,8 @@ void libvchan_close(libvchan_t *ctrl) {
     ctrl->con->disconnect(t);
 }
 
-int libvchan_is_open(libvchan_t *ctrl) {
+int libvchan_is_open(libvchan_t *ctrl)
+{
     vchan_ctrl_t args = {
         .domain = ctrl->con->source_dom_number,
         .dest = ctrl->domain_num,
@@ -273,8 +290,9 @@ int libvchan_is_open(libvchan_t *ctrl) {
 }
 
 /* Returns nonzero if the peer has closed connection */
-int libvchan_is_eof(libvchan_t *ctrl) {
-    if(libvchan_is_open(ctrl) != 1) {
+int libvchan_is_eof(libvchan_t *ctrl)
+{
+    if (libvchan_is_open(ctrl) != 1) {
         return 1;
     }
     return 0;
@@ -283,7 +301,8 @@ int libvchan_is_eof(libvchan_t *ctrl) {
 /*
     How much data can be read from the vchan
 */
-int libvchan_data_ready(libvchan_t *ctrl) {
+int libvchan_data_ready(libvchan_t *ctrl)
+{
     vchan_buf_t *b = get_vchan_ctrl_databuf(ctrl, VCHAN_RECV);
     assert(b != NULL);
     size_t filled = abs(b->write_pos - b->read_pos);
@@ -294,8 +313,9 @@ int libvchan_data_ready(libvchan_t *ctrl) {
 /*
     How much data can be written to the vchan
 */
-int libvchan_buffer_space(libvchan_t *ctrl) {
-    if(libvchan_is_open(ctrl) != 1) {
+int libvchan_buffer_space(libvchan_t *ctrl)
+{
+    if (libvchan_is_open(ctrl) != 1) {
         return 0;
     }
 

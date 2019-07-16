@@ -28,21 +28,20 @@
 struct sysreg_priv {
     struct dma *dma_list;
     vm_t *vm;
-    void* regs;
+    void *regs;
 };
 
-static int
-handle_vsysreg_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_vsysreg_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
-    struct sysreg_priv* sysreg_data = (struct sysreg_priv*)d->priv;
+    struct sysreg_priv *sysreg_data = (struct sysreg_priv *)d->priv;
     volatile uint32_t *reg;
     int offset;
 
     /* Gather fault information */
     offset = fault_get_address(fault) - d->pstart;
-    reg = (uint32_t*)(sysreg_data->regs + offset);
+    reg = (uint32_t *)(sysreg_data->regs + offset);
     /* Handle the fault */
-    reg = (volatile uint32_t*)(sysreg_data->regs + offset);
+    reg = (volatile uint32_t *)(sysreg_data->regs + offset);
     if (fault_is_read(fault)) {
         fault_set_data(fault, *reg);
         DSYSREG("[%s] pc0x%x| r0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
@@ -64,12 +63,11 @@ const struct device dev_sysreg = {
     .priv = NULL
 };
 
-int
-vm_install_vsysreg(vm_t* vm)
+int vm_install_vsysreg(vm_t *vm)
 {
     struct sysreg_priv *sysreg_data;
     struct device d;
-    vspace_t* vmm_vspace;
+    vspace_t *vmm_vspace;
     int err;
 
     d = dev_sysreg;

@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4ARM_VMM_DEVICES_H
-#define SEL4ARM_VMM_DEVICES_H
+#pragma once
 
 #include <stdint.h>
 
@@ -52,16 +51,16 @@ struct device {
 /// Logical identifier for internal use
     enum devid devid;
 /// A string representation of the device. Useful for debugging
-    const char* name;
+    const char *name;
 /// The physical address of the device */
     seL4_Word pstart;
 /// Device mapping size */
     seL4_Word size;
 
 /// Fault handler */
-    int (*handle_page_fault)(struct device* d, vm_t* vm, fault_t* fault);
+    int (*handle_page_fault)(struct device *d, vm_t *vm, fault_t *fault);
 /// device emulation private data */
-    void* priv;
+    void *priv;
 };
 
 /**
@@ -80,7 +79,7 @@ struct clock_device;
  * @param[in] device A description of the device
  * @return           0 on success
  */
-int vm_install_passthrough_device(vm_t* vm, const struct device* device);
+int vm_install_passthrough_device(vm_t *vm, const struct device *device);
 
 /**
  * Install a device backed by ram into a VM
@@ -88,7 +87,7 @@ int vm_install_passthrough_device(vm_t* vm, const struct device* device);
  * @param[in] device A description of the device
  * @return           0 on success
  */
-int vm_install_ram_only_device(vm_t *vm, const struct device* device);
+int vm_install_ram_only_device(vm_t *vm, const struct device *device);
 
 /**
  * Install a passthrough device into a VM, but trap and print all access
@@ -96,7 +95,7 @@ int vm_install_ram_only_device(vm_t *vm, const struct device* device);
  * @param[in] device A description of the device
  * @return           0 on success
  */
-int vm_install_listening_device(vm_t* vm, const struct device* device);
+int vm_install_listening_device(vm_t *vm, const struct device *device);
 
 /**
  * Install a device into the VM and call its associated fault handler on access
@@ -104,7 +103,7 @@ int vm_install_listening_device(vm_t* vm, const struct device* device);
  * @param[in] device A description of the device
  * @return           0 on success
  */
-int vm_install_emulated_device(vm_t* vm, const struct device *device);
+int vm_install_emulated_device(vm_t *vm, const struct device *device);
 
 
 /**
@@ -115,7 +114,7 @@ int vm_install_emulated_device(vm_t* vm, const struct device *device);
  * @param[in] device A description of the device
  * @return           0 on success
  */
-int vm_add_device(vm_t* vm, const struct device* d);
+int vm_add_device(vm_t *vm, const struct device *d);
 
 /**
  * Map a given frame cap into a VM's IPA.
@@ -160,7 +159,7 @@ enum vacdev_action {
  * @param[in] action Action to take when access is violated.
  * @return           0 on success
  */
-int vm_install_generic_ac_device(vm_t* vm, const struct device* d, void* mask,
+int vm_install_generic_ac_device(vm_t *vm, const struct device *d, void *mask,
                                  size_t size, enum vacdev_action action);
 /**
  * Install a GPIO access control
@@ -170,7 +169,7 @@ int vm_install_generic_ac_device(vm_t* vm, const struct device* d, void* mask,
  * @return               A handle to the GPIO Access control device, NULL on
  *                       failure
  */
-struct gpio_device* vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac,
+struct gpio_device *vm_install_ac_gpio(vm_t *vm, enum vacdev_default default_ac,
                                        enum vacdev_action action);
 
 /**
@@ -179,7 +178,7 @@ struct gpio_device* vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac,
  * @param[in] gpio_id      The ID of the GPIO to provide access to
  * @return                 0 on success
  */
-int vm_gpio_provide(struct gpio_device* gpio_device, gpio_id_t gpio_id);
+int vm_gpio_provide(struct gpio_device *gpio_device, gpio_id_t gpio_id);
 
 /**
  * Restrict GPIO pin access to the VM
@@ -187,7 +186,7 @@ int vm_gpio_provide(struct gpio_device* gpio_device, gpio_id_t gpio_id);
  * @param[in] gpio_id      The ID of the GPIO to deny access to
  * @return                 0 on success
  */
-int vm_gpio_restrict(struct gpio_device* gpio_device, gpio_id_t gpio_id);
+int vm_gpio_restrict(struct gpio_device *gpio_device, gpio_id_t gpio_id);
 
 
 /**** CLOCK ****/
@@ -200,7 +199,7 @@ int vm_gpio_restrict(struct gpio_device* gpio_device, gpio_id_t gpio_id);
  * @return               A handle to the GPIO Access control device, NULL on
  *                       failure
  */
-struct clock_device* vm_install_ac_clock(vm_t* vm, enum vacdev_default default_ac,
+struct clock_device *vm_install_ac_clock(vm_t *vm, enum vacdev_default default_ac,
                                          enum vacdev_action action);
 
 /**
@@ -209,7 +208,7 @@ struct clock_device* vm_install_ac_clock(vm_t* vm, enum vacdev_default default_a
  * @param[in] clk_id        The ID of the clock to provide access to
  * @return                  0 on success
  */
-int vm_clock_provide(struct clock_device* clock_device, enum clk_id clk_id);
+int vm_clock_provide(struct clock_device *clock_device, enum clk_id clk_id);
 
 /**
  * Deny clock access to the VM
@@ -217,7 +216,4 @@ int vm_clock_provide(struct clock_device* clock_device, enum clk_id clk_id);
  * @param[in] clk_id        The ID of the clock to deny access to
  * @return                  0 on success
  */
-int vm_clock_restrict(struct clock_device* clock_device, enum clk_id clk_id);
-
-
-#endif /* SEL4ARM_VMM_DEVICES_H */
+int vm_clock_restrict(struct clock_device *clock_device, enum clk_id clk_id);

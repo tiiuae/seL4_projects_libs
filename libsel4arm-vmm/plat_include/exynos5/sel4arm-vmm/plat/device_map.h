@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4ARM_VMM_EXYNOS_MAP_H
-#define SEL4ARM_VMM_EXYNOS_MAP_H
+#pragma once
 
 #include <autoconf.h>
 #include <sel4arm-vmm/gen_config.h>
@@ -121,5 +120,3 @@
 #define SYSMMU_TV_PADDR       0x14650000
 
 /***** IRQS ******/
-
-#endif /* SEL4ARM_VMM_EXYNOS_MAP_H */

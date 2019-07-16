@@ -38,12 +38,14 @@ struct bga {
  */
 static const uint16_t INDEX = 0x1ce;
 static const uint16_t DATA  = 0x1cf;
-static void write_data(bga_p device, uint16_t index, uint16_t data) {
+static void write_data(bga_p device, uint16_t index, uint16_t data)
+{
     assert(device != NULL);
     device->write(INDEX, index);
     device->write(DATA, data);
 }
-static uint16_t read_data(bga_p device, uint16_t index) {
+static uint16_t read_data(bga_p device, uint16_t index)
+{
     assert(device != NULL);
     device->write(INDEX, index);
     return device->read(DATA);
@@ -53,11 +55,13 @@ static uint16_t read_data(bga_p device, uint16_t index) {
  * or 0x0001 to the data port to disable or enable the device respectively.
  */
 static const uint16_t INDEX_ENABLED = 0x0004;
-static void disable(bga_p device) {
+static void disable(bga_p device)
+{
     const uint16_t data_disable = 0x0000;
     write_data(device, INDEX_ENABLED, data_disable);
 }
-static void enable(bga_p device) {
+static void enable(bga_p device)
+{
     /* Note that we unconditionally use a linear frame buffer and clear the
     * screen. Not ideal, but the emphasis is on simplicity in this driver.
     */
@@ -66,7 +70,8 @@ static void enable(bga_p device) {
     write_data(device, INDEX_ENABLED, data_enable | lfb);
 }
 
-uint16_t bga_version(bga_p device) {
+uint16_t bga_version(bga_p device)
+{
     assert(device != NULL);
     const uint16_t index_id = 0x0000; /* Index to read version information. */
     const uint16_t mask = (uint16_t)~0xb0c0;
@@ -75,8 +80,9 @@ uint16_t bga_version(bga_p device) {
 }
 
 bga_p bga_init(void *framebuffer,
-        void (*ioport_write)(uint16_t port, uint16_t value),
-        uint16_t (*ioport_read)(uint16_t port)) {
+               void (*ioport_write)(uint16_t port, uint16_t value),
+               uint16_t (*ioport_read)(uint16_t port))
+{
     bga_p device = (bga_p)malloc(sizeof(struct bga));
     if (device == NULL) {
         return device;
@@ -90,12 +96,14 @@ bga_p bga_init(void *framebuffer,
     return device;
 }
 
-int bga_destroy(bga_p device) {
+int bga_destroy(bga_p device)
+{
     free(device);
     return 0;
 }
 
-int bga_set_mode(bga_p device, unsigned int width, unsigned int height, unsigned int bpp) {
+int bga_set_mode(bga_p device, unsigned int width, unsigned int height, unsigned int bpp)
+{
     /* We need to disable the device to change these parameters. */
     disable(device);
 
@@ -118,7 +126,8 @@ int bga_set_mode(bga_p device, unsigned int width, unsigned int height, unsigned
     return 0;
 }
 
-int bga_set_pixel(bga_p device, unsigned int x, unsigned int y, char *value) {
+int bga_set_pixel(bga_p device, unsigned int x, unsigned int y, char *value)
+{
     char *target;
     unsigned int coord_factor;
     size_t len;
@@ -128,36 +137,41 @@ int bga_set_pixel(bga_p device, unsigned int x, unsigned int y, char *value) {
      */
 
     switch (device->bpp) {
-        case 8: {
-            coord_factor = 1;
-            len = 1;
-            break;
-        } case 15:
-          case 16: {
-            coord_factor = 2;
-            len = 2;
-            break;
-        } case 24: {
-            coord_factor = 3;
-            len = 3;
-            break;
-        } case 32: {
-            coord_factor = 4;
-            len = 3;
-            break;
-        } default: {
-            /* Unsupported BPP. */
-            return -1;
-        }
+    case 8: {
+        coord_factor = 1;
+        len = 1;
+        break;
+    }
+    case 15:
+    case 16: {
+        coord_factor = 2;
+        len = 2;
+        break;
+    }
+    case 24: {
+        coord_factor = 3;
+        len = 3;
+        break;
+    }
+    case 32: {
+        coord_factor = 4;
+        len = 3;
+        break;
+    }
+    default: {
+        /* Unsupported BPP. */
+        return -1;
+    }
     }
 
     /* Determine where we need to write and copy the pixel data over. */
-    target = ((char*)device->framebuffer) + (y * device->width + x) * coord_factor;
+    target = ((char *)device->framebuffer) + (y * device->width + x) * coord_factor;
     (void)memcpy(target, value, len);
 
     return 0;
 }
 
-void *bga_get_framebuffer(bga_p device) {
+void *bga_get_framebuffer(bga_p device)
+{
     return device->framebuffer;
 }

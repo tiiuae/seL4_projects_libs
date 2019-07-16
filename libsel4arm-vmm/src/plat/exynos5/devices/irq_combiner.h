@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef IRQ_COMBINER_H
-#define IRQ_COMBINER_H
+#pragma once
 
 #include "../../../vm.h"
 #include <sel4utils/irq_server.h>
@@ -18,11 +17,11 @@
 struct combiner_irq {
     int group;
     int index;
-    void* combiner_priv;
-    void* priv;
+    void *combiner_priv;
+    void *priv;
 };
 
-typedef void (*combiner_irq_handler_fn)(struct combiner_irq* irq);
+typedef void (*combiner_irq_handler_fn)(struct combiner_irq *irq);
 
 extern const struct device dev_irq_combiner;
 
@@ -35,13 +34,10 @@ extern const struct device dev_irq_combiner;
  * @param[in] r       resources for allocation
  * @return            0 on succes
  */
-int vmm_register_combiner_irq(int group, int index, combiner_irq_handler_fn cb, void* priv);
+int vmm_register_combiner_irq(int group, int index, combiner_irq_handler_fn cb, void *priv);
 
 /**
  * Call to acknlowledge an IRQ with the combiner
  * @param[in] irq a description of the IRQ to ACK
  */
-void combiner_irq_ack(struct combiner_irq* irq);
-
-
-#endif /* IRQ_COMBINER_H */
+void combiner_irq_ack(struct combiner_irq *irq);

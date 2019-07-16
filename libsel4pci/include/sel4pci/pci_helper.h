@@ -17,7 +17,7 @@
 
 #include <sel4pci/pci.h>
 
-#define PCI_BAR_OFFSET(b)	(offsetof(vmm_pci_device_def_t, bar##b))
+#define PCI_BAR_OFFSET(b)   (offsetof(vmm_pci_device_def_t, bar##b))
 
 /* Struct definition of a PCI device. This is used for emulating a device from
  * purely memory reads. This is not generally useful on its own, but provides
@@ -139,7 +139,8 @@ vmm_pci_entry_t vmm_pci_create_irq_emulation(vmm_pci_entry_t existing, int irq);
  * linked list, as well as a ranges of the capability space that should be
  * directly disallowed. Assumes a type 0 device.
  */
-vmm_pci_entry_t vmm_pci_create_cap_emulation(vmm_pci_entry_t existing, int num_caps, uint8_t *caps, int num_ranges, uint8_t *range_starts, uint8_t *range_ends);
+vmm_pci_entry_t vmm_pci_create_cap_emulation(vmm_pci_entry_t existing, int num_caps, uint8_t *caps, int num_ranges,
+                                             uint8_t *range_starts, uint8_t *range_ends);
 
 /* Finds the MSI capabilities and uses vmm_pci_create_cap_emulation to remove them */
 vmm_pci_entry_t vmm_pci_no_msi_cap_emulation(vmm_pci_entry_t existing);

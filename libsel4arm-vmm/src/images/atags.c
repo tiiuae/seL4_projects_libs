@@ -37,22 +37,22 @@ struct atag_cmdline {
 };
 
 
-static struct atag_list*
-atag_search(struct atag_list* head, uint32_t tag) {
+static struct atag_list *atag_search(struct atag_list *head, uint32_t tag)
+{
     while (head != NULL && head->hdr->tag != tag) {
         head = head->next;
     }
     return head;
 }
 
-static struct atag_list*
-atag_new(int size) {
-    struct atag_list* t;
-    t = (struct atag_list*)malloc(sizeof(*t));
+static struct atag_list *atag_new(int size)
+{
+    struct atag_list *t;
+    t = (struct atag_list *)malloc(sizeof(*t));
     if (t == NULL) {
         return NULL;
     }
-    t->hdr = (struct atag_hdr*)malloc(size);
+    t->hdr = (struct atag_hdr *)malloc(size);
     if (t->hdr == NULL) {
         free(t);
         return NULL;
@@ -63,8 +63,7 @@ atag_new(int size) {
     return t;
 }
 
-static void
-atag_append(struct atag_list* atags, struct atag_list* tag)
+static void atag_append(struct atag_list *atags, struct atag_list *tag)
 {
     assert(atags);
     while (atags->next != NULL) {
@@ -73,10 +72,11 @@ atag_append(struct atag_list* atags, struct atag_list* tag)
     atags->next = tag;
 }
 
-struct atag_list*
-atags_new(void) {
-    struct atag_list* atag;
-    struct atag_core* core;
+struct atag_list *
+atags_new(void)
+{
+    struct atag_list *atag;
+    struct atag_core *core;
 
     /* Create an atag */
     atag = atag_new(sizeof(*core));
@@ -85,19 +85,18 @@ atags_new(void) {
     }
 
     /* Fill in the data */
-    core = (struct atag_core*)atag->hdr;
+    core = (struct atag_core *)atag->hdr;
     core->hdr.size = 2 /* No structure */;
     core->hdr.tag = ATAG_CORE;
     return atag;
 }
 
-int
-atags_add_core(struct atag_list* atags, uint32_t flags, uint32_t pagesize, uint32_t rootdev)
+int atags_add_core(struct atag_list *atags, uint32_t flags, uint32_t pagesize, uint32_t rootdev)
 {
-    struct atag_core* core;
+    struct atag_core *core;
     assert(atags);
 
-    core = (struct atag_core*)atags->hdr;
+    core = (struct atag_core *)atags->hdr;
     assert(core != NULL);
     assert(core->hdr.tag == ATAG_CORE);
     /* Fill in the data */
@@ -108,18 +107,17 @@ atags_add_core(struct atag_list* atags, uint32_t flags, uint32_t pagesize, uint3
     return 0;
 }
 
-int
-atags_add_mem(struct atag_list* atags, uint32_t size, uint32_t start)
+int atags_add_mem(struct atag_list *atags, uint32_t size, uint32_t start)
 {
-    struct atag_list* atag;
-    struct atag_mem* mem;
+    struct atag_list *atag;
+    struct atag_mem *mem;
     assert(atags);
 
     atag = atag_new(sizeof(*mem));
     if (atag == NULL) {
         return -1;
     }
-    mem = (struct atag_mem*)atag->hdr;
+    mem = (struct atag_mem *)atag->hdr;
 
     mem->hdr.size = HDR_SIZE(mem);
     mem->hdr.tag = ATAG_MEM;
@@ -130,10 +128,9 @@ atags_add_mem(struct atag_list* atags, uint32_t size, uint32_t start)
     return 0;
 }
 
-int
-atags_append_cmdline(struct atag_list* atags, const char* arg)
+int atags_append_cmdline(struct atag_list *atags, const char *arg)
 {
-    struct atag_list* atag;
+    struct atag_list *atag;
     struct atag_cmdline *cmdline, *cmdline_old;
     char *buf;
     int size;
@@ -149,21 +146,21 @@ atags_append_cmdline(struct atag_list* atags, const char* arg)
             return -1;
         }
         atag_append(atags, atag);
-        cmdline = (struct atag_cmdline*)atag->hdr;
+        cmdline = (struct atag_cmdline *)atag->hdr;
         buf = cmdline->cmdline;
     } else {
-        char* old_buf;
+        char *old_buf;
         /* Find the extended size */
-        cmdline_old = (struct atag_cmdline*)atag->hdr;
+        cmdline_old = (struct atag_cmdline *)atag->hdr;
         old_buf = cmdline_old->cmdline;
         size += strlen(old_buf) + strlen(CMDLINE_SEPERATOR);
         /* allocate some memory */
-        cmdline = (struct atag_cmdline*)malloc(sizeof(*cmdline) + ((size + 3) & ~0x3));
+        cmdline = (struct atag_cmdline *)malloc(sizeof(*cmdline) + ((size + 3) & ~0x3));
         assert(cmdline);
         if (cmdline == NULL) {
             return -1;
         }
-        atag->hdr = (struct atag_hdr*)cmdline;
+        atag->hdr = (struct atag_hdr *)cmdline;
         /* Copy in the old buffer */
         buf = cmdline->cmdline;
         strcpy(buf, old_buf);
@@ -182,8 +179,7 @@ atags_append_cmdline(struct atag_list* atags, const char* arg)
     return 0;
 }
 
-int
-atags_size_bytes(struct atag_list* atag)
+int atags_size_bytes(struct atag_list *atag)
 {
     return atag->hdr->size * sizeof(uint32_t);
 }

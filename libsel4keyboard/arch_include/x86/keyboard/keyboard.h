@@ -10,8 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
-#ifndef _LIBKEYBOARD_KEYBOARD_H_
-#define _LIBKEYBOARD_KEYBOARD_H_
+#pragma once
 
 #include <stdint.h>
 
@@ -39,5 +38,3 @@ void sel4keyboard_reset(void);
  *  scancode - Location to store the read scancode
  */
 int sel4keyboard_get_scancode(int *scancode);
-
-#endif /* !_LIBKEYBOARD_KEYBOARD_H_ */

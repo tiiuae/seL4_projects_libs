@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4ARM_VMM_VM_H
-#define SEL4ARM_VMM_VM_H
+#pragma once
 
 #include <sel4arm-vmm/sel4_arch/vm.h>
 
@@ -37,7 +36,7 @@
 #define MAX_DEVICES_PER_VM 50
 #define MAX_REBOOT_HOOKS_PER_VM 10
 
-typedef int (*reboot_hook_fn)(vm_t* vm, void *token);
+typedef int (*reboot_hook_fn)(vm_t *vm, void *token);
 
 struct reboot_hooks {
     reboot_hook_fn fn;
@@ -46,13 +45,13 @@ struct reboot_hooks {
 
 struct vm {
     /* Identification */
-    const char* name;
+    const char *name;
     int vmid;
     /* OS support */
     vka_t *vka;
     simple_t *simple;
     vspace_t *vmm_vspace;
-    ps_io_ops_t* io_ops;
+    ps_io_ops_t *io_ops;
     /* VM objects */
     vspace_t vm_vspace;
     sel4utils_alloc_data_t data;
@@ -87,7 +86,7 @@ struct vm {
 };
 typedef struct vm vm_t;
 
-typedef struct virq_handle* virq_handle_t;
+typedef struct virq_handle *virq_handle_t;
 
 /**
  * Create a virtual machine
@@ -107,11 +106,11 @@ typedef struct virq_handle* virq_handle_t;
  * @param vm             A reference to a vm struct to initialise
  * @return               0 on success
  */
-int vm_create(const char* name, int priority,
+int vm_create(const char *name, int priority,
               seL4_CPtr vmm_endpoint, seL4_Word vm_badge,
               vka_t *vka, simple_t *simple, vspace_t *vspace,
-              ps_io_ops_t* io_ops,
-              vm_t* vm);
+              ps_io_ops_t *io_ops,
+              vm_t *vm);
 
 /**
  * Copy data in from the VM.
@@ -121,7 +120,7 @@ int vm_create(const char* name, int priority,
  * @param[in] size    The number of bytes of data to read
  * @return            0 on success
  */
-int vm_copyin(vm_t* vm, void* data, uintptr_t address, size_t size);
+int vm_copyin(vm_t *vm, void *data, uintptr_t address, size_t size);
 
 /**
  * Copy data out to the VM.
@@ -131,7 +130,7 @@ int vm_copyin(vm_t* vm, void* data, uintptr_t address, size_t size);
  * @param[in] size    The number of bytes of data to load
  * @return            0 on success
  */
-int vm_copyout(vm_t* vm, void* data, uintptr_t address, size_t size);
+int vm_copyout(vm_t *vm, void *data, uintptr_t address, size_t size);
 
 /**
  * Copy ELF segments out to the VM/
@@ -149,7 +148,7 @@ void *vm_copyout_elf(vm_t *vm, elf_t *elf_data);
  * @param[in] addr      The address that the atags should be copied to
  * @return              0 on success
  */
-int vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr);
+int vm_copyout_atags(vm_t *vm, struct atag_list *atags, uint32_t addr);
 
 /**
  * Set the boot args and pc for the VM.
@@ -164,7 +163,7 @@ int vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr);
  * @param[in] atags     Linux specific IPA of atags
  * @return              0 on success
  */
-int vm_set_bootargs(vm_t* vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags);
+int vm_set_bootargs(vm_t *vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags);
 
 
 /**
@@ -172,14 +171,14 @@ int vm_set_bootargs(vm_t* vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags
  * @param[in] vm  The virtual machine to boot
  * @return        0 on success
  */
-int vm_start(vm_t* vm);
+int vm_start(vm_t *vm);
 
 /**
  * Stop a VM. The VM can be started later with a call to vm_start
  * @param[in] vm The virtual machine to stop
  * @return       0 on success
  */
-int vm_stop(vm_t* vm);
+int vm_stop(vm_t *vm);
 
 /**
  * Handle a VM event
@@ -187,7 +186,7 @@ int vm_stop(vm_t* vm);
  * @param[in] tag  The tag of the incomming message
  * @return     0 on success, otherwise, the VM should be shut down
  */
-int vm_event(vm_t* vm, seL4_MessageInfo_t tag);
+int vm_event(vm_t *vm, seL4_MessageInfo_t tag);
 
 /**
  * Register or replace a virtual IRQ definition
@@ -195,7 +194,7 @@ int vm_event(vm_t* vm, seL4_MessageInfo_t tag);
  * @param[in] ack   A function to call when the VM ACKs the IRQ
  * @param[in] token A token to pass, unmodified, to the ACK callback function
  */
-virq_handle_t vm_virq_new(vm_t* vm, int virq, void (*ack)(void*), void* token);
+virq_handle_t vm_virq_new(vm_t *vm, int virq, void (*ack)(void *), void *token);
 
 /**
  * Inject an IRQ into a VM
@@ -214,7 +213,7 @@ int vm_inject_IRQ(virq_handle_t virq);
  * @param[in] badge    The badge to assign to the cap.
  * @return             0 on success
  */
-int vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t badge);
+int vm_install_service(vm_t *vm, seL4_CPtr service, int index, uint32_t badge);
 
 /**
  * Given a guest intermiate physical address, find the actual physical address
@@ -227,7 +226,7 @@ int vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t badge);
  *                     If a valid mapping is not present, or if the mapping does
  *                     not provide a contiguous region of the requested size.
  */
-uintptr_t vm_ipa_to_pa(vm_t* vm, uintptr_t ipa, size_t size);
+uintptr_t vm_ipa_to_pa(vm_t *vm, uintptr_t ipa, size_t size);
 
 /**
  * Add a function to be called when the vm is reset by the vmm.
@@ -243,8 +242,6 @@ int vm_register_reboot_callback(vm_t *vm, reboot_hook_fn hook, void *token);
  * @param  vm The VM
  * @return    0 if all callbacks successfully called. If a callback fails with
  *            an error then this returns with that error and callbacks registered
- *            after failing callback will not be called. 
+ *            after failing callback will not be called.
  */
 int vm_process_reboot_callbacks(vm_t *vm);
-
-#endif /* SEL4ARM_VMM_VM_H */

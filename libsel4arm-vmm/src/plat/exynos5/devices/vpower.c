@@ -32,17 +32,16 @@
 struct power_priv {
     vm_t *vm;
     vm_power_cb shutdown_cb;
-    void* shutdown_token;
+    void *shutdown_token;
     vm_power_cb reboot_cb;
-    void* reboot_token;
-    void* regs[5];
+    void *reboot_token;
+    void *regs[5];
 };
 
 
-static int
-handle_vpower_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_vpower_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
-    struct power_priv* power_data = (struct power_priv*)d->priv;
+    struct power_priv *power_data = (struct power_priv *)d->priv;
     volatile uint32_t *reg;
     int vm_offset, offset, reg_offset;
     int bank;
@@ -54,7 +53,7 @@ handle_vpower_fault(struct device* d, vm_t* vm, fault_t* fault)
     reg_offset = offset & ~MASK(2);
 
     /* Handle the fault */
-    reg = (volatile uint32_t*)(power_data->regs[bank] + offset);
+    reg = (volatile uint32_t *)(power_data->regs[bank] + offset);
     if (fault_is_read(fault)) {
         fault_set_data(fault, *reg);
         DPWR("[%s] pc0x%x| r0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
@@ -107,13 +106,12 @@ const struct device dev_alive = {
     .priv = NULL
 };
 
-int
-vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
-                  vm_power_cb reboot_cb, void* reboot_token)
+int vm_install_vpower(vm_t *vm, vm_power_cb shutdown_cb, void *shutdown_token,
+                      vm_power_cb reboot_cb, void *reboot_token)
 {
     struct power_priv *power_data;
     struct device d;
-    vspace_t* vmm_vspace;
+    vspace_t *vmm_vspace;
     int err;
     int i;
 

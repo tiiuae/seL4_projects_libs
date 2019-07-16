@@ -10,12 +10,9 @@
  * @TAG(DATA61_BSD)
  */
 
-#ifndef SEL4ARM_VMM_TX1_MAP_H
-#define SEL4ARM_VMM_TX1_MAP_H
+#pragma once
 
 /***** Physical Map ****/
 #define RAM_BASE  0x80000000
 #define RAM_END   0x88000000
 #define RAM_SIZE (RAM_END - RAM_BASE)
-
-#endif /* SEL4ARM_VMM_TX1_MAP_H */

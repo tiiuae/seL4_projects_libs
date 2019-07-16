@@ -12,10 +12,9 @@
 #include "../../../devices.h"
 #include "../../../vm.h"
 
-static int
-handle_ram_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_ram_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
-    void* addr;
+    void *addr;
 
     addr = map_vm_ram(vm, fault_get_address(fault));
     if (addr == NULL) {
@@ -38,8 +37,7 @@ const struct device dev_vram = {
 };
 
 
-int
-vm_install_ram_default(vm_t *vm)
+int vm_install_ram_default(vm_t *vm)
 {
     struct device d;
     d = dev_vram;
@@ -47,8 +45,7 @@ vm_install_ram_default(vm_t *vm)
 }
 
 
-int
-vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size)
+int vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size)
 {
     struct device d;
     d = dev_vram;

@@ -43,16 +43,16 @@ struct vmct_priv {
     uint32_t lwstat[4];
 };
 
-static inline struct vmct_priv* vmct_get_priv(void* priv) {
+static inline struct vmct_priv *vmct_get_priv(void *priv)
+{
     assert(priv);
-    return (struct vmct_priv*)priv;
+    return (struct vmct_priv *)priv;
 }
 
 
-static int
-handle_vmct_fault(struct device* d, vm_t* vm, fault_t* fault)
+static int handle_vmct_fault(struct device *d, vm_t *vm, fault_t *fault)
 {
-    struct vmct_priv* mct_priv;
+    struct vmct_priv *mct_priv;
     int offset;
     uint32_t mask;
 
@@ -136,7 +136,7 @@ const struct device dev_vmct_timer = {
 };
 
 
-int vm_install_vmct(vm_t* vm)
+int vm_install_vmct(vm_t *vm)
 {
     struct vmct_priv *vmct_data;
     struct device d;

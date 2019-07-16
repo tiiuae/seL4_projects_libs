@@ -95,7 +95,7 @@ vmm_pci_entry_t *find_device(vmm_pci_space_t *self, vmm_pci_address_t addr)
 
 int vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result)
 {
-    vmm_pci_space_t *self = (vmm_pci_space_t*)cookie;
+    vmm_pci_space_t *self = (vmm_pci_space_t *)cookie;
     uint8_t offset;
 
     if (port_no >= PCI_CONF_PORT_ADDR && port_no < PCI_CONF_PORT_ADDR_END) {
@@ -103,7 +103,7 @@ int vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, un
         assert(port_no + size <= PCI_CONF_PORT_ADDR_END);
         /* Emulate read addr. */
         *result = 0;
-        memcpy(result, ((char*)&self->conf_port_addr) + offset, size);
+        memcpy(result, ((char *)&self->conf_port_addr) + offset, size);
         return 0;
     }
     assert(port_no >= PCI_CONF_PORT_DATA && port_no + size <= PCI_CONF_PORT_DATA_END);
@@ -145,7 +145,7 @@ int vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, un
 
 int vmm_pci_io_port_out(void *cookie, unsigned int port_no, unsigned int size, unsigned int value)
 {
-    vmm_pci_space_t *self = (vmm_pci_space_t*)cookie;
+    vmm_pci_space_t *self = (vmm_pci_space_t *)cookie;
     uint8_t offset;
 
     if (port_no >= PCI_CONF_PORT_ADDR && port_no < PCI_CONF_PORT_ADDR_END) {
@@ -154,7 +154,7 @@ int vmm_pci_io_port_out(void *cookie, unsigned int port_no, unsigned int size, u
         /* Emulated set addr. First mask out the bottom two bits of the address that
          * should never be used*/
         value &= ~MASK(2);
-        memcpy(((char*)&self->conf_port_addr) + offset, &value, size);
+        memcpy(((char *)&self->conf_port_addr) + offset, &value, size);
         return 0;
     }
     assert(port_no >= PCI_CONF_PORT_DATA && port_no + size <= PCI_CONF_PORT_DATA_END);

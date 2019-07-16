@@ -34,7 +34,7 @@ typedef struct ioport_interface {
     ioport_in_fn port_in;
     ioport_out_fn port_out;
     /* ioport description (for debugging) */
-    const char* desc;
+    const char *desc;
 } ioport_interface_t;
 
 typedef struct ioport_entry {
@@ -54,6 +54,7 @@ typedef struct vmm_io_list {
 int vmm_io_port_init(vmm_io_port_list_t **io_list);
 
 /* Add an io port range for emulation */
-int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t ioport_range, ioport_interface_t ioport_interface);
+int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t ioport_range,
+                            ioport_interface_t ioport_interface);
 
 int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool is_in, size_t size, unsigned int *data);

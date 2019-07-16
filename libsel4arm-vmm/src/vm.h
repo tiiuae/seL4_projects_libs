@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef VM_H
-#define VM_H
+#pragma once
 
 #include <sel4arm-vmm/vm.h>
 
@@ -21,25 +20,23 @@ struct vm_onode {
 
 
 /* When differentiating VM's by colour, call this function */
-const char* choose_colour(vm_t* vm);
+const char *choose_colour(vm_t *vm);
 
 /**
  * Find a device within the VM
  */
-struct device* vm_find_device_by_id(vm_t* vm, enum devid id);
-struct device* vm_find_device_by_ipa(vm_t* vm, uintptr_t ipa);
+struct device *vm_find_device_by_id(vm_t *vm, enum devid id);
+struct device *vm_find_device_by_ipa(vm_t *vm, uintptr_t ipa);
 
-static inline seL4_CPtr vm_get_tcb(vm_t* vm)
+static inline seL4_CPtr vm_get_tcb(vm_t *vm)
 {
     return vm->tcb.cptr;
 }
 
-static inline seL4_CPtr vm_get_vcpu(vm_t* vm)
+static inline seL4_CPtr vm_get_vcpu(vm_t *vm)
 {
     return vm->vcpu.cptr;
 }
 
-vspace_t* vm_get_vspace(vm_t* vm);
-vspace_t* vm_get_vmm_vspace(vm_t *vm);
-
-#endif /* VM_H */
+vspace_t *vm_get_vspace(vm_t *vm);
+vspace_t *vm_get_vmm_vspace(vm_t *vm);
