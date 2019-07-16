@@ -16,19 +16,36 @@ project(libsel4arm-vmm C)
 
 set(configure_string "")
 
-config_option(LibSel4ArmVMMOnDemandDeviceInstall ONDEMAND_DEVICE_INSTALL
+config_option(
+    LibSel4ArmVMMOnDemandDeviceInstall
+    ONDEMAND_DEVICE_INSTALL
     "Allow the VMM to install arbitrary devices into the VM as they are accessed."
-    DEFAULT ON)
+    DEFAULT
+    ON
+)
 
-config_option(LibSel4ArmVMMVchanSupport LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
+config_option(
+    LibSel4ArmVMMVchanSupport
+    LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     "Support vchan connections"
-    DEFAULT OFF)
+    DEFAULT
+    OFF
+)
 
 add_config_library(sel4arm-vmm "${configure_string}")
 
 add_compile_options(-std=gnu99)
 
-file(GLOB sources src/*.c src/arch/arm/*/*.c src/images/*.c src/devices/*.c src/plat/${KernelPlatform}/*/*.c src/sel4_arch/${KernelSel4Arch}/*.c)
+file(
+    GLOB
+        sources
+        src/*.c
+        src/arch/arm/*/*.c
+        src/images/*.c
+        src/devices/*.c
+        src/plat/${KernelPlatform}/*/*.c
+        src/sel4_arch/${KernelSel4Arch}/*.c
+)
 
 add_library(sel4arm-vmm STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4arm-vmm PUBLIC include plat_include/${KernelPlatform})
@@ -47,6 +64,7 @@ target_link_libraries(
     platsupport
     sel4pci
     sel4vmmcore
+    kernel_autoconf
     sel4arm-vmm_Config
     usbdrivers_Config
 )
