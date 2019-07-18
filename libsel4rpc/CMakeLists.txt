@@ -34,5 +34,5 @@ target_link_libraries(
         sel4utils
         sel4vka
         nanopb
-    PRIVATE kernel_autoconf
+    PRIVATE sel4_autoconf
 )

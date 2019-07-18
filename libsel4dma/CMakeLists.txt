@@ -20,4 +20,4 @@ file(GLOB sources src/*.c)
 
 add_library(sel4dma STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4dma PUBLIC include)
-target_link_libraries(sel4dma PUBLIC muslc platsupport PRIVATE kernel_autoconf)
+target_link_libraries(sel4dma PUBLIC muslc platsupport PRIVATE sel4_autoconf)

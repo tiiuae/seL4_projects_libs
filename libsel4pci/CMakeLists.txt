@@ -20,7 +20,7 @@ file(GLOB sources src/*.c src/arch/${KernelArch}/*.c)
 
 add_library(sel4pci STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4pci PUBLIC include arch_include/${KernelArch})
-target_link_libraries(sel4pci sel4 pci muslc platsupport ethdrivers kernel_autoconf)
+target_link_libraries(sel4pci sel4 pci muslc platsupport ethdrivers sel4_autoconf)
 if(${KernelArch} STREQUAL "arm")
     target_link_libraries(sel4pci sel4arm-vmm)
 elseif(${KernelArch} STREQUAL "x86")

@@ -64,7 +64,7 @@ target_link_libraries(
     platsupport
     sel4pci
     sel4vmmcore
-    kernel_autoconf
+    sel4_autoconf
     sel4arm-vmm_Config
     usbdrivers_Config
 )
