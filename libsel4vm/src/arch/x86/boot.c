@@ -22,7 +22,7 @@
 #include <sel4utils/api.h>
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_ram.h>
 
 #include <sel4vm/boot.h>
 #include <sel4vm/platform/guest_memory.h>
@@ -65,7 +65,7 @@ static int make_guest_page_dir(vm_t *vm) {
     }
     printf("Guest page dir allocated at 0x%x. Creating 1-1 entries\n", (unsigned int)pd);
     vm->arch.guest_pd = pd;
-    return vm_guest_mem_touch(vm, pd, BIT(seL4_PageBits), make_guest_page_dir_continued, NULL);
+    return vm_ram_touch(vm, pd, BIT(seL4_PageBits), make_guest_page_dir_continued, NULL);
 }
 
 int

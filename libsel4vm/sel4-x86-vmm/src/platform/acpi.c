@@ -17,7 +17,7 @@ Author: W.A. */
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_ram.h>
 
 #include "sel4vm/debug.h"
 #include "sel4vm/platform/acpi.h"
@@ -157,7 +157,7 @@ int make_guest_acpi_tables(vm_t *vm) {
     for (int i = 0; i < num_tables; i++) {
         DPRINTF(2, "ACPI table \"%.4s\", addr = %p, size = %zu bytes\n",
                 (char *)tables[i], (void*)table_paddr, table_sizes[i]);
-        err = vm_guest_mem_touch(vm, table_paddr,
+        err = vm_ram_touch(vm, table_paddr,
                 table_sizes[i], make_guest_acpi_tables_continued, tables[i]);
         if (err) {
             return err;
@@ -191,6 +191,6 @@ int make_guest_acpi_tables(vm_t *vm) {
 
     DPRINTF(2, "ACPI RSDP addr = %p\n", (void*)rsdp_addr);
 
-    return vm_guest_mem_touch(vm, rsdp_addr, sizeof(rsdp),
+    return vm_ram_touch(vm, rsdp_addr, sizeof(rsdp),
             make_guest_acpi_tables_continued, &rsdp);
 }

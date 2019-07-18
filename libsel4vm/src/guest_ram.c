@@ -10,7 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_ram.h>
 
 struct guest_mem_touch_params {
     void *data;
@@ -18,16 +18,16 @@ struct guest_mem_touch_params {
     size_t offset;
     uintptr_t current_addr;
     vm_t *vm;
-    mem_touch_callback_fn touch_fn;
+    ram_touch_callback_fn touch_fn;
 };
 
 /* Helpers for use with touch below */
-int vm_guest_mem_read_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf) {
+int vm_guest_ram_read_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf) {
     memcpy(buf, vaddr, size);
     return 0;
 }
 
-int vm_guest_mem_write_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf) {
+int vm_guest_ram_write_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf) {
     memcpy(vaddr, buf, size);
     return 0;
 }
@@ -41,7 +41,7 @@ static int touch_access_callback(void *access_addr, void *vaddr, void *cookie) {
             guest_touch->size, guest_touch->offset, guest_touch->data);
 }
 
-int vm_guest_mem_touch(vm_t *vm, uintptr_t addr, size_t size, mem_touch_callback_fn touch_callback, void *cookie) {
+int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn touch_callback, void *cookie) {
     struct guest_mem_touch_params access_cookie;
     uintptr_t current_addr;
     uintptr_t next_addr;
@@ -56,8 +56,8 @@ int vm_guest_mem_touch(vm_t *vm, uintptr_t addr, size_t size, mem_touch_callback
         access_cookie.size = next_addr - current_addr;
         access_cookie.offset = current_addr - addr;
         access_cookie.current_addr = current_addr;
-        int result = vspace_access_page_with_callback(&vm->mem.vm_vspace, &vm->mem.vmm_vspace, (void *)current_aligned, vm->mem.page_size, seL4_AllRights,
-                1, touch_access_callback, &access_cookie);
+        int result = vspace_access_page_with_callback(&vm->mem.vm_vspace, &vm->mem.vmm_vspace, (void *)current_aligned,
+                vm->mem.page_size, seL4_AllRights, 1, touch_access_callback, &access_cookie);
         if (result) {
             return result;
         }

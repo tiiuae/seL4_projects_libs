@@ -13,7 +13,7 @@
 #include <sel4vm/guest_vm.h>
 
 #include <sel4vm/sel4_arch/fault.h>
-#include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_vm_util.h>
 #include "vm.h"
 
@@ -81,7 +81,7 @@ static int maybe_fetch_fault_instruction(fault_t *f)
     if ((f->content & CONTENT_INST) == 0) {
         seL4_Word inst = 0;
         /* Fetch the instruction */
-        if (vm_guest_mem_touch(f->vcpu->vm, f->ip, 4, vm_guest_mem_read_callback, &inst)) {
+        if (vm_ram_touch(f->vcpu->vm, f->ip, 4, vm_guest_ram_read_callback, &inst)) {
             return -1;
         }
         /* Fixup the instruction */

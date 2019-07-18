@@ -26,7 +26,7 @@
 #include <vka/capops.h>
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_ram.h>
 
 #include "sel4vm/debug.h"
 #include "sel4vm/processor/platfeature.h"
@@ -123,10 +123,10 @@ void vmm_plat_guest_elf_relocate(vm_t *vm, const char *relocs_filename) {
         /* Perform the relocation. */
         DPRINTF(5, "   reloc vaddr 0x%x guest_addr 0x%x\n", (unsigned int)vaddr, (unsigned int)guest_paddr);
         uint32_t addr;
-        vm_guest_mem_touch(vm, guest_paddr, sizeof(int),
+        vm_ram_touch(vm, guest_paddr, sizeof(int),
                 guest_elf_read_address, &addr);
         addr += delta;
-        vm_guest_mem_touch(vm, guest_paddr, sizeof(int),
+        vm_ram_touch(vm, guest_paddr, sizeof(int),
                 guest_elf_write_address, &addr);
 
         if (i && i % 50000 == 0) {
@@ -177,7 +177,7 @@ int vmm_guest_load_boot_module(vm_t *vm, const char *name) {
 
     guest_ram_mark_allocated(&vm->mem, load_addr, initrd_size);
     boot_guest_cookie_t pass = { .vm = vm, .file = file};
-    vm_guest_mem_touch(vm, load_addr, initrd_size, vmm_guest_load_boot_module_continued, &pass);
+    vm_ram_touch(vm, load_addr, initrd_size, vmm_guest_load_boot_module_continued, &pass);
 
     printf("Guest memory after loading initrd:\n");
     print_guest_ram_regions(&vm->mem);
@@ -211,7 +211,7 @@ static int make_guest_cmd_line(vm_t *vm, const char *cmdline) {
     printf("Constructing guest cmdline at 0x%x of size %d\n", (unsigned int)cmd_addr, len);
     vm->arch.guest_image.cmd_line = cmd_addr;
     vm->arch.guest_image.cmd_line_len = len;
-    return vm_guest_mem_touch(vm, cmd_addr, len + 1, make_guest_cmd_line_continued, (void*)cmdline);
+    return vm_ram_touch(vm, cmd_addr, len + 1, make_guest_cmd_line_continued, (void*)cmdline);
 }
 
 static void make_guest_screen_info(vm_t *vm, struct screen_info *info) {
@@ -365,7 +365,7 @@ static int make_guest_boot_info(vm_t *vm) {
     } else {
         boot_info.hdr.version = 0x0202;
     }
-    return vm_guest_mem_touch(vm, addr, sizeof(boot_info), guest_elf_write_address, &boot_info);
+    return vm_ram_touch(vm, addr, sizeof(boot_info), guest_elf_write_address, &boot_info);
 }
 
 /* Init the guest page directory, cmd line args and boot info structures. */
