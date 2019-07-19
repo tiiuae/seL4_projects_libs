@@ -199,6 +199,14 @@ seL4_Word fault_get_address(fault_t *fault);
 enum fault_width fault_get_width(fault_t *f);
 
 /**
+ * Get the access width size of the fault
+ * The fault must be a data fault.
+ * @param[in] fault  A handle to the fault
+ * @return           The access width size of the fault
+ */
+size_t fault_get_width_size(fault_t* f);
+
+/**
  * Get the context of a fault
  * @param[in] fault  A handle to the fault
  * @return           A handle to the fault context
