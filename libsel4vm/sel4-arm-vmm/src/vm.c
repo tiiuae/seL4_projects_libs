@@ -15,6 +15,7 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_vm_util.h>
+#include <sel4vm/guest_memory.h>
 
 #include "vm.h"
 #include <stdio.h>
@@ -74,7 +75,26 @@ extern char _cpio_archive[];
 
 static int handle_page_fault(vm_t *vm, fault_t *fault)
 {
-    struct device *d;
+    struct device* d;
+    guest_memory_arch_data_t arch_data;
+    uintptr_t addr = fault_get_address(fault);
+    size_t fault_size = fault_get_width_size(fault);
+
+    arch_data.fault = fault;
+    memory_fault_result_t fault_result = vm_memory_handle_fault(vm, addr, fault_size, arch_data);
+    switch(fault_result) {
+        case FAULT_HANDLED:
+            return 0;
+        case FAULT_RESTART:
+            restart_fault(fault);
+            return 0;
+        case FAULT_IGNORE:
+            return ignore_fault(fault);
+        case FAULT_ERROR:
+            print_fault(fault);
+            abandon_fault(fault);
+            return -1;
+    }
 
     /* See if the device is already in our address space */
     d = vm_find_device_by_ipa(vm, fault_get_address(fault));
