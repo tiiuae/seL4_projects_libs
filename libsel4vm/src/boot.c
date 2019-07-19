@@ -47,6 +47,12 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
     vm->vcpus = malloc(sizeof(vm_vcpu_t *) * MAX_NUM_VCPUS);
     assert(vm->vcpus);
     memset(vm->vcpus, 0, sizeof(vm_vcpu_t *) * MAX_NUM_VCPUS);
+    /* Initialise vm memory management interface */
+    err = vm_memory_init(vm);
+    if (err) {
+        ZF_LOGE("Failed to initialise VM memory manager");
+        return err;
+    }
 
     /* Initialise vm architecture support */
     err = vm_init_arch(vm, cookie);

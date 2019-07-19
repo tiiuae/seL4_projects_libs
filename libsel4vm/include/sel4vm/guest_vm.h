@@ -20,6 +20,7 @@
 #include <allocman/allocman.h>
 
 #include <sel4vm/guest_vm_arch.h>
+#include <sel4vm/guest_memory.h>
 
 typedef struct vm vm_t;
 typedef struct vm_vcpu vm_vcpu_t;
@@ -99,6 +100,8 @@ struct vm_mem {
     int page_size;
     /* Memory mapped io management for emulated devices */
     vm_mmio_list_t mmio_list;
+    /* Memory reservations */
+    vm_memory_reservation_cookie_t *reservation_cookie;
 };
 
 struct vm_tcb {
