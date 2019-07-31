@@ -156,7 +156,7 @@ struct lr_of {
     struct lr_of *next;
 };
 
-struct vgic {
+typedef struct vgic {
 /// Mirrors the vcpu list registers
     struct virq_handle *irq[63];
 /// IRQs that would not fit in the vcpu list registers
@@ -165,9 +165,9 @@ struct vgic {
     struct virq_handle *virqs[MAX_VIRQS];
 /// Virtual distributer registers
     struct gic_dist_map *dist;
-};
+} vgic_t;
 
-static struct virq_handle *virq_find_irq_data(struct vgic *vgic, int virq)
+static struct virq_handle *virq_find_irq_data(vgic_t *vgic, int virq)
 {
     int i;
     for (i = 0; i < MAX_VIRQS; i++) {
@@ -178,7 +178,7 @@ static struct virq_handle *virq_find_irq_data(struct vgic *vgic, int virq)
     return NULL;
 }
 
-static int virq_add(struct vgic *vgic, struct virq_handle *virq_data)
+static int virq_add(vgic_t *vgic, struct virq_handle *virq_data)
 {
     int i;
     for (i = 0; i < MAX_VIRQS; i++) {
@@ -190,7 +190,7 @@ static int virq_add(struct vgic *vgic, struct virq_handle *virq_data)
     return -1;
 }
 
-static int virq_init(struct vgic *vgic)
+static int virq_init(vgic_t *vgic)
 {
     memset(vgic->irq, 0, sizeof(vgic->irq));
     memset(vgic->virqs, 0, sizeof(vgic->virqs));
@@ -198,11 +198,11 @@ static int virq_init(struct vgic *vgic)
     return 0;
 }
 
-static inline struct vgic *vgic_device_get_vgic(struct device *d)
+static inline vgic_t *vgic_device_get_vgic(struct device *d)
 {
     assert(d);
     assert(d->priv);
-    return (struct vgic *)d->priv;
+    return (vgic_t *)d->priv;
 }
 
 static inline struct gic_dist_map *vgic_priv_get_dist(struct device *d)
@@ -271,7 +271,7 @@ static int list_size = 0;
 
 static int vgic_vcpu_inject_irq(struct device *d, vm_t *vm, struct virq_handle *irq)
 {
-    struct vgic *vgic;
+    vgic_t *vgic;
     int err;
     int i;
 
@@ -424,7 +424,7 @@ static int vgic_dist_enable_irq(struct device *d, vm_t *vm, int irq)
 {
     struct gic_dist_map *gic_dist;
     struct virq_handle *virq_data;
-    struct vgic *vgic;
+    vgic_t *vgic;
     gic_dist = vgic_priv_get_dist(d);
     vgic = vgic_device_get_vgic(d);
     DDIST("enabling irq %d\n", irq);
@@ -460,7 +460,7 @@ static int vgic_dist_set_pending_irq(struct device *d, vm_t *vm, int irq)
 
     /* STATE c) */
     struct gic_dist_map *gic_dist;
-    struct vgic *vgic;
+    vgic_t *vgic;
     struct virq_handle *virq_data;
 
     gic_dist = vgic_priv_get_dist(d);
@@ -673,7 +673,7 @@ virq_handle_t vm_virq_new(vm_t *vm, int virq, void (*ack)(void *), void *token)
 {
     struct virq_handle *virq_data;
     struct device *vgic_device;
-    struct vgic *vgic;
+    vgic_t *vgic;
     int err;
     vgic_device = vm_find_device_by_id(vm, DEV_VGIC_DIST);
     assert(vgic_device);
@@ -734,7 +734,7 @@ int vm_inject_IRQ(virq_handle_t virq)
 int vm_install_vgic(vm_t *vm)
 {
     struct device dist, vcpu;
-    struct vgic *vgic;
+    vgic_t *vgic;
     void *addr;
     int err;
 
