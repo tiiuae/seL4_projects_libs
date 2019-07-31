@@ -151,16 +151,20 @@ struct gic_dist_map {
     uint32_t component_id[4];       /* [0xFF0, 0xFFF] */
 };
 
+#define MAX_LR_OVERFLOW 64
+#define LR_OF_NEXT(_i) ((_i) == MAX_LR_OVERFLOW ? 0 : ((_i) + 1))
+
 struct lr_of {
-    struct virq_handle *virq_data;
-    struct lr_of *next;
+    struct virq_handle irqs[MAX_LR_OVERFLOW]; /* circular buffer */
+    size_t head;
+    size_t tail;
 };
 
 typedef struct vgic {
 /// Mirrors the vcpu list registers
     struct virq_handle *irq[63];
 /// IRQs that would not fit in the vcpu list registers
-    struct lr_of *lr_overflow;
+    struct lr_of lr_overflow;
 /// Complete set of virtual irqs
     struct virq_handle *virqs[MAX_VIRQS];
 /// Virtual distributer registers
@@ -194,7 +198,8 @@ static int virq_init(vgic_t *vgic)
 {
     memset(vgic->irq, 0, sizeof(vgic->irq));
     memset(vgic->virqs, 0, sizeof(vgic->virqs));
-    vgic->lr_overflow = NULL;
+    vgic->lr_overflow.head = 0;
+    vgic->lr_overflow.tail = 0;
     return 0;
 }
 
@@ -292,21 +297,11 @@ static int vgic_vcpu_inject_irq(struct device *d, vm_t *vm, struct virq_handle *
         return err;
     } else {
         /* Add to overflow list */
-        struct lr_of **lrof_ptr;
-        struct lr_of *lrof;
-        lrof_ptr = &vgic->lr_overflow;
-        while (*lrof_ptr != NULL) {
-            lrof_ptr = &(*lrof_ptr)->next;
-        }
-        list_size++;
-        lrof = (struct lr_of *)malloc(sizeof(*lrof));
-        assert(lrof);
-        if (lrof == NULL) {
-            return -1;
-        }
-        lrof->virq_data = irq;
-        lrof->next = NULL;
-        *lrof_ptr = lrof;
+        int idx = LR_OF_NEXT(vgic->lr_overflow.tail);
+        ZF_LOGF_IF(idx == vgic->lr_overflow.head && idx != vgic->lr_overflow.tail,
+                   "too many overflow irqs");
+        vgic->lr_overflow.irqs[idx] = *irq;
+        vgic->lr_overflow.tail = idx;
         return 0;
     }
 }
@@ -322,7 +317,6 @@ int handle_vgic_maintenance(vm_t *vm, int idx)
     struct device *d;
     struct gic_dist_map *gic_dist;
     struct virq_handle **lr;
-    struct lr_of **lrof_ptr;
 
     d = vm_find_device_by_id(vm, DEV_VGIC_DIST);
     assert(d);
@@ -337,17 +331,13 @@ int handle_vgic_maintenance(vm_t *vm, int idx)
 
     /* Check the overflow list for pending IRQs */
     lr[idx] = NULL;
-    lrof_ptr = &vgic_device_get_vgic(d)->lr_overflow;
-    if (*lrof_ptr) {
-        struct lr_of *lrof;
-        int err;
-        lrof = *lrof_ptr;
-        *lrof_ptr = lrof->next;
-        err = vgic_vcpu_inject_irq(d, vm, lrof->virq_data);
+    vgic_t *vgic = vgic_device_get_vgic(d);
+    for (size_t i = vgic->lr_overflow.head; i != vgic->lr_overflow.tail; i = LR_OF_NEXT(i)) {
+        int err = vgic_vcpu_inject_irq(d, vm, &vgic->lr_overflow.irqs[i]);
         assert(!err);
-        free(lrof);
-        list_size--;
     }
+    vgic->lr_overflow.head = 0;
+    vgic->lr_overflow.tail = 0;
 
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     vm->unlock();
