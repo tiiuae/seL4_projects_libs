@@ -18,7 +18,7 @@ set(configure_string "")
 
 add_compile_options(-std=gnu99)
 
-set(sources src/boot.c src/guest_vspace.c src/guest_ram.c src/arch/${KernelArch}/boot.c src/guest_memory.c)
+set(sources src/boot.c src/guest_vspace.c src/guest_ram.c src/arch/${KernelArch}/boot.c src/guest_memory.c src/guest_memory_utils.c)
 
 if("${KernelArch}" STREQUAL "arm")
     config_option(
