@@ -257,7 +257,12 @@ static void sys_pa_to_ipa(vm_t *vm, seL4_UserContext *regs)
 }
 
 
-static void sys_ipa_to_pa(vm_t *vm, seL4_UserContext *regs)
+#if 0
+/* sys_ipa_to_pa currently not supported
+ * TODO: Re-enable or re-evaluate support for syscall
+ */
+static void
+sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
 {
     seL4_ARM_Page_GetAddress_t ret;
     long ipa;
@@ -287,6 +292,7 @@ static void sys_ipa_to_pa(vm_t *vm, seL4_UserContext *regs)
     regs->r0 = ret.paddr;
 #endif
 }
+#endif
 
 static void sys_nop(vm_t *vm, seL4_UserContext *regs)
 {
@@ -313,9 +319,11 @@ static int handle_syscall(vm_t *vm, seL4_Word length)
     case 65:
         sys_pa_to_ipa(vm, &regs);
         break;
+#if 0
     case 66:
         sys_ipa_to_pa(vm, &regs);
         break;
+#endif
     case 67:
         sys_nop(vm, &regs);
         break;
