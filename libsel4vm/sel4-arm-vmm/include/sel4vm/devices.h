@@ -75,39 +75,6 @@ struct gpio_device;
 struct clock_device;
 
 /**
- * Install a passthrough device into a VM
- * @param[in] vm     A handle to the VM that the device should be install to
- * @param[in] device A description of the device
- * @return           0 on success
- */
-int vm_install_passthrough_device(vm_t *vm, const struct device *device);
-
-/**
- * Install a device backed by ram into a VM
- * @param[in] vm     A handle to the VM that the device should be install to
- * @param[in] device A description of the device
- * @return           0 on success
- */
-int vm_install_ram_only_device(vm_t *vm, const struct device *device);
-
-/**
- * Install a passthrough device into a VM, but trap and print all access
- * @param[in] vm     A handle to the VM that the device should be install to
- * @param[in] device A description of the device
- * @return           0 on success
- */
-int vm_install_listening_device(vm_t *vm, const struct device *device);
-
-/**
- * Install a device into the VM and call its associated fault handler on access
- * @param[in] vm     A handle to the VM that the device should be install to
- * @param[in] device A description of the device
- * @return           0 on success
- */
-int vm_install_emulated_device(vm_t *vm, const struct device *device);
-
-
-/**
  * Add a generic device to the VM without performind any initialisation of the device
  * When the VM receives a fault with an address that is in the range of this device,
  * it will call the assigned fault handler.
