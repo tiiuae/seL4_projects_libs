@@ -11,48 +11,19 @@
  */
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_ram.h>
 
 #include "../../../devices.h"
 #include "../../../vm.h"
 
-static int handle_ram_fault(struct device *d, vm_t *vm, fault_t *fault)
+int
+vm_install_ram_default(vm_t *vm)
 {
-    void *addr;
-
-    addr = map_vm_ram(vm, fault_get_address(fault));
-    if (addr == NULL) {
-        print_fault(fault);
-        abandon_fault(fault);
-    } else {
-        restart_fault(fault);
-    }
-    return addr == NULL;
+    return vm_ram_register_at(vm, RAM_BASE, RAM_SIZE, true);
 }
 
-
-const struct device dev_vram = {
-    .devid = DEV_RAM,
-    .name = "RAM",
-    .pstart = RAM_BASE,
-    .size = RAM_SIZE,
-    .handle_page_fault = handle_ram_fault,
-    .priv = NULL,
-};
-
-
-int vm_install_ram_default(vm_t *vm)
+int
+vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size)
 {
-    struct device d;
-    d = dev_vram;
-    return vm_add_device(vm, &d);
-}
-
-
-int vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size)
-{
-    struct device d;
-    d = dev_vram;
-    d.pstart = start;
-    d.size = size;
-    return vm_add_device(vm, &d);
+    return vm_ram_register_at(vm, start, size, true);
 }

@@ -52,6 +52,8 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
+#include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_memory_util.h>
 
 #include "../../../devices.h"
 #include "../../../vm.h"
@@ -507,14 +509,21 @@ static int vgic_dist_clr_pending_irq(struct device *d, vm_t *vm, int irq)
     return 0;
 }
 
-static int handle_vgic_dist_fault(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+handle_vgic_dist_fault(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
+        void *cookie, guest_memory_arch_data_t arch_data)
 {
-    struct gic_dist_map *gic_dist;
+    int err;
+    struct device* d;
+    fault_t* fault;
+    struct gic_dist_map* gic_dist;
     int offset;
     enum gic_dist_action act;
     uint32_t mask;
     uint32_t *reg;
 
+    fault = arch_data.fault;
+    d = (struct device *)cookie;
     gic_dist = vgic_priv_get_dist(d);
     mask = fault_get_data_mask(fault);
     offset = fault_get_address(fault) - d->pstart;
@@ -529,22 +538,21 @@ static int handle_vgic_dist_fault(struct device *d, vm_t *vm, fault_t *fault)
     /* Out of range */
     if (offset < 0 || offset >= sizeof(struct gic_dist_map)) {
         DDIST("offset out of range %x %x\n", offset, sizeof(struct gic_dist_map));
-        return ignore_fault(fault);
-
+        err = ignore_fault(fault);
         /* Read fault */
     } else if (fault_is_read(fault)) {
         fault_set_data(fault, *reg);
-        return ignore_fault(fault);
+        err = ignore_fault(fault);
     } else {
         uint32_t data;
         switch (act) {
         case ACTION_READONLY:
-            return ignore_fault(fault);
-
+            err = ignore_fault(fault);
+            break;
         case ACTION_PASSTHROUGH:
             *reg = fault_emulate(fault, *reg);
-            return advance_fault(fault);
-
+            err = advance_fault(fault);
+            break;
         case ACTION_ENABLE:
             *reg = fault_emulate(fault, *reg);
             data = fault_get_data(fault);
@@ -555,8 +563,8 @@ static int handle_vgic_dist_fault(struct device *d, vm_t *vm, fault_t *fault)
             } else {
                 assert(!"Unknown enable register encoding\n");
             }
-            return advance_fault(fault);
-
+            err = advance_fault(fault);
+            break;
         case ACTION_ENABLE_SET:
             data = fault_get_data(fault);
             /* Mask the data to write */
@@ -570,8 +578,8 @@ static int handle_vgic_dist_fault(struct device *d, vm_t *vm, fault_t *fault)
                 irq += (offset - 0x100) * 8;
                 vgic_dist_enable_irq(d, vm, irq);
             }
-            return ignore_fault(fault);
-
+            err = ignore_fault(fault);
+            break;
         case ACTION_ENABLE_CLR:
             data = fault_get_data(fault);
             /* Mask the data to write */
@@ -585,8 +593,8 @@ static int handle_vgic_dist_fault(struct device *d, vm_t *vm, fault_t *fault)
                 irq += (offset - 0x180) * 8;
                 vgic_dist_disable_irq(d, vm, irq);
             }
-            return ignore_fault(fault);
-
+            err = ignore_fault(fault);
+            break;
         case ACTION_PENDING_SET:
             data = fault_get_data(fault);
             /* Mask the data to write */
@@ -600,8 +608,8 @@ static int handle_vgic_dist_fault(struct device *d, vm_t *vm, fault_t *fault)
                 irq += (offset - 0x200) * 8;
                 vgic_dist_set_pending_irq(d, vm, irq);
             }
-            return ignore_fault(fault);
-
+            err = ignore_fault(fault);
+            break;
         case ACTION_PENDING_CLR:
             data = fault_get_data(fault);
             /* Mask the data to write */
@@ -615,20 +623,22 @@ static int handle_vgic_dist_fault(struct device *d, vm_t *vm, fault_t *fault)
                 irq += (offset - 0x280) * 8;
                 vgic_dist_clr_pending_irq(d, vm, irq);
             }
-            return ignore_fault(fault);
-
+            err = ignore_fault(fault);
+            break;
         case ACTION_SGI:
             assert(!"vgic SGI not implemented!\n");
-            return ignore_fault(fault);
-
+            err = ignore_fault(fault);
+            break;
         case ACTION_UNKNOWN:
         default:
             DDIST("Unknown action on offset 0x%x\n", offset);
-            return ignore_fault(fault);
+            err = ignore_fault(fault);
         }
     }
-    abandon_fault(fault);
-    return -1;
+    if (!err) {
+        return FAULT_HANDLED;
+    }
+    return FAULT_ERROR;
 }
 
 static void vgic_dist_reset(struct device *d)
@@ -734,6 +744,41 @@ int vm_inject_IRQ(virq_handle_t virq)
     return 0;
 }
 
+static memory_fault_result_t
+handle_vgic_vcpu_fault(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
+        void *cookie, guest_memory_arch_data_t arch_data) {
+    /* We shouldn't fault on the vgic vcpu region as it should be mapped in
+     * with all rights */
+    return FAULT_ERROR;
+}
+
+static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie) {
+    int err;
+    cspacepath_t frame;
+    vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
+    vm_t *vm = (vm_t *)cookie;
+
+    err = vka_cspace_alloc_path(vm->vka, &frame);
+    if (err) {
+        printf("Failed to allocate cslot for vgic vcpu\n");
+        return frame_result;
+    }
+    seL4_Word vka_cookie;
+    err = vka_utspace_alloc_at(vm->vka, &frame, kobject_get_type(KOBJECT_FRAME, 12), 12, GIC_VCPU_PADDR, &vka_cookie);
+    if (err) {
+        err = simple_get_frame_cap(vm->simple, (void*)GIC_VCPU_PADDR, 12, &frame);
+        if (err) {
+            ZF_LOGE("Failed to find device cap for vgic vcpu\n");
+            return frame_result;
+        }
+    }
+    frame_result.cptr = frame.capPtr;
+    frame_result.rights = seL4_AllRights;
+    frame_result.vaddr = GIC_CPU_PADDR;
+    frame_result.size_bits = vm->mem.page_size;
+    return frame_result;
+}
+
 /*
  * 1) completely virtual the distributor
  * 2) remap vcpu to cpu. Full access
@@ -757,34 +802,42 @@ int vm_install_vgic(vm_t *vm)
     }
 
     /* Distributor */
-    dist = dev_vgic_dist;
-    vgic->dist = map_emulated_device(vm, &dev_vgic_dist);
+    struct device *vgic_dist = (struct device *)malloc(sizeof(struct device));
+    if (!vgic_dist) {
+        return -1;
+    }
+    memcpy(vgic_dist, &dev_vgic_dist, sizeof(struct device));
+
+    vgic->dist = create_emulated_reservation_frame(vm, GIC_DIST_PADDR, handle_vgic_dist_fault,
+            (void *)vgic_dist);
+
     assert(vgic->dist);
     if (vgic->dist == NULL) {
         return -1;
     }
+    vgic_dist->priv = (void*)vgic;
+    vgic_dist_reset(vgic_dist);
 
-    dist.priv = (void *)vgic;
-    vgic_dist_reset(&dist);
-    err = vm_add_device(vm, &dist);
+    err = vm_add_device(vm, vgic_dist);
     if (err) {
-        free(dist.priv);
+        free(vgic_dist->priv);
         return -1;
     }
 
     /* Remap VCPU to CPU */
     vcpu = dev_vgic_vcpu;
-    addr = map_vm_device(vm, vcpu.pstart, dev_vgic_cpu.pstart, seL4_AllRights);
-    assert(addr);
-    if (!addr) {
-        free(dist.priv);
+    vm_memory_reservation_t *vgic_vcpu_reservation = vm_reserve_memory_at(vm, GIC_CPU_PADDR,
+            0x1000, handle_vgic_vcpu_fault, NULL);
+    err = vm_map_reservation(vm, vgic_vcpu_reservation, vgic_vcpu_iterator, (void *)vm);
+    if (err) {
+        free(vgic_dist->priv);
         return -1;
     }
     vcpu.pstart = dev_vgic_cpu.pstart;
     err = vm_add_device(vm, &vcpu);
     assert(!err);
     if (err) {
-        free(dist.priv);
+        free(vgic_dist->priv);
         return -1;
     }
 
@@ -796,7 +849,7 @@ const struct device dev_vgic_dist = {
     .name = "vgic.distributor",
     .pstart = GIC_DIST_PADDR,
     .size = 0x1000,
-    .handle_page_fault = &handle_vgic_dist_fault,
+    .handle_page_fault = NULL,
     .priv = NULL,
 };
 
