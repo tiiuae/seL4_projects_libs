@@ -11,6 +11,9 @@
  */
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_memory_util.h>
+#include <sel4vm/boot.h>
 
 #include "irq_combiner.h"
 #include "../../../devices.h"
@@ -142,15 +145,23 @@ int vmm_register_combiner_irq(int group, int idx, combiner_irq_handler_fn cb, vo
     return 0;
 }
 
-static int vcombiner_fault(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+vcombiner_fault(vm_t* vm, uintptr_t fault_addr, size_t fault_length,
+        void *cookie, guest_memory_arch_data_t arch_data)
 {
-    struct virq_combiner *vcombiner;
+    int err;
+    struct virq_combiner* vcombiner;
     int offset;
     int gidx;
     uint32_t mask;
     uint32_t *reg;
+    struct device* d;
+    fault_t* fault;
 
+    fault = arch_data.fault;
+    d = (struct device *)cookie;
     assert(d->priv);
+
     vcombiner = vcombiner_priv_get_vcombiner(d->priv);
     mask = fault_get_data_mask(fault);
     offset = fault_get_address(fault) - d->pstart;
@@ -178,7 +189,8 @@ static int vcombiner_fault(struct device *d, vm_t *vm, fault_t *fault)
                 index = i % 8;
                 DCOMBINER("enable IRQ %d.%d (%d)\n", group, index, group + 32);
             }
-            return ignore_fault(fault);
+            err = ignore_fault(fault);
+            break;
         case 1:
             data = fault_get_data(fault);
             data &= mask;
@@ -191,7 +203,8 @@ static int vcombiner_fault(struct device *d, vm_t *vm, fault_t *fault)
                 index = i % 8;
                 DCOMBINER("disable IRQ %d.%d (%d)\n", group, index, group + 32);
             }
-            return ignore_fault(fault);
+            err = ignore_fault(fault);
+            break;
         case 2:
         case 3:
         /* Read only registers */
@@ -201,8 +214,11 @@ static int vcombiner_fault(struct device *d, vm_t *vm, fault_t *fault)
     } else {
         DCOMBINER("Unknown register access at offset 0%x\n", offset);
     }
-
-    return advance_fault(fault);
+    if (err) {
+        return FAULT_ERROR;
+    }
+    advance_fault(fault);
+    return FAULT_HANDLED;
 }
 
 
@@ -212,15 +228,15 @@ const struct device dev_irq_combiner = {
     .name = "irq.combiner",
     .pstart = IRQ_COMBINER_PADDR,
     .size = 0x1000,
-    .handle_page_fault = vcombiner_fault,
+    .handle_page_fault = NULL,
     .priv = NULL
 };
 
 int vm_install_vcombiner(vm_t *vm)
 {
-    struct device combiner;
-    struct virq_combiner *vcombiner;
-    void *addr;
+    struct device *combiner;
+    struct virq_combiner* vcombiner;
+    void* addr;
     int err;
 
     err = irq_combiner_init(IRQ_COMBINER0, vm->io_ops, &_combiner.pcombiner);
@@ -229,22 +245,27 @@ int vm_install_vcombiner(vm_t *vm)
     }
 
     /* Distributor */
-    combiner = dev_irq_combiner;
+    combiner = (struct device *)malloc(sizeof(struct device));
+    if (!combiner) {
+        return -1;
+    }
+    memcpy(combiner, &dev_irq_combiner, sizeof(struct device));
+
     vcombiner = malloc(sizeof(*vcombiner));
     if (!vcombiner) {
         assert(!"Unable to malloc memory for VGIC");
         return -1;
     }
 
-    addr = map_emulated_device(vm, &combiner);
+    addr = create_emulated_reservation_frame(vm, IRQ_COMBINER_PADDR, vcombiner_fault, (void *)combiner);
     assert(addr);
     if (addr == NULL) {
         return -1;
     }
     memset(addr, 0, 0x1000);
-    vcombiner->vregs = (struct irq_combiner_map *)addr;
-    combiner.priv = (void *)vcombiner;
-    err = vm_add_device(vm, &combiner);
+    vcombiner->vregs = (struct irq_combiner_map*)addr;
+    combiner->priv = (void*)vcombiner;
+    err = vm_add_device(vm, combiner);
     if (err) {
         free(vcombiner);
         return -1;

@@ -14,6 +14,9 @@
 #include <sel4/types.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_memory_util.h>
+
 #include <sel4vm/devices.h>
 #include <utils/io.h>
 
@@ -41,20 +44,18 @@ static int usb_vm_reboot_hook(vm_t *vm, void *token)
 }
 
 
+static memory_fault_result_t
+handle_usb_fault(vm_t *vm, uintptr_t fault_addr, size_t fault_length, void *cookie) {
+    ZF_LOGE("Fault occured on passthrough usb device");
+    return FAULT_ERROR;
+}
 
 int vm_install_tk1_usb_passthrough_device(vm_t *vm)
 {
-
     /* Add the device */
-    void *addr = map_vm_device(vm, dev_usb.pstart, dev_usb.pstart, seL4_AllRights);
-    if (addr == NULL) {
-        ZF_LOGE("map_vm_device returned NULL");
-        return -1;
-    }
-    void *vmm_addr = vspace_share_mem(vm_get_vspace(vm), vm_get_vmm_vspace(vm), addr, 1,
-                                      seL4_PageBits, seL4_AllRights, 0);
+    void *vmm_addr = create_device_reservation_frame(vm, addr, handle_usb_fault, NULL);
     if (vmm_addr == NULL) {
-        ZF_LOGE("vspace_share_mem returned NULL");
+        ZF_LOGE("Failed to create passthrough usb device");
         return -1;
     }
 

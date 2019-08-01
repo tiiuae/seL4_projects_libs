@@ -1,0 +1,3 @@
+* Update src/plat driver implementation 
+    - Update usage of memory mechanisms
+    - Update to use different device (struct device) abstraction
