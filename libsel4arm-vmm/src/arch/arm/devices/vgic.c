@@ -158,6 +158,7 @@ struct lr_of {
     struct virq_handle irqs[MAX_LR_OVERFLOW]; /* circular buffer */
     size_t head;
     size_t tail;
+    bool full;
 };
 
 typedef struct vgic {
@@ -200,6 +201,7 @@ static int virq_init(vgic_t *vgic)
     memset(vgic->virqs, 0, sizeof(vgic->virqs));
     vgic->lr_overflow.head = 0;
     vgic->lr_overflow.tail = 0;
+    vgic->lr_overflow.full = false;
     return 0;
 }
 
@@ -298,14 +300,15 @@ static int vgic_vcpu_inject_irq(struct device *d, vm_t *vm, struct virq_handle *
     } else {
         /* Add to overflow list */
         int idx = vgic->lr_overflow.tail;
-        ZF_LOGF_IF(idx == vgic->lr_overflow.head &&
-                   vgic->lr_overflow.head != vgic->lr_overflow.tail, "too many overflow irqs");
+        ZF_LOGF_IF(vgic->lr_overflow.full, "too many overflow irqs");
         vgic->lr_overflow.irqs[idx] = *irq;
-        vgic->lr_overflow.tail = LR_OF_NEXT(idx);
+        vgic->lr_overflow.full = (vgic->lr_overflow.head == LR_OF_NEXT(vgic->lr_overflow.tail));
+        if (!vgic->lr_overflow.full) {
+            vgic->lr_overflow.tail = LR_OF_NEXT(idx);
+        }
         return 0;
     }
 }
-
 
 int handle_vgic_maintenance(vm_t *vm, int idx)
 {
@@ -338,6 +341,7 @@ int handle_vgic_maintenance(vm_t *vm, int idx)
     for (size_t i = vgic->lr_overflow.head; i != tail; i = LR_OF_NEXT(i)) {
         if (vgic_vcpu_inject_irq(d, vm, &vgic->lr_overflow.irqs[i]) == 0) {
             vgic->lr_overflow.head = LR_OF_NEXT(i);
+            vgic->lr_overflow.full = (vgic->lr_overflow.head == LR_OF_NEXT(vgic->lr_overflow.tail));
         } else {
             break;
         }
