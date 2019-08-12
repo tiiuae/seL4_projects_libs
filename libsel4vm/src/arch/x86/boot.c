@@ -25,7 +25,7 @@
 #include <sel4vm/guest_ram.h>
 
 #include <sel4vm/boot.h>
-#include <sel4vm/platform/guest_memory.h>
+#include <sel4vm/guest_memory.h>
 #include <sel4vm/guest_state.h>
 #include <sel4vm/processor/decode.h>
 #include <sel4vm/processor/apicdef.h>
@@ -106,10 +106,12 @@ vm_init_arch(vm_t *vm, void *cookie) {
         return -1;
     }
     /* Add local apic handler */
-    vmm_mmio_add_handler(&vm->arch.mmio_list, APIC_DEFAULT_PHYS_BASE,
-            APIC_DEFAULT_PHYS_BASE + sizeof(struct local_apic_regs) - 1,
-            NULL, "Local APIC", vmm_apic_mmio_read, vmm_apic_mmio_write);
-
+    vm_memory_reservation_t * apic_reservation = vm_reserve_memory_at(vm, APIC_DEFAULT_PHYS_BASE,
+            sizeof(struct local_apic_regs), apic_fault_callback, NULL);
+    if (!apic_reservation) {
+        ZF_LOGE("Failed to reserve apic memory");
+        return -1;
+    }
     /* ====== To be removed: will be refactored/removed ====== */
     err = vmm_pci_init(&vm->arch.pci);
     if (err) {

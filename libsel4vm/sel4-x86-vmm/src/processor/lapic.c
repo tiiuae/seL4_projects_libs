@@ -866,6 +866,17 @@ void vmm_apic_mmio_read(vm_vcpu_t *vcpu, void *cookie, uint32_t offset,
     return;
 }
 
+memory_fault_result_t apic_fault_callback(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
+        void *cookie, guest_memory_arch_data_t arch_data) {
+    vm_vcpu_t *vcpu = arch_data.vcpu;
+    if(arch_data.is_read) {
+        vmm_apic_mmio_read(vcpu, cookie, APIC_DEFAULT_PHYS_BASE - fault_addr, fault_length, arch_data.data);
+    } else {
+        vmm_apic_mmio_write(vcpu, cookie, APIC_DEFAULT_PHYS_BASE - fault_addr, fault_length, *(arch_data.data));
+    }
+    return FAULT_HANDLED;
+}
+
 void vmm_free_lapic(vm_vcpu_t *vcpu)
 {
     vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
