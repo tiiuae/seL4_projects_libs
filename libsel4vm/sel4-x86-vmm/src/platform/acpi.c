@@ -18,10 +18,11 @@ Author: W.A. */
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_ram.h>
+#include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_memory_util.h>
 
 #include "sel4vm/debug.h"
 #include "sel4vm/platform/acpi.h"
-#include "sel4vm/platform/guest_memory.h"
 #include "sel4vm/processor/apicdef.h"
 
 #include "platsupport/plat/acpi/acpi.h"
@@ -167,7 +168,12 @@ int make_guest_acpi_tables(vm_t *vm) {
 
     // RSDP
     uintptr_t rsdp_addr = ACPI_START;
-    err = vmm_alloc_guest_device_at(vm, ACPI_START, sizeof(acpi_rsdp_t));
+    vm_memory_reservation_t *rsdp_reservation = vm_reserve_memory_at(vm, rsdp_addr, sizeof(acpi_rsdp_t),
+            default_error_fault_callback, NULL);
+    if (!rsdp_reservation) {
+        return err;
+    }
+    err = map_frame_alloc_reservation(vm, rsdp_reservation);
     if (err) {
         return err;
     }

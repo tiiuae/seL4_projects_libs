@@ -27,7 +27,7 @@ typedef struct vm_vcpu vm_vcpu_t;
 #include "sel4vm/platform/vmexit.h"
 #include "sel4vm/driver/pci.h"
 #include "sel4vm/io.h"
-#include "sel4vm/platform/guest_memory.h"
+#include "sel4vm/guest_memory.h"
 #include "sel4vm/guest_state.h"
 #include "sel4vm/vmexit.h"
 #include "sel4vm/mmio.h"

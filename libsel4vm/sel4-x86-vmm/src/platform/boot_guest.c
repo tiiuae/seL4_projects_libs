@@ -27,11 +27,12 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_ram.h>
+#include <sel4vm/guest_memory_util.h>
 
 #include "sel4vm/debug.h"
 #include "sel4vm/processor/platfeature.h"
 #include "sel4vm/platform/boot_guest.h"
-#include "sel4vm/platform/guest_memory.h"
+#include "sel4vm/guest_memory.h"
 #include "sel4vm/platform/e820.h"
 #include "sel4vm/platform/bootinfo.h"
 #include "sel4vm/platform/elf_helper.h"
@@ -155,7 +156,10 @@ static int vmm_guest_load_boot_module_continued(vm_t *vm, uintptr_t paddr, void 
 }
 
 int vmm_guest_load_boot_module(vm_t *vm, const char *name) {
-    uintptr_t load_addr = guest_ram_largest_free_region_start(&vm->mem);
+    int err;
+    uintptr_t load_addr;
+    size_t region_size;
+    err = vm_ram_find_largest_free_region(vm, &load_addr, &region_size);
     printf("Loading boot module \"%s\" at 0x%x\n", name, (unsigned int)load_addr);
 
     size_t initrd_size = 0;
@@ -175,12 +179,9 @@ int vmm_guest_load_boot_module(vm_t *vm, const char *name) {
     vm->arch.guest_image.boot_module_paddr = load_addr;
     vm->arch.guest_image.boot_module_size = initrd_size;
 
-    guest_ram_mark_allocated(&vm->mem, load_addr, initrd_size);
+    vm_ram_mark_allocated(vm, load_addr, initrd_size);
     boot_guest_cookie_t pass = { .vm = vm, .file = file};
     vm_ram_touch(vm, load_addr, initrd_size, vmm_guest_load_boot_module_continued, &pass);
-
-    printf("Guest memory after loading initrd:\n");
-    print_guest_ram_regions(&vm->mem);
 
     fclose(file);
 
@@ -203,7 +204,7 @@ static int make_guest_cmd_line_continued(vm_t *vm, uintptr_t phys, void *vaddr, 
 static int make_guest_cmd_line(vm_t *vm, const char *cmdline) {
     /* Allocate command line from guest ram */
     int len = strlen(cmdline);
-    uintptr_t cmd_addr = guest_ram_allocate(&vm->mem, len + 1);
+    uintptr_t cmd_addr = vm_ram_allocate(vm, len + 1);
     if (cmd_addr == 0) {
         ZF_LOGE("Failed to allocate guest cmdline (length %d)", len);
         return -1;
@@ -232,15 +233,28 @@ static void make_guest_screen_info(vm_t *vm, struct screen_info *info) {
             uintptr_t aligned_pm = ROUND_DOWN(pm_base, PAGE_SIZE_4K);
             int size = vbeinfo.vbeInterfaceLen + (pm_base - aligned_pm);
             size = ROUND_UP(size, PAGE_SIZE_4K);
-            error = vmm_map_guest_device_at(vm, aligned_pm, aligned_pm, size);
+            vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, aligned_pm, size,
+                    default_error_fault_callback, NULL);
+            if (reservation) {
+                error = map_ut_alloc_reservation(vm, reservation);
+            } else {
+                error = -1;
+            }
         }
         if (error) {
             ZF_LOGE("Failed to map vbe protected mode interface for VESA frame buffer. Disabling");
         } else {
             fbuffer_size = vmm_plat_vesa_fbuffer_size(&vbeinfo.vbeModeInfoBlock);
-            base = vmm_map_guest_device(vm, vbeinfo.vbeModeInfoBlock.vbe20.physBasePtr, fbuffer_size, PAGE_SIZE_4K);
-            if (!base) {
-                ZF_LOGE("Failed to map base pointer for VESA frame buffer. Disabling");
+            vm_memory_reservation_t *reservation = vm_reserve_anon_memory(vm, fbuffer_size,
+                    default_error_fault_callback, NULL, &base);
+            if (!reservation) {
+                ZF_LOGE("Failed to reserve base pointer for VESA frame buffer. Disabling");
+            } else {
+                error = map_ut_alloc_reservation_with_base_paddr(vm, vbeinfo.vbeModeInfoBlock.vbe20.physBasePtr, reservation);
+                if (error) {
+                    ZF_LOGE("Failed to map base pointer for VESA frame buffer. Disabling");
+                    base = 0;
+                }
             }
         }
     }
@@ -273,8 +287,6 @@ static void make_guest_screen_info(vm_t *vm, struct screen_info *info) {
 static int make_guest_e820_map(struct e820entry *e820, vm_mem_t *guest_memory) {
     int i;
     int entry = 0;
-    printf("Constructing e820 memory map for guest with:\n");
-    print_guest_ram_regions(guest_memory);
     /* Create an initial entry at 0 that is reserved */
     e820[entry].addr = 0;
     e820[entry].size = 0;
@@ -320,7 +332,7 @@ static int make_guest_e820_map(struct e820entry *e820, vm_mem_t *guest_memory) {
 
 static int make_guest_boot_info(vm_t *vm) {
     /* TODO: Bootinfo struct needs to be allocated in location accessable by real mode? */
-    uintptr_t addr = guest_ram_allocate(&vm->mem, sizeof(struct boot_params));
+    uintptr_t addr = vm_ram_allocate(vm, sizeof(struct boot_params));
     if (addr == 0) {
         ZF_LOGE("Failed to allocate %zu bytes for guest boot info struct", sizeof(struct boot_params));
         return -1;
@@ -497,7 +509,13 @@ int vmm_load_guest_elf(vm_t *vm, const char *elfname, size_t alignment) {
     unsigned int n_headers = elf_getNumProgramHeaders(&elf);
 
     /* Find the largest guest ram region and use that for loading */
-    uintptr_t load_addr = guest_ram_largest_free_region_start(&vm->mem);
+    uintptr_t load_addr;
+    uintptr_t region_size;
+    ret = vm_ram_find_largest_free_region(vm, &load_addr, &region_size);
+    if (ret) {
+        ZF_LOGE("Unable to find ram region for loading");
+        return -1;
+    }
     /* Round up by the alignemnt. We just hope its still in the memory region.
      * if it isn't we will just fail when we try and get the frame */
     load_addr = ROUND_UP(load_addr, alignment);
@@ -556,7 +574,7 @@ int vmm_load_guest_elf(vm_t *vm, const char *elfname, size_t alignment) {
         }
 
         /* Record it as allocated */
-        guest_ram_mark_allocated(&vm->mem, dest_addr, segment_size);
+        vm_ram_mark_allocated(vm, dest_addr, segment_size);
     }
 
     /* Record the entry point. */
@@ -569,9 +587,6 @@ int vmm_load_guest_elf(vm_t *vm, const char *elfname, size_t alignment) {
     vm->arch.guest_image.link_vaddr = guest_kernel_vaddr;
     vm->arch.guest_image.relocation_offset = guest_relocation_offset;
     vm->arch.guest_image.alignment = alignment;
-
-    printf("Guest memory layout after loading elf\n");
-    print_guest_ram_regions(&vm->mem);
 
     fclose(file);
 
