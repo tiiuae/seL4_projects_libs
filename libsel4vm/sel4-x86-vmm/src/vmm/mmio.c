@@ -26,91 +26,12 @@
 #include "sel4vm/mmio.h"
 #include "sel4vm/processor/decode.h"
 
-#define EPT_VIOL_READ(qual) ((qual) & BIT(0))
-#define EPT_VIOL_WRITE(qual) ((qual) & BIT(1))
-#define EPT_VIOL_FETCH(qual) ((qual) & BIT(2))
-
 int vmm_mmio_init(vmm_mmio_list_t *list) {
     list->num_ranges = 0;
     list->ranges = malloc(0);
     assert(list->ranges);
 
     return 0;
-}
-
-// Returns 0 if the exit was handled
-int vmm_mmio_exit_handler(vm_vcpu_t *vcpu, uintptr_t addr, unsigned int qualification) {
-    int read = EPT_VIOL_READ(qualification);
-    int write = EPT_VIOL_WRITE(qualification);
-    int fetch = EPT_VIOL_FETCH(qualification);
-    if (read && write) {
-        // Indicates a fault while walking EPT
-        return -1;
-    }
-    if (fetch) {
-        // This is not MMIO
-        return -1;
-    }
-
-    // Search the list
-    for (int i = 0; i < vcpu->vm->arch.mmio_list.num_ranges; i++) {
-        vmm_mmio_range_t *range = &vcpu->vm->arch.mmio_list.ranges[i];
-
-        if (addr < range->start) {
-            return -1;
-        }
-
-        if (addr <= range->end) {
-            // Found a match
-            if (read && range->read_handler == NULL) {
-                return -1;
-            }
-            if (write && range->write_handler == NULL) {
-                return -1;
-            }
-
-            // Decode instruction
-            uint8_t ibuf[15];
-            int instr_len = vmm_guest_exit_get_int_len(&vcpu->vcpu_arch.guest_state);
-            vmm_fetch_instruction(vcpu,
-                    vmm_guest_state_get_eip(&vcpu->vcpu_arch.guest_state),
-                    vmm_guest_state_get_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr),
-                    instr_len, ibuf);
-
-            int reg;
-            uint32_t imm;
-            int size;
-            vmm_decode_instruction(ibuf, instr_len, &reg, &imm, &size);
-assert(size == 4); // we don't support non-32 bit accesses. TODO fix this
-
-            // Call handler
-            if (read) {
-                uint32_t result;
-                range->read_handler(vcpu, range->cookie, addr - range->start, size, &result);
-
-                // Inject into register
-                assert(reg >= 0 && reg < 8);
-                int vcpu_reg = vmm_decoder_reg_mapw[reg];
-                assert(vcpu_reg >= 0);
-                vmm_set_user_context(&vcpu->vcpu_arch.guest_state,
-                        vcpu_reg, result);
-            } else {
-                // Get value to pass in
-                uint32_t value = imm;
-                assert (reg >= 0);
-                int vcpu_reg =  vmm_decoder_reg_mapw[reg];
-                assert(vcpu_reg >= 0);
-                value = vmm_read_user_context(&vcpu->vcpu_arch.guest_state,
-                        vcpu_reg);
-
-                range->write_handler(vcpu, range->cookie, addr - range->start, size, value);
-            }
-
-            return 0;
-        }
-    }
-
-    return -1;
 }
 
 static int range_cmp(const void *a, const void *b) {
