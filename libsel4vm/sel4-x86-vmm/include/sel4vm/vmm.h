@@ -30,7 +30,6 @@ typedef struct vm_vcpu vm_vcpu_t;
 #include "sel4vm/guest_memory.h"
 #include "sel4vm/guest_state.h"
 #include "sel4vm/vmexit.h"
-#include "sel4vm/mmio.h"
 #include "sel4vm/processor/lapic.h"
 #include "sel4vm/vmm_manager.h"
 

@@ -31,7 +31,6 @@
 #include "sel4vm/processor/lapic.h"
 #include "sel4vm/processor/apicdef.h"
 #include "sel4vm/processor/msr.h"
-#include "sel4vm/mmio.h"
 
 #define APIC_BUS_CYCLE_NS 1
 

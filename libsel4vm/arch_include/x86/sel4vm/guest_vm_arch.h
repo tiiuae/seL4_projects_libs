@@ -14,7 +14,6 @@
 
 #include <sel4/sel4.h>
 
-#include <sel4vm/mmio.h>
 #include <sel4vm/guest_state.h>
 #include <sel4vm/platform/vmexit.h>
 #include <sel4vm/processor/lapic.h>
@@ -74,7 +73,6 @@ struct vm_arch {
     /* ====== To be removed: will be refactored/removed ====== */
     vmm_pci_space_t pci;
     vmm_io_port_list_t io_port;
-    vmm_mmio_list_t mmio_list;
     guest_image_t guest_image;
     /* ======================================================= */
 };

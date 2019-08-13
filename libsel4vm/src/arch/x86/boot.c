@@ -122,10 +122,6 @@ vm_init_arch(vm_t *vm, void *cookie) {
     if (err) {
         return err;
     }
-    err = vmm_mmio_init(&vm->arch.mmio_list);
-    if (err) {
-        return err;
-    }
     /* ======================================================= */
 
     /* Bind our interrupt pending callback */
