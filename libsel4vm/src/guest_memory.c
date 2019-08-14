@@ -64,7 +64,7 @@ typedef struct res_tree {
     struct res_tree *right;
 } res_tree;
 
-static int vspace_map_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation);
+static int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation);
 
 static inline int reservation_node_cmp(res_tree *x, res_tree *y) {
     if (x->addr < y->addr) {
@@ -289,7 +289,7 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, uintptr_t addr, size_t si
 
     if (!fault_reservation->is_mapped && fault_reservation->memory_map_iterator) {
         /* Deferred mapping */
-        err = vspace_map_reservation(vm, fault_reservation);
+        err = map_vm_memory_reservation(vm, fault_reservation);
         fault_reservation->memory_map_iterator = NULL;
         fault_reservation->memory_iterator_cookie = NULL;
         fault_reservation->is_mapped = true;
@@ -445,7 +445,7 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation) {
     return 0;
 }
 
-static int vspace_map_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation) {
+static int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation) {
     int err;
     uintptr_t reservation_addr = vm_reservation->addr;
     size_t reservation_size = vm_reservation->size;
@@ -483,7 +483,7 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
     reservation->memory_map_iterator = map_iterator;
     reservation->memory_iterator_cookie = cookie;
     if (!config_set(CONFIG_LIB_SEL4VM_DEFER_MEMORY_MAP)) {
-        err = vspace_map_reservation(vm, reservation);
+        err = map_vm_memory_reservation(vm, reservation);
         reservation->memory_map_iterator = NULL;
         reservation->memory_iterator_cookie = NULL;
         reservation->is_mapped = true;
