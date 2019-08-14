@@ -30,16 +30,17 @@ struct guest_mem_touch_params {
     ram_touch_callback_fn touch_fn;
 };
 
-static void push_guest_ram_region(vm_mem_t *guest_memory, uintptr_t start, size_t size, int allocated) {
+static int push_guest_ram_region(vm_mem_t *guest_memory, uintptr_t start, size_t size, int allocated) {
     int last_region = guest_memory->num_ram_regions;
-    if (size == 0) return;
     guest_memory->ram_regions = realloc(guest_memory->ram_regions, sizeof(vm_ram_region_t) * (last_region + 1));
     assert(guest_memory->ram_regions);
+    if (size == 0) return -1;
 
     guest_memory->ram_regions[last_region].start = start;
     guest_memory->ram_regions[last_region].size = size;
     guest_memory->ram_regions[last_region].allocated = allocated;
     guest_memory->num_ram_regions++;
+    return 0;
 }
 
 static int ram_region_cmp(const void *a, const void *b) {
@@ -80,9 +81,14 @@ static void collapse_guest_ram_regions(vm_mem_t *guest_memory) {
 }
 
 static int expand_guest_ram_region(vm_t *vm, uintptr_t start, size_t bytes) {
+    int err;
     vm_mem_t *guest_memory = &vm->mem;
     /* blindly put a new region at the end */
-    push_guest_ram_region(guest_memory, start, bytes, 0);
+    err = push_guest_ram_region(guest_memory, start, bytes, 0);
+    if (err) {
+        ZF_LOGE("Failed to expand guest ram region");
+        return err;
+    }
     /* sort the region we just added */
     sort_guest_ram_regions(guest_memory);
     /* collapse any contiguous regions */
