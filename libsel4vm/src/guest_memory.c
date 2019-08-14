@@ -292,11 +292,11 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, uintptr_t addr, size_t si
         err = map_vm_memory_reservation(vm, fault_reservation);
         fault_reservation->memory_map_iterator = NULL;
         fault_reservation->memory_iterator_cookie = NULL;
-        fault_reservation->is_mapped = true;
         if (err) {
             ZF_LOGE("Unable to handle memory fault: Failed to map memory");
             return FAULT_ERROR;
         }
+        fault_reservation->is_mapped = true;
         return FAULT_RESTART;
     }
 
@@ -490,13 +490,15 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
     reservation->memory_iterator_cookie = cookie;
     if (!config_set(CONFIG_LIB_SEL4VM_DEFER_MEMORY_MAP)) {
         err = map_vm_memory_reservation(vm, reservation);
+        /* We remove the iterator after attempting the mapping (regardless of success or fail)
+         * If failed its left to the caller to update the memory map iterator */
         reservation->memory_map_iterator = NULL;
         reservation->memory_iterator_cookie = NULL;
-        reservation->is_mapped = true;
         if (err) {
             ZF_LOGE("Failed to map vm reservation: Error when mapping into VM's vspace");
             return -1;
         }
+        reservation->is_mapped = true;
     }
 
     return 0;
