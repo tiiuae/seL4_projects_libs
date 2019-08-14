@@ -300,6 +300,10 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, uintptr_t addr, size_t si
         return FAULT_RESTART;
     }
 
+    if (!fault_reservation->fault_callback) {
+        return FAULT_ERROR;
+    }
+
     return fault_reservation->fault_callback(vm, addr, size, fault_reservation->fault_callback_cookie, arch_data);
 }
 
