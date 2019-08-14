@@ -53,12 +53,12 @@ static vm_frame_t device_frame_iterator(uintptr_t addr, void *cookie) {
 
     int ret = vka_cspace_alloc_path(vm->vka, &return_frame);
     if (ret) {
-        ZF_LOGE("Failed to allocate cspace path from emulated device frame");
+        ZF_LOGE("Failed to allocate cspace path from device frame");
         return frame_result;
     }
     ret = vka_cnode_copy(&return_frame, &device_cookie->mapped_frame, seL4_AllRights);
     if (ret) {
-        ZF_LOGE("Failed to cnode_copy for emulated frame");
+        ZF_LOGE("Failed to cnode_copy for device frame");
         return frame_result;
     }
     frame_result.cptr = return_frame.capPtr;
