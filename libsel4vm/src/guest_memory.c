@@ -438,9 +438,8 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation) {
         int page_size = vm->mem.page_size;
         int num_pages = ROUND_UP(reservation->size, BIT(page_size)) >> page_size;
         vspace_unmap_pages(&vm->mem.vm_vspace, (void *)reservation->addr, num_pages, page_size, vm->vka);
-    } else {
-        vspace_free_reservation(&vm->mem.vm_vspace, reservation->vspace_reservation);
     }
+    vspace_free_reservation(&vm->mem.vm_vspace, reservation->vspace_reservation);
     free_vm_reservation(vm, reservation);
     return 0;
 }
