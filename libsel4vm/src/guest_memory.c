@@ -409,12 +409,14 @@ vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size,
     new_reservation->res_type = MEM_ANON_RES;
 
     /* Register the sub-reservation token into the region - It will need to iterate over it on faults */
-    allocable_region->reservations = realloc(allocable_region->reservations,
+    vm_memory_reservation_t **extended_reservations = realloc(allocable_region->reservations,
             sizeof(vm_memory_reservation_t *) * (allocable_region->num_reservations + 1));
-    if (!allocable_region->reservations) {
+    if (!extended_reservations) {
         free_vm_reservation(vm, new_reservation);
         return NULL;
     }
+    allocable_region->reservations = extended_reservations;
+
     allocable_region->reservations[allocable_region->num_reservations] = new_reservation;
     allocable_region->alloc_addr += size;
     allocable_region->num_reservations += 1;

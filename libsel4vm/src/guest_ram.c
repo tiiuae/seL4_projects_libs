@@ -32,9 +32,12 @@ struct guest_mem_touch_params {
 
 static int push_guest_ram_region(vm_mem_t *guest_memory, uintptr_t start, size_t size, int allocated) {
     int last_region = guest_memory->num_ram_regions;
-    guest_memory->ram_regions = realloc(guest_memory->ram_regions, sizeof(vm_ram_region_t) * (last_region + 1));
-    assert(guest_memory->ram_regions);
     if (size == 0) return -1;
+    vm_ram_region_t *extended_regions = realloc(guest_memory->ram_regions, sizeof(vm_ram_region_t) * (last_region + 1));
+    if (extended_regions == NULL) {
+        return -1;
+    }
+    guest_memory->ram_regions = extended_regions;
 
     guest_memory->ram_regions[last_region].start = start;
     guest_memory->ram_regions[last_region].size = size;
