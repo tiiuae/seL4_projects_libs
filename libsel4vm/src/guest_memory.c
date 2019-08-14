@@ -473,10 +473,13 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
     int err;
     if (!vm) {
         ZF_LOGE("Failed to map vm reservation: Invalid NULL VM handle given");
+        return -1;
     } else if (!reservation) {
         ZF_LOGE("Failed to map vm reservation: Invalid NULL reservation given");
+        return -1;
     } else if (!map_iterator) {
         ZF_LOGE("Failed to map vm reservation: Invalid map iterator given");
+        return -1;
     }
 
     reservation->memory_map_iterator = map_iterator;
