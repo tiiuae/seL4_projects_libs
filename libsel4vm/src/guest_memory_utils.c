@@ -205,7 +205,7 @@ void *create_emulated_reservation_frame(vm_t *vm, uintptr_t addr,
     }
 
     /* Reserve emulated vm frame */
-    cookie->reservation = vm_reserve_memory_at(vm, addr, 0x1000,
+    cookie->reservation = vm_reserve_memory_at(vm, addr, PAGE_SIZE_4K,
             emul_fault_callback, (void *)emul_fault_cookie);
     if (!cookie->reservation) {
         ZF_LOGE("Failed to create emulated vm frame: Unable to reservate emulated frame");
@@ -264,7 +264,7 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr,
     }
 
     /* Reserve emulated vm frame */
-    cookie->reservation = vm_reserve_memory_at(vm, addr, 0x1000,
+    cookie->reservation = vm_reserve_memory_at(vm, addr, PAGE_SIZE_4K,
             fault_callback, (void *)fault_cookie);
     if (!cookie->reservation) {
         ZF_LOGE("Failed to create device vm frame: Unable to reservate emulated frame");
