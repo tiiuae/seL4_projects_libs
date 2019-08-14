@@ -160,6 +160,10 @@ handle_page_fault(vm_t* vm, fault_t* fault)
             print_fault(fault);
             abandon_fault(fault);
             return -1;
+        default: /* FAULT_UNHANDLED */
+            break;
+            /* We don't have a memory reservation for the faulting address
+             * We move onto the rest of the page fault handler */
     }
 
     /* See if the device is already in our address space */
