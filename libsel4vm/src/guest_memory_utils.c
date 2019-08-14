@@ -142,7 +142,7 @@ static vm_frame_t ut_allocman_iterator(uintptr_t addr, void *cookie) {
     return frame_result;
 }
 
-static vm_frame_t device_alloc_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t maybe_device_alloc_iterator(uintptr_t addr, void *cookie) {
     int ret;
     vka_object_t object;
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
@@ -353,6 +353,6 @@ int map_frame_alloc_reservation(vm_t *vm, vm_memory_reservation_t *reservation) 
     return vm_map_reservation(vm, reservation, frame_alloc_iterator, (void *)vm);
 }
 
-int map_device_reservation(vm_t *vm, vm_memory_reservation_t *reservation) {
-    return vm_map_reservation(vm, reservation, device_alloc_iterator, (void *)vm);
+int map_maybe_device_reservation(vm_t *vm, vm_memory_reservation_t *reservation) {
+    return vm_map_reservation(vm, reservation, maybe_device_alloc_iterator, (void *)vm);
 }

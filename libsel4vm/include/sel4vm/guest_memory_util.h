@@ -80,4 +80,4 @@ int map_frame_alloc_reservation(vm_t *vm, vm_memory_reservation_t *reservation);
  * @param[in] reservation           Pointer to reservation object being mapped
  * @return                          -1 on failure otherwise 0 for success
  */
-int map_device_reservation(vm_t *vm, vm_memory_reservation_t *reservation);
+int map_maybe_device_reservation(vm_t *vm, vm_memory_reservation_t *reservation);

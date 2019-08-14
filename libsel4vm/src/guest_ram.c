@@ -210,7 +210,7 @@ static int map_ram_reservation(vm_t *vm, vm_memory_reservation_t *ram_reservatio
     memory_map_iterator_fn map_iterator;
     int err;
     if (one_to_one) {
-        err = map_device_reservation(vm, ram_reservation);
+        err = map_maybe_device_reservation(vm, ram_reservation);
     } else {
         err = map_ut_allocman_reservation(vm, ram_reservation);
     }
