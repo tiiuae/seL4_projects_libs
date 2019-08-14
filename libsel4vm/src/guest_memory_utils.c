@@ -59,6 +59,7 @@ static vm_frame_t device_frame_iterator(uintptr_t addr, void *cookie) {
     ret = vka_cnode_copy(&return_frame, &device_cookie->mapped_frame, seL4_AllRights);
     if (ret) {
         ZF_LOGE("Failed to cnode_copy for device frame");
+        vka_cspace_free_path(vm->vka, return_frame);
         return frame_result;
     }
     frame_result.cptr = return_frame.capPtr;
@@ -102,6 +103,7 @@ static vm_frame_t ut_alloc_iterator(uintptr_t addr, void *cookie) {
     }
     if (error) {
         ZF_LOGE("Failed to allocate page");
+        vka_cspace_free_path(vm->vka, path);
         return frame_result;
     }
 
@@ -133,6 +135,7 @@ static vm_frame_t ut_allocman_iterator(uintptr_t addr, void *cookie) {
             kobject_get_type(KOBJECT_FRAME, page_size), &path, true, &ret);
     if (error) {
         ZF_LOGE("Failed to allocate page");
+        vka_cspace_free_path(vm->vka, path);
         return frame_result;
     }
     frame_result.cptr = path.capPtr;
@@ -272,6 +275,8 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr,
     err = vka_cspace_alloc_path(vm->vka, &cookie->mapped_frame);
     if (err) {
         ZF_LOGE("Failed to create device vm frame: Unable to allocate cslot");
+        vm_free_reserved_memory(vm, cookie->reservation);
+        ps_free(&ops->malloc_ops, sizeof(struct device_frame_cookie), (void **)&cookie);
         return NULL;
     }
 
@@ -283,12 +288,16 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr,
     }
     if (err) {
         ZF_LOGE("Failed to allocate page");
+        vka_cspace_free_path(vm->vka, cookie->mapped_frame);
+        vm_free_reserved_memory(vm, cookie->reservation);
+        ps_free(&ops->malloc_ops, sizeof(struct device_frame_cookie), (void **)&cookie);
         return NULL;
     }
     dev_addr = vspace_map_pages(vmm_vspace, &cookie->mapped_frame.capPtr,
                                   NULL, seL4_AllRights, 1, page_size, 0);
     if (!dev_addr) {
         ZF_LOGE("Failed to map device frame into vmm vspace");
+        vka_cspace_free_path(vm->vka, cookie->mapped_frame);
         vm_free_reserved_memory(vm, cookie->reservation);
         ps_free(&ops->malloc_ops, sizeof(struct device_frame_cookie), (void **)&cookie);
         return NULL;
@@ -302,6 +311,8 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr,
     err = vm_map_reservation(vm, cookie->reservation, device_frame_iterator, (void *)cookie);
     if (err) {
         ZF_LOGE("Failed to map device frame into vm");
+        vspace_unmap_pages(vmm_vspace, dev_addr, 1, page_size, NULL);
+        vka_cspace_free_path(vm->vka, cookie->mapped_frame);
         vm_free_reserved_memory(vm, cookie->reservation);
         ps_free(&ops->malloc_ops, sizeof(struct device_frame_cookie), (void **)&cookie);
         return NULL;
