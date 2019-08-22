@@ -42,6 +42,7 @@ if("${KernelArch}" STREQUAL "arm")
     file(
         GLOB
             arm_sources
+            src/arch/arm/vgic/*.c
             sel4-arm-vmm/src/*.c
             sel4-arm-vmm/src/arch/arm/*/*.c
             sel4-arm-vmm/src/images/*.c

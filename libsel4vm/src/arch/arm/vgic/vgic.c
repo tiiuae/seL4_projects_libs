@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -50,14 +50,14 @@
 #include <vka/vka.h>
 #include <vka/capops.h>
 
+#include <sel4vm/vm.h>
+
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_memory.h>
 #include <sel4vm/guest_memory_util.h>
 
-#include "../../../devices.h"
-#include "../../../vm.h"
-
+#include <sel4vm/plat/devices.h>
 //#define DEBUG_IRQ
 //#define DEBUG_DIST
 
@@ -111,7 +111,9 @@ struct virq_handle {
     vm_t *vm;
 };
 
-static inline vm_t *virq_get_vm(struct virq_handle *irq)
+typedef struct virq_handle* virq_handle_t;
+
+static inline vm_t* virq_get_vm(struct virq_handle* irq)
 {
     return irq->vm;
 }

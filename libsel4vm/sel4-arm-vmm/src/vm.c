@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -30,8 +30,6 @@
 
 #include <sel4/sel4.h>
 #include <sel4/messages.h>
-
-#include "arch/arm/devices/vgic.h"
 
 #include "devices.h"
 
