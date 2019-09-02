@@ -13,15 +13,15 @@
 #pragma once
 
 /* ARM VM Exit Reasons */
-#define VM_GUEST_ABORT_EXIT 0
-#define VM_SYSCALL_EXIT 1
-#define VM_USER_EXCEPTION_EXIT 2
-#define VM_VGIC_MAINTENANCE_EXIT 3
-#define VM_VCPU_EXIT 4
-#define VM_UNKNOWN_EXIT 5
-
-/* Number of VM Exit reasons */
-#define VM_NUM_EXIT_HANDLERS 6
+enum arm_vm_exit_reasons {
+    VM_GUEST_ABORT_EXIT,
+    VM_SYSCALL_EXIT,
+    VM_USER_EXCEPTION_EXIT,
+    VM_VGIC_MAINTENANCE_EXIT,
+    VM_VCPU_EXIT,
+    VM_UNKNOWN_EXIT,
+    VM_NUM_EXITS
+};
 
 /* HSR Constants */
 #define HSR_WFI 0x1
