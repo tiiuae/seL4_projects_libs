@@ -18,6 +18,8 @@
 #include <sel4/sel4.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/boot.h>
+
 #include "sel4vm/debug.h"
 #include "sel4vm/vmm.h"
 #include "sel4vm/processor/decode.h"
@@ -152,12 +154,9 @@ void vmm_check_external_interrupt(vm_t *vm)
     /* TODO if all lapics are enabled, store which lapic
        (only one allowed) receives extints, and short circuit this */
     if (vm->callbacks.has_interrupt() != -1) {
-        for (int i = 0; i < vm->num_vcpus; i++) {
-            vm_vcpu_t *vcpu = vm->vcpus[i];
-            if (vmm_apic_accept_pic_intr(vcpu)) {
-                vmm_vcpu_accept_interrupt(vcpu);
-                break; /* Only one VCPU can take a PIC interrupt */
-            }
+        vm_vcpu_t *vcpu = vm->vcpus[BOOT_VCPU];
+        if (vmm_apic_accept_pic_intr(vcpu)) {
+            vmm_vcpu_accept_interrupt(vcpu);
         }
     }
 }

@@ -146,22 +146,20 @@ void vmm_run(vm_t *vm) {
     int UNUSED error;
     DPRINTF(2, "VMM MAIN HOST MODULE STARTED\n");
 
-    for (int i = 0; i < vm->num_vcpus; i++) {
-        vm_vcpu_t *vcpu = vm->vcpus[i];
+    vm_vcpu_t *vcpu = vm->vcpus[BOOT_VCPU];
 
-        vcpu->vcpu_arch.guest_state.virt.interrupt_halt = 0;
-        vcpu->vcpu_arch.guest_state.exit.in_exit = 0;
+    vcpu->vcpu_arch.guest_state.virt.interrupt_halt = 0;
+    vcpu->vcpu_arch.guest_state.exit.in_exit = 0;
 
-        /* sync the existing guest state */
-        vmm_sync_guest_state(vcpu);
-        vmm_sync_guest_context(vcpu);
-        /* now invalidate everything */
-        assert(vmm_guest_state_no_modified(&vcpu->vcpu_arch.guest_state));
-        vmm_guest_state_invalidate_all(&vcpu->vcpu_arch.guest_state);
-    }
+    /* sync the existing guest state */
+    vmm_sync_guest_state(vcpu);
+    vmm_sync_guest_context(vcpu);
+    /* now invalidate everything */
+    assert(vmm_guest_state_no_modified(&vcpu->vcpu_arch.guest_state));
+    vmm_guest_state_invalidate_all(&vcpu->vcpu_arch.guest_state);
 
     /* Start the boot vcpu guest thread running */
-    vm->vcpus[BOOT_VCPU]->vcpu_online = 1;
+    vcpu->vcpu_online = 1;
 
     while (1) {
         /* Block and wait for incoming msg or VM exits. */
@@ -243,14 +241,12 @@ int vmm_finalize(vm_t *vm) {
     int err;
     vmm_exit_init(vm);
 
-    for (int i = 0; i < vm->num_vcpus; i++) {
-        vm_vcpu_t *vcpu = vm->vcpus[i];
+    vm_vcpu_t *vcpu = vm->vcpus[BOOT_VCPU];
 
-        vmm_init_guest_thread_state(vcpu);
-        err = vmm_io_port_init_guest(&vm->arch.io_port, vm->simple, vcpu->vcpu.cptr, vm->vka);
-        if (err) {
-            return err;
-        }
+    vmm_init_guest_thread_state(vcpu);
+    err = vmm_io_port_init_guest(&vm->arch.io_port, vm->simple, vcpu->vcpu.cptr, vm->vka);
+    if (err) {
+        return err;
     }
     return 0;
 }

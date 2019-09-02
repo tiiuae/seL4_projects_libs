@@ -498,36 +498,19 @@ int vmm_irq_delivery_to_apic(vm_vcpu_t *src_vcpu, struct vmm_lapic_irq *irq, uns
         return vmm_apic_set_irq(src_vcpu, irq, dest_map);
     }
 
-    for (i = 0; i < vm->num_vcpus; i++) {
-        vm_vcpu_t *dest_vcpu = vm->vcpus[i];
+    vm_vcpu_t *dest_vcpu = vm->vcpus[BOOT_VCPU];
 
-        if (!vmm_apic_hw_enabled(dest_vcpu->vcpu_arch.lapic)) {
-            continue;
-        }
-
-        if (!vmm_apic_match_dest(dest_vcpu, src, irq->shorthand,
-                        irq->dest_id, irq->dest_mode)) {
-            continue;
-        }
-
-        if (!vmm_is_dm_lowest_prio(irq)) {
-            // Normal delivery
-            if (r < 0) {
-                r = 0;
-            }
-            r += vmm_apic_set_irq(dest_vcpu, irq, dest_map);
-        } else if (vmm_apic_enabled(dest_vcpu->vcpu_arch.lapic)) {
-            // Pick vcpu with lowest priority to deliver to
-            if (!lowest) {
-                lowest = dest_vcpu;
-            } else if (vmm_apic_compare_prio(dest_vcpu, lowest) < 0) {
-                lowest = dest_vcpu;
-            }
-        }
+    if (!vmm_apic_hw_enabled(dest_vcpu->vcpu_arch.lapic)) {
+        return r;
     }
 
-    if (lowest) {
-        r = vmm_apic_set_irq(lowest, irq, dest_map);
+    if (!vmm_apic_match_dest(dest_vcpu, src, irq->shorthand,
+                    irq->dest_id, irq->dest_mode)) {
+        return r;
+    }
+
+    if (!vmm_is_dm_lowest_prio(irq) || (vmm_apic_enabled(dest_vcpu->vcpu_arch.lapic))) {
+        r = vmm_apic_set_irq(dest_vcpu, irq, dest_map);
     }
 
     return r;
