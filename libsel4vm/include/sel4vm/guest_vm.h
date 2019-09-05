@@ -29,6 +29,8 @@ typedef struct vm_ram_region vm_ram_region_t;
 typedef struct vm_run vm_run_t;
 typedef struct vm_arch vm_arch_t;
 
+typedef memory_fault_result_t (*unhandled_mem_fault_callback_fn)(vm_t *vm, uintptr_t paddr,
+        size_t len, bool is_read, seL4_Word *data, seL4_Word data_mask, void *cookie);
 
 typedef struct vm_plat_callbacks {
     int (*get_interrupt)();
@@ -71,6 +73,8 @@ struct vm_mem {
     int page_size;
     /* Memory reservations */
     vm_memory_reservation_cookie_t *reservation_cookie;
+    unhandled_mem_fault_callback_fn unhandled_mem_fault_handler;
+    void *unhandled_mem_fault_cookie;
 };
 
 struct vm_tcb {
@@ -131,3 +135,7 @@ struct vm {
 
 /* Run the VM */
 int vm_run(vm_t *vm);
+
+/* Unhandled fault callback registration functions */
+int vm_register_unhandled_mem_fault_callback(vm_t *vm, unhandled_mem_fault_callback_fn fault_handler,
+                                             void *cookie);

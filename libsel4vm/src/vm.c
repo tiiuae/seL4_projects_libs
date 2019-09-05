@@ -23,3 +23,19 @@ int vm_run(vm_t *vm) {
     vm->vcpus[BOOT_VCPU]->vcpu_online = true;
     return vm_run_arch(vm);
 }
+
+int vm_register_unhandled_mem_fault_callback(vm_t *vm, unhandled_mem_fault_callback_fn fault_handler,
+                                             void *cookie) {
+    if (!vm) {
+        ZF_LOGE("Failed to register mem fault callback: Invalid VM handle");
+        return -1;
+    }
+
+    if (!fault_handler) {
+        ZF_LOGE("Failed to register mem fault callback: Invalid handler");
+        return -1;
+    }
+    vm->mem.unhandled_mem_fault_handler = fault_handler;
+    vm->mem.unhandled_mem_fault_cookie = cookie;
+    return 0;
+}
