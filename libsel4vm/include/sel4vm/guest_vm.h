@@ -27,29 +27,8 @@ typedef struct vm_vcpu vm_vcpu_t;
 typedef struct vm_mem vm_mem_t;
 typedef struct vm_ram_region vm_ram_region_t;
 typedef struct vm_run vm_run_t;
-typedef struct vm_mmio_range vm_mmio_range_t;
 typedef struct vm_arch vm_arch_t;
 
-typedef int (*vm_mmio_fault_fn)(vm_t *vm, vm_mmio_range_t *range, void *cookie,
-        uint32_t addr);
-
-typedef struct vm_mmio_range {
-    /* MMIO start and end address */
-    uintptr_t start;
-    size_t size;
-    /* Fault handler for mmio region */
-    vm_mmio_fault_fn fault_handler;
-    /* Private data */
-    void *priv;
-    /* Debugging & Identification */
-    const char *name;
-} vm_mmio_range_t;
-
-typedef struct vm_mmio_list {
-    /* Sorted array of mmio ranges */
-    vm_mmio_range_t *ranges;
-    int num_ranges;
-} vm_mmio_list_t;
 
 typedef struct vm_plat_callbacks {
     int (*get_interrupt)();
@@ -57,15 +36,6 @@ typedef struct vm_plat_callbacks {
     int (*do_async)(seL4_Word badge, seL4_Word label);
     seL4_CPtr (*get_async_event_notification)();
 } vm_plat_callbacks_t;
-
-typedef struct vm_mmio_abort {
-    uintptr_t paddr;
-    size_t len;
-    bool is_write;
-    seL4_Word data;
-    seL4_Word data_mask;
-    int abort_result;
-} vm_mmio_abort_t;
 
 typedef struct vm_io_abort {
     unsigned int port_no;
@@ -99,8 +69,6 @@ struct vm_mem {
     struct vm_ram_region *ram_regions;
     /* Default page size to use */
     int page_size;
-    /* Memory mapped io management for emulated devices */
-    vm_mmio_list_t mmio_list;
     /* Memory reservations */
     vm_memory_reservation_cookie_t *reservation_cookie;
 };
@@ -134,8 +102,6 @@ struct vm_vcpu {
 struct vm_run {
     /* Records last vm exit reason */
     int exit_reason;
-    /* Records last vm mmio data abort */
-    vm_mmio_abort_t mmio_abort;
     vm_io_abort_t io_abort;
 };
 
