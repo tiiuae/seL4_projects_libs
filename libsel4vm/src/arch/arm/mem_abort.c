@@ -95,71 +95,6 @@ vm_find_device_by_ipa(vm_t* vm, uintptr_t ipa) {
     return vm_find_device(vm, &cmp_ipa, &ipa);
 }
 
-static int alloc_vm_device_cap(uintptr_t addr, vm_t* vm, vm_frame_t *frame_result) {
-    int err;
-    cspacepath_t frame;
-    err = vka_cspace_alloc_path(vm->vka, &frame);
-    if (err) {
-        ZF_LOGE("Failed to allocate cslot\n");
-        return -1;
-    }
-    seL4_Word cookie;
-    err = vka_utspace_alloc_at(vm->vka, &frame, kobject_get_type(KOBJECT_FRAME, 12), 12, addr, &cookie);
-    if (err) {
-        err = simple_get_frame_cap(vm->simple, (void*)addr, 12, &frame);
-        if (err) {
-            return -1;
-        }
-    }
-    frame_result->cptr = frame.capPtr;
-    frame_result->rights = seL4_AllRights;
-    frame_result->vaddr = addr;
-    frame_result->size_bits = vm->mem.page_size;
-    return 0;
-}
-
-static int alloc_vm_ram_cap(uintptr_t addr, vm_t* vm, vm_frame_t *frame_result) {
-    int err;
-    cspacepath_t frame;
-    vka_object_t frame_obj;
-    err = vka_alloc_frame_maybe_device(vm->vka, 12, true, &frame_obj);
-    if (err) {
-        ZF_LOGF("Failed vka_alloc_frame_maybe_device");
-        return -1;
-    }
-    vka_cspace_make_path(vm->vka, frame_obj.cptr, &frame);
-    frame_result->cptr = frame.capPtr;
-    frame_result->rights = seL4_AllRights;
-    frame_result->vaddr = addr;
-    frame_result->size_bits = vm->mem.page_size;
-    return 0;
-}
-
-static vm_frame_t on_demand_iterator(uintptr_t addr, void *cookie) {
-    int err;
-    uintptr_t paddr = addr & ~0xfff;
-    vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
-    vm_t *vm = (vm_t *)cookie;
-    /* Attempt allocating device memory */
-    err = alloc_vm_device_cap(paddr, vm, &frame_result);
-    if (!err) {
-        return frame_result;
-    }
-    /* Attempt allocating ram memory */
-    err = alloc_vm_ram_cap(paddr, vm, &frame_result);
-    if (err) {
-        ZF_LOGE("Failed to create on demand memory for addr 0x%x", addr);
-    }
-    return frame_result;
-}
-
-static memory_fault_result_t
-handle_on_demand_fault_callback(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
-        void *cookie, guest_memory_arch_data_t arch_data) {
-    ZF_LOGE("Fault for on demand memory region: 0x%x", fault_addr);
-    return FAULT_ERROR;
-}
-
 int
 handle_page_fault(vm_t* vm, fault_t* fault)
 {
@@ -210,30 +145,10 @@ handle_page_fault(vm_t* vm, fault_t* fault)
                       fault_get_address(fault), fault_get_ctx(fault)->pc);
         }
         return d->handle_page_fault(d, vm, fault);
-    } else {
-#ifdef CONFIG_ONDEMAND_DEVICE_INSTALL
-        uintptr_t addr = fault_get_address(fault) & ~0xfff;
-        int mapped;
-        vm_memory_reservation_t *reservation;
-        switch (addr) {
-        case 0:
-            print_fault(fault);
-            return -1;
-        default:
-            reservation = vm_reserve_memory_at(vm, addr, 0x1000,
-                    handle_on_demand_fault_callback, NULL);
-            mapped = vm_map_reservation(vm, reservation, on_demand_iterator, (void *)vm);
-            if (!mapped) {
-                restart_fault(fault);
-                return 0;
-            }
-            ZF_LOGW("Unhandled fault on address 0x%x\n", (uint32_t)addr);
-        }
-#endif
-        print_fault(fault);
-        abandon_fault(fault);
-        return -1;
     }
+    print_fault(fault);
+    abandon_fault(fault);
+    return -1;
 }
 
 int vm_guest_mem_abort_handler(vm_vcpu_t *vcpu) {
