@@ -53,8 +53,34 @@ static void decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *
     vmm_decode_instruction(ibuf, instr_len, reg, imm, size);
 }
 
+static int unhandled_memory_fault(vm_t *vm, vm_vcpu_t *vcpu, uint32_t guest_phys,
+        size_t size, bool is_read, uint32_t data, int vcpu_reg) {
+    seL4_Word fault_data = 0;
+    if (!is_read) {
+        fault_data = data;
+    }
+    memory_fault_result_t fault_result = vm->mem.unhandled_mem_fault_handler(vm, guest_phys, size,
+            is_read, &fault_data, UINT_MAX, vm->mem.unhandled_mem_fault_cookie);
+    switch(fault_result) {
+        case FAULT_ERROR:
+            print_ept_violation(vcpu);
+            return -1;
+        case FAULT_HANDLED:
+            if (is_read) {
+                vmm_set_user_context(&vcpu->vcpu_arch.guest_state,
+                        vcpu_reg, fault_data);
+            }
+            return 0;
+        case FAULT_IGNORE:
+            vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+            return 0;
+    }
+    return -1;
+}
+
 /* Handling EPT violation VMExit Events. */
 int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
+    int err;
     uintptr_t guest_phys = vmm_guest_exit_get_physical(&vcpu->vcpu_arch.guest_state);
     unsigned int qualification = vmm_guest_exit_get_qualification(&vcpu->vcpu_arch.guest_state);
 
@@ -111,6 +137,14 @@ int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
         case FAULT_IGNORE:
             vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
             return VM_EXIT_HANDLED;
+        case FAULT_UNHANDLED:
+            if (vcpu->vm->mem.unhandled_mem_fault_handler) {
+                err = unhandled_memory_fault(vcpu->vm, vcpu, guest_phys, size, read, value, vcpu_reg);
+                if (err) {
+                    return -1;
+                }
+                return 0;
+            }
     }
     ZF_LOGE("Failed to handle ept fault");
     print_ept_violation(vcpu);
