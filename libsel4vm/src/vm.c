@@ -39,3 +39,19 @@ int vm_register_unhandled_mem_fault_callback(vm_t *vm, unhandled_mem_fault_callb
     vm->mem.unhandled_mem_fault_cookie = cookie;
     return 0;
 }
+
+int vm_register_notification_callback(vm_t *vm, notification_callback_fn notification_callback,
+                                      void *cookie) {
+    if (!vm) {
+        ZF_LOGE("Failed to register notification callback: Invalid VM handle");
+        return -1;
+    }
+
+    if (!notification_callback) {
+        ZF_LOGE("Failed to register notification callback: Invalid callback");
+        return -1;
+    }
+    vm->run.notification_callback = notification_callback;
+    vm->run.notification_callback_cookie = cookie;
+    return 0;
+}

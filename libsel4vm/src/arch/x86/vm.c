@@ -173,12 +173,18 @@ int vm_run_arch(vm_t *vm) {
         if (fault == SEL4_VMENTER_RESULT_NOTIF) {
             assert(badge >= vm->num_vcpus);
             /* assume interrupt */
-            int raise = vm->callbacks.do_async(badge, 0);
-            if (raise == 0) {
-                /* Check if this caused PIC to generate interrupt */
-                vmm_check_external_interrupt(vm);
-            }
-            continue;
+            if (vm->run.notification_callback) {
+                int raise = vm->run.notification_callback(vm, badge, 0, vm->run.notification_callback_cookie);
+                if (raise == 0) {
+                    /* Check if this caused PIC to generate interrupt */
+                    vmm_check_external_interrupt(vm);
+                } else if (raise == -1) {
+                    ret = VM_EXIT_HANDLE_ERROR;
+                }
+             } else {
+                ZF_LOGE("Unable to handle VM notification. Exiting");
+                ret = VM_EXIT_HANDLE_ERROR;
+             }
         } else {
             /* Handle the vm exit */
             ret = handle_vm_exit(vcpu);

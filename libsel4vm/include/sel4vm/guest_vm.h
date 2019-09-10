@@ -31,11 +31,12 @@ typedef struct vm_arch vm_arch_t;
 
 typedef memory_fault_result_t (*unhandled_mem_fault_callback_fn)(vm_t *vm, uintptr_t paddr,
         size_t len, bool is_read, seL4_Word *data, seL4_Word data_mask, void *cookie);
+typedef int (*notification_callback_fn)(vm_t *vm, seL4_Word badge, seL4_Word label,
+        void *cookie);
 
 typedef struct vm_plat_callbacks {
     int (*get_interrupt)();
     int (*has_interrupt)();
-    int (*do_async)(seL4_Word badge, seL4_Word label);
     seL4_CPtr (*get_async_event_notification)();
 } vm_plat_callbacks_t;
 
@@ -106,6 +107,8 @@ struct vm_vcpu {
 struct vm_run {
     /* Records last vm exit reason */
     int exit_reason;
+    notification_callback_fn notification_callback;
+    void *notification_callback_cookie;
     vm_io_abort_t io_abort;
 };
 
@@ -139,3 +142,5 @@ int vm_run(vm_t *vm);
 /* Unhandled fault callback registration functions */
 int vm_register_unhandled_mem_fault_callback(vm_t *vm, unhandled_mem_fault_callback_fn fault_handler,
                                              void *cookie);
+int vm_register_notification_callback(vm_t *vm, notification_callback_fn notification_callback,
+                                      void *cookie);

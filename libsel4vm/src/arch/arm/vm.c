@@ -169,7 +169,17 @@ int vm_run_arch(vm_t *vm) {
                 vm->run.exit_reason = VM_GUEST_ERROR_EXIT;
             }
         } else {
-            err = vm->callbacks.do_async(sender_badge, label);
+            if (vm->run.notification_callback) {
+                err = vm->run.notification_callback(vm, sender_badge, label,
+                        vm->run.notification_callback_cookie);
+            } else {
+                ZF_LOGE("Unable to handle VM notification. Exiting");
+                err = -1;
+            }
+            if (err) {
+                ret = -1;
+                vm->run.exit_reason = VM_GUEST_ERROR_EXIT;
+            }
         }
     }
 
