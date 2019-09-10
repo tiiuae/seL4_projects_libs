@@ -66,14 +66,15 @@ struct vm_arch {
     /* VM Call handlers */
     vmcall_handler_t *vmcall_handlers;
     unsigned int vmcall_num_handlers;
-    /* Callback notification */
-    seL4_CPtr callback_notification;
     /* Guest physical address of where we built the vm's page directory */
     uintptr_t guest_pd;
+    seL4_CPtr notification_cap;
     /* ====== To be removed: will be refactored/removed ====== */
     vmm_pci_space_t pci;
     vmm_io_port_list_t io_port;
     guest_image_t guest_image;
+    int (*get_interrupt)();
+    int (*has_interrupt)();
     /* ======================================================= */
 };
 

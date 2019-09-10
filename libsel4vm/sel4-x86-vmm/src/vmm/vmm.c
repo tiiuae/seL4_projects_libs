@@ -95,7 +95,7 @@ seL4_CPtr vmm_create_async_event_notification_cap(vm_t *vm, seL4_Word badge) {
     }
 
     // notification cap
-    seL4_CPtr ntfn = vm->callbacks.get_async_event_notification();
+    seL4_CPtr ntfn = vm->arch.notification_cap;
 
     // path to notification cap slot
     cspacepath_t ntfn_path;

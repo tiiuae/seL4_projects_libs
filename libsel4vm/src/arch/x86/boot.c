@@ -73,6 +73,12 @@ int
 vm_init_arch(vm_t *vm, void *cookie) {
     int err;
 
+    /* Initialise x86 specific fields */
+    struct vm_init_x86_config *vm_init_x86_params = cookie;
+    vm->arch.get_interrupt = vm_init_x86_params->get_interrupt;
+    vm->arch.has_interrupt = vm_init_x86_params->has_interrupt;
+    vm->arch.notification_cap = vm_init_x86_params->notification_cap;
+
     if (!vm) {
         ZF_LOGE("Failed to initialise vm arch: Invalid vm");
         return -1;
@@ -126,10 +132,8 @@ vm_init_arch(vm_t *vm, void *cookie) {
     /* ======================================================= */
 
     /* Bind our interrupt pending callback */
-    seL4_CPtr notification = vm->callbacks.get_async_event_notification();
-    err = seL4_TCB_BindNotification(simple_get_init_cap(vm->simple, seL4_CapInitThreadTCB), vm->callbacks.get_async_event_notification());
+    err = seL4_TCB_BindNotification(simple_get_init_cap(vm->simple, seL4_CapInitThreadTCB), vm->arch.notification_cap);
     assert(err == seL4_NoError);
-    vm->arch.callback_notification = notification;
     return err;
 }
 

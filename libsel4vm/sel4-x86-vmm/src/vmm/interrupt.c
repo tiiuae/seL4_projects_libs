@@ -155,7 +155,7 @@ void vmm_check_external_interrupt(vm_t *vm)
 {
     /* TODO if all lapics are enabled, store which lapic
        (only one allowed) receives extints, and short circuit this */
-    if (vm->callbacks.has_interrupt() != -1) {
+    if (vm->arch.has_interrupt() != -1) {
         vm_vcpu_t *vcpu = vm->vcpus[BOOT_VCPU];
         if (vmm_apic_accept_pic_intr(vcpu)) {
             vmm_vcpu_accept_interrupt(vcpu);

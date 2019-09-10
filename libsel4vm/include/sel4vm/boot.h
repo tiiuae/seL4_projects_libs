@@ -23,7 +23,7 @@
 #define BOOT_VCPU 0
 
 /* Initialise/Create VM */
-int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace, vm_plat_callbacks_t callbacks, int priority,
+int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace, int priority,
         ps_io_ops_t* io_ops, const char *name, void *cookie);
 
 /* Create a VPCU for a given VM */

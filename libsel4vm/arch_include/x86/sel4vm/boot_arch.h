@@ -13,3 +13,11 @@
 #pragma once
 
 #define MAX_NUM_VCPUS 1
+
+typedef struct vm_init_x86_config vm_init_x86_config_t;
+
+struct vm_init_x86_config {
+    seL4_CPtr notification_cap;
+    int (*get_interrupt)();
+    int (*has_interrupt)();
+};

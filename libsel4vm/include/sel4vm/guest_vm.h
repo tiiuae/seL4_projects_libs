@@ -34,12 +34,6 @@ typedef memory_fault_result_t (*unhandled_mem_fault_callback_fn)(vm_t *vm, uintp
 typedef int (*notification_callback_fn)(vm_t *vm, seL4_Word badge, seL4_Word label,
         void *cookie);
 
-typedef struct vm_plat_callbacks {
-    int (*get_interrupt)();
-    int (*has_interrupt)();
-    seL4_CPtr (*get_async_event_notification)();
-} vm_plat_callbacks_t;
-
 typedef struct vm_io_abort {
     unsigned int port_no;
     bool is_in;
@@ -129,7 +123,6 @@ struct vm {
     ps_io_ops_t* io_ops;
     simple_t *simple;
     allocman_t *allocman;
-    vm_plat_callbacks_t callbacks;
     /* Debugging & Identification */
     char* vm_name;
     unsigned int vm_id;

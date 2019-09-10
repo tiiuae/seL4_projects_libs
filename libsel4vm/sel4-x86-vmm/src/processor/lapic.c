@@ -50,12 +50,12 @@
 
 inline static int pic_get_interrupt(vm_t *vm)
 {
-    return vm->callbacks.get_interrupt();
+    return vm->arch.get_interrupt();
 }
 
 inline static int pic_has_interrupt(vm_t *vm)
 {
-    return vm->callbacks.has_interrupt();
+    return vm->arch.has_interrupt();
 }
 
 struct vmm_lapic_irq {

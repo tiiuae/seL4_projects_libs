@@ -26,7 +26,7 @@
 static int curr_vcpu_index = 0;
 
 int
-vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace, vm_plat_callbacks_t callbacks, int priority,
+vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace, int priority,
         ps_io_ops_t* io_ops, const char* name, void *cookie) {
     int err;
     bzero(vm, sizeof(vm_t));
@@ -36,7 +36,6 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
     vm->allocman = allocman;
     vm->io_ops = io_ops;
     vm->mem.vmm_vspace = host_vspace;
-    vm->callbacks = callbacks;
     vm->tcb.priority = priority;
     vm->vm_name = strndup(name, strlen(name));
     vm->run.exit_reason = VM_GUEST_UNKNOWN_EXIT;
