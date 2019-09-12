@@ -20,6 +20,11 @@
 
 #include <sel4vm/driver/pci.h>
 
+typedef enum ioport_fault_result {
+    IO_FAULT_HANDLED,
+    IO_FAULT_UNHANDLED,
+    IO_FAULT_ERROR
+} ioport_fault_result_t;
 
 /* ================ To be removed: will be refactored/removed ================ */
 /* Stores informatoin about the guest image we are loading. This information probably stops
@@ -60,6 +65,9 @@ typedef struct vmcall_handler {
     vmcall_handler func;
 } vmcall_handler_t;
 
+typedef ioport_fault_result_t (*ioport_callback_fn)(vm_t *vm, unsigned int port_no, bool is_in, unsigned int *value,
+        size_t size, void *cookie);
+
 struct vm_arch {
     /* Exit handler hooks */
     vmexit_handler_ptr vmexit_handlers[VMM_EXIT_REASON_NUM];
@@ -69,6 +77,8 @@ struct vm_arch {
     /* Guest physical address of where we built the vm's page directory */
     uintptr_t guest_pd;
     seL4_CPtr notification_cap;
+    ioport_callback_fn ioport_callback;
+    void *ioport_callback_cookie;
     /* ====== To be removed: will be refactored/removed ====== */
     vmm_pci_space_t pci;
     vmm_io_port_list_t io_port;
@@ -84,3 +94,7 @@ struct vm_vcpu_arch {
     /* VM local apic */
     vmm_lapic_t *lapic;
 };
+
+/* IOPort fault callback registration functions */
+int vm_register_ioport_callback(vm_t *vm, ioport_callback_fn ioport_callback,
+                                      void *cookie);
