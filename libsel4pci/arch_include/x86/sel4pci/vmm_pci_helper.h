@@ -10,8 +10,10 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <sel4vm/vmm.h>
+#include <sel4vm/guest_vm.h>
+#include <sel4pci/pci_helper.h>
+
 #include <pci/virtual_pci.h>
 #include <pci/helper.h>
 
-int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars);
+int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars);

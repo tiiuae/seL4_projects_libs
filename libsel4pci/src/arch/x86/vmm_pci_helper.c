@@ -10,9 +10,14 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <sel4pci/pci_vm.h>
+#include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_memory_util.h>
+#include <sel4vm/io.h>
+#include <sel4vm/boot.h>
 
-int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars)
+#include <sel4pci/vmm_pci_helper.h>
+
+int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars)
 {
     int i;
     int bar = 0;
@@ -30,9 +35,16 @@ int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_
         bars[bar].size_bits = size_bits;
         if (cfg->base_addr_space[i] == PCI_BASE_ADDRESS_SPACE_MEMORY) {
             /* Need to map into the VMM. Make sure it is aligned */
-            uintptr_t addr = vmm_map_guest_device(vmm, cfg->base_addr[i], size, BIT(size_bits));
-            if (addr == 0) {
-                ZF_LOGE("Failed to map PCI bar %p size %zu", (void *)(uintptr_t)cfg->base_addr[i], size);
+            uintptr_t addr;
+            vm_memory_reservation_t *reservation = vm_reserve_anon_memory(vm, size, default_error_fault_callback, NULL,
+                    &addr);
+            if (!reservation) {
+                ZF_LOGE("Failed to reserve PCI bar %p size %zu", (void*)(uintptr_t)cfg->base_addr[i], size);
+                return -1;
+            }
+            int err = map_ut_alloc_reservation_with_base_paddr(vm, (uintptr_t)cfg->base_addr[i], reservation);
+            if (err) {
+                ZF_LOGE("Failed to map PCI bar %p size %zu", (void*)(uintptr_t)cfg->base_addr[i], size);
                 return -1;
             }
             bars[bar].address = addr;
@@ -43,14 +55,12 @@ int vmm_pci_helper_map_bars(vmm_t *vmm, libpci_device_iocfg_t *cfg, vmm_pci_bar_
             }
         } else {
             /* Need to add the IO port range */
-            int error = vmm_io_port_add_passthrough(&vmm->io_port, cfg->base_addr[i], cfg->base_addr[i] + size - 1,
-                                                    "PCI Passthrough Device");
+            int error = vm_enable_passthrough_ioport(vm->vcpus[BOOT_VCPU], cfg->base_addr[i], cfg->base_addr[i] + size - 1);
             if (error) {
                 return error;
             }
             bars[bar].mem_type = NON_MEM;
             bars[bar].address = cfg->base_addr[i];
-            bars[bar].prefetchable = 0;
         }
         bar++;
     }
