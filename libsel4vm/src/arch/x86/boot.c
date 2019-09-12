@@ -119,17 +119,6 @@ vm_init_arch(vm_t *vm, void *cookie) {
         ZF_LOGE("Failed to reserve apic memory");
         return -1;
     }
-    /* ====== To be removed: will be refactored/removed ====== */
-    err = vmm_pci_init(&vm->arch.pci);
-    if (err) {
-        ZF_LOGF("Failed to initialise VM PCI");
-    }
-    /* Init ioports */
-    err = vmm_io_port_init(&vm->arch.io_port);
-    if (err) {
-        return err;
-    }
-    /* ======================================================= */
 
     /* Bind our interrupt pending callback */
     err = seL4_TCB_BindNotification(simple_get_init_cap(vm->simple, seL4_CapInitThreadTCB), vm->arch.notification_cap);

@@ -18,8 +18,6 @@
 #include <sel4vm/platform/vmexit.h>
 #include <sel4vm/processor/lapic.h>
 
-#include <sel4vm/driver/pci.h>
-
 typedef enum ioport_fault_result {
     IO_FAULT_HANDLED,
     IO_FAULT_UNHANDLED,
@@ -80,8 +78,6 @@ struct vm_arch {
     ioport_callback_fn ioport_callback;
     void *ioport_callback_cookie;
     /* ====== To be removed: will be refactored/removed ====== */
-    vmm_pci_space_t pci;
-    vmm_io_port_list_t io_port;
     guest_image_t guest_image;
     int (*get_interrupt)();
     int (*has_interrupt)();
