@@ -56,4 +56,13 @@ int vmm_io_port_init(vmm_io_port_list_t **io_list);
 int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t ioport_range,
                             ioport_interface_t ioport_interface);
 
+/*
+ * From a set of registered ioports, emulate an io instruction given a current ioport access.
+ * @param io_port List of registered ioports with in/out handlers
+ * @param port_no ioport address being accessed
+ * @param is_in true if we are performing an io in operation, otherwise false
+ * @param size size of io access
+ * @param data pointer with the data being written if io-out op, otherwise will be populated with data from an io-in op
+ * @return 0 if handled, 1 if unhandled, otherwise -1 for error
+ */
 int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool is_in, size_t size, unsigned int *data);
