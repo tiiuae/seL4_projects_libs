@@ -123,13 +123,6 @@ static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_entry_t port)
     return 0;
 }
 
-int vmm_io_port_add_passthrough(vmm_io_port_list_t *io_list, ioport_range_t io_range, ioport_interface_t io_interface)
-{
-    return add_io_port_range(io_list, (ioport_entry_t) {
-        io_range, io_interface, IOPORT_PASSTHROUGH
-    });
-}
-
 /* Add an io port range for emulation */
 int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t io_range, ioport_interface_t io_interface)
 {

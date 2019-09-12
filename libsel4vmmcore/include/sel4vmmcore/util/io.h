@@ -20,7 +20,6 @@ typedef int (*ioport_out_fn)(void *cookie, unsigned int port_no, unsigned int si
 
 typedef enum ioport_type {
     IOPORT_EMULATED,
-    IOPORT_PASSTHROUGH,
 } ioport_type_t;
 
 typedef struct ioport_range {
