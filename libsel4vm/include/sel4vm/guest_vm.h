@@ -34,14 +34,6 @@ typedef memory_fault_result_t (*unhandled_mem_fault_callback_fn)(vm_t *vm, uintp
 typedef int (*notification_callback_fn)(vm_t *vm, seL4_Word badge, seL4_Word label,
         void *cookie);
 
-typedef struct vm_io_abort {
-    unsigned int port_no;
-    bool is_in;
-    unsigned int value;
-    unsigned int size;
-    int abort_result;
-} vm_io_abort_t;
-
 struct vm_ram_region {
     /* Guest physical start address */
     uintptr_t start;
@@ -103,7 +95,6 @@ struct vm_run {
     int exit_reason;
     notification_callback_fn notification_callback;
     void *notification_callback_cookie;
-    vm_io_abort_t io_abort;
 };
 
 struct vm {
