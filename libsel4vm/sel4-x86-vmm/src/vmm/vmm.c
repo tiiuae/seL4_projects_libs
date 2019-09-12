@@ -80,10 +80,6 @@ int vmm_finalize(vm_t *vm) {
     vm_vcpu_t *vcpu = vm->vcpus[BOOT_VCPU];
 
     vmm_init_guest_thread_state(vcpu);
-    err = vmm_io_port_init_guest(&vm->arch.io_port, vm->simple, vcpu->vcpu.cptr, vm->vka);
-    if (err) {
-        return err;
-    }
     return 0;
 }
 

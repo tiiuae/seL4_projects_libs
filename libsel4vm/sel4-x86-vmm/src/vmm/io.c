@@ -54,6 +54,28 @@ static const char* vmm_debug_io_portno_desc(vmm_io_port_list_t *io_port, int por
     return port ? port->desc : "Unknown IO Port";
 }
 
+int vm_enable_passthrough_ioport(vm_vcpu_t *vcpu, uint16_t port_start, uint16_t port_end) {
+    cspacepath_t path;
+    int error;
+    ZF_LOGD("Enabling IO port 0x%x - 0x%x for passthrough", port_start, port_end);
+    error = vka_cspace_alloc_path(vcpu->vm->vka, &path);
+    if (error) {
+        ZF_LOGE("Failed to allocate slot");
+        return error;
+    }
+    error = simple_get_IOPort_cap(vcpu->vm->simple, port_start, port_end, path.root, path.capPtr, path.capDepth);
+    if (error) {
+        ZF_LOGE("Failed to get io port from simple for range 0x%x - 0x%x", port_start, port_end);
+        return error;
+    }
+    error = seL4_X86_VCPU_EnableIOPort(vcpu->vcpu.cptr, path.capPtr, port_start, port_end);
+    if (error != seL4_NoError) {
+        ZF_LOGE("Failed to enable io port");
+        return error;
+    }
+    return 0;
+}
+
 /* IO instruction execution handler. */
 int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
 
@@ -163,33 +185,6 @@ int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, uint16_t start, uint16_
     return add_io_port_range(io_list, (ioport_range_t){start, end, 0, cookie, port_in, port_out, desc});
 }
 
-/*configure io ports for a guest*/
-int vmm_io_port_init_guest(vmm_io_port_list_t *io_list, simple_t *simple, seL4_CPtr vcpu, vka_t *vka) {
-    int UNUSED error;
-
-    for (int i = 0; i < io_list->num_ioports; i++) {
-        ioport_range_t *port = &io_list->ioports[i];
-        if (port->passthrough) {
-            DPRINTF(1, "vmm io port: setting %s IO port 0x%x - 0x%x to passthrough\n", port->desc, port->port_start, port->port_end);
-            cspacepath_t path;
-            int error;
-            error = vka_cspace_alloc_path(vka, &path);
-            if (error) {
-                ZF_LOGE("Failed to allocate slot");
-                return error;
-            }
-            error = simple_get_IOPort_cap(simple, port->port_start, port->port_end, path.root, path.capPtr, path.capDepth);
-            if (error) {
-                ZF_LOGE("Failed to get \"%s\" io port from simple for range 0x%x - 0x%x", port->desc, port->port_start, port->port_end);
-                return error;
-            }
-            error = seL4_X86_VCPU_EnableIOPort(vcpu, path.capPtr, port->port_start, port->port_end);
-            assert(error == seL4_NoError);
-        }
-    }
-
-    return 0;
-}
 
 int vmm_io_port_init(vmm_io_port_list_t *io_list) {
     io_list->num_ioports = 0;
