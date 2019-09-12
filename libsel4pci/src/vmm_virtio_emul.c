@@ -28,12 +28,12 @@ static int write_guest_mem(vm_t *vm, uintptr_t phys, void *vaddr, size_t size, s
     return 0;
 }
 
-int vm_guest_write_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size)
+int vm_guest_write_mem(vm_t *vm, void *data, uintptr_t address, size_t size)
 {
-    return vm_ram_touch(emul_vm->vm, address, size,  write_guest_mem, data);
+    return vm_ram_touch(vm, address, size,  write_guest_mem, data);
 }
 
-int vm_guest_read_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size)
+int vm_guest_read_mem(vm_t *vm, void *data, uintptr_t address, size_t size)
 {
-    return vm_ram_touch(emul_vm->vm, address, size, read_guest_mem, data);
+    return vm_ram_touch(vm, address, size, read_guest_mem, data);
 }

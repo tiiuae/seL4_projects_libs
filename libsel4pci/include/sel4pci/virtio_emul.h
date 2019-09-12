@@ -17,7 +17,7 @@
 #include <platsupport/io.h>
 #include <ethdrivers/raw.h>
 #include "con_forward.h"
-#include <sel4pci/vmm_virtio_emul.h>
+#include <sel4vm/guest_vm.h>
 #include <ethdrivers/virtio/virtio_ring.h>
 #include <ethdrivers/virtio/virtio_pci.h>
 #include <ethdrivers/virtio/virtio_net.h>
@@ -55,15 +55,15 @@ typedef struct virtio_emul {
     bool (*device_io_out)(struct virtio_emul *emul, unsigned int offset, unsigned int size, unsigned int result);
     /* generic virtqueue structure */
     vqueue_t virtq;
-    virtio_emul_vm_t *emul_vm;
+    vm_t *vm;
 } virtio_emul_t;
 
-virtio_emul_t *virtio_emul_init(ps_io_ops_t io_ops, int queue_size, virtio_emul_vm_t *emul_vm, void *driver,
+virtio_emul_t *virtio_emul_init(ps_io_ops_t io_ops, int queue_size, vm_t *vm, void *driver,
                                 void *config, virtio_pci_devices_t device);
 
-int vm_guest_write_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size);
+int vm_guest_write_mem(vm_t *vm, void *data, uintptr_t address, size_t size);
 
-int vm_guest_read_mem(virtio_emul_vm_t *emul_vm, void *data, uintptr_t address, size_t size);
+int vm_guest_read_mem(vm_t *vm, void *data, uintptr_t address, size_t size);
 
 void ring_used_add(virtio_emul_t *emul, struct vring *vring, struct vring_used_elem elem);
 

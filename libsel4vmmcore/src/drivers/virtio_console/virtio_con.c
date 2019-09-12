@@ -93,7 +93,7 @@ static vmm_pci_entry_t vmm_virtio_console_pci_bar(unsigned int iobase,
 }
 
 
-virtio_con_t *common_make_virtio_con(virtio_emul_vm_t *emul_vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
+virtio_con_t *common_make_virtio_con(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
                                      unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
                                      struct console_passthrough backend)
 {
@@ -117,7 +117,7 @@ virtio_con_t *common_make_virtio_con(virtio_emul_vm_t *emul_vm, vmm_pci_space_t 
 
     ps_io_ops_t ioops;
     con->emul_driver_funcs = backend;
-    con->emul = virtio_emul_init(ioops, QUEUE_SIZE, emul_vm, emul_con_driver_init, con, VIRTIO_CONSOLE);
+    con->emul = virtio_emul_init(ioops, QUEUE_SIZE, vm, emul_con_driver_init, con, VIRTIO_CONSOLE);
 
     assert(con->emul);
     return con;

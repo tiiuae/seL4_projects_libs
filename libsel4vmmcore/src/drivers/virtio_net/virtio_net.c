@@ -165,7 +165,7 @@ static vmm_pci_entry_t vmm_virtio_net_pci_bar(unsigned int iobase,
     return vmm_pci_create_passthrough_bar_emulation(entry, 1, bars);
 }
 
-virtio_net_t *common_make_virtio_net(virtio_emul_vm_t *emul_vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
+virtio_net_t *common_make_virtio_net(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
                                      unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
                                      struct raw_iface_funcs backend)
 {
@@ -197,7 +197,7 @@ virtio_net_t *common_make_virtio_net(virtio_emul_vm_t *emul_vm, vmm_pci_space_t 
     };
 
     net->emul_driver_funcs = backend;
-    net->emul = virtio_emul_init(ioops, QUEUE_SIZE, emul_vm, emul_driver_init, net, VIRTIO_NET);
+    net->emul = virtio_emul_init(ioops, QUEUE_SIZE, vm, emul_driver_init, net, VIRTIO_NET);
 
     assert(net->emul);
     return net;

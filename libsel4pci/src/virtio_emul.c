@@ -15,31 +15,31 @@
 uint16_t ring_avail_idx(virtio_emul_t *emul, struct vring *vring)
 {
     uint16_t idx;
-    vm_guest_read_mem(emul->emul_vm, &idx, (uintptr_t)&vring->avail->idx, sizeof(vring->avail->idx));
+    vm_guest_read_mem(emul->vm, &idx, (uintptr_t)&vring->avail->idx, sizeof(vring->avail->idx));
     return idx;
 }
 
 uint16_t ring_avail(virtio_emul_t *emul, struct vring *vring, uint16_t idx)
 {
     uint16_t elem;
-    vm_guest_read_mem(emul->emul_vm, &elem, (uintptr_t) & (vring->avail->ring[idx % vring->num]), sizeof(elem));
+    vm_guest_read_mem(emul->vm, &elem, (uintptr_t) & (vring->avail->ring[idx % vring->num]), sizeof(elem));
     return elem;
 }
 
 struct vring_desc ring_desc(virtio_emul_t *emul, struct vring *vring, uint16_t idx)
 {
     struct vring_desc desc;
-    vm_guest_read_mem(emul->emul_vm, &desc, (uintptr_t) & (vring->desc[idx]), sizeof(desc));
+    vm_guest_read_mem(emul->vm, &desc, (uintptr_t) & (vring->desc[idx]), sizeof(desc));
     return desc;
 }
 
 void ring_used_add(virtio_emul_t *emul, struct vring *vring, struct vring_used_elem elem)
 {
     uint16_t guest_idx;
-    vm_guest_read_mem(emul->emul_vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
-    vm_guest_write_mem(emul->emul_vm, &elem, (uintptr_t)&vring->used->ring[guest_idx % vring->num], sizeof(elem));
+    vm_guest_read_mem(emul->vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
+    vm_guest_write_mem(emul->vm, &elem, (uintptr_t)&vring->used->ring[guest_idx % vring->num], sizeof(elem));
     guest_idx++;
-    vm_guest_write_mem(emul->emul_vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
+    vm_guest_write_mem(emul->vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
 }
 
 static int emul_io_in(virtio_emul_t *emul, unsigned int offset, unsigned int size, unsigned int *result)
@@ -110,7 +110,7 @@ static int emul_io_out(virtio_emul_t *emul, unsigned int offset, unsigned int si
     return 0;
 }
 
-virtio_emul_t *virtio_emul_init(ps_io_ops_t io_ops, int queue_size, virtio_emul_vm_t *emul_vm, void *driver,
+virtio_emul_t *virtio_emul_init(ps_io_ops_t io_ops, int queue_size, vm_t *vm, void *driver,
                                 void *config, virtio_pci_devices_t device)
 {
     virtio_emul_t *emul = NULL;
@@ -132,7 +132,7 @@ virtio_emul_t *virtio_emul_init(ps_io_ops_t io_ops, int queue_size, virtio_emul_
     if (emul->internal == NULL) {
         return NULL;
     }
-    emul->emul_vm = emul_vm;
+    emul->vm = vm;
     emul->virtq.queue_size[RX_QUEUE] = queue_size;
     emul->virtq.queue_size[TX_QUEUE] = queue_size;
     /* create dummy rings. we never actually dereference the rings so they can be null */

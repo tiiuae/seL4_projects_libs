@@ -50,7 +50,7 @@ static void emul_con_rx_complete(void *iface, char *buf, unsigned int len)
             uint32_t copy;
             copy = len - buf_written;
             copy = MIN(copy, desc.len - desc_written);
-            vm_guest_write_mem(emul->emul_vm, buf + buf_written, (uintptr_t)desc.addr + desc_written, copy);
+            vm_guest_write_mem(emul->vm, buf + buf_written, (uintptr_t)desc.addr + desc_written, copy);
             /* update amounts */
             tot_written += copy;
             desc_written += copy;
@@ -114,7 +114,7 @@ static void emul_con_notify_tx(virtio_emul_t *emul)
         do {
             desc = ring_desc(emul, vring, desc_idx);
 
-            vm_guest_read_mem(emul->emul_vm, buf + len, (uintptr_t)desc.addr, desc.len);
+            vm_guest_read_mem(emul->vm, buf + len, (uintptr_t)desc.addr, desc.len);
             len += desc.len;
             desc_idx = desc.next;
         } while (desc.flags & VRING_DESC_F_NEXT);

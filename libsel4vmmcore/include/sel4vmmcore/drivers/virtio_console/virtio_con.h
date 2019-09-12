@@ -30,7 +30,7 @@ typedef struct virtio_con {
 /**
  * Initialise a new virtio_con device with Base Address Registers (BARs) starting at iobase and backend functions
  * specified by the console_passthrough struct.
- * @param emul_vm arch specfic vm cookie
+ * @param vm vm handle
  * @param pci PCI library instance to register virtio con device
  * @param ioport IOPort library instance to register virtio con ioport
  * @param iobase starting BAR port for front end emulation to start from
@@ -41,7 +41,7 @@ typedef struct virtio_con {
  *  virtio_con_default_backend for default methods.
  * @return pointer to an initialised virtio_con_t, NULL if error.
  */
-virtio_con_t *common_make_virtio_con(virtio_emul_vm_t *emul_vm,
+virtio_con_t *common_make_virtio_con(vm_t *vm,
                                      vmm_pci_space_t *pci,
                                      vmm_io_port_list_t *ioport,
                                      unsigned int iobase,

@@ -34,7 +34,7 @@ typedef struct virtio_net {
  * Initialise a new virtio_net device with Base Address Registers (BARs) starting at iobase and backend functions
  *
  * specified by the raw_iface_funcs struct.
- * @param emul_vm arch specfic vm cookie
+ * @param vm vm handle
  * @param pci PCI library instance to register virtio net device
  * @param ioport IOPort library instance to register virtio net ioport
  * @param iobase starting BAR port for front end emulation to start from
@@ -45,7 +45,7 @@ typedef struct virtio_net {
  *  virtio_net_default_backend for default methods.
  * @return pointer to an initialised virtio_net_t, NULL if error.
  */
-virtio_net_t *common_make_virtio_net(virtio_emul_vm_t *emul_vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
+virtio_net_t *common_make_virtio_net(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
                                      unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
                                      struct raw_iface_funcs backend);
 
