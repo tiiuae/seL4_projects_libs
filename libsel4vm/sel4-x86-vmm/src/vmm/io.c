@@ -76,6 +76,29 @@ int vm_enable_passthrough_ioport(vm_vcpu_t *vcpu, uint16_t port_start, uint16_t 
     return 0;
 }
 
+static void set_io_in_unhandled(vm_vcpu_t *vcpu, unsigned int size) {
+    uint32_t eax;
+    if (size < 4) {
+        eax = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
+        eax |= MASK(size * 8);
+    } else {
+        eax = -1;
+    }
+    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, eax);
+}
+
+static void set_io_in_value(vm_vcpu_t *vcpu, unsigned int value, unsigned int size) {
+    uint32_t eax;
+    if (size < 4) {
+        eax = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
+        eax &= ~MASK(size * 8);
+        eax |= value;
+    } else {
+        eax = value;
+    }
+    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, eax);
+}
+
 /* IO instruction execution handler. */
 int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
 
@@ -93,62 +116,42 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
     size = (exit_qualification & 7) + 1;
     rep = (exit_qualification & 0x20) >> 5;
 
-    DPRINTF(4, "vm exit io request: string %d  in %d rep %d  port no 0x%x (%s) size %d\n", string,
-            is_in, rep, port_no, vmm_debug_io_portno_desc(&vcpu->vm->arch.io_port, port_no), size);
-
     /*FIXME: does not support string and rep instructions*/
     if (string || rep) {
-        DPRINTF(0, "vm exit io request: FIXME: does not support string and rep instructions");
-        DPRINTF(0, "vm exit io ERROR: string %d  in %d rep %d  port no 0x%x (%s) size %d\n", 0,
-                is_in, 0, port_no, vmm_debug_io_portno_desc(&vcpu->vm->arch.io_port, port_no), size);
-        return -1;
+        ZF_LOGE("FIXME: IO exit does not support string and rep instructions");
+        return VM_EXIT_HANDLE_ERROR;
     }
 
-    ioport_range_t *port = search_port(&vcpu->vm->arch.io_port, port_no);
-    if (!port) {
-        static int last_port = -1;
-        if (last_port != port_no) {
-            DPRINTF(3, "vm exit io request: WARNING - ignoring unsupported ioport 0x%x (%s)\n", port_no,
-                    vmm_debug_io_portno_desc(&vcpu->vm->arch.io_port, port_no));
-            last_port = port_no;
+    if (!vcpu->vm->arch.ioport_callback) {
+        if (port_no != -1) {
+            ZF_LOGW("ignoring unsupported ioport 0x%x", port_no);
         }
         if (is_in) {
-            uint32_t eax;
-            if ( size < 4) {
-                eax = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
-                eax |= MASK(size * 8);
-            } else {
-                eax = -1;
-            }
-            vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, eax);
+            set_io_in_unhandled(vcpu, size);
         }
         vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }
 
-    if (is_in) {
-        uint32_t eax;
-        ret = port->port_in(port->cookie, port_no, size, &value);
-        if (size < 4) {
-            eax = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
-            eax &= ~MASK(size * 8);
-            eax |= value;
-        } else {
-            eax = value;
-        }
-        vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, eax);
-    } else {
+    if (!is_in) {
         value = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
-        if (size < 4)
+        if (size < 4) {
             value &= MASK(size * 8);
-        ret = port->port_out(port->cookie, port_no, size, value);
+        }
+    }
+    ioport_fault_result_t res = vcpu->vm->arch.ioport_callback(vcpu->vm, port_no, is_in, &value, size, vcpu->vm->arch.ioport_callback_cookie);
+    if (is_in) {
+        if (res == IO_FAULT_UNHANDLED) {
+            set_io_in_unhandled(vcpu, size);
+        } else {
+            set_io_in_value(vcpu, value, size);
+        }
     }
 
-    if (ret) {
-        ZF_LOGE("vm exit io request: handler returned error.");
-        ZF_LOGE("vm exit io ERROR: string %d  in %d rep %d  port no 0x%x (%s) size %d", 0,
-                is_in, 0, port_no, vmm_debug_io_portno_desc(&vcpu->vm->arch.io_port, port_no), size);
-        return -1;
+    if (res == IO_FAULT_ERROR) {
+        ZF_LOGE("VM Exit IO Error: string %d  in %d rep %d  port no 0x%x size %d", 0,
+                is_in, 0, port_no, size);
+        return VM_EXIT_HANDLE_ERROR;
     }
 
     vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
