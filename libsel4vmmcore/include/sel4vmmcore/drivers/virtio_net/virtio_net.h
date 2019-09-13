@@ -43,11 +43,12 @@ typedef struct virtio_net {
  * @param interrupt_line PCI interrupt line for virtio net IRQS
  * @param backend function pointers to backend implementation. Can be initialised by
  *  virtio_net_default_backend for default methods.
+ * @param emulate_bar Emulate read and writes accesses to the PCI device Base Address Registers.
  * @return pointer to an initialised virtio_net_t, NULL if error.
  */
 virtio_net_t *common_make_virtio_net(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
                                      unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
-                                     struct raw_iface_funcs backend);
+                                     struct raw_iface_funcs backend, bool emulate_bar_access);
 
 /**
 * @return a struct with a default virtio_net backend. It is the responsibility of the caller to
