@@ -27,6 +27,11 @@
 #include <sel4vm/devices.h>
 #include <sel4vm/devices/vpci.h>
 
+struct pci_cfg_data {
+    vmm_io_port_list_t *io_port;
+    vmm_pci_space_t *pci;
+};
+
 static int width_to_size(enum fault_width fw)
 {
 
@@ -88,6 +93,8 @@ static int pci_cfg_fault_handler(struct device *d, vm_t *vm, fault_t *fault)
     uint32_t addr;
     uint8_t offset;
     vmm_pci_address_t pci_addr;
+    struct pci_cfg_data *cfg_data = (struct pci_cfg_data *)d->priv;
+    vmm_pci_space_t *pci = cfg_data->pci;
 
     addr = fault_get_address(fault);
     addr -= PCI_CFG_REGION_ADDR;
@@ -95,7 +102,7 @@ static int pci_cfg_fault_handler(struct device *d, vm_t *vm, fault_t *fault)
     make_addr_reg_from_config(addr, &pci_addr, &offset);
     pci_addr.fun = 0;
 
-    vmm_pci_entry_t *dev = find_device(vm->arch.pci, pci_addr);
+    vmm_pci_entry_t *dev = find_device(pci, pci_addr);
     if (!dev) {
         ZF_LOGW("Failed to find pci device B:%d D:%d F:%d", pci_addr.bus, pci_addr.dev, pci_addr.fun);
         /* No device found */
@@ -117,6 +124,8 @@ static int pci_cfg_io_fault_handler(struct device *d, vm_t *vm, fault_t *fault)
     uint16_t cfg_port = (fault_get_address(fault) - d->pstart) & USHRT_MAX;
     unsigned int value = 0;
     seL4_Word fault_data = 0;
+    struct pci_cfg_data *cfg_data = (struct pci_cfg_data *)d->priv;
+    vmm_io_port_list_t *io_port = cfg_data->io_port;
 
     /* Determine io direction */
     bool is_in = false;
@@ -126,7 +135,7 @@ static int pci_cfg_io_fault_handler(struct device *d, vm_t *vm, fault_t *fault)
         value = fault_get_data(fault);
     }
     /* Emulate IO */
-    emulate_io_handler(vm->arch.io_port, cfg_port, is_in, width_to_size(fault_get_width(fault)), (void *)&value);
+    emulate_io_handler(io_port, cfg_port, is_in, width_to_size(fault_get_width(fault)), (void *)&value);
 
     if (is_in) {
         memcpy(&fault_data, (void *)&value, width_to_size(fault_get_width(fault)));
@@ -137,7 +146,7 @@ static int pci_cfg_io_fault_handler(struct device *d, vm_t *vm, fault_t *fault)
     return advance_fault(fault);
 }
 
-const struct device dev_vpci_cfg = {
+struct device dev_vpci_cfg = {
     .devid = DEV_CUSTOM,
     .name = "vpci.cfg",
     .pstart = PCI_CFG_REGION_ADDR,
@@ -146,7 +155,7 @@ const struct device dev_vpci_cfg = {
     .priv = NULL,
 };
 
-const struct device dev_vpci_cfg_io = {
+struct device dev_vpci_cfg_io = {
     .devid = DEV_CUSTOM,
     .name = "vpci.cfg_io",
     .pstart = PCI_IO_REGION_ADDR,
@@ -155,17 +164,29 @@ const struct device dev_vpci_cfg_io = {
     .priv = NULL,
 };
 
-int vm_install_vpci(vm_t *vm)
+int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
 {
 
+    ps_io_ops_t *ops = vm->io_ops;
+    struct pci_cfg_data *cfg_data;
+    int err = ps_calloc(&ops->malloc_ops, 1, sizeof(struct pci_cfg_data), (void **)&cfg_data);
+    if (err) {
+        ZF_LOGE("Failed to install VPCI: Failed allocate pci cfg io data");
+        return -1;
+    }
+    cfg_data->io_port = io_port;
+    cfg_data->pci = pci;
+
     /* Install base VPCI CFG region */
-    int err = vm_add_device(vm, &dev_vpci_cfg);
+    dev_vpci_cfg.priv = (void *)cfg_data;
+    err = vm_add_device(vm, &dev_vpci_cfg);
     if (err) {
         ZF_LOGE("Failed to install VPCI CFG region");
         return err;
     }
 
     /* Install base VPCI CFG IOPort region */
+    dev_vpci_cfg_io.priv = (void *)cfg_data;
     err = vm_add_device(vm, &dev_vpci_cfg_io);
     if (err) {
         ZF_LOGE("Failed to install VPCI CFG IOPort region");
@@ -175,8 +196,8 @@ int vm_install_vpci(vm_t *vm)
     /* Add VPCI CFG IOPort handlers */
     /* PCI_CONFIG_DATA */
     ioport_range_t config_data_range = {PCI_CONF_PORT_DATA, PCI_CONF_PORT_DATA_END};
-    ioport_interface_t config_data_interface = {&vm->arch.pci, vmm_pci_io_port_in, vmm_pci_io_port_out, "PCI_CONF_PORT_DATA"};
-    err = vmm_io_port_add_handler(vm->arch.io_port, config_data_range, config_data_interface);
+    ioport_interface_t config_data_interface = {pci, vmm_pci_io_port_in, vmm_pci_io_port_out, "PCI_CONF_PORT_DATA"};
+    err = vmm_io_port_add_handler(io_port, config_data_range, config_data_interface);
     if (err) {
         ZF_LOGE("Failed to register IOPort handler for PCI_CONF_PORT_DATA (Port: 0x%x-0x%x)", PCI_CONF_PORT_DATA,
                 PCI_CONF_PORT_DATA_END);
@@ -184,8 +205,8 @@ int vm_install_vpci(vm_t *vm)
     }
     /* PCI_CONFIG_ADDRESS */
     ioport_range_t config_address_range = {PCI_CONF_PORT_DATA, PCI_CONF_PORT_ADDR_END};
-    ioport_interface_t config_address_interface = {&vm->arch.pci, vmm_pci_io_port_in, vmm_pci_io_port_out, "PCI_CONF_PORT_ADDR"};
-    err = vmm_io_port_add_handler(vm->arch.io_port, config_address_range, config_address_interface);
+    ioport_interface_t config_address_interface = {pci, vmm_pci_io_port_in, vmm_pci_io_port_out, "PCI_CONF_PORT_ADDR"};
+    err = vmm_io_port_add_handler(io_port, config_address_range, config_address_interface);
     if (err) {
         ZF_LOGE("Failed to register IOPort handler for PCI_CONF_PORT_ADDR (Port: 0x%x-0x%x)", PCI_CONF_PORT_ADDR,
                 PCI_CONF_PORT_ADDR_END);
