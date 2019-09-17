@@ -15,9 +15,6 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/fault.h>
 
-#include <sel4pci/pci.h>
-#include <sel4vmmcore/util/io.h>
-
 /* ======= NOTE: Not permanent - will be refactored ======= */
 #include <sel4vm/devices.h>
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
@@ -54,10 +51,6 @@ struct vm_arch {
     /* Installed devices */
     struct device devices[MAX_DEVICES_PER_VM];
     int ndevices;
-    /* IOPort Manager */
-    vmm_io_port_list_t *io_port;
-    /* Virtual PCI Host Bridge */
-    vmm_pci_space_t *pci;
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     /* Installed vchan connections */
     camkes_vchan_con_t **vchan_cons;

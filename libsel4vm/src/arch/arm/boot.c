@@ -57,15 +57,6 @@ vm_init_arch(vm_t *vm, void *cookie) {
 
     /* ====== NOTE: Not permanent - will be refactored ====== */
     vm->arch.nhooks = 0;
-    err = vmm_pci_init(&vm->arch.pci);
-    if (err) {
-        ZF_LOGF("Failed to initialise VM PCI");
-    }
-    err = vmm_io_port_init(&vm->arch.io_port);
-    if (err) {
-        ZF_LOGE("Failed to initialise VM ioports");
-        return err;
-    }
     /* ====================================================== */
 
     /* Create a cspace */
