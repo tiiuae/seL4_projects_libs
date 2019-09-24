@@ -12,8 +12,12 @@
 
 #include <sel4vm/guest_vm.h>
 
-extern const struct device dev_vgic_dist;
-extern const struct device dev_vgic_vcpu;
-extern const struct device dev_vgic_cpu;
+struct vgic_dist_device {
+    uintptr_t pstart;
+    size_t size;
+    void *priv;
+};
+
+extern const struct vgic_dist_device dev_vgic_dist;
 
 int vm_vgic_maintenance_handler(vm_vcpu_t *vcpu);
