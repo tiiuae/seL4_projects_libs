@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -9,9 +9,5 @@
  *
  * @TAG(DATA61_BSD)
  */
-#pragma once
 
-/***** Physical Map ****/
-#define RAM_BASE  0x80000000
-#define RAM_END   0xC0000000
-#define RAM_SIZE (RAM_END - RAM_BASE)
+#pragma once
