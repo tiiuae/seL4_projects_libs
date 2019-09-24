@@ -48,9 +48,6 @@ struct vm_arch {
     /* Installed reboot hooks */
     struct reboot_hooks rb_hooks[MAX_REBOOT_HOOKS_PER_VM];
     int nhooks;
-    /* Installed devices */
-    struct device devices[MAX_DEVICES_PER_VM];
-    int ndevices;
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     /* Installed vchan connections */
     camkes_vchan_con_t **vchan_cons;

@@ -58,43 +58,6 @@ static int unhandled_memory_fault(vm_t *vm, fault_t* fault) {
     return -1;
 }
 
-static inline int dev_paddr_in_range(uintptr_t addr, const struct device* d)
-{
-    return ( (addr >= d->pstart) && addr < (d->pstart + d->size) );
-}
-
-static int cmp_id(struct device* d, void* data)
-{
-    return !(d->devid == *((enum devid*)data));
-}
-
-static int cmp_ipa(struct device* d, void* data)
-{
-    return !dev_paddr_in_range(*(uintptr_t*)data, d);
-}
-
-struct device*
-vm_find_device(vm_t* vm, int (*cmp)(struct device* d, void* data), void* data) {
-    struct device *ret;
-    int i;
-    for (i = 0, ret = vm->arch.devices; i < vm->arch.ndevices; i++, ret++) {
-        if (cmp(ret, data) == 0) {
-            return ret;
-        }
-    }
-    return NULL;
-}
-
-struct device*
-vm_find_device_by_id(vm_t* vm, enum devid id) {
-    return vm_find_device(vm, &cmp_id, &id);
-}
-
-struct device*
-vm_find_device_by_ipa(vm_t* vm, uintptr_t ipa) {
-    return vm_find_device(vm, &cmp_ipa, &ipa);
-}
-
 int
 handle_page_fault(vm_t* vm, fault_t* fault)
 {
@@ -132,20 +95,6 @@ handle_page_fault(vm_t* vm, fault_t* fault)
              * We move onto the rest of the page fault handler */
     }
 
-    /* See if the device is already in our address space */
-    d = vm_find_device_by_ipa(vm, fault_get_address(fault));
-    if (d != NULL) {
-        if (d->devid == DEV_RAM) {
-            ZF_LOGI("[%s] %s fault @ 0x%x from 0x%x\n", d->name,
-                      (fault_is_read(fault)) ? "read" : "write",
-                      fault_get_address(fault), fault_get_ctx(fault)->pc);
-        } else {
-            ZF_LOGI("[%s] %s fault @ 0x%x from 0x%x\n", d->name,
-                      (fault_is_read(fault)) ? "read" : "write",
-                      fault_get_address(fault), fault_get_ctx(fault)->pc);
-        }
-        return d->handle_page_fault(d, vm, fault);
-    }
     print_fault(fault);
     abandon_fault(fault);
     return -1;

@@ -156,17 +156,6 @@ vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
     return 0;
 }
 
-int vm_add_device(vm_t *vm, const struct device *d)
-{
-    assert(d != NULL);
-    if (vm->arch.ndevices < MAX_DEVICES_PER_VM) {
-        vm->arch.devices[vm->arch.ndevices++] = *d;
-        return 0;
-    } else {
-        return -1;
-    }
-}
-
 int
 vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t b)
 {
