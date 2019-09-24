@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -13,18 +13,6 @@
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
-
-#include "../vm.h"
-#include "../devices.h"
-
-//#define AC_DEBUG
-
-#ifdef AC_DEBUG
-#define DAC(...) printf(__VA_ARGS__)
-#else
-#define DAC(...) do{}while(0)
-#endif
-
 
 struct gac_device_priv {
     void *regs;

@@ -9,12 +9,5 @@
  *
  * @TAG(DATA61_BSD)
  */
+
 #pragma once
-
-#include <sel4vm/vm.h>
-#include <sel4vm/plat/vpci.h>
-
-/* Mask to retrieve PCI bar size */
-#define PCI_CFG_BAR_MASK 0xFFFFFFFF
-
-int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci);

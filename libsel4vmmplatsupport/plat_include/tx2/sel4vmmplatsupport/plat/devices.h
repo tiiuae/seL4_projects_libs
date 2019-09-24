@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -9,13 +9,5 @@
  *
  * @TAG(DATA61_BSD)
  */
+
 #pragma once
-
-#include <sel4vm/guest_vm.h>
-#include <sel4vm/plat/device_map.h>
-#include <sel4vm/vm.h>
-
-#define GIC_PADDR   0x10480000
-#define MAX_VIRQS   200
-
-extern const struct device dev_vram;

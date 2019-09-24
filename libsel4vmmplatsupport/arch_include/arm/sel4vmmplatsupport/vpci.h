@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -11,11 +11,10 @@
  */
 #pragma once
 
-#include <sel4vm/guest_vm.h>
-#include <sel4vm/plat/device_map.h>
 #include <sel4vm/vm.h>
+#include <sel4vmmplatsupport/plat/vpci.h>
 
-#define GIC_PADDR   0x10480000
-#define MAX_VIRQS   200
+/* Mask to retrieve PCI bar size */
+#define PCI_CFG_BAR_MASK 0xFFFFFFFF
 
-extern const struct device dev_vram;
+int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci);
