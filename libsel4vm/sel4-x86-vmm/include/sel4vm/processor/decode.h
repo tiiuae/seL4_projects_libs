@@ -19,6 +19,8 @@ int vmm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3, int len,
 
 int vmm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *imm, int *op_len);
 
+void vmm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *size);
+
 /* Interpret just enough virtual 8086 instructions to run trampoline code.
    Returns the final jump address */
 uintptr_t vmm_emulate_realmode(vm_t *vm, uint8_t *instr_buf,

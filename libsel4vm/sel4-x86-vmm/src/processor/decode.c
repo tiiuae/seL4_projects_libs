@@ -179,6 +179,18 @@ int vmm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *im
     return 0;
 }
 
+void vmm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *size) {
+    /* Decode instruction */
+    uint8_t ibuf[15];
+    int instr_len = vmm_guest_exit_get_int_len(&vcpu->vcpu_arch.guest_state);
+    vmm_fetch_instruction(vcpu,
+            vmm_guest_state_get_eip(&vcpu->vcpu_arch.guest_state),
+            vmm_guest_state_get_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr),
+            instr_len, ibuf);
+
+    vmm_decode_instruction(ibuf, instr_len, reg, imm, size);
+}
+
 /*
    Useful information: The GDT loaded by the Linux SMP trampoline looks like:
 0x00: 00 00 00 00 00 00 00 00

@@ -41,18 +41,6 @@ void print_ept_violation(vm_vcpu_t *vcpu) {
     printf("    This is most likely due to a bug or misconfiguration.\n" COLOUR_RESET);
 }
 
-static void decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *size) {
-    /* Decode instruction */
-    uint8_t ibuf[15];
-    int instr_len = vmm_guest_exit_get_int_len(&vcpu->vcpu_arch.guest_state);
-    vmm_fetch_instruction(vcpu,
-            vmm_guest_state_get_eip(&vcpu->vcpu_arch.guest_state),
-            vmm_guest_state_get_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr),
-            instr_len, ibuf);
-
-    vmm_decode_instruction(ibuf, instr_len, reg, imm, size);
-}
-
 static int unhandled_memory_fault(vm_t *vm, vm_vcpu_t *vcpu, uint32_t guest_phys,
         size_t size, bool is_read, uint32_t data, int vcpu_reg) {
     seL4_Word fault_data = 0;
@@ -99,7 +87,7 @@ int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
     int reg;
     uint32_t imm;
     int size;
-    decode_ept_violation(vcpu, &reg, &imm, &size);
+    vmm_decode_ept_violation(vcpu, &reg, &imm, &size);
     if (size != 4) {
         ZF_LOGE("Currently don't support non-32 bit accesses");
         return VM_EXIT_HANDLE_ERROR;
