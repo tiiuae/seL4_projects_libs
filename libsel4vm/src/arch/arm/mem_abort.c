@@ -24,24 +24,13 @@
 #include "vm.h"
 #include "mem_abort.h"
 
-static int unhandled_memory_fault(vm_t *vm, fault_t* fault) {
+static int unhandled_memory_fault(vm_t *vm, vm_vcpu_t* vcpu, fault_t* fault) {
     uintptr_t addr = fault_get_address(fault);
     size_t fault_size = fault_get_width_size(fault);
-    bool is_read_fault = fault_is_read(fault);
-    seL4_Word fault_data = 0;
-
-    if (!is_read_fault) {
-        fault_data = fault_get_data(fault);
-    }
-    memory_fault_result_t fault_result = vm->mem.unhandled_mem_fault_handler(vm, addr, fault_size,
-            fault_is_read(fault), &fault_data, fault_get_data_mask(fault),
+    memory_fault_result_t fault_result = vm->mem.unhandled_mem_fault_handler(vm, vcpu, addr, fault_size,
             vm->mem.unhandled_mem_fault_cookie);
      switch(fault_result) {
         case FAULT_HANDLED:
-            if (is_read_fault) {
-                fault_set_data(fault, fault_data);
-                advance_fault(fault);
-            }
             return 0;
         case FAULT_RESTART:
             restart_fault(fault);
@@ -81,7 +70,7 @@ handle_page_fault(vm_t* vm, vm_vcpu_t* vcpu, fault_t* fault)
             return -1;
         case FAULT_UNHANDLED:
             if (vm->mem.unhandled_mem_fault_handler) {
-                err = unhandled_memory_fault(vm, fault);
+                err = unhandled_memory_fault(vm, vcpu, fault);
                 if (err) {
                     return -1;
                 }
