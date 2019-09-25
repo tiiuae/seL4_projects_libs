@@ -99,8 +99,8 @@ static int expand_guest_ram_region(vm_t *vm, uintptr_t start, size_t bytes) {
     return 0;
 }
 
-static memory_fault_result_t default_ram_fault_callback(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
-        void *cookie, guest_memory_arch_data_t arch_data) {
+static memory_fault_result_t default_ram_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
+        size_t fault_length, void *cookie) {
     /* We don't handle RAM faults by default unless the callback is specifically overrided, hence we fail here */
     ZF_LOGE("ERROR: UNHANDLED RAM FAULT");
     return FAULT_ERROR;

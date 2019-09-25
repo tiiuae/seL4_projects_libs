@@ -18,6 +18,7 @@
 #include <sel4vm/guest_memory_arch.h>
 
 typedef struct vm vm_t;
+typedef struct vm_vcpu vm_vcpu_t;
 
 typedef struct vm_frame {
     seL4_CPtr cptr;
@@ -35,8 +36,8 @@ typedef enum memory_fault_result {
 } memory_fault_result_t;
 
 typedef struct guest_memory_arch_data guest_memory_arch_data_t;
-typedef memory_fault_result_t (*memory_fault_callback_fn)(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
-        void *cookie, guest_memory_arch_data_t arch_data);
+typedef memory_fault_result_t (*memory_fault_callback_fn)(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+        void *cookie);
 typedef vm_frame_t (*memory_map_iterator_fn)(uintptr_t addr, void *cookie);
 
 typedef struct vm_memory_reservation vm_memory_reservation_t;
@@ -45,11 +46,12 @@ typedef struct vm_memory_reservation_cookie vm_memory_reservation_cookie_t;
 /**
  * Handle a vm memory fault through searching previously created reservations and invoking the appropriate fault callback
  * @param[in] vm                    A handle to the VM
+ * @param[in] vcpu                  A handle to the faulting vcpu
  * @param[in] addr                  Faulting address
  * @param[in] size                  Size of the faulting region
  * @return                          Fault handling status code: HANDLED, UNHANDLED, RESTART, ERROR
  */
-memory_fault_result_t vm_memory_handle_fault(vm_t *vm, uintptr_t addr, size_t size, guest_memory_arch_data_t arch_data);
+memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t addr, size_t size);
 
 /**
  * Reserve a region of the VM's memory at a given base address

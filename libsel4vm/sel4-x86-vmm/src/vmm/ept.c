@@ -42,8 +42,13 @@ void print_ept_violation(vm_vcpu_t *vcpu) {
 }
 
 static int unhandled_memory_fault(vm_t *vm, vm_vcpu_t *vcpu, uint32_t guest_phys,
-        size_t size, bool is_read, uint32_t data, int vcpu_reg) {
+        size_t size, bool is_read, int reg) {
     seL4_Word fault_data = 0;
+
+    uint32_t data;
+    int vcpu_reg = vmm_decoder_reg_mapw[reg];
+    data = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, vcpu_reg);
+
     if (!is_read) {
         fault_data = data;
     }
@@ -97,37 +102,18 @@ int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
         return VM_EXIT_HANDLE_ERROR;
     }
 
-    guest_memory_arch_data_t arch_data;
-    uint32_t value;
-    int vcpu_reg;
-    if (read) {
-        arch_data.is_read = true;
-    } else {
-        arch_data.is_read = false;
-        value = imm;
-        vcpu_reg = vmm_decoder_reg_mapw[reg];
-        value = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, vcpu_reg);
-    }
-    arch_data.data = &value;
-    arch_data.vcpu = vcpu;
-
-    memory_fault_result_t fault_result = vm_memory_handle_fault(vcpu->vm, guest_phys, size, arch_data);
+    memory_fault_result_t fault_result = vm_memory_handle_fault(vcpu->vm, vcpu, guest_phys, size);
     switch(fault_result) {
         case FAULT_ERROR:
             print_ept_violation(vcpu);
             return -1;
         case FAULT_HANDLED:
-            if (read) {
-                vcpu_reg = vmm_decoder_reg_mapw[reg];
-                vmm_set_user_context(&vcpu->vcpu_arch.guest_state,
-                        vcpu_reg, value);
-            }
         case FAULT_IGNORE:
             vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
             return VM_EXIT_HANDLED;
         case FAULT_UNHANDLED:
             if (vcpu->vm->mem.unhandled_mem_fault_handler) {
-                err = unhandled_memory_fault(vcpu->vm, vcpu, guest_phys, size, read, value, vcpu_reg);
+                err = unhandled_memory_fault(vcpu->vm, vcpu, guest_phys, size, read, reg);
                 if (err) {
                     return -1;
                 }

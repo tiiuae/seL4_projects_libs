@@ -260,8 +260,7 @@ static vm_memory_reservation_t *find_anon_reservation_by_addr(uintptr_t addr, si
     return NULL;
 }
 
-memory_fault_result_t vm_memory_handle_fault(vm_t *vm, uintptr_t addr, size_t size,
-        guest_memory_arch_data_t arch_data) {
+memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t addr, size_t size) {
     int err;
     res_tree *reservation_node = find_memory_reservation_by_addr(vm, addr);
     vm_memory_reservation_t *fault_reservation;
@@ -304,7 +303,7 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, uintptr_t addr, size_t si
         return FAULT_ERROR;
     }
 
-    return fault_reservation->fault_callback(vm, addr, size, fault_reservation->fault_callback_cookie, arch_data);
+    return fault_reservation->fault_callback(vm, vcpu, addr, size, fault_reservation->fault_callback_cookie);
 }
 
 vm_memory_reservation_t *vm_reserve_memory_at(vm_t *vm, uintptr_t addr, size_t size,

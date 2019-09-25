@@ -59,16 +59,14 @@ static int unhandled_memory_fault(vm_t *vm, fault_t* fault) {
 }
 
 int
-handle_page_fault(vm_t* vm, fault_t* fault)
+handle_page_fault(vm_t* vm, vm_vcpu_t* vcpu, fault_t* fault)
 {
     int err;
     struct device* d;
-    guest_memory_arch_data_t arch_data;
     uintptr_t addr = fault_get_address(fault);
     size_t fault_size = fault_get_width_size(fault);
 
-    arch_data.fault = fault;
-    memory_fault_result_t fault_result = vm_memory_handle_fault(vm, addr, fault_size, arch_data);
+    memory_fault_result_t fault_result = vm_memory_handle_fault(vm, vcpu, addr, fault_size);
     switch(fault_result) {
         case FAULT_HANDLED:
             return 0;
@@ -109,7 +107,7 @@ int vm_guest_mem_abort_handler(vm_vcpu_t *vcpu) {
         ZF_LOGE("Failed to initialise new fault");
         return -1;
     }
-    err = handle_page_fault(vcpu->vm, fault);
+    err = handle_page_fault(vcpu->vm, vcpu, fault);
     if (err) {
         return VM_EXIT_HANDLE_ERROR;
     }

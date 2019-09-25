@@ -17,8 +17,8 @@
  * Default fault callback that throws a fault error.
  * Useful to avoid having to re-define a fault callback on regions that should be mapped with all rights.
  */
-memory_fault_result_t default_error_fault_callback(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
-        void *cookie, guest_memory_arch_data_t arch_data);
+memory_fault_result_t default_error_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
+        size_t fault_length, void *cookie);
 
 /**
  * Create and map a reservation for an emulated frame. The emulated frame is mapped in both the vm and vmm vspace

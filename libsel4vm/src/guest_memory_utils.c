@@ -321,8 +321,8 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr,
     return dev_addr;
 }
 
-memory_fault_result_t default_error_fault_callback(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
-        void *cookie, guest_memory_arch_data_t arch_data) {
+memory_fault_result_t default_error_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
+        size_t fault_length, void *cookie) {
     ZF_LOGE("Failed to handle fault addr: 0x%x", fault_addr);
     return FAULT_ERROR;
 }
