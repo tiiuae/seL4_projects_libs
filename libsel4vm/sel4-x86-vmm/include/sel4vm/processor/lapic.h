@@ -68,8 +68,8 @@ uint32_t vmm_lapic_get_base_msr(vm_vcpu_t *vcpu);
 int vmm_apic_local_deliver(vm_vcpu_t *vcpu, int lvt_type);
 int vmm_apic_accept_pic_intr(vm_vcpu_t *vcpu);
 
-memory_fault_result_t apic_fault_callback(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
-        void *cookie, guest_memory_arch_data_t arch_data);
+memory_fault_result_t apic_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
+        size_t fault_length, void *cookie);
 
 uint64_t vmm_get_lapic_tscdeadline_msr(vm_vcpu_t *vcpu);
 void vmm_set_lapic_tscdeadline_msr(vm_vcpu_t *vcpu, uint64_t data);
