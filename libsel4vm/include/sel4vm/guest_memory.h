@@ -35,7 +35,6 @@ typedef enum memory_fault_result {
     FAULT_ERROR
 } memory_fault_result_t;
 
-typedef struct guest_memory_arch_data guest_memory_arch_data_t;
 typedef memory_fault_result_t (*memory_fault_callback_fn)(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
         void *cookie);
 typedef vm_frame_t (*memory_map_iterator_fn)(uintptr_t addr, void *cookie);

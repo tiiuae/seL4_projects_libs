@@ -11,7 +11,3 @@
  */
 
 #pragma once
-
-struct guest_memory_arch_data {
-    fault_t *fault;
-};

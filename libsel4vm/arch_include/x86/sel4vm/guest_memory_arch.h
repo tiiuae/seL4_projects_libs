@@ -11,13 +11,3 @@
  */
 
 #pragma once
-
-#include <stdbool.h>
-
-typedef struct vm_vcpu vm_vcpu_t;
-
-struct guest_memory_arch_data {
-    vm_vcpu_t *vcpu;
-    bool is_read;
-    uint32_t *data;
-};
