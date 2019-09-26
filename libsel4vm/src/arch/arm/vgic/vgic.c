@@ -518,8 +518,8 @@ vgic_dist_clr_pending_irq(struct vgic_dist_device* d, vm_t* vm, int irq)
 }
 
 static memory_fault_result_t
-handle_vgic_dist_fault(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
-        void *cookie, guest_memory_arch_data_t arch_data)
+handle_vgic_dist_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+        void *cookie)
 {
     int err;
     struct vgic_dist_device* d;
@@ -530,7 +530,7 @@ handle_vgic_dist_fault(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
     uint32_t mask;
     uint32_t *reg;
 
-    fault = arch_data.fault;
+    fault = vcpu->vcpu_arch.fault;
     d = (struct vgic_dist_device *)cookie;
     gic_dist = vgic_priv_get_dist(d);
     mask = fault_get_data_mask(fault);
@@ -741,8 +741,8 @@ int vm_inject_IRQ(virq_handle_t virq)
 }
 
 static memory_fault_result_t
-handle_vgic_vcpu_fault(vm_t *vm, uintptr_t fault_addr, size_t fault_length,
-        void *cookie, guest_memory_arch_data_t arch_data) {
+handle_vgic_vcpu_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+        void *cookie) {
     /* We shouldn't fault on the vgic vcpu region as it should be mapped in
      * with all rights */
     return FAULT_ERROR;
