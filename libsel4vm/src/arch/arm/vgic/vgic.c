@@ -803,7 +803,7 @@ int vm_install_vgic(vm_t *vm)
     }
     memcpy(vgic_dist, &dev_vgic_dist, sizeof(struct vgic_dist_device));
 
-    vgic->dist = create_emulated_reservation_frame(vm, GIC_DIST_PADDR, handle_vgic_dist_fault,
+    vgic->dist = create_allocated_reservation_frame(vm, GIC_DIST_PADDR, seL4_CanRead, handle_vgic_dist_fault,
             (void *)vgic_dist);
 
     assert(vgic->dist);

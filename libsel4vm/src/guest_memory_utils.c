@@ -189,42 +189,42 @@ static vm_frame_t frame_alloc_iterator(uintptr_t addr, void *cookie) {
     return frame_result;
 }
 
-void *create_emulated_reservation_frame(vm_t *vm, uintptr_t addr,
-        memory_fault_callback_fn emul_fault_callback, void *emul_fault_cookie) {
+void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t rights,
+        memory_fault_callback_fn alloc_fault_callback, void *alloc_fault_cookie) {
     int err;
     struct device_frame_cookie *cookie;
     int page_size = vm->mem.page_size;
-    void *emul_addr;
+    void *alloc_addr;
     vspace_t *vmm_vspace = &vm->mem.vmm_vspace;
     ps_io_ops_t *ops = vm->io_ops;
 
     err = ps_calloc(&ops->malloc_ops, 1, sizeof(struct device_frame_cookie), (void **)&cookie);
     if (err) {
-        ZF_LOGE("Failed to create emulated vm frame: Unable to allocate cookie");
+        ZF_LOGE("Failed to create allocated vm frame: Unable to allocate cookie");
         return NULL;
     }
 
     /* Reserve emulated vm frame */
     cookie->reservation = vm_reserve_memory_at(vm, addr, PAGE_SIZE_4K,
-            emul_fault_callback, (void *)emul_fault_cookie);
+            alloc_fault_callback, (void *)alloc_fault_cookie);
     if (!cookie->reservation) {
-        ZF_LOGE("Failed to create emulated vm frame: Unable to reservate emulated frame");
+        ZF_LOGE("Failed to create allocated vm frame: Unable to reservate emulated frame");
         ps_free(&ops->malloc_ops, sizeof(struct device_frame_cookie), (void **)&cookie);
         return NULL;
     }
 
     err = vka_alloc_frame(vm->vka, page_size, &cookie->frame);
     if (err) {
-        ZF_LOGE("Failed vka_alloc_frame for emulated device frame");
+        ZF_LOGE("Failed vka_alloc_frame for allocated device frame");
         vm_free_reserved_memory(vm, cookie->reservation);
         ps_free(&ops->malloc_ops, sizeof(struct device_frame_cookie), (void **)&cookie);
         return NULL;
     }
     vka_cspace_make_path(vm->vka, cookie->frame.cptr, &cookie->mapped_frame);
-    emul_addr = vspace_map_pages(vmm_vspace, &cookie->mapped_frame.capPtr,
+    alloc_addr = vspace_map_pages(vmm_vspace, &cookie->mapped_frame.capPtr,
                                   NULL, seL4_AllRights, 1, page_size, 0);
-    if (!emul_addr) {
-        ZF_LOGE("Failed to map emulated frame into vmm vspace");
+    if (!alloc_addr) {
+        ZF_LOGE("Failed to map allocated frame into vmm vspace");
         vka_free_object(vm->vka, &cookie->frame);
         vm_free_reserved_memory(vm, cookie->reservation);
         ps_free(&ops->malloc_ops, sizeof(struct device_frame_cookie), (void **)&cookie);
@@ -233,19 +233,19 @@ void *create_emulated_reservation_frame(vm_t *vm, uintptr_t addr,
 
     cookie->vm = vm;
     cookie->addr = addr;
-    cookie->rights = seL4_CanRead;
+    cookie->rights = rights;
 
-    /* Map the emulated frame */
+    /* Map the allocated frame */
     err = vm_map_reservation(vm, cookie->reservation, device_frame_iterator, (void *)cookie);
     if (err) {
-        ZF_LOGE("Failed to map emulated frame into vm");
+        ZF_LOGE("Failed to map allocated frame into vm");
         vka_free_object(vm->vka, &cookie->frame);
         vm_free_reserved_memory(vm, cookie->reservation);
         ps_free(&ops->malloc_ops, sizeof(struct device_frame_cookie), (void **)&cookie);
         return NULL;
     }
 
-    return emul_addr;
+    return alloc_addr;
 }
 
 void *create_device_reservation_frame(vm_t *vm, uintptr_t addr,

@@ -21,15 +21,16 @@ memory_fault_result_t default_error_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, ui
         size_t fault_length, void *cookie);
 
 /**
- * Create and map a reservation for an emulated frame. The emulated frame is mapped in both the vm and vmm vspace
+ * Create and map a reservation for a vka allocated frame. The allocated frame is mapped in both the vm and vmm vspace
  * @param[in] vm                    A handle to the VM
  * @param[in] addr                  Address of emulated frame
- * @param[in] emul_fault_callback   Fault callback for emulated frame
- * @param[in] emul_fault_cookie     Cookie for fault callback
- * @return                          Address of emulated frame in vmm vspace
+ * @param[in] rights                Rights for mapping the allocated frame into the vm's vspace
+ * @param[in] alloc_fault_callback   Fault callback for allocated frame
+ * @param[in] alloc_fault_cookie     Cookie for fault callback
+ * @return                          Address of allocated frame in vmm vspace
  */
-void *create_emulated_reservation_frame(vm_t *vm, uintptr_t addr, memory_fault_callback_fn emul_fault_callback,
-                                        void *emul_fault_cookie);
+void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t rights,
+                                         memory_fault_callback_fn alloc_fault_callback, void *alloc_fault_cookie);
 /**
  * Create and map a reservation for a device frame. The device frame is mapped in both the vm and vmm vspace
  * @param[in] vm                    A handle to the VM
