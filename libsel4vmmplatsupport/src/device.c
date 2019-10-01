@@ -32,7 +32,11 @@ int add_device(device_list_t *list, const struct device* d)
         return -1;
     }
 
-    list->devices = realloc(list->devices, sizeof(struct device) * (list->num_devices + 1));
+    struct device *updated_devices = realloc(list->devices, sizeof(struct device) * (list->num_devices + 1));
+    if (!updated_devices) {
+        return -1;
+    }
+    list->devices = updated_devices;
     memcpy(&list->devices[list->num_devices++], d, sizeof(struct device));
     qsort(list->devices, list->num_devices, sizeof(struct device), dev_cmp);
     return 0;
