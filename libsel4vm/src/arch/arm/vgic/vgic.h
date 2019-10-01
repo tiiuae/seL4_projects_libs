@@ -18,6 +18,6 @@ struct vgic_dist_device {
     void *priv;
 };
 
-extern const struct vgic_dist_device dev_vgic_dist;
+const struct vgic_dist_device dev_vgic_dist;
 
 int vm_vgic_maintenance_handler(vm_vcpu_t *vcpu);

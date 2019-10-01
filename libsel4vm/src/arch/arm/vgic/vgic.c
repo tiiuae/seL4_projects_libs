@@ -841,7 +841,7 @@ int vm_vgic_maintenance_handler(vm_vcpu_t *vcpu) {
     return VM_EXIT_HANDLED;
 }
 
-extern const struct vgic_dist_device dev_vgic_dist = {
+const struct vgic_dist_device dev_vgic_dist = {
     .pstart = GIC_DIST_PADDR,
     .size = 0x1000,
     .priv = NULL,
