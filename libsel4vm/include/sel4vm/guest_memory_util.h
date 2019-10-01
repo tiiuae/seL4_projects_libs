@@ -35,12 +35,13 @@ void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRight
  * Create and map a reservation for a device frame. The device frame is mapped in both the vm and vmm vspace
  * @param[in] vm                    A handle to the VM
  * @param[in] addr                  Address of emulated frame
+ * @param[in] rights                Rights for mapping the device frame into the vm's vspace
  * @param[in] fault_callback        Fault callback for the frame
  * @param[in] fault_cookie          Cookie for fault callback
  * @return                          Address of device frame in vmm vspace
  */
-void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, memory_fault_callback_fn fault_callback,
-                                        void *fault_cookie);
+void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t rights,
+                                      memory_fault_callback_fn fault_callback, void *fault_cookie);
 /**
  * Map a guest reservation backed with untyped allocman frames
  * @param[in] vm                    A handle to the VM

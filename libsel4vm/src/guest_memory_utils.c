@@ -248,7 +248,7 @@ void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRight
     return alloc_addr;
 }
 
-void *create_device_reservation_frame(vm_t *vm, uintptr_t addr,
+void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t rights,
         memory_fault_callback_fn fault_callback, void *fault_cookie) {
     int err;
     struct device_frame_cookie *cookie;
@@ -305,7 +305,7 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr,
 
     cookie->vm = vm;
     cookie->addr = addr;
-    cookie->rights = seL4_AllRights;
+    cookie->rights = rights;
 
     /* Map the emulated frame */
     err = vm_map_reservation(vm, cookie->reservation, device_frame_iterator, (void *)cookie);
