@@ -20,6 +20,8 @@
 #include <sel4vm/guest_vcpu_fault.h>
 #include <sel4vm/guest_memory_util.h>
 
+
+#include <sel4vmmplatsupport/plat/vsdhc.h>
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/plat/devices.h>
 

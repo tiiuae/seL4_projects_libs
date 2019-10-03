@@ -18,6 +18,7 @@
 
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/plat/device_map.h>
+#include <sel4vmmplatsupport/plat/vuart.h>
 #include <sel4vmmplatsupport/plat/devices.h>
 
 #define VUART_BUFLEN 300
