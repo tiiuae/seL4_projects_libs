@@ -13,67 +13,77 @@
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_vcpu_fault.h>
 
-#include <sel4vm/vm.h>
-#include <sel4vm/devices.h>
-#include <sel4vm/devices/generic_forward.h>
+#include <sel4vmmplatsupport/generic_forward_device.h>
+#include <sel4vmmplatsupport/device.h>
 
 struct gf_device_priv {
     struct generic_forward_cfg cfg;
 };
 
-static int handle_gf_fault(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+handle_gf_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
 {
-    struct gf_device_priv *gf_device_priv = (struct gf_device_priv *)d->priv;
+    struct device *dev = (struct device *)cookie;
+    struct gf_device_priv* gf_device_priv = (struct gf_device_priv*)dev->priv;
 
     /* Gather fault information */
-    uint32_t offset = fault_get_address(fault) - d->pstart;
-    if (offset >= d->size) {
+    uint32_t offset = fault_addr - dev->pstart;
+    if (offset >= dev->size) {
         ZF_LOGF("Fault on address not supported by this handler");
     }
 
     /* Dispatch to external fault handler */
-    if (fault_is_read(fault)) {
+    if (is_vcpu_read_fault(vcpu)) {
         if (gf_device_priv->cfg.read_fn == NULL) {
             ZF_LOGD("No read function provided");
-            fault_set_data(fault, 0);
+            set_vcpu_fault_data(vcpu, 0);
         } else {
-            fault_set_data(fault, gf_device_priv->cfg.read_fn(offset));
+            set_vcpu_fault_data(vcpu, gf_device_priv->cfg.read_fn(offset));
         }
     } else  {
         if (gf_device_priv->cfg.write_fn == NULL) {
             ZF_LOGD("No write function provided");
         } else {
-            gf_device_priv->cfg.write_fn(offset, fault_get_data(fault));
+            gf_device_priv->cfg.write_fn(offset, get_vcpu_fault_data(vcpu));
         }
     }
 
-    return advance_fault(fault);
+    advance_vcpu_fault(vcpu);
+    return FAULT_HANDLED;
 }
 
 
 int vm_install_generic_forward_device(vm_t *vm, const struct device *d,
                                       struct generic_forward_cfg cfg)
 {
-    struct gf_device_priv *gf_device_priv;
-    struct device dev;
+    struct gf_device_priv* gf_device_priv;
+    struct device *dev;
     int err;
+
+    dev = (struct device *)malloc(sizeof(struct device));
+    if (!dev) {
+        return -1;
+    }
+    memcpy(dev, d, sizeof(struct device));
 
     /* initialise private data */
     gf_device_priv = (struct gf_device_priv *)malloc(sizeof(*gf_device_priv));
     if (gf_device_priv == NULL) {
         ZF_LOGE("error malloc returned null");
+        free(dev);
         return -1;
     }
     gf_device_priv->cfg = cfg;
 
     /* Add the device */
-    dev = *d;
-    dev.priv = gf_device_priv;
-    dev.handle_page_fault = &handle_gf_fault;
-    err = vm_add_device(vm, &dev);
-    if (err) {
-        ZF_LOGE("vm_add_device returned error: %d", err);
+    dev->priv = gf_device_priv;
+
+    vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, dev->pstart, dev->size,
+            handle_gf_fault, (void *)dev);
+    if (!reservation) {
+        free(dev);
         free(gf_device_priv);
         return -1;
     }

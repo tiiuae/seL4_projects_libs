@@ -20,12 +20,14 @@
 #include <pci/pci.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_vcpu_fault.h>
 
 #include <sel4pci/pci_helper.h>
 #include <sel4pci/pci.h>
 #include <sel4vmmcore/util/io.h>
-#include <sel4vm/devices.h>
-#include <sel4vm/devices/vpci.h>
+
+#include <sel4vmmplatsupport/device.h>
+#include <sel4vmmplatsupport/vpci.h>
 
 struct pci_cfg_data {
     vmm_io_port_list_t *io_port;
@@ -47,22 +49,22 @@ static int width_to_size(enum fault_width fw)
     return 0;
 }
 
-static void pci_cfg_read_fault(struct device *d, vm_t *vm, fault_t *fault, vmm_pci_address_t pci_addr,
+static void pci_cfg_read_fault(struct device* d, vm_t *vm, vm_vcpu_t* vcpu, vmm_pci_address_t pci_addr,
                                uint8_t offset, vmm_pci_entry_t *dev)
 {
     seL4_Word data = 0;
     int err = 0;
 
-    err = dev->ioread((void *)dev->cookie, offset, width_to_size(fault_get_width(fault)), &data);
+    err = dev->ioread((void *)dev->cookie, offset, get_vcpu_fault_size(vcpu), &data);
     if (err) {
         ZF_LOGE("Failure performing read from PCI CFG device");
     }
 
-    seL4_Word s = (fault_get_address(fault) & 0x3) * 8;
-    fault_set_data(fault, data << s);
+    seL4_Word s = (get_vcpu_fault_address(vcpu) & 0x3) * 8;
+    set_vcpu_fault_data(vcpu, data << s);
 }
 
-static void pci_cfg_write_fault(struct device *d, vm_t *vm, fault_t *fault, vmm_pci_address_t pci_addr,
+static void pci_cfg_write_fault(struct device* d, vm_t *vm, vm_vcpu_t* vcpu, vmm_pci_address_t pci_addr,
                                 uint8_t offset, vmm_pci_entry_t *dev)
 {
     uint32_t mask;
@@ -71,8 +73,8 @@ static void pci_cfg_write_fault(struct device *d, vm_t *vm, fault_t *fault, vmm_
     int err;
 
     bar = (offset - PCI_BAR_OFFSET(0)) / sizeof(uint32_t);
-    mask = fault_get_data_mask(fault);
-    value = fault_get_data(fault) & mask;
+    mask = get_vcpu_fault_data_mask(vcpu);
+    value = get_vcpu_fault_data(vcpu) & mask;
     pci_bar_emulation_t *bar_emul = dev->cookie;
     /* Linux will mask the PCI bar expecting its next read to be the size of the bar.
     * To handle this we write the bars size to pci header such that the kernels next read will
@@ -88,79 +90,80 @@ static void pci_cfg_write_fault(struct device *d, vm_t *vm, fault_t *fault, vmm_
     }
 }
 
-static int pci_cfg_fault_handler(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+pci_cfg_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
 {
-    uint32_t addr;
     uint8_t offset;
     vmm_pci_address_t pci_addr;
-    struct pci_cfg_data *cfg_data = (struct pci_cfg_data *)d->priv;
+    struct device *dev = (struct device *)cookie;
+    struct pci_cfg_data *cfg_data = (struct pci_cfg_data *)dev->priv;
     vmm_pci_space_t *pci = cfg_data->pci;
 
-    addr = fault_get_address(fault);
-    addr -= PCI_CFG_REGION_ADDR;
+    fault_addr -= PCI_CFG_REGION_ADDR;
 
-    make_addr_reg_from_config(addr, &pci_addr, &offset);
+    make_addr_reg_from_config(fault_addr, &pci_addr, &offset);
     pci_addr.fun = 0;
 
-    vmm_pci_entry_t *dev = find_device(pci, pci_addr);
-    if (!dev) {
+    vmm_pci_entry_t *pci_dev = find_device(pci, pci_addr);
+    if (!pci_dev) {
         ZF_LOGW("Failed to find pci device B:%d D:%d F:%d", pci_addr.bus, pci_addr.dev, pci_addr.fun);
         /* No device found */
-        return advance_fault(fault);
+        advance_vcpu_fault(vcpu);
+        return FAULT_HANDLED;
     }
 
-    if (fault_is_read(fault)) {
-        pci_cfg_read_fault(d, vm, fault, pci_addr, offset, dev);
+    if (is_vcpu_read_fault(vcpu)) {
+        pci_cfg_read_fault(dev, vm, vcpu, pci_addr, offset, pci_dev);
     } else {
-        pci_cfg_write_fault(d, vm, fault, pci_addr, offset, dev);
+        pci_cfg_write_fault(dev, vm, vcpu, pci_addr, offset, pci_dev);
     }
 
-    return advance_fault(fault);
+    advance_vcpu_fault(vcpu);
+    return FAULT_HANDLED;
 }
 
-static int pci_cfg_io_fault_handler(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+pci_cfg_io_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
 {
+    struct device *dev = (struct device *)cookie;
     /* Get CFG Port address */
-    uint16_t cfg_port = (fault_get_address(fault) - d->pstart) & USHRT_MAX;
+    uint16_t cfg_port = (fault_addr - dev->pstart) & USHRT_MAX;
     unsigned int value = 0;
     seL4_Word fault_data = 0;
-    struct pci_cfg_data *cfg_data = (struct pci_cfg_data *)d->priv;
+    struct pci_cfg_data *cfg_data = (struct pci_cfg_data *)dev->priv;
     vmm_io_port_list_t *io_port = cfg_data->io_port;
 
     /* Determine io direction */
     bool is_in = false;
-    if (fault_is_read(fault)) {
+    if (is_vcpu_read_fault(vcpu)) {
         is_in = true;
     } else {
-        value = fault_get_data(fault);
+        value = get_vcpu_fault_data(vcpu);
     }
     /* Emulate IO */
-    emulate_io_handler(io_port, cfg_port, is_in, width_to_size(fault_get_width(fault)), (void *)&value);
+    emulate_io_handler(io_port, cfg_port, is_in, fault_length, (void *)&value);
 
     if (is_in) {
-        memcpy(&fault_data, (void *)&value, width_to_size(fault_get_width(fault)));
-        seL4_Word s = (fault_get_address(fault) & 0x3) * 8;
-        fault_set_data(fault, fault_data << s);
+        memcpy(&fault_data, (void *)&value, fault_length);
+        seL4_Word s = (fault_addr & 0x3) * 8;
+        set_vcpu_fault_data(vcpu, fault_data << s);
     }
 
-    return advance_fault(fault);
+    advance_vcpu_fault(vcpu);
+    return FAULT_HANDLED;
 }
 
 struct device dev_vpci_cfg = {
-    .devid = DEV_CUSTOM,
     .name = "vpci.cfg",
     .pstart = PCI_CFG_REGION_ADDR,
     .size = PCI_CFG_REGION_SIZE,
-    .handle_page_fault = &pci_cfg_fault_handler,
     .priv = NULL,
 };
 
 struct device dev_vpci_cfg_io = {
-    .devid = DEV_CUSTOM,
     .name = "vpci.cfg_io",
     .pstart = PCI_IO_REGION_ADDR,
     .size = PCI_IO_REGION_SIZE,
-    .handle_page_fault = &pci_cfg_io_fault_handler,
     .priv = NULL,
 };
 
@@ -179,18 +182,18 @@ int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
 
     /* Install base VPCI CFG region */
     dev_vpci_cfg.priv = (void *)cfg_data;
-    err = vm_add_device(vm, &dev_vpci_cfg);
-    if (err) {
-        ZF_LOGE("Failed to install VPCI CFG region");
-        return err;
+    vm_memory_reservation_t *cfg_reservation = vm_reserve_memory_at(vm, dev_vpci_cfg.pstart, dev_vpci_cfg.size,
+            pci_cfg_fault_handler, (void *)&dev_vpci_cfg);
+    if (!cfg_reservation) {
+        return -1;
     }
 
     /* Install base VPCI CFG IOPort region */
     dev_vpci_cfg_io.priv = (void *)cfg_data;
-    err = vm_add_device(vm, &dev_vpci_cfg_io);
-    if (err) {
-        ZF_LOGE("Failed to install VPCI CFG IOPort region");
-        return err;
+    vm_memory_reservation_t *cfg_io_reservation = vm_reserve_memory_at(vm, dev_vpci_cfg_io.pstart, dev_vpci_cfg_io.size,
+            pci_cfg_io_fault_handler, (void *)&dev_vpci_cfg_io);
+    if (!cfg_io_reservation) {
+        return -1;
     }
 
     /* Add VPCI CFG IOPort handlers */
@@ -212,5 +215,5 @@ int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
                 PCI_CONF_PORT_ADDR_END);
         return -1;
     }
-
+    return 0;
 }

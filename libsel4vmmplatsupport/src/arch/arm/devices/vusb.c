@@ -11,10 +11,13 @@
  */
 
 #include <sel4vm/guest_vm.h>
-
-#include <sel4vm/devices/vusb.h>
+#include <sel4vm/guest_vcpu_fault.h>
+#include <sel4vm/vm.h>
+#include <sel4vm/guest_memory_util.h>
 
 #ifdef CONFIG_LIB_USB
+#include <sel4vmmplatsupport/device.h>
+#include <sel4vmmplatsupport/vusb.h>
 
 #include <vka/capops.h>
 #include <vka/object.h>
@@ -23,13 +26,10 @@
 #include <simple/simple.h>
 #include <platsupport/io.h>
 #include <sel4utils/thread.h>
-#include <sel4vm/vm.h>
 #include <stdlib.h>
 #include <usb/usb_host.h>
 #include <usb/usb.h>
 #include <dma/dma.h>
-
-#include "../devices.h"
 
 #include <string.h>
 
@@ -262,21 +262,25 @@ static void vm_vusb_cancel(vusb_device_t *vusb, uint32_t surb_idx)
     }
 }
 
-static int handle_vusb_fault(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+handle_vusb_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                  void *cookie)
 {
     vusb_device_t *vusb;
     usb_ctrl_regs_t *ctrl_regs;
     uint32_t *reg;
     int offset;
+    struct device *d = (struct device *)cookie;
 
+    assert(d);
     assert(d->priv);
-    offset = fault_get_address(fault) - d->pstart - 0x1000;
+    offset = fault_addr - d->pstart - 0x1000;
     vusb = device_to_vusb_dev_data(d);
     ctrl_regs = vusb->ctrl_regs;
-    reg = (uint32_t *)((void *)ctrl_regs + (offset & ~0x3));
-    if (fault_is_read(fault)) {
+    reg = (uint32_t*)((void*)ctrl_regs + (offset & ~0x3));
+    if (is_vcpu_read_fault(vcpu)) {
         if (reg != &ctrl_regs->status) {
-            fault_set_data(fault, *reg);
+            set_vcpu_fault_data(vcpu, *reg);
         }
     } else {
         if (reg == &ctrl_regs->status) {
@@ -284,27 +288,26 @@ static int handle_vusb_fault(struct device *d, vm_t *vm, fault_t *fault)
             root_hub_ctrl_start(vusb->hcd, ctrl_regs);
         } else if (reg == &ctrl_regs->intr) {
             /* Clear the interrupt pending flag */
-            *reg = fault_emulate(fault, *reg);
+            *reg = emulate_vcpu_fault(vcpu, *reg);
         } else if (reg == &ctrl_regs->notify) {
             /* Manual notification */
             vm_vusb_notify(vusb);
         } else if (reg == &ctrl_regs->cancel_transaction) {
             /* Manual notification */
-            vm_vusb_cancel(vusb, fault_get_data(fault));
-        } else if ((void *)reg >= (void *)&ctrl_regs->req) {
+            vm_vusb_cancel(vusb, get_vcpu_fault_data(vcpu));
+        } else if ((void*)reg >= (void*)&ctrl_regs->req) {
             /* Fill out the root hub USB request */
-            *reg = fault_emulate(fault, *reg);
+            *reg = emulate_vcpu_fault(vcpu, *reg);
         }
     }
-    return advance_fault(fault);
+    advance_vcpu_fault(vcpu);
+    return FAULT_HANDLED;
 }
 
 const struct device dev_vusb = {
-    .devid = DEV_CUSTOM,
     .name = "virtual usb",
     .pstart = 0xDEADBEEF,
     .size = 0x2000,
-    .handle_page_fault = handle_vusb_fault,
     .priv = NULL
 };
 
@@ -416,10 +419,15 @@ void vm_vusb_notify(vusb_device_t *vusb)
 vusb_device_t *vm_install_vusb(vm_t *vm, usb_host_t *hcd, uintptr_t pbase, int virq,
                                seL4_CPtr vmm_ncap, seL4_CPtr vm_ncap, int badge)
 {
-    vusb_device_t *vusb;
-    struct device d;
+    vusb_device_t* vusb;
+    struct device *d;
     struct endpoint ep;
     int err;
+
+    d = (struct device *)malloc(sizeof(struct device));
+    if (!d) {
+        return NULL;
+    }
 
     /* Setup book keeping */
     vusb = malloc(sizeof(*vusb));
@@ -429,13 +437,18 @@ vusb_device_t *vm_install_vusb(vm_t *vm, usb_host_t *hcd, uintptr_t pbase, int v
     vusb->vm = vm;
     vusb->hcd = hcd;
 
+    /* Setup the device */
+    d->pstart = pbase;
+    d->size = 0x2000;
+    d->priv = vusb;
+
     /* Map registers */
-    vusb->data_regs = map_shared_page(vm, pbase, seL4_AllRights);
+    vusb->data_regs = create_allocated_reservation_frame(vm, pbase, seL4_AllRights, default_error_fault_callback, NULL);
     if (vusb->data_regs == NULL) {
         free(vusb);
         return NULL;
     }
-    vusb->ctrl_regs = map_shared_page(vm, pbase + 0x1000, seL4_CanRead);
+    vusb->ctrl_regs = create_allocated_reservation_frame(vm, pbase + 0x1000, seL4_CanRead, handle_vusb_fault, (void *)d);
     if (vusb->ctrl_regs == NULL) {
         free(vusb);
         return NULL;
@@ -454,16 +467,6 @@ vusb_device_t *vm_install_vusb(vm_t *vm, usb_host_t *hcd, uintptr_t pbase, int v
         return NULL;
     }
 
-    /* Install the device */
-    d = dev_vusb;
-    d.pstart = pbase;
-    d.size = 0x2000;
-    d.priv = vusb;
-    err = vm_add_device(vm, &d);
-    if (err) {
-        assert(!err);
-        return NULL;
-    }
     err = vm_install_service(vm, vmm_ncap, vm_ncap, badge);
     if (err) {
         assert(!err);
