@@ -19,6 +19,7 @@ add_subdirectory(libsel4bga)
 add_subdirectory(libsel4keyboard)
 add_subdirectory(libsel4pci)
 add_subdirectory(libsel4vmmcore)
+add_subdirectory(libsel4vmmplatsupport)
 
 set(configure_string "")
 config_option(LibNanopb BUILD_NANOPB "Build Nanopb and related libraries" DEFAULT OFF)
