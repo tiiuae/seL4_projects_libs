@@ -24,7 +24,7 @@ struct device {
     /* Device mapping size */
     seL4_Word size;
     /* Fault handler */
-    int (*handle_device_fault)(vm_t* vm, uint32_t addr, uint32_t *data, size_t len, bool is_write, void *priv);
+    int (*handle_device_fault)(vm_t* vm, vm_vcpu_t *vcpu, struct device *dev, uintptr_t addr, size_t len);
     /* Device emulation private data */
     void* priv;
 };
