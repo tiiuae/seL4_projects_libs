@@ -17,9 +17,11 @@
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_vcpu_fault.h>
+#include <sel4vm/guest_memory_util.h>
 
-#include "../../../devices.h"
-#include "../../../vm.h"
+#include <sel4vmmplatsupport/device.h>
+#include <sel4vmmplatsupport/plat/devices.h>
 
 #define DWEMMC_DBADDR_OFFSET    0x088
 #define DWEMMC_DSCADDR_OFFSET   0x094
@@ -40,35 +42,38 @@ struct sdhc_priv {
     uint32_t a64;
 };
 
-static int handle_sdhc_fault(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+handle_sdhc_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                  void *cookie)
 {
-    struct sdhc_priv *sdhc_data = (struct sdhc_priv *)d->priv;
+    struct device *d = (struct device *)cookie;
+    struct sdhc_priv* sdhc_data = (struct sdhc_priv*)d->priv;
     volatile uint32_t *reg;
     int offset;
 
     /* Gather fault information */
-    offset = fault_get_address(fault) - d->pstart;
-    reg = (uint32_t *)(sdhc_data->regs + offset);
+    offset = fault_addr - d->pstart;
+    reg = (uint32_t*)(sdhc_data->regs + offset);
     /* Handle the fault */
-    reg = (volatile uint32_t *)(sdhc_data->regs + offset);
-    if (fault_is_read(fault)) {
-        if (fault_get_width(fault) == WIDTH_DOUBLEWORD) {
+    reg = (volatile uint32_t*)(sdhc_data->regs + offset);
+    if (is_vcpu_read_fault(vcpu)) {
+        if (fault_length == sizeof(uint64_t)) {
             if (offset & 0x4) {
                 /* Unaligned access: report residual */
-                fault_set_data(fault, sdhc_data->a64);
+                set_vcpu_fault_data(vcpu, sdhc_data->a64);
             } else {
                 /* Aligned access: Read in and store residual */
                 uint64_t v;
-                v = *(volatile uint64_t *)reg;
-                fault_set_data(fault, v);
+                v = *(volatile uint64_t*)reg;
+                set_vcpu_fault_data(vcpu, v);
                 sdhc_data->a64 = v >> 32;
             }
         } else {
-            assert(fault_get_width(fault) == WIDTH_WORD);
-            fault_set_data(fault, *reg);
+            assert(fault_length == sizeof(seL4_Word));
+            set_vcpu_fault_data(vcpu, *reg);
         }
-        dprintf("[%s] pc0x%x| r0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
-                fault_get_address(fault), fault_get_data(fault));
+        ZF_LOGD("[%s] pc0x%x| r0x%x:0x%x\n", d->name, get_vcpu_fault_ip(vcpu),
+                fault_addr, get_vcpu_fault_data(vcpu));
     } else {
         switch (offset & ~0x3) {
         case DWEMMC_DBADDR_OFFSET:
@@ -77,66 +82,64 @@ static int handle_sdhc_fault(struct device *d, vm_t *vm, fault_t *fault)
             printf("[%s] Restricting DMA access offset 0x%x\n", d->name, offset);
             break;
         default:
-            if (fault_get_width(fault) == WIDTH_DOUBLEWORD) {
+            if (fault_length == sizeof(uint64_t)) {
                 if (offset & 0x4) {
                     /* Unaligned acces: store data and residual */
                     uint64_t v;
-                    v = ((uint64_t)fault_get_data(fault) << 32) | sdhc_data->a64;
-                    *(volatile uint64_t *)reg = v;
+                    v = ((uint64_t)get_vcpu_fault_data(vcpu) << 32) | sdhc_data->a64;
+                    *(volatile uint64_t*)reg = v;
                 } else {
                     /* Aligned access: record residual */
-                    sdhc_data->a64 = fault_get_data(fault);
+                    sdhc_data->a64 = get_vcpu_fault_data(vcpu);
                 }
             } else {
-                assert(fault_get_width(fault) == WIDTH_WORD);
-                *reg = fault_get_data(fault);
+                assert(fault_length == sizeof(seL4_Word));
+                *reg = get_vcpu_fault_data(vcpu);
             }
         }
 
-        dprintf("[%s] pc0x%x| w0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
-                fault_get_address(fault), fault_get_data(fault));
+        ZF_LOGD("[%s] pc0x%x| w0x%x:0x%x\n", d->name, get_vcpu_fault_ip(vcpu),
+                fault_addr, get_vcpu_fault_data(vcpu));
     }
-    return advance_fault(fault);
+    advance_vcpu_fault(vcpu);
+    return FAULT_HANDLED;
 }
 
 
 const struct device dev_msh0 = {
-    .devid = DEV_CUSTOM,
     .name = "MSH0",
     .pstart = MSH0_PADDR,
     .size = 0x1000,
-    .handle_page_fault = &handle_sdhc_fault,
     .priv = NULL
 };
 
 const struct device dev_msh2 = {
-    .devid = DEV_CUSTOM,
     .name = "MSH2",
     .pstart = MSH2_PADDR,
     .size = 0x1000,
-    .handle_page_fault = &handle_sdhc_fault,
     .priv = NULL
 };
 
 static int vm_install_nodma_sdhc(vm_t *vm, int idx)
 {
     struct sdhc_priv *sdhc_data;
-    struct device d;
-    vspace_t *vmm_vspace;
+    struct device *d;
     int err;
+    d = malloc(sizeof(struct device));
+    if (!d) {
+        return -1;
+    }
     switch (idx) {
     case 0:
-        d = dev_msh0;
+        *d = dev_msh0;
         break;
     case 2:
-        d = dev_msh2;
+        *d = dev_msh2;
         break;
     default:
         assert(0);
         return -1;
     }
-
-    vmm_vspace = &vm->mem.vmm_vspace;
 
     /* Initialise the virtual device */
     sdhc_data = malloc(sizeof(struct sdhc_priv));
@@ -146,22 +149,13 @@ static int vm_install_nodma_sdhc(vm_t *vm, int idx)
     }
     memset(sdhc_data, 0, sizeof(*sdhc_data));
     sdhc_data->vm = vm;
-
-    sdhc_data->regs = map_device(vmm_vspace, vm->vka, vm->simple,
-                                 d.pstart, 0, seL4_AllRights);
+    sdhc_data->regs = create_device_reservation_frame(vm, d->pstart, seL4_CanRead,
+                                                       handle_sdhc_fault, (void *)d);
     if (sdhc_data->regs == NULL) {
         assert(sdhc_data->regs);
         return -1;
     }
-    map_vm_device(vm, d.pstart, d.pstart, seL4_CanRead);
-
-    d.priv = sdhc_data;
-    err = vm_add_device(vm, &d);
-    assert(!err);
-    if (err) {
-        free(sdhc_data);
-        return -1;
-    }
+    d->priv = sdhc_data;
     return 0;
 }
 

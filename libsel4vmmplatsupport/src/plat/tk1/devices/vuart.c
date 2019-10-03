@@ -12,14 +12,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sel4vm/plat/devices.h>
+#include <sel4vmmplatsupport/plat/devices.h>
 #include <platsupport/plat/serial.h>
 
 const struct device dev_uartd = {
-    .devid = DEV_UART3,
     .name = "uartd",
     .pstart = UARTD_PADDR,
     .size = PAGE_SIZE,
-    .handle_page_fault = NULL,
+    .handle_device_fault = NULL,
     .priv = NULL
 };

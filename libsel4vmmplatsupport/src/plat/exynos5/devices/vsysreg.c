@@ -13,9 +13,7 @@
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
-
-#include "../../../devices.h"
-#include "../../../vm.h"
+#include <sel4vm/guest_vcpu_fault.h>
 
 //#define SYSREG_DEBUG
 
@@ -25,7 +23,8 @@
 #define DSYSREG(...) do{}while(0)
 #endif
 
-
+#include <sel4vmmplatsupport/device.h>
+#include <sel4vmmplatsupport/plat/devices.h>
 
 struct sysreg_priv {
     struct dma *dma_list;
@@ -33,67 +32,71 @@ struct sysreg_priv {
     void *regs;
 };
 
-static int handle_vsysreg_fault(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+handle_vsysreg_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
 {
-    struct sysreg_priv *sysreg_data = (struct sysreg_priv *)d->priv;
+    struct device *dev = (struct device *)cookie;
+    struct sysreg_priv* sysreg_data = (struct sysreg_priv*)dev->priv;
     volatile uint32_t *reg;
     int offset;
 
     /* Gather fault information */
-    offset = fault_get_address(fault) - d->pstart;
-    reg = (uint32_t *)(sysreg_data->regs + offset);
+    offset = fault_addr - dev->pstart;
+    reg = (uint32_t*)(sysreg_data->regs + offset);
     /* Handle the fault */
-    reg = (volatile uint32_t *)(sysreg_data->regs + offset);
-    if (fault_is_read(fault)) {
-        fault_set_data(fault, *reg);
-        DSYSREG("[%s] pc0x%x| r0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
-                fault_get_address(fault), fault_get_data(fault));
+    reg = (volatile uint32_t*)(sysreg_data->regs + offset);
+    if (is_vcpu_read_fault(vcpu)) {
+        set_vcpu_fault_data(vcpu, *reg);
+        ZF_LOGD("[%s] pc0x%x| r0x%x:0x%x\n", dev->name, get_vcpu_fault_ip(vcpu),
+                fault_addr, get_vcpu_fault_data(vcpu));
     } else {
-        DSYSREG("[%s] pc0x%x| w0x%x:0x%x\n", d->name, fault_get_ctx(fault)->pc,
-                fault_get_address(fault), fault_get_data(fault));
-        *reg = fault_emulate(fault, *reg);
+        ZF_LOGD("[%s] pc0x%x| w0x%x:0x%x\n", dev->name, get_vcpu_fault_ip(vcpu),
+                fault_addr, get_vcpu_fault_data(vcpu));
+        *reg = emulate_vcpu_fault(vcpu, *reg);
     }
-    return advance_fault(fault);
+    advance_vcpu_fault(vcpu);
+    return FAULT_HANDLED;
 }
 
 const struct device dev_sysreg = {
-    .devid = DEV_CUSTOM,
     .name = "sysreg",
     .pstart = SYSREG_PADDR,
     .size = 0x1000,
-    .handle_page_fault = &handle_vsysreg_fault,
     .priv = NULL
 };
 
 int vm_install_vsysreg(vm_t *vm)
 {
     struct sysreg_priv *sysreg_data;
-    struct device d;
-    vspace_t *vmm_vspace;
+    struct device *d;
     int err;
 
-    d = dev_sysreg;
-    vmm_vspace = &vm->mem.vmm_vspace;
+    d = (struct device *)malloc(sizeof(struct device));
+    memcpy(d, &dev_sysreg, sizeof(struct device));
 
     /* Initialise the virtual device */
     sysreg_data = malloc(sizeof(struct sysreg_priv));
     if (sysreg_data == NULL) {
         assert(sysreg_data);
+        free(d);
         return -1;
     }
     memset(sysreg_data, 0, sizeof(*sysreg_data));
     sysreg_data->vm = vm;
 
-    sysreg_data->regs = map_device(vmm_vspace, vm->vka, vm->simple,
-                                   d.pstart, 0, seL4_AllRights);
+    sysreg_data->regs = ps_io_map(&vm->io_ops->io_mapper, d->pstart, PAGE_SIZE_4K, 0, PS_MEM_NORMAL);
     if (sysreg_data->regs == NULL) {
+        free(d);
+        free(sysreg_data);
         return -1;
     }
 
-    d.priv = sysreg_data;
-    err = vm_add_device(vm, &d);
-    assert(!err);
-    if (err) {
+    d->priv = sysreg_data;
+
+    vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d->pstart, d->size,
+            handle_vsysreg_fault, (void *)d);
+    if (!reservation) {
+        free(d);
         free(sysreg_data);
         return -1;
     }

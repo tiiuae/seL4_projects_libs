@@ -13,9 +13,8 @@
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_vcpu_fault.h>
 
-#include <sel4vm/plat/devices.h>
-#include "../../../vm.h"
 
 //#define DEBUG_MCT
 #ifdef DEBUG_MCT
@@ -23,6 +22,7 @@
 #else
 #define DMCT(...) do{}while(0)
 #endif
+#include <sel4vmmplatsupport/plat/devices.h>
 
 #define GWSTAT_TCON          (1U << 16)
 #define GWSTAT_COMP3_ADD_INC (1U << 14)
@@ -52,17 +52,19 @@ static inline struct vmct_priv *vmct_get_priv(void *priv)
 }
 
 
-static int handle_vmct_fault(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+handle_vmct_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
 {
     struct vmct_priv *mct_priv;
     int offset;
     uint32_t mask;
+    struct device *dev = (struct device *)cookie;
 
-    mct_priv = vmct_get_priv(d->priv);
+    mct_priv = vmct_get_priv(dev->priv);
 
     /* Gather fault information */
-    offset = fault_get_address(fault) - d->pstart;
-    mask = fault_get_data_mask(fault);
+    offset = fault_addr - dev->pstart;
+    mask = get_vcpu_fault_data_mask(vcpu);
     /* Handle the fault */
     if (offset < 0x300) {
         /*** Global ***/
@@ -70,29 +72,29 @@ static int handle_vmct_fault(struct device *d, vm_t *vm, fault_t *fault)
         uint32_t *cnt_wstat;
         wstat = &mct_priv->wstat;
         cnt_wstat = &mct_priv->cnt_wstat;
-        if (fault_is_write(fault)) {
+        if (!is_vcpu_read_fault(vcpu)) {
             if (offset >= 0x100 && offset < 0x108) {
                 /* Count registers */
                 *cnt_wstat |= (1 << (offset - 0x100) / 4);
             } else if (offset == 0x110) {
-                *cnt_wstat &= ~(fault_get_data(fault) & mask);
+                *cnt_wstat &= ~(get_vcpu_fault_data(vcpu) & mask);
             } else if (offset >= 0x200 && offset < 0x244) {
                 /* compare registers */
                 *wstat |= (1 << (offset - 0x200) / 4);
             } else if (offset == 0x24C) {
                 /* Write status */
-                *wstat &= ~(fault_get_data(fault) & mask);
+                *wstat &= ~(get_vcpu_fault_data(vcpu) & mask);
             } else {
                 DMCT("global MCT fault on unknown offset 0x%x\n", offset);
             }
         } else {
             /* read fault */
             if (offset == 0x110) {
-                fault_set_data(fault, *cnt_wstat);
+                set_vcpu_fault_data(vcpu, *cnt_wstat);
             } else if (offset == 0x24C) {
-                fault_set_data(fault, *wstat);
+                set_vcpu_fault_data(vcpu, *wstat);
             } else {
-                fault_set_data(fault, 0);
+                set_vcpu_fault_data(vcpu, 0);
             }
         }
     } else {
@@ -100,7 +102,7 @@ static int handle_vmct_fault(struct device *d, vm_t *vm, fault_t *fault)
         int timer = (offset - 0x300) / 0x100;
         int loffset = (offset - 0x300) - (timer * 0x100);
         uint32_t *wstat = &mct_priv->lwstat[timer];
-        if (fault_is_write(fault)) {
+        if (is_vcpu_read_fault(vcpu)) {
             if (loffset == 0x0) {        /* tcompl */
                 *wstat |= (1 << 1);
             } else if (loffset == 0x8) {  /* tcomph */
@@ -110,30 +112,29 @@ static int handle_vmct_fault(struct device *d, vm_t *vm, fault_t *fault)
             } else if (loffset == 0x34) { /* int_en */
                 /* Do nothing */
             } else if (loffset == 0x40) { /* wstat */
-                *wstat &= ~(fault_get_data(fault) & mask);
+                *wstat &= ~(get_vcpu_fault_data(vcpu) & mask);
             } else {
                 DMCT("local MCT fault on unknown offset 0x%x\n", offset);
             }
         } else {
             /* read fault */
             if (loffset == 0x40) {
-                fault_set_data(fault, *wstat);
+                set_vcpu_fault_data(vcpu, *wstat);
             } else {
-                fault_set_data(fault, 0);
+                set_vcpu_fault_data(vcpu, 0);
             }
         }
     }
-    return advance_fault(fault);
+    advance_vcpu_fault(vcpu);
+    return FAULT_HANDLED;
 }
 
 const struct device dev_vmct_timer = {
-    .devid = DEV_MCT_TIMER,
     .name = "mct",
 
     .pstart = MCT_ADDR,
 
     .size = 0x1000,
-    .handle_page_fault = handle_vmct_fault,
     .priv = NULL
 };
 
@@ -141,9 +142,14 @@ const struct device dev_vmct_timer = {
 int vm_install_vmct(vm_t *vm)
 {
     struct vmct_priv *vmct_data;
-    struct device d;
+    struct device *d;
     int err;
-    d = dev_vmct_timer;
+
+    d = (struct device *)malloc(sizeof(struct device));
+    if (!d) {
+        return -1;
+    }
+    memcpy(d, &dev_vmct_timer, sizeof(struct device));
     /* Initialise the virtual device */
     vmct_data = malloc(sizeof(struct vmct_priv));
     if (vmct_data == NULL) {
@@ -151,11 +157,11 @@ int vm_install_vmct(vm_t *vm)
         return -1;
     }
     memset(vmct_data, 0, sizeof(*vmct_data));
-
-    d.priv = vmct_data;
-    err = vm_add_device(vm, &d);
-    assert(!err);
-    if (err) {
+    d->priv = vmct_data;
+    vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d->pstart, d->size,
+            handle_vmct_fault, (void *)d);
+    if (!reservation) {
+        free(d);
         free(vmct_data);
         return -1;
     }

@@ -12,13 +12,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sel4vm/devices.h>
+#include <sel4vmmplatsupport/device.h>
 
 const struct device dev_clkcar = {
-    .devid = DEV_CUSTOM,
     .name = "clkcar",
     .pstart = TK1_CLKCAR_PADDR,
     .size = PAGE_SIZE,
-    .handle_page_fault = NULL,
+    .handle_device_fault = NULL,
     .priv = NULL
 };

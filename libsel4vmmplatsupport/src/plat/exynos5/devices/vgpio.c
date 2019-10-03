@@ -14,10 +14,6 @@
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
-#include "../../../devices.h"
-#include "../../../vm.h"
-#include <platsupport/gpio.h>
-#include <platsupport/plat/gpio.h>
 
 //#define GPIO_DEBUG
 
@@ -26,7 +22,13 @@
 #else
 #define DGPIO(...) do{}while(0)
 #endif
+#include <sel4vm/guest_vcpu_fault.h>
+#include <sel4vmmplatsupport/device.h>
+#include <sel4vmmplatsupport/plat/device_map.h>
+#include <sel4vmmplatsupport/plat/vgpio.h>
 
+#include <platsupport/gpio.h>
+#include <platsupport/plat/gpio.h>
 
 #define GPIOREG_CON_OFFSET    0x00
 #define GPIOREG_DAT_OFFSET    0x04
@@ -48,8 +50,8 @@
 #define NPINS_PER_PORT  (8)
 #define NPINS_PER_BANK (NPORTS_PER_BANK * NPINS_PER_PORT)
 
-static int handle_vgpio_right_fault(struct device *d, vm_t *vm, fault_t *fault);
-static int handle_vgpio_left_fault(struct device *d, vm_t *vm, fault_t *fault);
+static memory_fault_result_t handle_vgpio_right_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie);
+static memory_fault_result_t handle_vgpio_left_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie);
 
 struct gpio_device {
     vm_t *vm;
@@ -58,33 +60,29 @@ struct gpio_device {
     uint8_t granted_bf[GPIO_NBANKS][((NPINS_PER_BANK - 1 / 8) + 1)];
 };
 
-static const struct device *gpio_devices[] = {
+const struct device dev_gpio_left = {
+    .name = "gpio.left",
+    .pstart = GPIO_LEFT_PADDR,
+    .size = 0x1000,
+    .priv = NULL
+};
+
+const struct device dev_gpio_right = {
+    .name = "gpio.right",
+    .pstart = GPIO_RIGHT_PADDR,
+    .size = 0x1000,
+    .priv = NULL
+};
+
+static const struct device* gpio_devices[] = {
     [GPIO_LEFT_BANK]  = &dev_gpio_left,
     [GPIO_RIGHT_BANK] = &dev_gpio_right,
     [GPIO_C2C_BANK]   = NULL,
     [GPIO_AUDIO_BANK] = NULL,
 };
 
-
-const struct device dev_gpio_left = {
-    .devid = DEV_CUSTOM,
-    .name = "gpio.left",
-    .pstart = GPIO_LEFT_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = &handle_vgpio_left_fault,
-    .priv = NULL
-};
-
-const struct device dev_gpio_right = {
-    .devid = DEV_CUSTOM,
-    .name = "gpio.right",
-    .pstart = GPIO_RIGHT_PADDR,
-    .size = 0x1000,
-    .handle_page_fault = &handle_vgpio_right_fault,
-    .priv = NULL
-};
-
-static uint32_t _create_mask(uint8_t ac, int bits)
+static uint32_t
+_create_mask(uint8_t ac, int bits)
 {
     uint32_t mask = 0;
     while (ac) {
@@ -95,33 +93,35 @@ static uint32_t _create_mask(uint8_t ac, int bits)
     return mask;
 }
 
-static int handle_vgpio_fault(struct device *d, vm_t *vm, fault_t *fault, int bank)
+static memory_fault_result_t
+handle_vgpio_fault(vm_t* vm, vm_vcpu_t *vcpu, struct device *dev, uintptr_t addr, size_t len,  int bank)
 {
-    struct gpio_device *gpio_device = (struct gpio_device *)d->priv;
+    struct gpio_device* gpio_device = (struct gpio_device*)dev->priv;
     volatile uint32_t *reg;
     int offset;
     if (gpio_device->regs[bank] == NULL) {
         /* We could not map the device. Lets return SBZ */
-        if (fault_is_read(fault)) {
-            fault_set_data(fault, 0);
+        if (is_vcpu_read_fault(vcpu)) {
+            set_vcpu_fault_data(vcpu, 0);
         }
-        return advance_fault(fault);
+        advance_vcpu_fault(vcpu);
+        return FAULT_HANDLED;
     }
 
     /* Gather fault information */
-    offset = fault_get_address(fault) - d->pstart;
-    reg = (volatile uint32_t *)(gpio_device->regs[bank] + offset);
-    if (fault_is_read(fault)) {
-        fault_set_data(fault, *reg);
-        DGPIO("[%s] pc 0x%08x | r 0x%08x:0x%08x\n", gpio_devices[bank]->name,
-              fault_get_ctx(fault)->pc, fault_get_address(fault),
-              fault_get_data(fault));
+    offset = addr - dev->pstart;
+    reg = (volatile uint32_t*)(gpio_device->regs[bank] + offset);
+    if (is_vcpu_read_fault(vcpu)) {
+        set_vcpu_fault_data(vcpu, *reg);
+        ZF_LOGD("[%s] pc 0x%08x | r 0x%08x:0x%08x\n", gpio_devices[bank]->name,
+              get_vcpu_fault_ip(vcpu), addr,
+              get_vcpu_fault_data(vcpu));
     } else {
         uint32_t mask;
         uint32_t change;
-        DGPIO("[%s] pc 0x%08x | w 0x%08x:0x%08x\n", gpio_devices[bank]->name,
-              fault_get_ctx(fault)->pc, fault_get_address(fault),
-              fault_get_data(fault));
+        ZF_LOGD("[%s] pc 0x%08x | w 0x%08x:0x%08x\n", gpio_devices[bank]->name,
+              get_vcpu_fault_ip(vcpu), addr,
+              get_vcpu_fault_data(vcpu));
         if ((offset >= 0x700 && offset < 0xC00) || offset >= 0xE00) {
             /* Not implemented */
             mask = 0xFFFFFFFF;
@@ -156,7 +156,7 @@ static int handle_vgpio_fault(struct device *d, vm_t *vm, fault_t *fault, int ba
                 mask = 0;
             }
         }
-        change = fault_emulate(fault, *reg);
+        change = emulate_vcpu_fault(vcpu,*reg);
         if ((change ^ *reg) & ~mask) {
             switch (gpio_device->action) {
             case VACDEV_REPORT_AND_MASK:
@@ -164,8 +164,8 @@ static int handle_vgpio_fault(struct device *d, vm_t *vm, fault_t *fault, int ba
             case VACDEV_REPORT_ONLY:
                 /* Fallthrough */
                 printf("[%s] pc 0x%08x| w @ 0x%08x: 0x%08x -> 0x%08x\n",
-                       gpio_devices[bank]->name, fault_get_ctx(fault)->pc,
-                       fault_get_address(fault), *reg, change);
+                       gpio_devices[bank]->name,  get_vcpu_fault_ip(vcpu),
+                       addr, *reg, change);
                 break;
             default:
                 break;
@@ -173,17 +173,22 @@ static int handle_vgpio_fault(struct device *d, vm_t *vm, fault_t *fault, int ba
         }
         *reg = change;
     }
-    return advance_fault(fault);
+    advance_vcpu_fault(vcpu);
+    return FAULT_HANDLED;
 }
 
-static int handle_vgpio_right_fault(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+handle_vgpio_right_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
 {
-    return handle_vgpio_fault(d, vm, fault, GPIO_RIGHT_BANK);
+    struct device *dev = (struct device *)cookie;
+    return handle_vgpio_fault(vm, vcpu, dev, fault_addr, fault_length, GPIO_RIGHT_BANK);
 }
 
-static int handle_vgpio_left_fault(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+handle_vgpio_left_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
 {
-    return handle_vgpio_fault(d, vm, fault, GPIO_LEFT_BANK);
+    struct device *dev = (struct device *)cookie;
+    return handle_vgpio_fault(vm, vcpu, dev, fault_addr, fault_length, GPIO_LEFT_BANK);
 }
 
 
@@ -191,7 +196,6 @@ struct gpio_device*
 vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac, enum vacdev_action action) {
     struct gpio_device* gpio_device;
     vspace_t* vmm_vspace;
-    vmm_vspace = &vm->mem.vmm_vspace;
     uint8_t ac = (default_ac == VACDEV_DEFAULT_ALLOW) ? 0xff : 0x00;
     int i;
 
@@ -209,15 +213,12 @@ vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac, enum vacdev_action 
             int err;
             dev = *gpio_devices[i];
             dev.priv = gpio_device;
-            gpio_device->regs[i] = map_device(vmm_vspace, vm->vka, vm->simple,
-                                              dev.pstart, 0, seL4_AllRights);
+            gpio_device->regs[i] = ps_io_map(&vm->io_ops->io_mapper, dev.pstart, PAGE_SIZE_4K, 0, PS_MEM_NORMAL);
             /* Ignore failues. We will check regs for NULL on access */
             if (gpio_device->regs[i] != NULL) {
-                err = vm_add_device(vm, &dev);
-                assert(!err);
-                if (err) {
-                    return NULL;
-                }
+                memory_fault_callback_fn callback = (i == GPIO_LEFT_BANK) ? handle_vgpio_left_fault : handle_vgpio_right_fault;
+                vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, dev.pstart, dev.size,
+                                                      callback, (void *)&dev);
             } else {
                 LOG_INFO("Failed to provide device region 0x%08x->0x%08x", dev.pstart, dev.pstart + dev.size);
             }

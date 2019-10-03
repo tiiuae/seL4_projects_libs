@@ -14,9 +14,10 @@
 #include <sel4vm/guest_memory.h>
 #include <sel4vm/guest_memory_util.h>
 #include <sel4vm/boot.h>
+#include <sel4vm/guest_vcpu_fault.h>
+#include <sel4vmmplatsupport/plat/device_map.h>
 
 #include "irq_combiner.h"
-#include "../../../devices.h"
 #include <stdlib.h>
 #include <string.h>
 #include <platsupport/irq_combiner.h>
@@ -146,29 +147,29 @@ int vmm_register_combiner_irq(int group, int idx, combiner_irq_handler_fn cb, vo
 }
 
 static memory_fault_result_t
-vcombiner_fault(vm_t* vm, uintptr_t fault_addr, size_t fault_length,
-        void *cookie, guest_memory_arch_data_t arch_data)
+vcombiner_fault(vm_t* vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+        void *cookie)
 {
     int err;
+    memory_fault_result_t ret;
     struct virq_combiner* vcombiner;
     int offset;
     int gidx;
     uint32_t mask;
     uint32_t *reg;
     struct device* d;
-    fault_t* fault;
 
-    fault = arch_data.fault;
     d = (struct device *)cookie;
     assert(d->priv);
 
     vcombiner = vcombiner_priv_get_vcombiner(d->priv);
-    mask = fault_get_data_mask(fault);
-    offset = fault_get_address(fault) - d->pstart;
-    reg = (uint32_t *)((uintptr_t)vcombiner->vregs + offset);
+    mask = get_vcpu_fault_data_mask(vcpu);
+    offset = fault_addr - d->pstart;
+    reg = (uint32_t*)( (uintptr_t)vcombiner->vregs + offset );
     gidx = offset / sizeof(struct combiner_gmap);
     assert(offset >= 0 && offset < sizeof(*vcombiner->vregs));
 
+    ret = FAULT_HANDLED;
     if (offset == 0x100) {
         DCOMBINER("Fault on group pending register\n");
     } else if (offset < 0x80) {
@@ -178,7 +179,7 @@ vcombiner_fault(vm_t* vm, uintptr_t fault_addr, size_t fault_length,
         (void)index;
         switch (offset / 4 % 4) {
         case 0:
-            data = fault_get_data(fault);
+            data = get_vcpu_fault_data(vcpu);
             data &= mask;
             data &= ~(*reg);
             while (data) {
@@ -189,10 +190,10 @@ vcombiner_fault(vm_t* vm, uintptr_t fault_addr, size_t fault_length,
                 index = i % 8;
                 DCOMBINER("enable IRQ %d.%d (%d)\n", group, index, group + 32);
             }
-            err = ignore_fault(fault);
+            ret = FAULT_IGNORE;
             break;
         case 1:
-            data = fault_get_data(fault);
+            data = get_vcpu_fault_data(vcpu);
             data &= mask;
             data &= *reg;
             while (data) {
@@ -203,7 +204,7 @@ vcombiner_fault(vm_t* vm, uintptr_t fault_addr, size_t fault_length,
                 index = i % 8;
                 DCOMBINER("disable IRQ %d.%d (%d)\n", group, index, group + 32);
             }
-            err = ignore_fault(fault);
+            ret = FAULT_IGNORE;
             break;
         case 2:
         case 3:
@@ -215,20 +216,18 @@ vcombiner_fault(vm_t* vm, uintptr_t fault_addr, size_t fault_length,
         DCOMBINER("Unknown register access at offset 0%x\n", offset);
     }
     if (err) {
-        return FAULT_ERROR;
+        ret = FAULT_ERROR;
     }
-    advance_fault(fault);
-    return FAULT_HANDLED;
+    advance_vcpu_fault(vcpu);
+    return ret;
 }
 
 
 
 const struct device dev_irq_combiner = {
-    .devid = DEV_IRQ_COMBINER,
     .name = "irq.combiner",
     .pstart = IRQ_COMBINER_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
     .priv = NULL
 };
 
@@ -257,7 +256,7 @@ int vm_install_vcombiner(vm_t *vm)
         return -1;
     }
 
-    addr = create_emulated_reservation_frame(vm, IRQ_COMBINER_PADDR, vcombiner_fault, (void *)combiner);
+    addr = create_allocated_reservation_frame(vm, IRQ_COMBINER_PADDR, seL4_CanRead, vcombiner_fault, (void *)combiner);
     assert(addr);
     if (addr == NULL) {
         return -1;
@@ -265,10 +264,5 @@ int vm_install_vcombiner(vm_t *vm)
     memset(addr, 0, 0x1000);
     vcombiner->vregs = (struct irq_combiner_map*)addr;
     combiner->priv = (void*)vcombiner;
-    err = vm_add_device(vm, combiner);
-    if (err) {
-        free(vcombiner);
-        return -1;
-    }
     return 0;
 }

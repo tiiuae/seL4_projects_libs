@@ -11,8 +11,8 @@
  */
 #pragma once
 
-#include "../../../vm.h"
 #include <sel4utils/irq_server.h>
+#include <sel4vmmplatsupport/device.h>
 
 struct combiner_irq {
     int group;

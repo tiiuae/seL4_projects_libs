@@ -16,7 +16,6 @@
 
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/ac_device.h>
-#include <sel4vmmplatsupport/vgpio.h>
 
 /*
  * GPIO Access control device

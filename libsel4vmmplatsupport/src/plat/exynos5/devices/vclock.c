@@ -13,9 +13,10 @@
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
-
-#include "../../../devices.h"
-#include "../../../vm.h"
+#include <sel4vmmplatsupport/device.h>
+#include <sel4vmmplatsupport/ac_device.h>
+#include <sel4vmmplatsupport/plat/device_map.h>
+#include <sel4vmmplatsupport/plat/vclock.h>
 
 #define CLOCK_DEBUG
 
@@ -228,65 +229,58 @@ struct clock_data clock_data[] = {
 };
 
 const struct device dev_cmu_cpu = {
-    .devid = DEV_CUSTOM,
     .name = "CMU_CPU",
     .pstart = CMU_CPU_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
+    .handle_device_fault = NULL,
     .priv = NULL
 };
 
 const struct device dev_cmu_core = {
-    .devid = DEV_CUSTOM,
     .name = "CMU_CORE",
     .pstart = CMU_CORE_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
+    .handle_device_fault = NULL,
     .priv = NULL
 };
 
 const struct device dev_cmu_acp = {
-    .devid = DEV_CUSTOM,
     .name = "CMU_ACP",
     .pstart = CMU_ACP_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
+    .handle_device_fault = NULL,
     .priv = NULL
 };
 
 const struct device dev_cmu_isp = {
-    .devid = DEV_CUSTOM,
     .name = "CMU_ISP",
     .pstart = CMU_ISP_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
+    .handle_device_fault = NULL,
     .priv = NULL
 };
 
 const struct device dev_cmu_top = {
-    .devid = DEV_CUSTOM,
     .name = "CMU_TOP",
     .pstart = CMU_TOP_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
+    .handle_device_fault = NULL,
     .priv = NULL
 };
 
 const struct device dev_cmu_cdrex = {
-    .devid = DEV_CUSTOM,
     .name = "CMU_CDREX",
     .pstart = CMU_CDREX_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
+    .handle_device_fault = NULL,
     .priv = NULL
 };
 
 const struct device dev_cmu_mem = {
-    .devid = DEV_CUSTOM,
     .name = "CMU_MEM",
     .pstart = CMU_MEM_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
+    .handle_device_fault = NULL,
     .priv = NULL
 };
 

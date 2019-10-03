@@ -13,8 +13,12 @@
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/plat/devices.h>
-#include "../../../vm.h"
+#include <sel4vm/guest_vcpu_fault.h>
+#include <sel4vm/guest_memory.h>
+
+#include <sel4vmmplatsupport/device.h>
+#include <sel4vmmplatsupport/plat/device_map.h>
+#include <sel4vmmplatsupport/plat/devices.h>
 
 #define VUART_BUFLEN 300
 
@@ -98,76 +102,72 @@ static void vuart_putchar(struct device *d, char c)
     }
 }
 
-static int handle_vuart_fault(struct device *d, vm_t *vm, fault_t *fault)
+static memory_fault_result_t
+handle_vuart_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
 {
     uint32_t *reg;
     int offset;
     uint32_t mask;
+    struct device *dev;
+    dev = (struct device *)cookie;
 
     /* Gather fault information */
-    offset = fault_get_address(fault) - d->pstart;
-    reg = (uint32_t *)(vuart_priv_get_regs(d) + offset);
-    mask = fault_get_data_mask(fault);
+    offset = fault_addr - dev->pstart;
+    reg = (uint32_t*)(vuart_priv_get_regs(dev) + offset);
+    mask = get_vcpu_fault_data_mask(vcpu);
     /* Handle the fault */
     if (offset < 0 || UART_SIZE <= offset) {
         /* Out of range, treat as SBZ */
-        fault_set_data(fault, 0);
-        return ignore_fault(fault);
+        set_vcpu_fault_data(vcpu, 0);
+        return FAULT_IGNORE;
 
-    } else if (fault_is_read(fault)) {
+    } else if (is_vcpu_read_fault(vcpu)) {
         /* Blindly read out data */
-        fault_set_data(fault, *reg);
-        return advance_fault(fault);
+        set_vcpu_fault_data(vcpu, *reg);
+        advance_vcpu_fault(vcpu);
 
     } else { /* if(fault_is_write(fault))*/
         /* Blindly write to the device */
         uint32_t v;
         v = *reg & ~mask;
-        v |= fault_get_data(fault) & mask;
+        v |= get_vcpu_fault_data(vcpu) & mask;
         *reg = v;
         /* If it was the TX buffer, we send to the local stdout */
         if (offset == UTXH) {
-            vuart_putchar(d, fault_get_data(fault));
+            vuart_putchar(dev, get_vcpu_fault_data(vcpu));
         }
-        return advance_fault(fault);
+        advance_vcpu_fault(vcpu);
     }
+    return FAULT_HANDLED;
 }
 
 const struct device dev_uart0 = {
-    .devid = DEV_UART0,
     .name = "uart0",
     .pstart = UART0_PADDR,
     .size = 0x1000,
-    .handle_page_fault = handle_vuart_fault,
     .priv = NULL
 };
 
 const struct device dev_uart1 = {
-    .devid = DEV_UART1,
     .name = "uart1",
     .pstart = UART1_PADDR,
     .size = 0x1000,
-    .handle_page_fault = handle_vuart_fault,
     .priv = NULL
 };
 
 const struct device dev_uart2 = {
-    .devid = DEV_UART2,
     .name = "uart2.console",
     .pstart = UART2_PADDR,
     .size = 0x1000,
-    .handle_page_fault = handle_vuart_fault,
     .priv = NULL
 };
 
 
 
 const struct device dev_uart3 = {
-    .devid = DEV_UART3,
     .name = "uart3",
     .pstart = UART3_PADDR,
     .size = 0x1000,
-    .handle_page_fault = handle_vuart_fault,
     .priv = NULL
 };
 
@@ -175,9 +175,15 @@ const struct device dev_uart3 = {
 int vm_install_vconsole(vm_t *vm)
 {
     struct vuart_priv *vuart_data;
-    struct device d;
+    struct device *d;
     int err;
-    d = dev_vconsole;
+
+    d = (struct device *)malloc(sizeof(struct device));
+    if (!d) {
+        return -1;
+    }
+
+    *d = dev_vconsole;
     /* Initialise the virtual device */
     vuart_data = malloc(sizeof(struct vuart_priv));
     if (vuart_data == NULL) {
@@ -192,15 +198,14 @@ int vm_install_vconsole(vm_t *vm)
         assert(vuart_data->regs);
         return -1;
     }
-    d.priv = vuart_data;
-    vuart_reset(&d);
-    err = vm_add_device(vm, &d);
-    assert(!err);
-    if (err) {
-        free(vuart_data->regs);
-        free(vuart_data);
+
+    vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d->pstart, d->size,
+            handle_vuart_fault, (void *)d);
+    if (!reservation) {
         return -1;
     }
+    d->priv = vuart_data;
+    vuart_reset(d);
     return 0;
 }
 
