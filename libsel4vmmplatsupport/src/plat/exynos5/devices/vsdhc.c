@@ -28,11 +28,11 @@
 #define DWEMMC_BUFADDR_OFFSET   0x098
 
 struct sdhc_priv {
-/// The VM associated with this device
+    /* The VM associated with this device */
     vm_t *vm;
-/// Physical registers of the SDHC
-    void *regs;
-/// Residual for 64 bit atomic access to FIFO
+    /* Physical registers of the SDHC */
+    void* regs;
+    /* Residual for 64 bit atomic access to FIFO */
     uint32_t a64;
 };
 
