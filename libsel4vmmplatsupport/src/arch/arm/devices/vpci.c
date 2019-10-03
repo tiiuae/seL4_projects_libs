@@ -34,21 +34,6 @@ struct pci_cfg_data {
     vmm_pci_space_t *pci;
 };
 
-static int width_to_size(enum fault_width fw)
-{
-
-    if (fw == WIDTH_BYTE) {
-        return 1;
-    } else if (fw == WIDTH_HALFWORD) {
-        return 2;
-    } else if (fw == WIDTH_WORD) {
-        return 4;
-    } else if (fw == WIDTH_DOUBLEWORD) {
-        return 8;
-    }
-    return 0;
-}
-
 static void pci_cfg_read_fault(struct device* d, vm_t *vm, vm_vcpu_t* vcpu, vmm_pci_address_t pci_addr,
                                uint8_t offset, vmm_pci_entry_t *dev)
 {
