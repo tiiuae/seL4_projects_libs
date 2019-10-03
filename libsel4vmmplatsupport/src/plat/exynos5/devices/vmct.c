@@ -15,13 +15,6 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_vcpu_fault.h>
 
-
-//#define DEBUG_MCT
-#ifdef DEBUG_MCT
-#define DMCT(...) printf("MCT: " __VA_ARGS__)
-#else
-#define DMCT(...) do{}while(0)
-#endif
 #include <sel4vmmplatsupport/plat/devices.h>
 
 #define GWSTAT_TCON          (1U << 16)
@@ -85,7 +78,7 @@ handle_vmct_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_
                 /* Write status */
                 *wstat &= ~(get_vcpu_fault_data(vcpu) & mask);
             } else {
-                DMCT("global MCT fault on unknown offset 0x%x\n", offset);
+                ZF_LOGD("global MCT fault on unknown offset 0x%x\n", offset);
             }
         } else {
             /* read fault */
@@ -114,7 +107,7 @@ handle_vmct_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_
             } else if (loffset == 0x40) { /* wstat */
                 *wstat &= ~(get_vcpu_fault_data(vcpu) & mask);
             } else {
-                DMCT("local MCT fault on unknown offset 0x%x\n", offset);
+                ZF_LOGD("local MCT fault on unknown offset 0x%x\n", offset);
             }
         } else {
             /* read fault */

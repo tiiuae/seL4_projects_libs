@@ -15,13 +15,6 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_vcpu_fault.h>
 
-//#define PWR_DEBUG
-
-#ifdef PWR_DEBUG
-#define DPWR(...) printf(__VA_ARGS__)
-#else
-#define DPWR(...) do{}while(0)
-#endif
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/plat/devices.h>
 

@@ -14,14 +14,6 @@
 #include <string.h>
 
 #include <sel4vm/guest_vm.h>
-
-//#define GPIO_DEBUG
-
-#ifdef GPIO_DEBUG
-#define DGPIO(...) printf(__VA_ARGS__)
-#else
-#define DGPIO(...) do{}while(0)
-#endif
 #include <sel4vm/guest_vcpu_fault.h>
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/plat/device_map.h>
@@ -152,7 +144,7 @@ handle_vgpio_fault(vm_t* vm, vm_vcpu_t *vcpu, struct device *dev, uintptr_t addr
                 mask = _create_mask(ac, GPIOREG_PUDPDN_BITS);
                 break;
             default:  /* reserved */
-                printf("reserved GPIO 0x%x\n", offset);
+                ZF_LOGE("reserved GPIO 0x%x\n", offset);
                 mask = 0;
             }
         }

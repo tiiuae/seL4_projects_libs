@@ -22,15 +22,6 @@
 #include <string.h>
 #include <platsupport/irq_combiner.h>
 
-//#define DEBUG_COMBINER
-
-#ifdef DEBUG_MAPPINGS
-#define DCOMBINER(...) printf("Combiner:" __VA_ARGS__)
-#else
-#define DCOMBINER(...) do{}while(0)
-#endif
-
-
 struct combiner_gmap {
     uint32_t enable_set;
     uint32_t enable_clr;
@@ -134,7 +125,7 @@ int vmm_register_combiner_irq(int group, int idx, combiner_irq_handler_fn cb, vo
         memset(addr, 0, sizeof(struct irq_group_data) * 8);
         combiner->data[group] = (struct irq_group_data *)addr;
 
-        DCOMBINER("Registered combiner IRQ (%d, %d)\n", group, idx);
+        ZF_LOGD("Registered combiner IRQ (%d, %d)\n", group, idx);
     }
 
     /* Register the callback */
@@ -171,7 +162,7 @@ vcombiner_fault(vm_t* vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_le
 
     ret = FAULT_HANDLED;
     if (offset == 0x100) {
-        DCOMBINER("Fault on group pending register\n");
+        ZF_LOGD("Fault on group pending register\n");
     } else if (offset < 0x80) {
         uint32_t data;
         int group, index;
@@ -188,7 +179,7 @@ vcombiner_fault(vm_t* vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_le
                 data &= ~(1U << i);
                 group = gidx * 4 + i / 8;
                 index = i % 8;
-                DCOMBINER("enable IRQ %d.%d (%d)\n", group, index, group + 32);
+                ZF_LOGD("enable IRQ %d.%d (%d)\n", group, index, group + 32);
             }
             ret = FAULT_IGNORE;
             break;
@@ -202,7 +193,7 @@ vcombiner_fault(vm_t* vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_le
                 data &= ~(1U << i);
                 group = gidx * 4 + i / 8;
                 index = i % 8;
-                DCOMBINER("disable IRQ %d.%d (%d)\n", group, index, group + 32);
+                ZF_LOGD("disable IRQ %d.%d (%d)\n", group, index, group + 32);
             }
             ret = FAULT_IGNORE;
             break;
@@ -210,10 +201,10 @@ vcombiner_fault(vm_t* vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_le
         case 3:
         /* Read only registers */
         default:
-            DCOMBINER("Error handling register access at offset 0x%x\n", offset);
+            ZF_LOGD("Error handling register access at offset 0x%x\n", offset);
         }
     } else {
-        DCOMBINER("Unknown register access at offset 0%x\n", offset);
+        ZF_LOGD("Unknown register access at offset 0%x\n", offset);
     }
     if (err) {
         ret = FAULT_ERROR;

@@ -27,12 +27,6 @@
 #define DWEMMC_DSCADDR_OFFSET   0x094
 #define DWEMMC_BUFADDR_OFFSET   0x098
 
-#if 0
-#define dprintf(...) printf(__VA_ARGS__)
-#else
-#define dprintf(...) do { } while(0)
-#endif
-
 struct sdhc_priv {
 /// The VM associated with this device
     vm_t *vm;

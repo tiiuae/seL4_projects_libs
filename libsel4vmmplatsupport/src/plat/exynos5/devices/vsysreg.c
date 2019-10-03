@@ -15,14 +15,6 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_vcpu_fault.h>
 
-//#define SYSREG_DEBUG
-
-#ifdef SYSREG_DEBUG
-#define DSYSREG(...) printf(__VA_ARGS__)
-#else
-#define DSYSREG(...) do{}while(0)
-#endif
-
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/plat/devices.h>
 

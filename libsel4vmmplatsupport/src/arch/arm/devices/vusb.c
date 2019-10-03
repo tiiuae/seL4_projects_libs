@@ -33,22 +33,6 @@
 
 #include <string.h>
 
-//#define DEBUG_VUSB
-//#define DEBUG_ROOTHUB
-
-#ifdef DEBUG_ROOTHUB
-#define DROOTHUB(...) printf("VMM USB root hub:" __VA_ARGS__)
-#else
-#define DROOTHUB(...) do{}while(0)
-#endif
-
-#ifdef DEBUG_VUSB
-#define DVUSB(...) printf("VMM USB:" __VA_ARGS__)
-#else
-#define DVUSB(...) do{}while(0)
-#endif
-
-
 #define MAX_ACTIVE_URB   (0x1000 / sizeof(struct sel4urb))
 
 #define SURBT_PARAM_GET_TYPE(param) (((param) >> 30) & 0x3)
@@ -251,7 +235,7 @@ static int root_hub_ctrl_start(usb_host_t *hcd, usb_ctrl_regs_t *ctrl)
     ep.num = 0;
     ep.max_pkt = 64;
     len = usb_hcd_schedule(hcd, 1, -1, 0, 0, &ep, xact, 2, NULL, NULL);
-    DROOTHUB("usb ctrl complete len %d\n", len);
+    ZF_LOGD("usb ctrl complete len %d\n", len);
     return len;
 }
 
@@ -339,7 +323,7 @@ static int vusb_complete_cb(void *token, enum usb_xact_status stat, int rbytes)
     struct sel4urb *surb = &vusb->data_regs->sel4urb[surb_idx];
     uint32_t status;
 
-    DVUSB("packet completion callback %d\n", surb_idx);
+    ZF_LOGD("packet completion callback %d\n", surb_idx);
     surb->urb_bytes_remaining = rbytes;
     switch (stat) {
     case XACTSTAT_SUCCESS:
@@ -377,7 +361,7 @@ void vm_vusb_notify(vusb_device_t *vusb)
         if (SURB_EPADDR_GET_STATE(u->epaddr) != SURB_EPADDR_STATE_PENDING) {
             continue;
         }
-        DVUSB("descriptor %d ACTIVE\n", i);
+        ZF_LOGD("descriptor %d ACTIVE\n", i);
 
         switch (SURB_EPADDR_GET_SPEED(u->epaddr)) {
         case 3:
@@ -391,7 +375,7 @@ void vm_vusb_notify(vusb_device_t *vusb)
 
         nxact = sel4urb_to_xact(vusb->vm, u, xact);
         if (nxact < 0) {
-            DVUSB("descriptor error\n");
+            ZF_LOGD("descriptor error\n");
             surb_epaddr_change_state(u, SURB_EPADDR_STATE_ERROR);
             vusb_inject_irq(vusb);
             return;

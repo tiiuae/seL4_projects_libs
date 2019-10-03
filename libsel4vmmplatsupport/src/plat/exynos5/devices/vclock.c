@@ -18,15 +18,6 @@
 #include <sel4vmmplatsupport/plat/device_map.h>
 #include <sel4vmmplatsupport/plat/vclock.h>
 
-#define CLOCK_DEBUG
-
-#ifdef CLOCK_DEBUG
-#define DCLOCK(...) printf(__VA_ARGS__)
-#else
-#define DCLOCK(...) do{}while(0)
-#endif
-
-
 #define CLOCK_REG_DEFN(r, o, s, b) { .bank = CLKREGS_##r, .offset = o, .shift = s, .bits = b }
 #define CLK_DEFN(c) { .nregs = sizeof(c)/sizeof(*c), .regs = &c[0] }
 #define CLK_DEFN_NONE() { .nregs = 0, .regs = NULL }
