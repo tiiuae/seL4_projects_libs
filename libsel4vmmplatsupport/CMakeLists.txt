@@ -16,7 +16,7 @@ project(libsel4vmmplatsupport C)
 
 add_compile_options(-std=gnu99)
 
-set(sources src/device.c)
+set(sources src/device.c src/device_utils.c)
 
 if("${KernelArch}" STREQUAL "arm")
     file(GLOB arch_sources src/arch/arm/*.c src/arch/arm/devices/*.c)

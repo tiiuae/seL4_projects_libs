@@ -12,6 +12,9 @@
 
 #pragma once
 
+#include <sel4vm/guest_vm.h>
+#include <sel4vmmplatsupport/device.h>
+
 /**
  * Install a passthrough device into a VM
  * @param[in] vm     A handle to the VM that the device should be install to

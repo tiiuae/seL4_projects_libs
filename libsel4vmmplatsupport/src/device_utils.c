@@ -10,26 +10,33 @@
  * @TAG(DATA61_BSD)
  */
 
+#include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_vcpu_fault.h>
+#include <sel4vm/guest_memory_util.h>
+
+#include <sel4vmmplatsupport/device.h>
+#include <sel4vmmplatsupport/device_utils.h>
+
 int
 vm_install_ram_only_device(vm_t *vm, const struct device* device) {
     struct device d;
     uintptr_t paddr;
     int err;
     d = *device;
-    for (paddr = d.pstart; paddr - d.pstart < d.size; paddr += 0x1000) {
-        void* addr;
-        addr = map_vm_ram(vm, paddr);
-        if (!addr) {
-            return -1;
-        }
+
+    vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d.pstart, d.size,
+            default_error_fault_callback, NULL);
+    if (!reservation) {
+        return -1;
     }
-    err = vm_add_device(vm, &d);
+
+    err = map_frame_alloc_reservation(vm, reservation);
     assert(!err);
     return err;
 }
 
 static memory_fault_result_t
-passthrough_device_fault(vm_t* vm, uintptr_t fault_addr, size_t fault_length, void *cookie) {
+passthrough_device_fault(vm_t* vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie) {
     ZF_LOGE("Fault occured on passthrough device");
     return FAULT_ERROR;
 }
@@ -64,97 +71,106 @@ vm_install_passthrough_device(vm_t* vm, const struct device* device)
             return -1;
         }
     }
-    err = vm_add_device(vm, &d);
-    assert(!err);
     return err;
 }
 
-static int
-handle_listening_fault(struct device* d, vm_t* vm,
-                       fault_t* fault)
+static memory_fault_result_t
+handle_listening_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
 {
     volatile uint32_t *reg;
     int offset;
     void** map;
+    struct device *d = (struct device *)cookie;
 
     assert(d->priv);
     map = (void**)d->priv;
-    offset = fault_get_address(fault) - d->pstart;
+    offset = fault_addr - d->pstart;
 
     reg = (volatile uint32_t*)(map[offset >> 12] + (offset & MASK(12)));
 
     printf("[Listener/%s] ", d->name);
-    if (fault_is_read(fault)) {
+    if (is_vcpu_read_fault(vcpu)) {
         printf("read ");
-        fault_set_data(fault, *reg);
+        set_vcpu_fault_data(vcpu, *reg);
     } else {
         printf("write");
-        *reg = fault_emulate(fault, *reg);
+        *reg = emulate_vcpu_fault(vcpu, *reg);
     }
     printf(" ");
-    fault_print_data(fault);
-    printf(" address %p @ pc %p\n", (void *) fault_get_address(fault),
-           (void *) fault_get_ctx(fault)->pc);
-    return advance_fault(fault);
+    seL4_Word data = get_vcpu_fault_data(vcpu);
+    seL4_Word data_mask = get_vcpu_fault_data_mask(vcpu);
+    printf("0x%x", data & data_mask);
+    printf(" address %p @ pc %p\n", (void *) fault_addr,
+           (void *) get_vcpu_fault_ip(vcpu));
+    advance_vcpu_fault(vcpu);
+    return FAULT_HANDLED;
 }
 
 
 int
 vm_install_listening_device(vm_t* vm, const struct device* dev_listening)
 {
-    struct device d;
+    struct device *d;
     int pages;
     int i;
     void** map;
     int err;
     pages = dev_listening->size >> 12;
-    d = *dev_listening;
-    d.handle_page_fault = handle_listening_fault;
+    d = (struct device *)malloc(sizeof(struct device));
+    if (!d) {
+        return -1;
+    }
+    memcpy(d, dev_listening, sizeof(struct device));
     /* Build device memory map */
     map = (void**)malloc(sizeof(void*) * pages);
     if (map == NULL) {
         return -1;
     }
-    d.priv = map;
+    d->priv = map;
     for (i = 0; i < pages; i++) {
-        map[i] = map_device(&vm->mem.vmm_vspace, vm->vka, vm->simple,
-                            d.pstart + (i << 12), 0, seL4_AllRights);
+        map[i] = ps_io_map(&vm->io_ops->io_mapper, d->pstart + (i << 12), PAGE_SIZE_4K, 0, PS_MEM_NORMAL);
     }
-    err = vm_add_device(vm, &d);
-    return err;
+    vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d->pstart, d->size,
+            handle_listening_fault, (void *)d);
+    if (!reservation) {
+        free(d);
+        free(map);
+        return -1;
+    }
+    return 0;
 }
 
 
-static int
-handle_listening_ram_fault(struct device* d, vm_t* vm, fault_t* fault)
+static memory_fault_result_t
+handle_listening_ram_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
 {
     volatile uint32_t *reg;
     int offset;
 
+    struct device *d = (struct device *)cookie;
     assert(d->priv);
-    offset = fault_get_address(fault) - d->pstart;
+    offset = fault_addr - d->pstart;
 
     reg = (volatile uint32_t*)(d->priv + offset);
 
-    if (fault_is_read(fault)) {
-        fault_set_data(fault, *reg);
+    if (is_vcpu_read_fault(vcpu)) {
+        set_vcpu_fault_data(vcpu, *reg);
     } else {
-        *reg = fault_emulate(fault, *reg);
+        *reg = emulate_vcpu_fault(vcpu, *reg);
     }
-    printf("Listener pc%p| %s%p:%p\n", (void *) fault_get_ctx(fault)->pc,
-                                       fault_is_read(fault) ? "r" : "w",
-                                       (void *) fault_get_address(fault),
-                                       (void *) fault_get_data(fault));
-    return advance_fault(fault);
+    printf("Listener pc%p| %s%p:%p\n", (void *) get_vcpu_fault_ip(vcpu),
+                                       is_vcpu_read_fault(vcpu) ? "r" : "w",
+                                       (void *) fault_addr,
+                                       (void *) get_vcpu_fault_data(vcpu));
+    advance_vcpu_fault(vcpu);
+    return FAULT_HANDLED;
 }
 
 
 const struct device dev_listening_ram = {
-    .devid = DEV_CUSTOM,
     .name = "<listing_ram>",
     .pstart = 0x0,
     .size = 0x1000,
-    .handle_page_fault = handle_listening_ram_fault,
     .priv = NULL
 };
 
@@ -162,21 +178,28 @@ const struct device dev_listening_ram = {
 int
 vm_install_listening_ram(vm_t* vm, uintptr_t addr, size_t size)
 {
-    struct device d;
+    struct device *d;
     int err;
-    d = dev_listening_ram;
-    d.pstart = addr;
-    d.size = size;
-    d.priv = malloc(0x1000);
-    assert(d.priv);
-    if (!d.priv) {
-        printf("malloc failed\n");
+
+    d = (struct device *)malloc(sizeof(struct device));
+    if (!d) {
         return -1;
     }
-    err = vm_add_device(vm, &d);
-    assert(!err);
-    if (err) {
-        printf("alloc failed\n");
+    memcpy(d, &dev_listening_ram, sizeof(struct device));
+
+    d->pstart = addr;
+    d->size = size;
+    d->priv = malloc(0x1000);
+    assert(d->priv);
+    if (!d->priv) {
+        ZF_LOGE("malloc failed\n");
+        return -1;
     }
-    return err;
+
+    vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d->pstart, d->size,
+            handle_listening_ram_fault, (void *)d);
+    if (!reservation) {
+        return -1;
+    }
+    return 0;
 }
