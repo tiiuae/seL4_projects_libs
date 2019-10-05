@@ -31,7 +31,7 @@ typedef struct vm_arch vm_arch_t;
 
 typedef memory_fault_result_t (*unhandled_mem_fault_callback_fn)(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t paddr,
         size_t len, void *cookie);
-typedef int (*notification_callback_fn)(vm_t *vm, seL4_Word badge, seL4_Word label,
+typedef int (*notification_callback_fn)(vm_t *vm, seL4_Word badge, seL4_MessageInfo_t tag,
         void *cookie);
 
 struct vm_ram_region {

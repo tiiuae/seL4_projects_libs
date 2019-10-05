@@ -190,7 +190,8 @@ int vm_run_arch(vm_t *vm) {
             assert(badge >= vm->num_vcpus);
             /* assume interrupt */
             if (vm->run.notification_callback) {
-                int raise = vm->run.notification_callback(vm, badge, 0, vm->run.notification_callback_cookie);
+                seL4_MessageInfo_t tag = {0};
+                int raise = vm->run.notification_callback(vm, badge, tag, vm->run.notification_callback_cookie);
                 if (raise == 0) {
                     /* Check if this caused PIC to generate interrupt */
                     vmm_check_external_interrupt(vm);

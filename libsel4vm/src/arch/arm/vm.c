@@ -170,7 +170,7 @@ int vm_run_arch(vm_t *vm) {
             }
         } else {
             if (vm->run.notification_callback) {
-                err = vm->run.notification_callback(vm, sender_badge, label,
+                err = vm->run.notification_callback(vm, sender_badge, tag,
                         vm->run.notification_callback_cookie);
             } else {
                 ZF_LOGE("Unable to handle VM notification. Exiting");
