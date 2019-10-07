@@ -289,13 +289,10 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
     if (!fault_reservation->is_mapped && fault_reservation->memory_map_iterator) {
         /* Deferred mapping */
         err = map_vm_memory_reservation(vm, fault_reservation);
-        fault_reservation->memory_map_iterator = NULL;
-        fault_reservation->memory_iterator_cookie = NULL;
         if (err) {
             ZF_LOGE("Unable to handle memory fault: Failed to map memory");
             return FAULT_ERROR;
         }
-        fault_reservation->is_mapped = true;
         return FAULT_RESTART;
     }
 
@@ -470,6 +467,9 @@ static int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reser
         }
         current_addr += BIT(reservation_frame.size_bits);
     }
+    vm_reservation->memory_map_iterator = NULL;
+    vm_reservation->memory_iterator_cookie = NULL;
+    vm_reservation->is_mapped = true;
     return 0;
 }
 
@@ -493,13 +493,10 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
         err = map_vm_memory_reservation(vm, reservation);
         /* We remove the iterator after attempting the mapping (regardless of success or fail)
          * If failed its left to the caller to update the memory map iterator */
-        reservation->memory_map_iterator = NULL;
-        reservation->memory_iterator_cookie = NULL;
         if (err) {
             ZF_LOGE("Failed to map vm reservation: Error when mapping into VM's vspace");
             return -1;
         }
-        reservation->is_mapped = true;
     }
 
     return 0;
