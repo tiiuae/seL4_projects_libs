@@ -16,4 +16,4 @@
 
 int vm_install_ram_default(vm_t *vm);
 
-int vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size);
+int vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size, bool untyped);
