@@ -51,11 +51,10 @@ uintptr_t vm_ram_register(vm_t *vm, size_t bytes, bool one_to_one);
  * @param[in] vm            A handle to the VM that ram needs to be allocated for
  * @param[in] start         Starting guest physical address of the ram region being allocated
  * @param[in] size          The size of the RAM region to be allocated
- * @param[in] one_to_one    Allocate RAM frames such that it has a one-to-one mapping
- *                          between guest PA <-> PA
+ * @param[in] untyped       Allocate RAM frames such that it uses untyped memory
  * @return                  0 on success
  */
-int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool one_to_one);
+int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped);
 
 /**
  * Mark a registered region of RAM as allocated

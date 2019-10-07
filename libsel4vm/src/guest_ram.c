@@ -21,6 +21,8 @@
 #include <sel4vm/guest_memory.h>
 #include <sel4vm/guest_memory_util.h>
 
+#include "guest_memory_map.h"
+
 struct guest_mem_touch_params {
     void *data;
     size_t size;
@@ -215,13 +217,68 @@ uintptr_t vm_ram_allocate(vm_t *vm, size_t bytes) {
     return 0;
 }
 
-static int map_ram_reservation(vm_t *vm, vm_memory_reservation_t *ram_reservation, bool one_to_one) {
-    memory_map_iterator_fn map_iterator;
+static vm_frame_t ram_alloc_iterator(uintptr_t addr, void *cookie) {
+    int ret;
+    vka_object_t object;
+    vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
+    vm_t *vm = (vm_t *)cookie;
+    if (!vm) {
+        return frame_result;
+    }
+    int page_size = vm->mem.page_size;
+    uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
+    ret = vka_alloc_frame_maybe_device(vm->vka, page_size, true, &object);
+    if (ret) {
+        ZF_LOGE("Failed to allocate frame for address 0x%x", addr);
+        return frame_result;
+    }
+    frame_result.cptr = object.cptr;
+    frame_result.rights = seL4_AllRights;
+    frame_result.vaddr = frame_start;
+    frame_result.size_bits = page_size;
+    return frame_result;
+}
+
+static vm_frame_t ram_ut_alloc_iterator(uintptr_t addr, void *cookie) {
+    int ret;
+    int error;
+    vka_object_t object;
+    vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
+    vm_t *vm = (vm_t *)cookie;
+    if (!vm) {
+        return frame_result;
+    }
+    int page_size = vm->mem.page_size;
+    uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
+    cspacepath_t path;
+    error = vka_cspace_alloc_path(vm->vka, &path);
+    if (error) {
+        ZF_LOGE("Failed to allocate path");
+        return frame_result;
+    }
+    seL4_Word vka_cookie;
+    error = vka_utspace_alloc_at(vm->vka, &path, kobject_get_type(KOBJECT_FRAME, page_size), page_size, frame_start, &vka_cookie);
+    if (error) {
+        ZF_LOGE("Failed to allocate page");
+        vka_cspace_free_path(vm->vka, path);
+        return frame_result;
+    }
+    frame_result.cptr = path.capPtr;
+    frame_result.rights = seL4_AllRights;
+    frame_result.vaddr = frame_start;
+    frame_result.size_bits = page_size;
+    return frame_result;
+}
+
+static int map_ram_reservation(vm_t *vm, vm_memory_reservation_t *ram_reservation, bool untyped) {
     int err;
-    if (one_to_one) {
-        err = map_maybe_device_reservation(vm, ram_reservation);
+    /* We map the reservation immediately, by-passing the deferred mapping functionality
+     * This allows us the allocate, touch and manipulate VM RAM prior to the region needing to be
+     * faulted upon first */
+    if (untyped) {
+        err = map_vm_memory_reservation(vm, ram_reservation, ram_ut_alloc_iterator, (void *)vm);
     } else {
-        err = map_ut_allocman_reservation(vm, ram_reservation);
+        err = map_vm_memory_reservation(vm, ram_reservation, ram_alloc_iterator, (void *)vm);
     }
     if (err) {
         ZF_LOGE("Failed to map new ram reservation");
@@ -254,7 +311,7 @@ uintptr_t vm_ram_register(vm_t *vm, size_t bytes, bool one_to_one) {
     return base_addr;
 }
 
-int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool one_to_one) {
+int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped) {
     vm_memory_reservation_t *ram_reservation;
     int err;
 
@@ -264,7 +321,7 @@ int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool one_to_one)
         ZF_LOGE("Unable to reserve ram region at addr 0x%x of size 0x%x", start, bytes);
         return 0;
     }
-    err = map_ram_reservation(vm, ram_reservation, one_to_one);
+    err = map_ram_reservation(vm, ram_reservation, untyped);
     if (err) {
         vm_free_reserved_memory(vm, ram_reservation);
         return 0;
