@@ -286,7 +286,7 @@ static int map_ram_reservation(vm_t *vm, vm_memory_reservation_t *ram_reservatio
     }
 }
 
-uintptr_t vm_ram_register(vm_t *vm, size_t bytes, bool one_to_one) {
+uintptr_t vm_ram_register(vm_t *vm, size_t bytes) {
     vm_memory_reservation_t *ram_reservation;
     int err;
     uintptr_t base_addr;
@@ -296,7 +296,7 @@ uintptr_t vm_ram_register(vm_t *vm, size_t bytes, bool one_to_one) {
         ZF_LOGE("Unable to reserve ram region of size 0x%x", bytes);
         return 0;
     }
-    err = map_ram_reservation(vm, ram_reservation, one_to_one);
+    err = map_ram_reservation(vm, ram_reservation, false);
     if (err) {
         vm_free_reserved_memory(vm, ram_reservation);
         return 0;

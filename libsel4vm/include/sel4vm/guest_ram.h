@@ -40,11 +40,9 @@ int vm_ram_find_largest_free_region(vm_t *vm, uintptr_t *addr, size_t *size);
  * Reserve a region of memory for RAM in the guest VM
  * @param[in] vm                A handle to the VM
  * @param[in] bytes             Size of RAM region to allocate
- * @param[in] one_to_one        Allocate RAM frames such that it has a one-to-one mapping
- *                              between guest PA <-> PA
  * @return                      Starting address of registered ram region
  */
-uintptr_t vm_ram_register(vm_t *vm, size_t bytes, bool one_to_one);
+uintptr_t vm_ram_register(vm_t *vm, size_t bytes);
 
 /**
  * Reserve a region of memory for RAM in the guest VM at a starting guest physical address
