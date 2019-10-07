@@ -101,6 +101,18 @@ static int expand_guest_ram_region(vm_t *vm, uintptr_t start, size_t bytes) {
     return 0;
 }
 
+static bool is_ram_region(vm_t *vm, uintptr_t addr, size_t size) {
+    vm_mem_t *guest_memory = &vm->mem;
+    for (int i = 0; i < guest_memory->num_ram_regions; i++) {
+        if (guest_memory->ram_regions[i].start <= addr &&
+            guest_memory->ram_regions[i].start + guest_memory->ram_regions[i].size >= addr + size) {
+            /* We are within a ram region*/
+            return true;
+        }
+    }
+    return false;
+}
+
 static memory_fault_result_t default_ram_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
         size_t fault_length, void *cookie) {
     /* We don't handle RAM faults by default unless the callback is specifically overrided, hence we fail here */
@@ -133,6 +145,10 @@ int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn to
     uintptr_t current_addr;
     uintptr_t next_addr;
     uintptr_t end_addr = (uintptr_t)(addr + size);
+    if (!is_ram_region(vm, addr, size)) {
+        ZF_LOGE("Failed to touch ram region: Not registered RAM region");
+        return -1;
+    }
     access_cookie.touch_fn = touch_callback;
     access_cookie.data = cookie;
     access_cookie.vm = vm;
