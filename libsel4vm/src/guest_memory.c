@@ -19,6 +19,8 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory.h>
 
+#include "guest_memory_map.h"
+
 typedef enum reservation_type {
     MEM_REGULAR_RES,
     MEM_ANON_RES
@@ -63,8 +65,6 @@ typedef struct res_tree {
     struct res_tree *left;
     struct res_tree *right;
 } res_tree;
-
-static int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation);
 
 static inline int reservation_node_cmp(res_tree *x, res_tree *y) {
     if (x->addr < y->addr) {
@@ -288,7 +288,8 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
 
     if (!fault_reservation->is_mapped && fault_reservation->memory_map_iterator) {
         /* Deferred mapping */
-        err = map_vm_memory_reservation(vm, fault_reservation);
+        err = map_vm_memory_reservation(vm, fault_reservation,
+                fault_reservation->memory_map_iterator, fault_reservation->memory_iterator_cookie);
         if (err) {
             ZF_LOGE("Unable to handle memory fault: Failed to map memory");
             return FAULT_ERROR;
@@ -446,14 +447,15 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation) {
     return 0;
 }
 
-static int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation) {
+int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
+        memory_map_iterator_fn map_iterator, void *map_cookie) {
     int err;
     uintptr_t reservation_addr = vm_reservation->addr;
     size_t reservation_size = vm_reservation->size;
     uintptr_t current_addr = vm_reservation->addr;
 
     while(current_addr < reservation_addr + reservation_size) {
-        vm_frame_t reservation_frame = vm_reservation->memory_map_iterator(current_addr, vm_reservation->memory_iterator_cookie);
+        vm_frame_t reservation_frame = map_iterator(current_addr, map_cookie);
         if (reservation_frame.cptr == seL4_CapNull) {
             ZF_LOGE("Failed to get frame for reservation address 0x%lx", current_addr);
             break;
@@ -490,7 +492,7 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
     reservation->memory_map_iterator = map_iterator;
     reservation->memory_iterator_cookie = cookie;
     if (!config_set(CONFIG_LIB_SEL4VM_DEFER_MEMORY_MAP)) {
-        err = map_vm_memory_reservation(vm, reservation);
+        err = map_vm_memory_reservation(vm, reservation, map_iterator, cookie);
         /* We remove the iterator after attempting the mapping (regardless of success or fail)
          * If failed its left to the caller to update the memory map iterator */
         if (err) {
