@@ -12,7 +12,12 @@
 
 #pragma once
 
-#define ACPI_START (0xE0000) // Start of ACPI tables; RSD PTR is right here
+#define LOWER_BIOS_START (0xE0000)
+#define LOWER_BIOS_SIZE (0xFFFF)
+
+#define ACPI_START (LOWER_BIOS_START) // Start of ACPI tables; RSD PTR is right here
+#define XSDT_START (ACPI_START + 0x1000)
+
 #define MAX_ACPI_TABLES (2)
 
 #include <sel4vm/guest_vm.h>
