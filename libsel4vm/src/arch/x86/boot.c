@@ -22,11 +22,11 @@
 #include <sel4utils/api.h>
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_vm_exits.h>
 
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_memory_util.h>
 #include <sel4vm/guest_state.h>
 #include <sel4vm/processor/decode.h>
 #include <sel4vm/processor/apicdef.h>
@@ -35,6 +35,7 @@
 
 #include "vm_boot.h"
 #include "guest_vspace.h"
+#include "guest_memory_map.h"
 
 #define VMM_VMCS_CR0_MASK           (X86_CR0_PG | X86_CR0_PE)
 #define VMM_VMCS_CR0_VALUE          VMM_VMCS_CR0_MASK
@@ -44,9 +45,9 @@
 #define VMM_VMCS_CR4_MASK           (X86_CR4_PSE | X86_CR4_PAE | X86_CR4_VMXE)
 #define VMM_VMCS_CR4_VALUE          (X86_CR4_PSE | X86_CR4_VMXE)
 
-static int make_guest_page_dir_continued(vm_t *vm, uintptr_t guest_phys, void *vaddr, size_t size, size_t offset, void *cookie) {
-    assert(offset == 0);
-    assert(size == BIT(seL4_PageBits));
+#define GUEST_PAGE_DIR 0x10000000
+
+static int make_guest_page_dir_continued(void *access_addr, void *vaddr, void *cookie) {
     /* Write into this frame as the init page directory: 4M pages, 1 to 1 mapping. */
     uint32_t *pd = vaddr;
     for (int i = 0; i < 1024; i++) {
@@ -56,17 +57,46 @@ static int make_guest_page_dir_continued(vm_t *vm, uintptr_t guest_phys, void *v
     return 0;
 }
 
+static vm_frame_t pd_alloc_iterator(uintptr_t addr, void *cookie) {
+    int ret;
+    vka_object_t object;
+    vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
+    vm_t *vm = (vm_t *)cookie;
+    if (!vm) {
+        return frame_result;
+    }
+    int page_size = vm->mem.page_size;
+    uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
+    ret = vka_alloc_frame_maybe_device(vm->vka, page_size, false, &object);
+    if (ret) {
+        ZF_LOGE("Failed to allocate frame for address 0x%x", (unsigned int)addr);
+        return frame_result;
+    }
+    frame_result.cptr = object.cptr;
+    frame_result.rights = seL4_AllRights;
+    frame_result.vaddr = frame_start;
+    frame_result.size_bits = page_size;
+    return frame_result;
+}
+
+
 static int make_guest_page_dir(vm_t *vm) {
     /* Create a 4K Page to be our 1-1 pd */
     /* This is constructed with magical new memory that we will not tell Linux about */
-    uintptr_t pd = (uintptr_t)vspace_new_pages(&vm->mem.vm_vspace, seL4_AllRights, 1, seL4_PageBits);
-    if (pd == 0) {
-        ZF_LOGE("Failed to allocate page for initial guest pd");
+    vm_memory_reservation_t *pd_reservation = vm_reserve_memory_at(vm, GUEST_PAGE_DIR, BIT(seL4_PageBits),
+            default_error_fault_callback, NULL);
+    if (!pd_reservation) {
+        ZF_LOGE("Failed to reserve page for initial guest pd");
         return -1;
     }
-    printf("Guest page dir allocated at 0x%x. Creating 1-1 entries\n", (unsigned int)pd);
-    vm->arch.guest_pd = pd;
-    return vm_ram_touch(vm, pd, BIT(seL4_PageBits), make_guest_page_dir_continued, NULL);
+    int err = map_vm_memory_reservation(vm, pd_reservation, pd_alloc_iterator, (void *)vm);
+    if (err) {
+        ZF_LOGE("Failed to map page for initial guest pd");
+    }
+    printf("Guest page dir allocated at 0x%x. Creating 1-1 entries\n", (unsigned int)GUEST_PAGE_DIR);
+    vm->arch.guest_pd = GUEST_PAGE_DIR;
+    return vspace_access_page_with_callback(&vm->mem.vm_vspace, &vm->mem.vmm_vspace, (void *)GUEST_PAGE_DIR,
+                seL4_PageBits, seL4_AllRights, 1, make_guest_page_dir_continued, NULL);
 }
 
 int
