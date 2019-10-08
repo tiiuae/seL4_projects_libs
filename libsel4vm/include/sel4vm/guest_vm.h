@@ -41,7 +41,6 @@ struct vm_ram_region {
     size_t size;
     /* whether or not this region has been 'allocated' */
     int allocated;
-    vm_memory_reservation_t *region_reservation;
 };
 
 struct vm_mem {
