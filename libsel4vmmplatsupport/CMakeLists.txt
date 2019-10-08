@@ -24,6 +24,8 @@ if("${KernelArch}" STREQUAL "arm")
     list(APPEND sources ${arch_sources})
     list(APPEND sources ${plat_sources})
 else("${KernelArch}" STRQEQUAL "x86")
+    file(GLOB arch_sources src/arch/x86/*.c)
+    list(APPEND sources ${arch_sources})
 endif()
 
 add_library(sel4vmmplatsupport STATIC EXCLUDE_FROM_ALL ${sources})
