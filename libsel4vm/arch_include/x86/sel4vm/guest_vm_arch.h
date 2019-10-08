@@ -28,28 +28,10 @@ typedef enum ioport_fault_result {
 /* Stores informatoin about the guest image we are loading. This information probably stops
  * being relevant / useful after we start running. Most of this assumes
  * we are loading a guest kernel elf image and that we are acting as some kind of bootloader */
-typedef struct guest_image {
-    /* Alignment we used when loading the kernel image */
-    size_t alignment;
-    /* Entry point when the VM starts */
-    uintptr_t entry;
-    /* Base address (in guest physical) where the image was loaded */
-    uintptr_t load_paddr;
-    /* Base physical address the image was linked for */
-    uintptr_t link_paddr;
-    uintptr_t link_vaddr;
-    /* If we are loading a guest elf then we may not have been able to put it where it
-     * requested. This is the relocation offset */
-    int relocation_offset;
-    /* Guest physical address of where we stashed the kernel cmd line */
-    uintptr_t cmd_line;
-    size_t cmd_line_len;
+typedef struct guest_boot_info {
     /* Guest physical address of where we created the boot information */
     uintptr_t boot_info;
-    /* Boot module information */
-    uintptr_t boot_module_paddr;
-    size_t boot_module_size;
-} guest_image_t;
+} guest_boot_info_t;
 /* ============================================================================ */
 
 /* Function prototype for vm exit handlers */
@@ -78,7 +60,7 @@ struct vm_arch {
     ioport_callback_fn ioport_callback;
     void *ioport_callback_cookie;
     /* ====== To be removed: will be refactored/removed ====== */
-    guest_image_t guest_image;
+    guest_boot_info_t guest_boot_info;
     int (*get_interrupt)();
     int (*has_interrupt)();
     /* ======================================================= */

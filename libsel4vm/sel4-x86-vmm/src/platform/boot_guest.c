@@ -201,7 +201,7 @@ static int make_guest_cmd_line_continued(vm_t *vm, uintptr_t phys, void *vaddr, 
     return 0;
 }
 
-static int make_guest_cmd_line(vm_t *vm, const char *cmdline) {
+static int make_guest_cmd_line(vm_t *vm, const char *cmdline, uintptr_t *guest_cmd_addr, size_t *guest_cmd_len) {
     /* Allocate command line from guest ram */
     int len = strlen(cmdline);
     uintptr_t cmd_addr = vm_ram_allocate(vm, len + 1);
@@ -210,8 +210,8 @@ static int make_guest_cmd_line(vm_t *vm, const char *cmdline) {
         return -1;
     }
     printf("Constructing guest cmdline at 0x%x of size %d\n", (unsigned int)cmd_addr, len);
-    vm->arch.guest_image.cmd_line = cmd_addr;
-    vm->arch.guest_image.cmd_line_len = len;
+    *guest_cmd_addr = cmd_addr;
+    *guest_cmd_len = len;
     return vm_ram_touch(vm, cmd_addr, len + 1, make_guest_cmd_line_continued, (void*)cmdline);
 }
 
@@ -330,7 +330,9 @@ static int make_guest_e820_map(struct e820entry *e820, vm_mem_t *guest_memory) {
     return entry + 1;
 }
 
-static int make_guest_boot_info(vm_t *vm) {
+static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest_cmd_len,
+        uintptr_t guest_kernel_load_addr, size_t guest_kernel_alignment,
+        uintptr_t guest_ramdisk_load_addr, size_t guest_ramdisk_size) {
     /* TODO: Bootinfo struct needs to be allocated in location accessable by real mode? */
     uintptr_t addr = vm_ram_allocate(vm, sizeof(struct boot_params));
     if (addr == 0) {
@@ -338,7 +340,7 @@ static int make_guest_boot_info(vm_t *vm) {
         return -1;
     }
     printf("Guest boot info allocated at %p. Populating...\n", (void*)addr);
-    vm->arch.guest_image.boot_info = addr;
+    vm->arch.guest_boot_info.boot_info = addr;
 
     /* Map in BIOS boot info structure. */
     struct boot_params boot_info;
@@ -348,8 +350,8 @@ static int make_guest_boot_info(vm_t *vm) {
     boot_info.hdr.header = 0x53726448; /* Magic number 'HdrS' */
     boot_info.hdr.boot_flag = 0xAA55; /* Magic number for Linux. */
     boot_info.hdr.type_of_loader = 0xFF; /* Undefined loeader type. */
-    boot_info.hdr.code32_start = vm->arch.guest_image.load_paddr;
-    boot_info.hdr.kernel_alignment = vm->arch.guest_image.alignment;
+    boot_info.hdr.code32_start = guest_kernel_load_addr;
+    boot_info.hdr.kernel_alignment = guest_kernel_alignment;
     boot_info.hdr.relocatable_kernel = true;
 
     /* Set up screen information. */
@@ -360,8 +362,8 @@ static int make_guest_boot_info(vm_t *vm) {
     boot_info.e820_entries = make_guest_e820_map(boot_info.e820_map, &vm->mem);
 
     /* Pass in the command line string. */
-    boot_info.hdr.cmd_line_ptr = vm->arch.guest_image.cmd_line;
-    boot_info.hdr.cmdline_size = vm->arch.guest_image.cmd_line_len;
+    boot_info.hdr.cmd_line_ptr = guest_cmd_addr;
+    boot_info.hdr.cmdline_size = guest_cmd_len;
 
     /* These are not needed to be precise, because Linux uses these values
      * only to raise an error when the decompression code cannot find good
@@ -369,9 +371,9 @@ static int make_guest_boot_info(vm_t *vm) {
     boot_info.alt_mem_k = 0;//((32 * 0x100000) >> 10);
 
     /* Pass in initramfs. */
-    if (vm->arch.guest_image.boot_module_paddr) {
-        boot_info.hdr.ramdisk_image = (uint32_t) vm->arch.guest_image.boot_module_paddr;
-        boot_info.hdr.ramdisk_size = vm->arch.guest_image.boot_module_size;
+    if (guest_ramdisk_load_addr) {
+        boot_info.hdr.ramdisk_image = (uint32_t) guest_ramdisk_load_addr;
+        boot_info.hdr.ramdisk_size = guest_ramdisk_size;
         boot_info.hdr.root_dev = 0x0100;
         boot_info.hdr.version = 0x0204; /* Report version 2.04 in order to report ramdisk_image. */
     } else {
@@ -381,30 +383,36 @@ static int make_guest_boot_info(vm_t *vm) {
 }
 
 /* Init the guest page directory, cmd line args and boot info structures. */
-void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline) {
+void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
+        uintptr_t guest_kernel_load_addr, size_t guest_kernel_alignment,
+        uintptr_t guest_ramdisk_load_addr, size_t guest_ramdisk_size) {
     int UNUSED err;
+    uintptr_t guest_cmd_addr;
+    size_t guest_cmd_size;
 
-    err = make_guest_cmd_line(vm, cmdline);
+    err = make_guest_cmd_line(vm, cmdline, &guest_cmd_addr, &guest_cmd_size);
     assert(!err);
 
-    err = make_guest_boot_info(vm);
+    err = make_guest_boot_info(vm, guest_cmd_addr, guest_cmd_size,
+            guest_kernel_load_addr, guest_kernel_alignment,
+            guest_ramdisk_load_addr, guest_ramdisk_size);
     assert(!err);
 
     err = make_guest_acpi_tables(vm);
     assert(!err);
 }
 
-void vmm_init_guest_thread_state(vm_vcpu_t *vcpu) {
+void vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr) {
     vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, 0);
     vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EBX, 0);
     vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_ECX, 0);
     vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX, 0);
 
     /* Entry point. */
-    printf("Initializing guest to start running at 0x%x\n", (unsigned int)vcpu->vm->arch.guest_image.entry);
-    vmm_guest_state_set_eip(&vcpu->vcpu_arch.guest_state, vcpu->vm->arch.guest_image.entry);
+    printf("Initializing guest to start running at 0x%x\n", (unsigned int) guest_entry_addr);
+    vmm_guest_state_set_eip(&vcpu->vcpu_arch.guest_state, guest_entry_addr);
     /* The boot_param structure. */
-    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_ESI, vcpu->vm->arch.guest_image.boot_info);
+    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_ESI, vcpu->vm->arch.guest_boot_info.boot_info);
 }
 
 /* TODO: Refactor and stop rewriting fucking elf loading code */
