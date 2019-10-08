@@ -74,15 +74,6 @@ void vmm_sync_guest_state(vm_vcpu_t *vcpu) {
     vmm_guest_state_sync_entry_exception_error_code(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 }
 
-int vmm_finalize(vm_t *vm) {
-    int err;
-
-    vm_vcpu_t *vcpu = vm->vcpus[BOOT_VCPU];
-
-    vmm_init_guest_thread_state(vcpu);
-    return 0;
-}
-
 seL4_CPtr vmm_create_async_event_notification_cap(vm_t *vm, seL4_Word badge) {
 
     if (!(badge & BIT(27))) {

@@ -32,9 +32,6 @@ typedef struct vm_vcpu vm_vcpu_t;
 #include "sel4vm/processor/lapic.h"
 #include "sel4vm/vmm_manager.h"
 
-/* Finalize the VM before running it */
-int vmm_finalize(vm_t *vm);
-
 /* TODO htf did these get here? lets refactor everything  */
 void vmm_sync_guest_state(vm_vcpu_t *vcpu);
 void vmm_sync_guest_context(vm_vcpu_t *vcpu);
