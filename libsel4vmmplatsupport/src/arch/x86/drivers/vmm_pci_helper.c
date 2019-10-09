@@ -12,7 +12,7 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory_util.h>
-#include <sel4vm/io.h>
+#include <sel4vm/ioports.h>
 #include <sel4vm/boot.h>
 
 #include <sel4vmmplatsupport/drivers/vmm_pci_helper.h>

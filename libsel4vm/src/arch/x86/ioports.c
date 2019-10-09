@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -20,8 +20,9 @@
 #include <simple/simple.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/ioports.h>
+
 #include "sel4vm/debug.h"
-#include "sel4vm/io.h"
 #include "sel4vm/vmm.h"
 
 #include "vm.h"
