@@ -16,7 +16,7 @@
 #include <string.h>
 #include <platsupport/io.h>
 #include <ethdrivers/raw.h>
-#include "con_forward.h"
+#include <sel4vmmplatsupport/drivers/virtio_pci_console.h>
 #include <sel4vm/guest_vm.h>
 #include <ethdrivers/virtio/virtio_ring.h>
 #include <ethdrivers/virtio/virtio_pci.h>
@@ -61,10 +61,6 @@ typedef struct virtio_emul {
 virtio_emul_t *virtio_emul_init(ps_io_ops_t io_ops, int queue_size, vm_t *vm, void *driver,
                                 void *config, virtio_pci_devices_t device);
 
-int vm_guest_write_mem(vm_t *vm, void *data, uintptr_t address, size_t size);
-
-int vm_guest_read_mem(vm_t *vm, void *data, uintptr_t address, size_t size);
-
 void ring_used_add(virtio_emul_t *emul, struct vring *vring, struct vring_used_elem elem);
 
 struct vring_desc ring_desc(virtio_emul_t *emul, struct vring *vring, uint16_t idx);
@@ -76,4 +72,3 @@ uint16_t ring_avail(virtio_emul_t *emul, struct vring *vring, uint16_t idx);
 void *net_virtio_emul_init(virtio_emul_t *emul, ps_io_ops_t io_ops, ethif_driver_init driver, void *config);
 
 void *console_virtio_emul_init(virtio_emul_t *emul, ps_io_ops_t io_ops, console_driver_init driver, void *config);
-

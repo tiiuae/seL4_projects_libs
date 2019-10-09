@@ -10,8 +10,9 @@
  * @TAG(DATA61_BSD)
  */
 
-typedef void (*console_handle_irq_fn_t)(void *cookie);
+#pragma once
 
+typedef void (*console_handle_irq_fn_t)(void *cookie);
 typedef void (*console_putchar_fn_t)(char c);
 
 struct console_passthrough {

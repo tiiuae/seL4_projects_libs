@@ -15,7 +15,7 @@
 #include <sel4vm/io.h>
 #include <sel4vm/boot.h>
 
-#include <sel4pci/vmm_pci_helper.h>
+#include <sel4vmmplatsupport/drivers/vmm_pci_helper.h>
 
 int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars)
 {

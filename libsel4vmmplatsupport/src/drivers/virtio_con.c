@@ -16,11 +16,11 @@
 
 #include <platsupport/io.h>
 
-#include <sel4vmmcore/drivers/virtio.h>
-#include <sel4vmmcore/drivers/virtio_console/virtio_con.h>
+#include <sel4vmmplatsupport/drivers/virtio.h>
+#include <sel4vmmplatsupport/drivers/virtio_con.h>
 
 #include <pci/helper.h>
-#include <sel4pci/pci_helper.h>
+#include <sel4vmmplatsupport/drivers/pci_helper.h>
 
 #define QUEUE_SIZE 128
 

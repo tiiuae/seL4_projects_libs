@@ -10,8 +10,10 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <sel4pci/virtio_emul.h>
+#include <sel4vmmplatsupport/drivers/virtio_pci_emul.h>
 #include <stdbool.h>
+
+#include "virtio_emul_helpers.h"
 
 #define BUF_SIZE 2048
 

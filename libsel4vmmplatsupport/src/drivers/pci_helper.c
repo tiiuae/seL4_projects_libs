@@ -18,7 +18,7 @@
 #include <pci/virtual_pci.h>
 #include <pci/helper.h>
 
-#include <sel4pci/pci_helper.h>
+#include <sel4vmmplatsupport/drivers/pci_helper.h>
 
 #define PCI_CAPABILITY_SPACE_OFFSET 0x40
 

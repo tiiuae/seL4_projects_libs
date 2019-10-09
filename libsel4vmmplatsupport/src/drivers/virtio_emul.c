@@ -10,7 +10,9 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <sel4pci/virtio_emul.h>
+#include <sel4vmmplatsupport/drivers/virtio_pci_emul.h>
+
+#include "virtio_emul_helpers.h"
 
 uint16_t ring_avail_idx(virtio_emul_t *emul, struct vring *vring)
 {

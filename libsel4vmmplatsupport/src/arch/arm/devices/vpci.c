@@ -22,9 +22,9 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_vcpu_fault.h>
 
-#include <sel4pci/pci_helper.h>
-#include <sel4pci/pci.h>
-#include <sel4vmmcore/util/io.h>
+#include <sel4vmmplatsupport/drivers/pci_helper.h>
+#include <sel4vmmplatsupport/drivers/pci.h>
+#include <sel4vmmplatsupport/ioports.h>
 
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/vpci.h>

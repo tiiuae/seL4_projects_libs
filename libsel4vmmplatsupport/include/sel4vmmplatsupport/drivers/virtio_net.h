@@ -12,9 +12,11 @@
 
 #pragma once
 
-#include <sel4vmmcore/util/io.h>
-#include <sel4pci/pci.h>
-#include <sel4pci/virtio_emul.h>
+#include <sel4vm/guest_vm.h>
+
+#include <sel4vmmplatsupport/ioports.h>
+#include <sel4vmmplatsupport/drivers/pci.h>
+#include <sel4vmmplatsupport/drivers/virtio_pci_emul.h>
 
 /* Virtio net driver interface */
 typedef struct virtio_net {

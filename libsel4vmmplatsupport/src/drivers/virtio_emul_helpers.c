@@ -10,9 +10,10 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <sel4pci/virtio_emul.h>
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_ram.h>
+
+#include "virtio_emul_helpers.h"
 
 static int read_guest_mem(vm_t *vm, uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie)
 {

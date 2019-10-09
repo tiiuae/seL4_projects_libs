@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <pci/pci.h>
 
-#include <sel4pci/pci.h>
+#include <sel4vmmplatsupport/drivers/pci.h>
 
 #define PCI_BAR_OFFSET(b)   (offsetof(vmm_pci_device_def_t, bar##b))
 

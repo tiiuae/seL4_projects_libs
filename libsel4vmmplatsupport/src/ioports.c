@@ -10,13 +10,11 @@
  * @TAG(DATA61_BSD)
  */
 
-/*vm exits related with io instructions*/
-
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <sel4utils/util.h>
-#include <sel4vmmcore/util/io.h>
+#include <sel4vmmplatsupport/ioports.h>
 
 static int io_port_compare_by_range(const void *pkey, const void *pelem)
 {
@@ -65,14 +63,14 @@ int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool i
         return -1;
     }
 
-    ZF_LOGI("vm exit io request: in %d  port no 0x%x (%s) size %d\n",
+    ZF_LOGI("exit io request: in %d  port no 0x%x (%s) size %d\n",
             is_in, port_no, vmm_debug_io_portno_desc(io_port, port_no), size);
 
     ioport_entry_t *port = search_port(io_port, port_no);
     if (!port) {
         static int last_port = -1;
         if (last_port != port_no) {
-            ZF_LOGW("vm exit io request: WARNING - ignoring unsupported ioport 0x%x (%s)\n", port_no,
+            ZF_LOGW("exit io request: WARNING - ignoring unsupported ioport 0x%x (%s)\n", port_no,
                     vmm_debug_io_portno_desc(io_port, port_no));
             last_port = port_no;
         }
@@ -87,8 +85,8 @@ int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool i
     }
 
     if (ret) {
-        ZF_LOGE("vm exit io request: handler returned error.");
-        ZF_LOGE("vm exit io ERROR: string %d  in %d rep %d  port no 0x%x (%s) size %d", 0,
+        ZF_LOGE("exit io request: handler returned error.");
+        ZF_LOGE("exit io ERROR: string %d  in %d rep %d  port no 0x%x (%s) size %d", 0,
                 is_in, 0, port_no, vmm_debug_io_portno_desc(io_port, port_no), size);
         return -1;
     }

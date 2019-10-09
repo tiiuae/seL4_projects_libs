@@ -10,10 +10,10 @@
  * @TAG(DATA61_BSD)
  */
 
+#pragma once
+
 #include <sel4vm/guest_vm.h>
-#include <sel4pci/pci_helper.h>
 
-#include <pci/virtual_pci.h>
-#include <pci/helper.h>
+int vm_guest_write_mem(vm_t *vm, void *data, uintptr_t address, size_t size);
 
-int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars);
+int vm_guest_read_mem(vm_t *vm, void *data, uintptr_t address, size_t size);

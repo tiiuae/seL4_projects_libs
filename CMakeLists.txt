@@ -17,8 +17,6 @@ add_subdirectory(libsel4vchan)
 add_subdirectory(libsel4dma)
 add_subdirectory(libsel4bga)
 add_subdirectory(libsel4keyboard)
-add_subdirectory(libsel4pci)
-add_subdirectory(libsel4vmmcore)
 add_subdirectory(libsel4vmmplatsupport)
 
 set(configure_string "")

@@ -22,8 +22,8 @@
 #include <pci/pci.h>
 #include <pci/helper.h>
 
-#include <sel4pci/pci.h>
-#include <sel4pci/pci_helper.h>
+#include <sel4vmmplatsupport/drivers/pci.h>
+#include <sel4vmmplatsupport/drivers/pci_helper.h>
 
 #define NUM_DEVICES 32
 #define NUM_FUNCTIONS 8
