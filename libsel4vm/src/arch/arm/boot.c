@@ -26,8 +26,6 @@
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_vm.h>
 
-#include <sel4pci/pci.h>
-
 #include "arm_vm.h"
 #include "vm_boot.h"
 #include "guest_vspace.h"

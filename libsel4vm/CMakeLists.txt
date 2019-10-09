@@ -77,8 +77,6 @@ if("${KernelArch}" STREQUAL "arm")
         sel4allocman
         sel4dma
         platsupport
-        sel4pci
-        sel4vmmcore
         sel4_autoconf
         sel4vm_Config
         usbdrivers_Config

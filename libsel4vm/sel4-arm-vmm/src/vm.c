@@ -34,7 +34,6 @@
 #include "devices.h"
 
 #include <sel4vm/sel4_arch/vm.h>
-#include <sel4vmmcore/util/io.h>
 
 //#define DEBUG_VM
 //#define DEBUG_RAM_FAULTS

@@ -25,9 +25,6 @@
 #include <sel4vm/devices.h>
 #include <sel4vm/fault.h>
 
-#include <sel4vmmcore/util/io.h>
-#include <sel4pci/pci.h>
-
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 #include <sel4vm/vchan_vm_component.h>
 #include <sel4vchan/vchan_component.h>
