@@ -57,10 +57,6 @@ int vmm_pci_init(vmm_pci_space_t **space);
 /* Add a PCI entry. Optionally reports where it is located */
 int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_address_t *addr);
 
-/* Functions for emulating PCI config spaces over IO ports */
-int vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result);
-int vmm_pci_io_port_out(void *cookie, unsigned int port_no, unsigned int size, unsigned int value);
-
 /* Convert config to pci address */
 void make_addr_reg_from_config(uint32_t conf, vmm_pci_address_t *addr, uint8_t *reg);
 

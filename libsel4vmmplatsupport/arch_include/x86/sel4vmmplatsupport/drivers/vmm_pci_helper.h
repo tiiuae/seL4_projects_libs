@@ -17,3 +17,7 @@
 #include <pci/helper.h>
 
 int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t *bars);
+
+/* Functions for emulating PCI config spaces over IO ports */
+int vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result);
+int vmm_pci_io_port_out(void *cookie, unsigned int port_no, unsigned int size, unsigned int value);
