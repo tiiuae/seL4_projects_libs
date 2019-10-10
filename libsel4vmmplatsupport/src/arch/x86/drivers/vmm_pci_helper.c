@@ -69,7 +69,7 @@ int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t 
     return bar;
 }
 
-ioport_fault_result_t vmm_pci_io_port_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result)
+ioport_fault_result_t vmm_pci_io_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size, unsigned int *result)
 {
     vmm_pci_space_t *self = (vmm_pci_space_t *)cookie;
     uint8_t offset;
@@ -119,7 +119,7 @@ ioport_fault_result_t vmm_pci_io_port_in(void *cookie, unsigned int port_no, uns
     return IO_FAULT_HANDLED;
 }
 
-ioport_fault_result_t vmm_pci_io_port_out(void *cookie, unsigned int port_no, unsigned int size, unsigned int value)
+ioport_fault_result_t vmm_pci_io_port_out(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size, unsigned int value)
 {
     vmm_pci_space_t *self = (vmm_pci_space_t *)cookie;
     uint8_t offset;

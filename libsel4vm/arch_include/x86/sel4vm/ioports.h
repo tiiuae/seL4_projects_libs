@@ -26,9 +26,11 @@ typedef enum ioport_fault_result {
     IO_FAULT_ERROR
 } ioport_fault_result_t;
 
-typedef ioport_fault_result_t (*vm_ioport_in_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result);
-typedef ioport_fault_result_t (*vm_ioport_out_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int value);
-typedef ioport_fault_result_t (*unhandled_ioport_callback_fn)(vm_t *vm, unsigned int port_no, bool is_in, unsigned int *value,
+typedef ioport_fault_result_t (*vm_ioport_in_fn)(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size,
+        unsigned int *result);
+typedef ioport_fault_result_t (*vm_ioport_out_fn)(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size,
+        unsigned int value);
+typedef ioport_fault_result_t (*unhandled_ioport_callback_fn)(vm_vcpu_t *vcpu, unsigned int port_no, bool is_in, unsigned int *value,
         size_t size, void *cookie);
 
 typedef struct vm_ioport_range {

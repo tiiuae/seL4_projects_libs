@@ -159,12 +159,12 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
     vm_ioport_entry_t *port = search_port(&vcpu->vm->arch.ioport_list, port_no);
     if (port) {
         if (is_in) {
-            res = port->interface.port_in(port->interface.cookie, port_no, size, &value);
+            res = port->interface.port_in(vcpu, port->interface.cookie, port_no, size, &value);
         } else {
-            res = port->interface.port_out(port->interface.cookie, port_no, size, value);
+            res = port->interface.port_out(vcpu, port->interface.cookie, port_no, size, value);
         }
     } else if (vcpu->vm->arch.unhandled_ioport_callback) {
-        res = vcpu->vm->arch.unhandled_ioport_callback(vcpu->vm, port_no, is_in, &value, size, vcpu->vm->arch.unhandled_ioport_callback_cookie);
+        res = vcpu->vm->arch.unhandled_ioport_callback(vcpu, port_no, is_in, &value, size, vcpu->vm->arch.unhandled_ioport_callback_cookie);
     } else {
         /* No means of handling ioport instruction */
         if (port_no != -1) {
