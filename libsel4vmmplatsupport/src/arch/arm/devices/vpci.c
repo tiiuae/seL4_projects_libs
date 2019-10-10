@@ -180,25 +180,5 @@ int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
     if (!cfg_io_reservation) {
         return -1;
     }
-
-    /* Add VPCI CFG IOPort handlers */
-    /* PCI_CONFIG_DATA */
-    ioport_range_t config_data_range = {PCI_CONF_PORT_DATA, PCI_CONF_PORT_DATA_END};
-    ioport_interface_t config_data_interface = {pci, vmm_pci_io_port_in, vmm_pci_io_port_out, "PCI_CONF_PORT_DATA"};
-    err = vmm_io_port_add_handler(io_port, config_data_range, config_data_interface);
-    if (err) {
-        ZF_LOGE("Failed to register IOPort handler for PCI_CONF_PORT_DATA (Port: 0x%x-0x%x)", PCI_CONF_PORT_DATA,
-                PCI_CONF_PORT_DATA_END);
-        return -1;
-    }
-    /* PCI_CONFIG_ADDRESS */
-    ioport_range_t config_address_range = {PCI_CONF_PORT_DATA, PCI_CONF_PORT_ADDR_END};
-    ioport_interface_t config_address_interface = {pci, vmm_pci_io_port_in, vmm_pci_io_port_out, "PCI_CONF_PORT_ADDR"};
-    err = vmm_io_port_add_handler(io_port, config_address_range, config_address_interface);
-    if (err) {
-        ZF_LOGE("Failed to register IOPort handler for PCI_CONF_PORT_ADDR (Port: 0x%x-0x%x)", PCI_CONF_PORT_ADDR,
-                PCI_CONF_PORT_ADDR_END);
-        return -1;
-    }
     return 0;
 }
