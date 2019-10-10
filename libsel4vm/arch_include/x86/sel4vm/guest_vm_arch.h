@@ -51,6 +51,7 @@ struct vm_arch {
     seL4_CPtr notification_cap;
     unhandled_ioport_callback_fn unhandled_ioport_callback;
     void *unhandled_ioport_callback_cookie;
+    vm_io_port_list_t ioport_list;
     /* ====== To be removed: will be refactored/removed ====== */
     guest_boot_info_t guest_boot_info;
     int (*get_interrupt)();

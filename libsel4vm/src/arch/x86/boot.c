@@ -116,6 +116,8 @@ vm_init_arch(vm_t *vm, void *cookie) {
 
     vm->arch.vmcall_handlers = NULL;
     vm->arch.vmcall_num_handlers = 0;
+    vm->arch.ioport_list.num_ioports = 0;
+    vm->arch.ioport_list.ioports = NULL;
 
     /* Create an EPT which is the pd for all the vcpu tcbs */
     err = vka_alloc_ept_pml4(vm->vka, &vm->mem.vm_vspace_root);
