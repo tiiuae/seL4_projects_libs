@@ -134,6 +134,7 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
     unsigned int size;
     unsigned int value;
     int is_in;
+    ioport_fault_result_t res;
 
     string = (exit_qualification & 16) != 0;
     is_in = (exit_qualification & 8) != 0;
@@ -147,7 +148,25 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
         return VM_EXIT_HANDLE_ERROR;
     }
 
-    if (!vcpu->vm->arch.ioport_callback) {
+    if (!is_in) {
+        value = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
+        if (size < 4) {
+            value &= MASK(size * 8);
+        }
+    }
+
+    /* Search internal ioport list */
+    vm_ioport_entry_t *port = search_port(&vcpu->vm->arch.ioport_list, port_no);
+    if (port) {
+        if (is_in) {
+            res = port->interface.port_in(port->interface.cookie, port_no, size, &value);
+        } else {
+            res = port->interface.port_out(port->interface.cookie, port_no, size, value);
+        }
+    } else if (vcpu->vm->arch.unhandled_ioport_callback) {
+        res = vcpu->vm->arch.unhandled_ioport_callback(vcpu->vm, port_no, is_in, &value, size, vcpu->vm->arch.unhandled_ioport_callback_cookie);
+    } else {
+        /* No means of handling ioport instruction */
         if (port_no != -1) {
             ZF_LOGW("ignoring unsupported ioport 0x%x", port_no);
         }
@@ -158,13 +177,6 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
         return VM_EXIT_HANDLED;
     }
 
-    if (!is_in) {
-        value = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
-        if (size < 4) {
-            value &= MASK(size * 8);
-        }
-    }
-    ioport_fault_result_t res = vcpu->vm->arch.ioport_callback(vcpu->vm, port_no, is_in, &value, size, vcpu->vm->arch.ioport_callback_cookie);
     if (is_in) {
         if (res == IO_FAULT_UNHANDLED) {
             set_io_in_unhandled(vcpu, size);
