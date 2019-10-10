@@ -17,12 +17,7 @@
 #include <sel4vm/guest_state.h>
 #include <sel4vm/platform/vmexit.h>
 #include <sel4vm/processor/lapic.h>
-
-typedef enum ioport_fault_result {
-    IO_FAULT_HANDLED,
-    IO_FAULT_UNHANDLED,
-    IO_FAULT_ERROR
-} ioport_fault_result_t;
+#include <sel4vm/ioports.h>
 
 /* ================ To be removed: will be refactored/removed ================ */
 /* Stores informatoin about the guest image we are loading. This information probably stops
@@ -45,9 +40,6 @@ typedef struct vmcall_handler {
     vmcall_handler func;
 } vmcall_handler_t;
 
-typedef ioport_fault_result_t (*ioport_callback_fn)(vm_t *vm, unsigned int port_no, bool is_in, unsigned int *value,
-        size_t size, void *cookie);
-
 struct vm_arch {
     /* Exit handler hooks */
     vmexit_handler_ptr vmexit_handlers[VMM_EXIT_REASON_NUM];
@@ -57,8 +49,8 @@ struct vm_arch {
     /* Guest physical address of where we built the vm's page directory */
     uintptr_t guest_pd;
     seL4_CPtr notification_cap;
-    ioport_callback_fn ioport_callback;
-    void *ioport_callback_cookie;
+    unhandled_ioport_callback_fn unhandled_ioport_callback;
+    void *unhandled_ioport_callback_cookie;
     /* ====== To be removed: will be refactored/removed ====== */
     guest_boot_info_t guest_boot_info;
     int (*get_interrupt)();
@@ -72,7 +64,3 @@ struct vm_vcpu_arch {
     /* VM local apic */
     vmm_lapic_t *lapic;
 };
-
-/* IOPort fault callback registration functions */
-int vm_register_ioport_callback(vm_t *vm, ioport_callback_fn ioport_callback,
-                                      void *cookie);

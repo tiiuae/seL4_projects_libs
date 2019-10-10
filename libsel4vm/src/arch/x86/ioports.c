@@ -131,3 +131,19 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
 
     return VM_EXIT_HANDLED;
 }
+
+int vm_register_unhandled_ioport_callback(vm_t *vm, unhandled_ioport_callback_fn ioport_callback,
+                                      void *cookie) {
+    if (!vm) {
+        ZF_LOGE("Failed to register ioport callback: Invalid VM handle");
+        return -1;
+    }
+
+    if (!ioport_callback) {
+        ZF_LOGE("Failed to register ioport callback: Invalid callback");
+        return -1;
+    }
+    vm->arch.unhandled_ioport_callback = ioport_callback;
+    vm->arch.unhandled_ioport_callback_cookie = cookie;
+    return 0;
+}
