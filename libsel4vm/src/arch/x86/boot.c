@@ -103,16 +103,16 @@ int
 vm_init_arch(vm_t *vm, void *cookie) {
     int err;
 
+    if (!vm) {
+        ZF_LOGE("Failed to initialise vm arch: Invalid vm");
+        return -1;
+    }
+
     /* Initialise x86 specific fields */
     struct vm_init_x86_config *vm_init_x86_params = cookie;
     vm->arch.get_interrupt = vm_init_x86_params->get_interrupt;
     vm->arch.has_interrupt = vm_init_x86_params->has_interrupt;
     vm->arch.notification_cap = vm_init_x86_params->notification_cap;
-
-    if (!vm) {
-        ZF_LOGE("Failed to initialise vm arch: Invalid vm");
-        return -1;
-    }
 
     vm->arch.vmcall_handlers = NULL;
     vm->arch.vmcall_num_handlers = 0;
