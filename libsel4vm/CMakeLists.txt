@@ -20,7 +20,8 @@ add_compile_options(-std=gnu99)
 
 set(sources src/boot.c src/guest_vspace.c src/guest_ram.c src/arch/${KernelArch}/boot.c
     src/guest_memory.c src/guest_memory_utils.c src/vm.c src/arch/${KernelArch}/vm.c
-    src/guest_vcpu_fault.c src/arch/${KernelArch}/guest_vcpu_fault_arch.c)
+    src/guest_vcpu_fault.c src/arch/${KernelArch}/guest_vcpu_fault_arch.c
+    src/arch/${KernelArch}/guest_irq_controller.c)
 
 if("${KernelArch}" STREQUAL "arm")
     config_option(
@@ -152,7 +153,7 @@ elseif("${KernelArch}" STREQUAL "x86")
             sel4-x86-vmm/src/manager/*.c
             sel4-x86-vmm/src/processor/*.c
     )
-    list(APPEND sources ${x86_sources} src/arch/${KernelArch}/ioports.c src/arch/${KernelArch}/i8259/i8259.c src/arch/${KernelArch}/guest_irq_controller.c)
+    list(APPEND sources ${x86_sources} src/arch/${KernelArch}/ioports.c src/arch/${KernelArch}/i8259/i8259.c)
     add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
 
     target_include_directories(

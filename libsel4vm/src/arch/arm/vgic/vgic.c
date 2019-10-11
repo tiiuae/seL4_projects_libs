@@ -56,6 +56,7 @@
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_memory.h>
 #include <sel4vm/guest_memory_util.h>
+#include <sel4vm/guest_irq_controller.h>
 
 #include <sel4vm/plat/devices.h>
 
@@ -109,21 +110,15 @@ enum gic_dist_action {
 
 struct virq_handle {
     int virq;
-    void (*ack)(void *token);
+    irq_ack_fn_t ack;
     void *token;
-    vm_t *vm;
 };
 
 typedef struct virq_handle* virq_handle_t;
 
-static inline vm_t* virq_get_vm(struct virq_handle* irq)
+static inline void virq_ack(vm_t *vm, struct virq_handle *irq)
 {
-    return irq->vm;
-}
-
-static inline void virq_ack(struct virq_handle *irq)
-{
-    irq->ack(irq->token);
+    irq->ack(vm, irq->virq, irq->token);
 }
 
 /* Memory map for GIC distributer */
@@ -344,7 +339,7 @@ int handle_vgic_maintenance(vm_t *vm, int idx)
     /* Clear pending */
     DIRQ("Maintenance IRQ %d\n", lr[idx]->virq);
     set_pending(gic_dist, lr[idx]->virq, false);
-    virq_ack(lr[idx]);
+    virq_ack(vm, lr[idx]);
 
     /* Check the overflow list for pending IRQs */
     lr[idx] = NULL;
@@ -447,7 +442,7 @@ vgic_dist_enable_irq(struct vgic_dist_device* d, vm_t* vm, int irq)
     if (virq_data) {
         /* STATE b) */
         if (not_pending(gic_dist, virq_data->virq)) {
-            virq_ack(virq_data);
+            virq_ack(vm, virq_data);
         }
     } else {
         DDIST("enabled irq %d has no handle", irq);
@@ -694,7 +689,7 @@ static void vgic_dist_reset(struct vgic_dist_device* d)
     }
 }
 
-virq_handle_t vm_virq_new(vm_t *vm, int virq, void (*ack)(void *), void *token)
+int vm_register_irq(vm_t *vm, int irq, irq_ack_fn_t ack_fn, void *cookie)
 {
     struct virq_handle* virq_data;
     struct vgic* vgic;
@@ -705,31 +700,26 @@ virq_handle_t vm_virq_new(vm_t *vm, int virq, void (*ack)(void *), void *token)
 
     virq_data = malloc(sizeof(*virq_data));
     if (!virq_data) {
-        return NULL;
+        return -1;
     }
-    virq_data->virq = virq;
-    virq_data->token = token;
-    virq_data->ack = ack;
-    virq_data->vm = vm;
+    virq_data->virq = irq;
+    virq_data->token = cookie;
+    virq_data->ack = ack_fn;
     err = virq_add(vgic, virq_data);
     if (err) {
         free(virq_data);
-        return NULL;
+        return -1;
     }
-    return virq_data;
+    return 0;
 }
 
-int vm_inject_IRQ(virq_handle_t virq)
+int vm_inject_irq(vm_t *vm, int irq)
 {
-    vm_t* vm;
-    assert(virq);
-    vm = virq->vm;
-
     // vm->lock();
 
     DIRQ("VM received IRQ %d\n", virq->virq);
 
-    vgic_dist_set_pending_irq(vgic_dist, vm, virq->virq);
+    vgic_dist_set_pending_irq(vgic_dist, vm, irq);
 
     if (!fault_handled(vm->vcpus[BOOT_VCPU]->vcpu_arch.fault) && fault_is_wfi(vm->vcpus[BOOT_VCPU]->vcpu_arch.fault)) {
         ignore_fault(vm->vcpus[BOOT_VCPU]->vcpu_arch.fault);
