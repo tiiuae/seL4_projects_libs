@@ -29,6 +29,8 @@ typedef struct guest_boot_info {
 } guest_boot_info_t;
 /* ============================================================================ */
 
+typedef struct i8259 i8259_t;
+
 /* Function prototype for vm exit handlers */
 typedef int(*vmexit_handler_ptr)(vm_vcpu_t *vcpu);
 
@@ -52,6 +54,8 @@ struct vm_arch {
     unhandled_ioport_callback_fn unhandled_ioport_callback;
     void *unhandled_ioport_callback_cookie;
     vm_io_port_list_t ioport_list;
+    /* PIC machine state */
+    i8259_t *i8259_gs;
     /* ====== To be removed: will be refactored/removed ====== */
     guest_boot_info_t guest_boot_info;
     /* ======================================================= */

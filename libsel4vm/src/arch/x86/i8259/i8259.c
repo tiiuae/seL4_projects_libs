@@ -84,9 +84,6 @@ static inline int select_pic(unsigned int irq) {
     }
 }
 
-/* PIC machine state for guest OS. */
-static struct i8259 i8259_gs;
-
 static inline int __vmm_irq_line_state(unsigned long *irq_state,
                        int irq_source_id, int level)
 {
@@ -437,7 +434,7 @@ static unsigned int elcr_ioport_read(struct i8259_state *s, unsigned int addr) {
 
 ioport_fault_result_t i8259_port_out(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size, unsigned int value) {
     /* Sender thread is the VMM main thread, calculate guest ID according to the badge. */
-    struct i8259 *s = &i8259_gs;
+    struct i8259 *s = vcpu->vm->arch.i8259_gs;
 
     if (!i8259_in_range(port_no)) {
         return IO_FAULT_ERROR;
@@ -466,7 +463,7 @@ ioport_fault_result_t i8259_port_out(vm_vcpu_t *vcpu, void *cookie, unsigned int
 
 ioport_fault_result_t i8259_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size, unsigned int *result) {
     /* Sender thread is the VMM main thread, calculate guest ID according to the badge. */
-    struct i8259 *s = &i8259_gs;
+    struct i8259 *s = vcpu->vm->arch.i8259_gs;
 
     if (!i8259_in_range(port_no)) {
         return IO_FAULT_ERROR;
@@ -492,9 +489,7 @@ ioport_fault_result_t i8259_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned int 
 }
 
 /* Init internal status for PIC driver. */
-static void i8259_init_state(void) {
-    struct i8259 *s = &i8259_gs;
-
+static void i8259_init_state(struct i8259 *s) {
     /* Init pic machine state for guest OS. */
 //        s->pics[0].elcr = seL4_IA32_IOPort_In8(LIB_VMM_IO_PCI_CAP, 0x4d0).result;
 //        s->pics[1].elcr = seL4_IA32_IOPort_In8(LIB_VMM_IO_PCI_CAP, 0x4d1).result;
@@ -527,7 +522,7 @@ static inline void pic_intack(vm_t *vm, struct i8259_state *s, int irq)
 
 /* Use output as a flag for pending IRQ. */
 static int i8259_has_irq(vm_t *vm) {
-    struct i8259 *s = &i8259_gs;
+    struct i8259 *s = vm->arch.i8259_gs;
     return s->output;
 }
 
@@ -568,7 +563,7 @@ static int i8259_poll_irq()
  * function to get the pending IRQ. */
 static int i8259_read_irq(vm_t *vm)
 {
-    struct i8259 *s = &i8259_gs;
+    struct i8259 *s = vm->arch.i8259_gs;
 
     int irq, irq2, intno;
 
@@ -610,7 +605,7 @@ int i8259_get_interrupt(vm_t *vm) {
         ret = -1;
     }
     if (!i8259_has_irq(vm)) {
-        i8259_gs.emitagain = 1;
+        vm->arch.i8259_gs->emitagain = 1;
     }
     return ret;
 }
@@ -629,8 +624,12 @@ vm_ioport_entry_t pic_ioports[] = {
 int i8259_pre_init(vm_t *vm) {
     int err;
     /* First initialize the emulated pic state */
-    i8259_init_state();
-    i8259_gs.emitagain = 1;
+    vm->arch.i8259_gs = malloc(sizeof(struct i8259));
+    if (!vm->arch.i8259_gs) {
+        return -1;
+    }
+    i8259_init_state(vm->arch.i8259_gs);
+    vm->arch.i8259_gs->emitagain = 1;
     for (int i = 0; i < ARRAY_SIZE(pic_ioports); i++) {
         vm_ioport_range_t pic_range = pic_ioports[i].range;
         vm_ioport_interface_t pic_interface = pic_ioports[i].interface;
@@ -653,7 +652,7 @@ int i8259_pre_init(vm_t *vm) {
 int vm_set_irq_level(vm_t *vm, int irq, int irq_level) {
     int ret;
 
-    struct i8259 *s = &i8259_gs;
+    struct i8259 *s = vm->arch.i8259_gs;
 
     /* Set IRR. */
     ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
