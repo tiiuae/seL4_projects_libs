@@ -23,9 +23,11 @@
 #include <stdbool.h>
 #include <sel4/sel4.h>
 #include <stdio.h>
-#include <camkes.h>
 #include <utils/util.h>
+
+#include <sel4vm/guest_vm.h>
 #include <sel4vm/ioports.h>
+#include <sel4vm/platform/ioports.h>
 #include "i8259.h"
 
 #define I8259_MASTER   0
@@ -633,10 +635,26 @@ int i8259_has_interrupt() {
     return ret;
 }
 
-void i8259_pre_init(void) {
+vm_ioport_entry_t pic_ioports[] = {
+    {{X86_IO_PIC_1_START, X86_IO_PIC_1_END} , {NULL, i8259_port_in, i8259_port_out, "8259 Programmable Interrupt Controller (1st, Master)"}},
+    {{X86_IO_PIC_2_START, X86_IO_PIC_2_END} , {NULL, i8259_port_in, i8259_port_out, "8259 Programmable Interrupt Controller (2nd, Slave)"}},
+    {{X86_IO_ELCR_START, X86_IO_ELCR_END}   , {NULL, i8259_port_in, i8259_port_out, "ELCR (edge/level control register) for IRQ line"}}
+};
+
+int i8259_pre_init(vm_t *vm) {
+    int err;
     /* First initialize the emulated pic state */
     i8259_init_state();
     i8259_gs.emitagain = 1;
+    for (int i = 0; i < ARRAY_SIZE(pic_ioports); i++) {
+        vm_ioport_range_t pic_range = pic_ioports[i].range;
+        vm_ioport_interface_t pic_interface = pic_ioports[i].interface;
+        err = vm_io_port_add_handler(vm, pic_range, pic_interface);
+        if (err) {
+            return err;
+        }
+    }
+    return 0;
 }
 
 /* This is the actual function that will get called for all interrupt events */

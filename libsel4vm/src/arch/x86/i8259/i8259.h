@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -39,9 +39,10 @@ void i8259_level_set(int irq, int level);
 /* Port in/out functions for i8259 emulation */
 int i8259_port_in(void *cookie, unsigned int port_no, unsigned int size, unsigned int *result);
 int i8259_port_out(void *cookie, unsigned int port_no, unsigned int size, unsigned int value);
+typedef struct vm vm_t;
 
 /* Init function */
-void i8259_pre_init(void);
+int i8259_pre_init(vm_t *vm);
 
 /* Functions to retrieve interrupt state */
 int i8259_get_interrupt();
