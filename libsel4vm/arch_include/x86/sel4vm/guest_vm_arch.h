@@ -54,8 +54,6 @@ struct vm_arch {
     vm_io_port_list_t ioport_list;
     /* ====== To be removed: will be refactored/removed ====== */
     guest_boot_info_t guest_boot_info;
-    int (*get_interrupt)();
-    int (*has_interrupt)();
     /* ======================================================= */
 };
 

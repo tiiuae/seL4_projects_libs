@@ -27,6 +27,7 @@
 #include <sel4vm/guest_vm_exits.h>
 
 #include "vm.h"
+#include "i8259/i8259.h"
 
 #include "sel4vm/debug.h"
 #include "sel4vm/vmm.h"
@@ -175,12 +176,12 @@ int vm_run_arch(vm_t *vm) {
             /* assume interrupt */
             if (vm->run.notification_callback) {
                 seL4_MessageInfo_t tag = {0};
-                int raise = vm->run.notification_callback(vm, badge, tag, vm->run.notification_callback_cookie);
-                if (raise == 0) {
+                err = vm->run.notification_callback(vm, badge, tag, vm->run.notification_callback_cookie);
+                if (err == -1) {
+                    ret = VM_EXIT_HANDLE_ERROR;
+                } else if (i8259_has_interrupt(vm)) {
                     /* Check if this caused PIC to generate interrupt */
                     vmm_check_external_interrupt(vm);
-                } else if (raise == -1) {
-                    ret = VM_EXIT_HANDLE_ERROR;
                 }
              } else {
                 ZF_LOGE("Unable to handle VM notification. Exiting");

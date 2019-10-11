@@ -110,8 +110,6 @@ vm_init_arch(vm_t *vm, void *cookie) {
 
     /* Initialise x86 specific fields */
     struct vm_init_x86_config *vm_init_x86_params = cookie;
-    vm->arch.get_interrupt = vm_init_x86_params->get_interrupt;
-    vm->arch.has_interrupt = vm_init_x86_params->has_interrupt;
     vm->arch.notification_cap = vm_init_x86_params->notification_cap;
 
     vm->arch.vmcall_handlers = NULL;

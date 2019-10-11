@@ -33,6 +33,8 @@
 #include "sel4vm/processor/apicdef.h"
 #include "sel4vm/processor/msr.h"
 
+#include "i8259/i8259.h"
+
 #define APIC_BUS_CYCLE_NS 1
 
 #define APIC_DEBUG 0
@@ -51,12 +53,12 @@
 
 inline static int pic_get_interrupt(vm_t *vm)
 {
-    return vm->arch.get_interrupt();
+    return i8259_get_interrupt(vm);
 }
 
 inline static int pic_has_interrupt(vm_t *vm)
 {
-    return vm->arch.has_interrupt();
+    return i8259_has_interrupt(vm);
 }
 
 struct vmm_lapic_irq {
