@@ -144,13 +144,6 @@ vm_init_arch(vm_t *vm, void *cookie) {
     if (err) {
         return -1;
     }
-    /* Add local apic handler */
-    vm_memory_reservation_t * apic_reservation = vm_reserve_memory_at(vm, APIC_DEFAULT_PHYS_BASE,
-            sizeof(struct local_apic_regs), apic_fault_callback, NULL);
-    if (!apic_reservation) {
-        ZF_LOGE("Failed to reserve apic memory");
-        return -1;
-    }
 
     /* Bind our interrupt pending callback */
     err = seL4_TCB_BindNotification(simple_get_init_cap(vm->simple, seL4_CapInitThreadTCB), vm->arch.notification_cap);

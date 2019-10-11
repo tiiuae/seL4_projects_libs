@@ -26,6 +26,8 @@
 #include <utils/util.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/boot.h>
+#include <sel4vm/guest_irq_controller.h>
 #include <sel4vm/ioports.h>
 #include <sel4vm/platform/ioports.h>
 #include "i8259.h"
@@ -35,12 +37,12 @@
 
 #define PIC_NUM_PINS 16
 
-typedef struct irq_ack {
-    i8259_irq_ack_fn callback;
-    void *cookie;
-} irq_ack_t;
+typedef struct i8259_irq_ack {
+    irq_ack_fn_t callback;
+    void * cookie;
+} i8259_irq_ack_t;
 
-static irq_ack_t irq_ack_fns[PIC_NUM_PINS];
+static i8259_irq_ack_t irq_ack_fns[PIC_NUM_PINS];
 
 /* PIC Machine state. */
 struct i8259_state {
@@ -154,7 +156,7 @@ static int pic_get_irq(struct i8259_state *s) {
 }
 
 /* Clear the IRQ from ISR, the IRQ has been served. */
-static void pic_clear_isr(struct i8259_state *s, int irq) {
+static void pic_clear_isr(vm_t *vm, struct i8259_state *s, int irq) {
     /* Clear the ISR, notify the ack handler. */
     s->isr &= ~(1 << irq);
     if (s != &s->pics_state->pics[0])
@@ -162,7 +164,7 @@ static void pic_clear_isr(struct i8259_state *s, int irq) {
 
     if (irq != 2) {
         if (irq_ack_fns[irq].callback) {
-            irq_ack_fns[irq].callback(irq, irq_ack_fns[irq].cookie);
+            irq_ack_fns[irq].callback(vm, irq, irq_ack_fns[irq].cookie);
         }
     }
 }
@@ -228,7 +230,7 @@ static void pic_update_irq(struct i8259 *s) {
 }
 
 /* Reset the PIC state for a guest OS. */
-static void pic_reset(struct i8259_state *s) {
+static void pic_reset(vm_t *vm, struct i8259_state *s) {
     int irq;
     unsigned char edge_irr = s->irr & ~s->elcr;
 
@@ -259,13 +261,13 @@ static void pic_reset(struct i8259_state *s) {
 
     for (irq = 0; irq < PIC_NUM_PINS/2; irq++) {
         if (edge_irr & (1 << irq)) {
-            pic_clear_isr(s, irq);
+            pic_clear_isr(vm, s, irq);
         }
     }
 }
 
 /* Write into the state owned by the guest OS. */
-static void pic_ioport_write(struct i8259_state *s, unsigned int addr, unsigned int val) {
+static void pic_ioport_write(vm_vcpu_t *vcpu, struct i8259_state *s, unsigned int addr, unsigned int val) {
     int priority, cmd, irq;
 
     addr &= 1;
@@ -279,7 +281,7 @@ static void pic_ioport_write(struct i8259_state *s, unsigned int addr, unsigned 
             if (val & 0x08)
                 printf("PIC: level sensitive irq not supported\n");
             /* Reset the machine state and pending IRQS. */
-            pic_reset(s);
+            pic_reset(vcpu->vm, s);
         } else if (val & 0x08) {
             /* OCW 3 */
             if (val & 0x04)
@@ -305,14 +307,14 @@ static void pic_ioport_write(struct i8259_state *s, unsigned int addr, unsigned 
                         irq = (priority + s->priority_add) & 7;
                         if (cmd == 5)
                             s->priority_add = (irq + 1) & 7;
-                        pic_clear_isr(s, irq);
+                        pic_clear_isr(vcpu->vm, s, irq);
                         pic_update_irq(s->pics_state);
                     }
                     break;
                 case 3:
                     /* Specific EOI command. */
                     irq = val & 7;
-                    pic_clear_isr(s, irq);
+                    pic_clear_isr(vcpu->vm, s, irq);
                     pic_update_irq(s->pics_state);
                     break;
                 case 6:
@@ -324,7 +326,7 @@ static void pic_ioport_write(struct i8259_state *s, unsigned int addr, unsigned 
                     /* Rotate on specific eoi command. */
                     irq = val & 7;
                     s->priority_add = (irq + 1) & 7;
-                    pic_clear_isr(s, irq);
+                    pic_clear_isr(vcpu->vm, s, irq);
                     pic_update_irq(s->pics_state);
                     break;
                 default:
@@ -374,7 +376,7 @@ static void pic_ioport_write(struct i8259_state *s, unsigned int addr, unsigned 
 
 /* Poll the pending IRQS for the highest priority IRQ, ack the IRQ: clear the ISR and IRR, and
  * update PIC state. Returns -1 if no pending IRQ. */
-static unsigned int pic_poll_read(struct i8259_state *s, unsigned int addr1) {
+static unsigned int pic_poll_read(vm_t *vm, struct i8259_state *s, unsigned int addr1) {
     unsigned int ret;
 
     ret = pic_get_irq(s);
@@ -385,7 +387,7 @@ static unsigned int pic_poll_read(struct i8259_state *s, unsigned int addr1) {
             s->pics_state->pics[0].irr &= ~(1 << 2);
         }
         s->irr &= ~(1 << ret);
-        pic_clear_isr(s, ret);
+        pic_clear_isr(vm, s, ret);
         if (addr1 >> 7 || ret != 2)
             pic_update_irq(s->pics_state);
     } else {
@@ -398,12 +400,12 @@ static unsigned int pic_poll_read(struct i8259_state *s, unsigned int addr1) {
 
 
 /* Read and write functions for PIC (master and slave). */
-static unsigned int pic_ioport_read(struct i8259_state *s, unsigned int addr) {
+static unsigned int pic_ioport_read(vm_vcpu_t *vcpu, struct i8259_state *s, unsigned int addr) {
     unsigned int ret;
 
     /* Poll for the highest priority IRQ. */
     if (s->poll) {
-        ret = pic_poll_read(s, addr);
+        ret = pic_poll_read(vcpu->vm, s, addr);
         s->poll = 0;
 
     } else {
@@ -450,7 +452,7 @@ ioport_fault_result_t i8259_port_out(vm_vcpu_t *vcpu, void *cookie, unsigned int
         case 0x21:
         case 0xa0:
         case 0xa1:
-            pic_ioport_write(&s->pics[port_no >> 7], port_no, value);
+            pic_ioport_write(vcpu, &s->pics[port_no >> 7], port_no, value);
             break;
         case 0x4d0:
         case 0x4d1:
@@ -479,7 +481,7 @@ ioport_fault_result_t i8259_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned int 
         case 0x21:
         case 0xa0:
         case 0xa1:
-            *result = pic_ioport_read(&s->pics[port_no >> 7], port_no);
+            *result = pic_ioport_read(vcpu, &s->pics[port_no >> 7], port_no);
             break;
         case 0x4d0:
         case 0x4d1:
@@ -505,25 +507,8 @@ static void i8259_init_state(void) {
 }
 
 
-/* To inject an IRQ: First set the level as 1, then set the level as 0, toggling the level for
- * triggering the IRQ.
- * IRQ source ID is used for mapping multiple IRQ source into a IRQ pin.
- * Sets irq request into the state machine for PIC.
- */
-static int i8259_set_irq(int irq, int level) {
-    int ret;
-
-    struct i8259 *s = &i8259_gs;
-
-    /* Set IRR. */
-    ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
-    pic_update_irq(s);
-
-    return ret;
-}
-
 /* Acknowledge interrupt IRQ. */
-static inline void pic_intack(struct i8259_state *s, int irq)
+static inline void pic_intack(vm_t *vm, struct i8259_state *s, int irq)
 {
     /* Ack the IRQ, set the ISR. */
     s->isr |= 1 << irq;
@@ -536,12 +521,12 @@ static inline void pic_intack(struct i8259_state *s, int irq)
     if (s->auto_eoi) {
         if (s->rotate_on_auto_eoi)
             s->priority_add = (irq + 1) & 7;
-        pic_clear_isr(s, irq);
+        pic_clear_isr(vm, s, irq);
     }
 }
 
 /* Use output as a flag for pending IRQ. */
-static int i8259_has_irq() {
+static int i8259_has_irq(vm_t *vm) {
     struct i8259 *s = &i8259_gs;
     return s->output;
 }
@@ -581,7 +566,7 @@ static int i8259_poll_irq()
 
 /* Return the highest pending IRQ. Ack the IRQ by updating the ISR before entering guest, using this
  * function to get the pending IRQ. */
-static int i8259_read_irq()
+static int i8259_read_irq(vm_t *vm)
 {
     struct i8259 *s = &i8259_gs;
 
@@ -592,13 +577,13 @@ static int i8259_read_irq()
 
     if (irq >= 0) {
         /* Ack the IRQ. */
-        pic_intack(&s->pics[0], irq);
+        pic_intack(vm, &s->pics[0], irq);
 
         /* Ack the slave 8259 controller. */
         if (irq == 2) {
             irq2 = pic_get_irq(&s->pics[1]);
             if (irq2 >= 0)
-                pic_intack(&s->pics[1], irq2);
+                pic_intack(vm, &s->pics[1], irq2);
             else
                 /* Spurious IRQ on slave controller. */
                 irq2 = 7;
@@ -617,21 +602,21 @@ static int i8259_read_irq()
     return intno;
 }
 
-int i8259_get_interrupt() {
+int i8259_get_interrupt(vm_t *vm) {
     int ret;
-    if (i8259_has_irq()) {
-        ret = i8259_read_irq();
+    if (i8259_has_irq(vm)) {
+        ret = i8259_read_irq(vm);
     } else {
         ret = -1;
     }
-    if (!i8259_has_irq()) {
+    if (!i8259_has_irq(vm)) {
         i8259_gs.emitagain = 1;
     }
     return ret;
 }
 
-int i8259_has_interrupt() {
-    int ret = i8259_has_irq();
+int i8259_has_interrupt(vm_t *vm) {
+    int ret = i8259_has_irq(vm);
     return ret;
 }
 
@@ -657,37 +642,42 @@ int i8259_pre_init(vm_t *vm) {
     return 0;
 }
 
-/* This is the actual function that will get called for all interrupt events */
-void i8259_gen_irq(int irq) {
-    i8259_set_irq(irq, 1);
-    i8259_set_irq(irq, 0);
-}
+/* This is the actual function that will get called for all interrupt events
+ * Furthermore this implements the guest irq controller interface */
 
-void i8259_level_set(int irq, int level) {
-    i8259_set_irq(irq, level);
-}
+/* To inject an IRQ: First set the level as 1, then set the level as 0, toggling the level for
+ * triggering the IRQ.
+ * IRQ source ID is used for mapping multiple IRQ source into a IRQ pin.
+ * Sets irq request into the state machine for PIC.
+ */
+int vm_set_irq_level(vm_t *vm, int irq, int irq_level) {
+    int ret;
 
-void i8259_level_raise(int irq) {
-    i8259_level_set(irq, 1);
-}
+    struct i8259 *s = &i8259_gs;
 
-void i8259_level_lower(int irq) {
-    i8259_level_set(irq, 0);
-}
+    /* Set IRR. */
+    ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
+    pic_update_irq(s);
 
-i8259_irq_ack_fn i8259_register_irq_ack_callback(int irq, i8259_irq_ack_fn fn, void *cookie) {
-    if (irq < 0 || irq >= PIC_NUM_PINS) {
-        ZF_LOGF("irq %d is invalid", irq);
+    if (ret == -1) {
+        return -1;
     }
-    irq_ack_t *ack = &irq_ack_fns[irq];
-    i8259_irq_ack_fn prev = ack->callback;
+    return 0;
+}
+
+int vm_inject_irq(vm_t *vm, int irq) {
+    vm_set_irq_level(vm, irq, 1);
+    vm_set_irq_level(vm, irq, 0);
+    return 0;
+}
+
+int vm_register_irq(vm_t *vm, int irq, irq_ack_fn_t fn, void *cookie) {
+    if (irq < 0 || irq >= PIC_NUM_PINS) {
+        ZF_LOGE("irq %d is invalid", irq);
+        return -1;
+    }
+    i8259_irq_ack_t *ack = &irq_ack_fns[irq];
     ack->callback = fn;
     ack->cookie = cookie;
-    return prev;
-}
-
-void i8259_irq_ack_hw_irq_handler(int irq, void *cptr) {
-    seL4_CPtr handler = (seL4_CPtr) cptr;
-    int UNUSED error = seL4_IRQHandler_Ack(handler);
-    assert(!error);
+    return 0;
 }
