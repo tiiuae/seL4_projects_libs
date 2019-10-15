@@ -62,7 +62,7 @@ struct vm_arch {
 };
 
 struct vm_vcpu_arch {
-    /* Records vpcu context */
+    /* Records vcpu context */
     guest_state_t guest_state;
     /* VM local apic */
     vmm_lapic_t *lapic;

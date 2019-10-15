@@ -26,5 +26,5 @@
 int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace, int priority,
         ps_io_ops_t* io_ops, const char *name, void *cookie);
 
-/* Create a VPCU for a given VM */
+/* Create a VCPU for a given VM */
 vm_vcpu_t* vm_create_vcpu(vm_t *vm, void *cookie);
