@@ -29,7 +29,10 @@ int vmm_vmx_timer_handler(vm_vcpu_t *vcpu) {
 #ifdef CONFIG_LIB_VMM_VMX_TIMER_DEBUG
     vmm_print_guest_context(0, vcpu);
 //    vmm_vmcs_write(vmm->guest_vcpu, VMX_CONTROL_PIN_EXECUTION_CONTROLS, vmm_vmcs_read(vmm->guest_vcpu, VMX_CONTROL_PIN_EXECUTION_CONTROLS) | BIT(6));
-    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_VMX_PREEMPTION_TIMER_VALUE, CONFIG_LIB_VMM_VMX_TIMER_TIMEOUT);
+    int err = vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_VMX_PREEMPTION_TIMER_VALUE, CONFIG_LIB_VMM_VMX_TIMER_TIMEOUT);
+    if (err) {
+        return VM_EXIT_HANDLE_ERROR;
+    }
     return VM_EXIT_HANDLED;
 #else
     return VM_EXIT_HANDLE_ERROR;

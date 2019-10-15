@@ -35,7 +35,7 @@ static inline unsigned int apply_cr_bits(unsigned int cr, unsigned int mask, uns
 }
 
 static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
-
+    int err;
     if (value & CR0_RESERVED_BITS)
         return -1;
 
@@ -49,7 +49,10 @@ static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
         cr4_value = apply_cr_bits(cr4_value, new_mask ^ vcpu->vcpu_arch.guest_state.virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state.virt.cr.cr4_shadow);
         /* update mask and cr4 value */
         vcpu->vcpu_arch.guest_state.virt.cr.cr4_mask = new_mask;
-        vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_MASK, new_mask);
+        err = vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_MASK, new_mask);
+        if (err) {
+            return -1;
+        }
         vmm_guest_state_set_cr4(&vcpu->vcpu_arch.guest_state, cr4_value);
         /* now turn of cr3 load/store exiting */
         unsigned int ppc = vmm_guest_state_get_control_ppc(&vcpu->vcpu_arch.guest_state);
@@ -69,8 +72,10 @@ static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
 
     /* update the guest shadow */
     vcpu->vcpu_arch.guest_state.virt.cr.cr0_shadow = value;
-    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR0_READ_SHADOW, value);
-
+    err = vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR0_READ_SHADOW, value);
+    if (err) {
+        return -1;
+    }
     value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state.virt.cr.cr0_mask, vcpu->vcpu_arch.guest_state.virt.cr.cr0_host_bits);
 
     vmm_guest_state_set_cr0(&vcpu->vcpu_arch.guest_state, value);
@@ -104,7 +109,10 @@ static int vmm_cr_set_cr4(vm_vcpu_t *vcpu, unsigned int value) {
 
     /* update the guest shadow */
     vcpu->vcpu_arch.guest_state.virt.cr.cr4_shadow = value;
-    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_READ_SHADOW, value);
+    int err = vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_READ_SHADOW, value);
+    if (err) {
+        return -1;
+    }
 
     value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state.virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state.virt.cr.cr4_host_bits);
 

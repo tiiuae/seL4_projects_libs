@@ -19,25 +19,35 @@
 #include "sel4vm/vmm.h"
 #include "sel4vm/platform/vmcs.h"
 
-int vmm_vmcs_read(seL4_CPtr vcpu, seL4_Word field) {
+int vmm_vmcs_read(seL4_CPtr vcpu, seL4_Word field, unsigned int *value) {
 
     seL4_X86_VCPU_ReadVMCS_t UNUSED result;
 
-    assert(vcpu);
+    if (!vcpu) {
+        return -1;
+    }
 
     result = seL4_X86_VCPU_ReadVMCS(vcpu, field);
-    assert(result.error == seL4_NoError);
-    return result.value;
+    if (result.error != seL4_NoError) {
+        return -1;
+    }
+    *value = result.value;
+    return 0;
 }
 
 /*write a field and its value into the VMCS*/
-void vmm_vmcs_write(seL4_CPtr vcpu, seL4_Word field, seL4_Word value) {
+int vmm_vmcs_write(seL4_CPtr vcpu, seL4_Word field, seL4_Word value) {
 
     seL4_X86_VCPU_WriteVMCS_t UNUSED result;
-    assert(vcpu);
+    if (!vcpu) {
+        return -1;
+    }
 
     result = seL4_X86_VCPU_WriteVMCS(vcpu, field, value);
-    assert(result.error == seL4_NoError);
+    if (result.error != seL4_NoError) {
+        return -1;
+    }
+    return 0;
 }
 
 /*init the vmcs structure for a guest os thread*/
@@ -88,7 +98,7 @@ void vmm_vmcs_init_guest(vm_vcpu_t *vcpu) {
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_SYSENTER_EIP, 0);
     vcpu->vcpu_arch.guest_state.machine.control_ppc = VMX_CONTROL_PPC_HLT_EXITING | VMX_CONTROL_PPC_CR3_LOAD_EXITING | VMX_CONTROL_PPC_CR3_STORE_EXITING;
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS, vcpu->vcpu_arch.guest_state.machine.control_ppc);
-    vcpu->vcpu_arch.guest_state.machine.control_entry = vmm_vmcs_read(vcpu->vcpu.cptr, VMX_CONTROL_ENTRY_INTERRUPTION_INFO);
+    vmm_vmcs_read(vcpu->vcpu.cptr, VMX_CONTROL_ENTRY_INTERRUPTION_INFO, &vcpu->vcpu_arch.guest_state.machine.control_entry);
 
 #ifdef CONFIG_LIB_VMM_VMX_TIMER_DEBUG
     /* Enable pre-emption timer */
