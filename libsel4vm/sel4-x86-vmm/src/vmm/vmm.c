@@ -66,6 +66,7 @@ void vmm_sync_guest_state(vm_vcpu_t *vcpu) {
     vmm_guest_state_sync_cr0(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     vmm_guest_state_sync_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     vmm_guest_state_sync_cr4(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_rflags(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     vmm_guest_state_sync_idt_base(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     vmm_guest_state_sync_idt_limit(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     vmm_guest_state_sync_gdt_base(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);

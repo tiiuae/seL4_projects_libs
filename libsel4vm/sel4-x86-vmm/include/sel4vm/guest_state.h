@@ -291,6 +291,11 @@ static inline void vmm_guest_state_set_cr4(guest_state_t *gs, unsigned int val) 
     gs->machine.cr4 = val;
 }
 
+static inline void vmm_guest_state_set_rflags(guest_state_t *gs, unsigned int val) {
+    MACHINE_STATE_DIRTY(gs->machine.rflags);
+    gs->machine.rflags = val;
+}
+
 static inline void vmm_guest_state_set_control_entry(guest_state_t *gs, unsigned int val) {
     gs->machine.control_entry = val;
 }
@@ -351,6 +356,14 @@ static inline void vmm_guest_state_sync_cr4(guest_state_t *gs, seL4_CPtr vcpu) {
         int err = vmm_vmcs_write(vcpu, VMX_GUEST_CR4, gs->machine.cr4);
         assert(!err);
         MACHINE_STATE_SYNC(gs->machine.cr4);
+    }
+}
+
+static inline void vmm_guest_state_sync_rflags(guest_state_t *gs, seL4_CPtr vcpu) {
+    if(IS_MACHINE_STATE_MODIFIED(gs->machine.rflags)) {
+        int err = vmm_vmcs_write(vcpu, VMX_GUEST_RFLAGS, gs->machine.rflags);
+        assert(!err);
+        MACHINE_STATE_SYNC(gs->machine.rflags);
     }
 }
 
