@@ -49,7 +49,7 @@ static vm_exit_handler_fn_t x86_exit_handlers[] = {
 
 static void vm_resume(vm_vcpu_t *vcpu) {
     vmm_sync_guest_state(vcpu);
-    if (vcpu->vcpu_arch.guest_state.exit.in_exit && !vcpu->vcpu_arch.guest_state.virt.interrupt_halt) {
+    if (vcpu->vcpu_arch.guest_state->exit.in_exit && !vcpu->vcpu_arch.guest_state->virt.interrupt_halt) {
         /* Guest is blocked, but we are no longer halted. Reply to it */
         vmm_reply_vm_exit(vcpu);
     }
@@ -58,7 +58,7 @@ static void vm_resume(vm_vcpu_t *vcpu) {
 /* Handle VM exit in VMM module. */
 static int handle_vm_exit(vm_vcpu_t *vcpu) {
     int ret;
-    int reason = vmm_guest_exit_get_reason(&vcpu->vcpu_arch.guest_state);
+    int reason = vmm_guest_exit_get_reason(vcpu->vcpu_arch.guest_state);
 
     /* Distribute the task according to the exit info. */
     vmm_print_guest_context(3, vcpu);
@@ -89,25 +89,25 @@ static int handle_vm_exit(vm_vcpu_t *vcpu) {
 }
 
 static void vm_update_guest_state_from_interrupt(vm_vcpu_t *vcpu, seL4_Word *msg) {
-    vcpu->vcpu_arch.guest_state.machine.eip = msg[SEL4_VMENTER_CALL_EIP_MR];
-    vcpu->vcpu_arch.guest_state.machine.control_ppc = msg[SEL4_VMENTER_CALL_CONTROL_PPC_MR];
-    vcpu->vcpu_arch.guest_state.machine.control_entry = msg[SEL4_VMENTER_CALL_CONTROL_ENTRY_MR];
+    vcpu->vcpu_arch.guest_state->machine.eip = msg[SEL4_VMENTER_CALL_EIP_MR];
+    vcpu->vcpu_arch.guest_state->machine.control_ppc = msg[SEL4_VMENTER_CALL_CONTROL_PPC_MR];
+    vcpu->vcpu_arch.guest_state->machine.control_entry = msg[SEL4_VMENTER_CALL_CONTROL_ENTRY_MR];
 }
 
 static void vm_update_guest_state_from_fault(vm_vcpu_t *vcpu, seL4_Word *msg) {
-    assert(vcpu->vcpu_arch.guest_state.exit.in_exit);
+    assert(vcpu->vcpu_arch.guest_state->exit.in_exit);
 
     /* The interrupt state is a subset of the fault state */
     vm_update_guest_state_from_interrupt(vcpu, msg);
 
-    vcpu->vcpu_arch.guest_state.exit.reason = msg[SEL4_VMENTER_FAULT_REASON_MR];
-    vcpu->vcpu_arch.guest_state.exit.qualification = msg[SEL4_VMENTER_FAULT_QUALIFICATION_MR];
-    vcpu->vcpu_arch.guest_state.exit.instruction_length = msg[SEL4_VMENTER_FAULT_INSTRUCTION_LEN_MR];
-    vcpu->vcpu_arch.guest_state.exit.guest_physical = msg[SEL4_VMENTER_FAULT_GUEST_PHYSICAL_MR];
+    vcpu->vcpu_arch.guest_state->exit.reason = msg[SEL4_VMENTER_FAULT_REASON_MR];
+    vcpu->vcpu_arch.guest_state->exit.qualification = msg[SEL4_VMENTER_FAULT_QUALIFICATION_MR];
+    vcpu->vcpu_arch.guest_state->exit.instruction_length = msg[SEL4_VMENTER_FAULT_INSTRUCTION_LEN_MR];
+    vcpu->vcpu_arch.guest_state->exit.guest_physical = msg[SEL4_VMENTER_FAULT_GUEST_PHYSICAL_MR];
 
-    MACHINE_STATE_READ(vcpu->vcpu_arch.guest_state.machine.rflags, msg[SEL4_VMENTER_FAULT_RFLAGS_MR]);
-    MACHINE_STATE_READ(vcpu->vcpu_arch.guest_state.machine.guest_interruptibility, msg[SEL4_VMENTER_FAULT_GUEST_INT_MR]);
-    MACHINE_STATE_READ(vcpu->vcpu_arch.guest_state.machine.cr3, msg[SEL4_VMENTER_FAULT_CR3_MR]);
+    MACHINE_STATE_READ(vcpu->vcpu_arch.guest_state->machine.rflags, msg[SEL4_VMENTER_FAULT_RFLAGS_MR]);
+    MACHINE_STATE_READ(vcpu->vcpu_arch.guest_state->machine.guest_interruptibility, msg[SEL4_VMENTER_FAULT_GUEST_INT_MR]);
+    MACHINE_STATE_READ(vcpu->vcpu_arch.guest_state->machine.cr3, msg[SEL4_VMENTER_FAULT_CR3_MR]);
 
     seL4_VCPUContext context;
     context.eax = msg[SEL4_VMENTER_FAULT_EAX];
@@ -117,7 +117,7 @@ static void vm_update_guest_state_from_fault(vm_vcpu_t *vcpu, seL4_Word *msg) {
     context.esi = msg[SEL4_VMENTER_FAULT_ESI];
     context.edi = msg[SEL4_VMENTER_FAULT_EDI];
     context.ebp = msg[SEL4_VMENTER_FAULT_EBP];
-    MACHINE_STATE_READ(vcpu->vcpu_arch.guest_state.machine.context, context);
+    MACHINE_STATE_READ(vcpu->vcpu_arch.guest_state->machine.context, context);
 }
 
 int vm_run_arch(vm_t *vm) {
@@ -125,15 +125,15 @@ int vm_run_arch(vm_t *vm) {
     int ret;
     vm_vcpu_t *vcpu = vm->vcpus[BOOT_VCPU];
 
-    vcpu->vcpu_arch.guest_state.virt.interrupt_halt = 0;
-    vcpu->vcpu_arch.guest_state.exit.in_exit = 0;
+    vcpu->vcpu_arch.guest_state->virt.interrupt_halt = 0;
+    vcpu->vcpu_arch.guest_state->exit.in_exit = 0;
 
     /* Sync the existing guest state */
     vmm_sync_guest_state(vcpu);
     vmm_sync_guest_context(vcpu);
     /* Now invalidate everything */
-    assert(vmm_guest_state_no_modified(&vcpu->vcpu_arch.guest_state));
-    vmm_guest_state_invalidate_all(&vcpu->vcpu_arch.guest_state);
+    assert(vmm_guest_state_no_modified(vcpu->vcpu_arch.guest_state));
+    vmm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
 
     ret = 1;
     vm->run.exit_reason = -1;
@@ -142,16 +142,16 @@ int vm_run_arch(vm_t *vm) {
         seL4_Word badge;
         int fault;
 
-        if (vcpu->vcpu_online && !vcpu->vcpu_arch.guest_state.virt.interrupt_halt && !vcpu->vcpu_arch.guest_state.exit.in_exit) {
-            seL4_SetMR(0, vmm_guest_state_get_eip(&vcpu->vcpu_arch.guest_state));
-            seL4_SetMR(1, vmm_guest_state_get_control_ppc(&vcpu->vcpu_arch.guest_state));
-            seL4_SetMR(2, vmm_guest_state_get_control_entry(&vcpu->vcpu_arch.guest_state));
+        if (vcpu->vcpu_online && !vcpu->vcpu_arch.guest_state->virt.interrupt_halt && !vcpu->vcpu_arch.guest_state->exit.in_exit) {
+            seL4_SetMR(0, vmm_guest_state_get_eip(vcpu->vcpu_arch.guest_state));
+            seL4_SetMR(1, vmm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state));
+            seL4_SetMR(2, vmm_guest_state_get_control_entry(vcpu->vcpu_arch.guest_state));
             fault = seL4_VMEnter(&badge);
 
-            vmm_guest_state_invalidate_all(&vcpu->vcpu_arch.guest_state);
+            vmm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
             if (fault == SEL4_VMENTER_RESULT_FAULT) {
                 /* We in a fault */
-                vcpu->vcpu_arch.guest_state.exit.in_exit = 1;
+                vcpu->vcpu_arch.guest_state->exit.in_exit = 1;
                 /* Update the guest state from a fault */
                 seL4_Word fault_message[SEL4_VMENTER_RESULT_FAULT_LEN];
                 for (int i = 0 ; i < SEL4_VMENTER_RESULT_FAULT_LEN; i++) {

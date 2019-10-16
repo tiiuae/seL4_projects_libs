@@ -33,46 +33,46 @@
 #include "sel4vm/platform/boot_guest.h"
 
 void vmm_sync_guest_context(vm_vcpu_t *vcpu) {
-    if (IS_MACHINE_STATE_MODIFIED(vcpu->vcpu_arch.guest_state.machine.context)) {
+    if (IS_MACHINE_STATE_MODIFIED(vcpu->vcpu_arch.guest_state->machine.context)) {
         seL4_VCPUContext context;
-        context.eax = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
-        context.ebx = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EBX);
-        context.ecx = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_ECX);
-        context.edx = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX);
-        context.esi = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_ESI);
-        context.edi = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDI);
-        context.ebp = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EBP);
+        context.eax = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
+        context.ebx = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EBX);
+        context.ecx = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_ECX);
+        context.edx = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX);
+        context.esi = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_ESI);
+        context.edi = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDI);
+        context.ebp = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EBP);
         seL4_X86_VCPU_WriteRegisters(vcpu->vcpu.cptr, &context);
         /* Sync our context */
-        MACHINE_STATE_SYNC(vcpu->vcpu_arch.guest_state.machine.context);
+        MACHINE_STATE_SYNC(vcpu->vcpu_arch.guest_state->machine.context);
     }
 }
 
 void vmm_reply_vm_exit(vm_vcpu_t *vcpu) {
-    assert(vcpu->vcpu_arch.guest_state.exit.in_exit);
+    assert(vcpu->vcpu_arch.guest_state->exit.in_exit);
 
-    if (IS_MACHINE_STATE_MODIFIED(vcpu->vcpu_arch.guest_state.machine.context)) {
+    if (IS_MACHINE_STATE_MODIFIED(vcpu->vcpu_arch.guest_state->machine.context)) {
         vmm_sync_guest_context(vcpu);
     }
 
     /* Before we resume the guest, ensure there is no dirty state around */
-    assert(vmm_guest_state_no_modified(&vcpu->vcpu_arch.guest_state));
-    vmm_guest_state_invalidate_all(&vcpu->vcpu_arch.guest_state);
+    assert(vmm_guest_state_no_modified(vcpu->vcpu_arch.guest_state));
+    vmm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
 
-    vcpu->vcpu_arch.guest_state.exit.in_exit = 0;
+    vcpu->vcpu_arch.guest_state->exit.in_exit = 0;
 }
 
 void vmm_sync_guest_state(vm_vcpu_t *vcpu) {
-    vmm_guest_state_sync_cr0(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_cr4(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_rflags(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_idt_base(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_idt_limit(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_gdt_base(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_gdt_limit(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_cs_selector(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_entry_exception_error_code(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_cr0(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_idt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_idt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_gdt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_gdt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_cs_selector(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_entry_exception_error_code(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 }
 
 seL4_CPtr vmm_create_async_event_notification_cap(vm_t *vm, seL4_Word badge) {

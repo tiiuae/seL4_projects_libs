@@ -40,30 +40,30 @@ static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
         return -1;
 
     /* check if paging is being enabled */
-    if ((value & X86_CR0_PG) && !(vcpu->vcpu_arch.guest_state.virt.cr.cr0_shadow & X86_CR0_PG)) {
+    if ((value & X86_CR0_PG) && !(vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow & X86_CR0_PG)) {
         /* guest is taking over paging. So we can no longer care about some of our CR4 values, and
          * we don't need cr3 load/store exiting anymore */
-        unsigned int new_mask = vcpu->vcpu_arch.guest_state.virt.cr.cr4_mask & ~(X86_CR4_PSE | X86_CR4_PAE);
-        unsigned int cr4_value = vmm_guest_state_get_cr4(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        unsigned int new_mask = vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask & ~(X86_CR4_PSE | X86_CR4_PAE);
+        unsigned int cr4_value = vmm_guest_state_get_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         /* for any bits that have changed in the mask, grab them from the shadow */
-        cr4_value = apply_cr_bits(cr4_value, new_mask ^ vcpu->vcpu_arch.guest_state.virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state.virt.cr.cr4_shadow);
+        cr4_value = apply_cr_bits(cr4_value, new_mask ^ vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow);
         /* update mask and cr4 value */
-        vcpu->vcpu_arch.guest_state.virt.cr.cr4_mask = new_mask;
+        vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask = new_mask;
         err = vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_MASK, new_mask);
         if (err) {
             return -1;
         }
-        vmm_guest_state_set_cr4(&vcpu->vcpu_arch.guest_state, cr4_value);
+        vmm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, cr4_value);
         /* now turn of cr3 load/store exiting */
-        unsigned int ppc = vmm_guest_state_get_control_ppc(&vcpu->vcpu_arch.guest_state);
+        unsigned int ppc = vmm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state);
         ppc &= ~(VMX_CONTROL_PPC_CR3_LOAD_EXITING | VMX_CONTROL_PPC_CR3_STORE_EXITING);
-        vmm_guest_state_set_control_ppc(&vcpu->vcpu_arch.guest_state, ppc);
+        vmm_guest_state_set_control_ppc(vcpu->vcpu_arch.guest_state, ppc);
         /* load the cached cr3 value */
-        vmm_guest_state_set_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state.virt.cr.cr3_guest);
+        vmm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state->virt.cr.cr3_guest);
     }
 
     /* check if paging is being disabled */
-    if (!(value & X86_CR0_PG) && (vcpu->vcpu_arch.guest_state.virt.cr.cr0_shadow & X86_CR0_PG)) {
+    if (!(value & X86_CR0_PG) && (vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow & X86_CR0_PG)) {
         ZF_LOGE("Do not support paging being disabled");
         /* if we did support disabling paging we should re-enable cr3 load/store exiting,
          * watch the pae bit in cr4 again and then */
@@ -71,32 +71,32 @@ static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
     }
 
     /* update the guest shadow */
-    vcpu->vcpu_arch.guest_state.virt.cr.cr0_shadow = value;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow = value;
     err = vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR0_READ_SHADOW, value);
     if (err) {
         return -1;
     }
-    value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state.virt.cr.cr0_mask, vcpu->vcpu_arch.guest_state.virt.cr.cr0_host_bits);
+    value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state->virt.cr.cr0_mask, vcpu->vcpu_arch.guest_state->virt.cr.cr0_host_bits);
 
-    vmm_guest_state_set_cr0(&vcpu->vcpu_arch.guest_state, value);
+    vmm_guest_state_set_cr0(vcpu->vcpu_arch.guest_state, value);
 
     return 0;
 }
 
 static int vmm_cr_set_cr3(vm_vcpu_t *vcpu, unsigned int value) {
     /* if the guest hasn't turned on paging then just cache this */
-    vcpu->vcpu_arch.guest_state.virt.cr.cr3_guest = value;
-    if (vcpu->vcpu_arch.guest_state.virt.cr.cr0_shadow & X86_CR0_PG) {
-        vmm_guest_state_set_cr3(&vcpu->vcpu_arch.guest_state, value);
+    vcpu->vcpu_arch.guest_state->virt.cr.cr3_guest = value;
+    if (vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow & X86_CR0_PG) {
+        vmm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, value);
     }
     return 0;
 }
 
 static int vmm_cr_get_cr3(vm_vcpu_t *vcpu, unsigned int *value) {
-    if (vcpu->vcpu_arch.guest_state.virt.cr.cr0_shadow & X86_CR0_PG) {
-        *value = vmm_guest_state_get_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    if (vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow & X86_CR0_PG) {
+        *value = vmm_guest_state_get_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     } else {
-        *value = vcpu->vcpu_arch.guest_state.virt.cr.cr3_guest;
+        *value = vcpu->vcpu_arch.guest_state->virt.cr.cr3_guest;
     }
     return 0;
 
@@ -108,15 +108,15 @@ static int vmm_cr_set_cr4(vm_vcpu_t *vcpu, unsigned int value) {
         return -1;
 
     /* update the guest shadow */
-    vcpu->vcpu_arch.guest_state.virt.cr.cr4_shadow = value;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow = value;
     int err = vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_READ_SHADOW, value);
     if (err) {
         return -1;
     }
 
-    value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state.virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state.virt.cr.cr4_host_bits);
+    value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state->virt.cr.cr4_host_bits);
 
-    vmm_guest_state_set_cr4(&vcpu->vcpu_arch.guest_state, value);
+    vmm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, value);
 
     return 0;
 }
@@ -151,7 +151,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
     unsigned int exit_qualification, val;
     int cr, reg, ret = -1;
 
-    exit_qualification = vmm_guest_exit_get_qualification(&vcpu->vcpu_arch.guest_state);
+    exit_qualification = vmm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
     cr = exit_qualification & 15;
     reg = (exit_qualification >> 8) & 15;
 
@@ -160,7 +160,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
             if (crExitRegs[reg] < 0) {
                 return -1;
             }
-            val = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, crExitRegs[reg]);
+            val = vmm_read_user_context(vcpu->vcpu_arch.guest_state, crExitRegs[reg]);
 
             switch (cr) {
                 case 0:
@@ -202,7 +202,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
 
                     ret = vmm_cr_get_cr3(vcpu, &val);
                     if (!ret)
-                        vmm_set_user_context(&vcpu->vcpu_arch.guest_state, crExitRegs[reg], val);
+                        vmm_set_user_context(vcpu->vcpu_arch.guest_state, crExitRegs[reg], val);
 
                     break;
                 case 8:
@@ -236,7 +236,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
     }
 
     if (!ret) {
-        vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }
 

@@ -37,8 +37,8 @@ void print_ept_violation(vm_vcpu_t *vcpu) {
     printf(COLOUR_R "!!!!!!!! ALERT :: GUEST OS PAGE FAULT !!!!!!!!\n");
     printf("    Guest OS VMExit due to EPT Violation:\n");
     printf("        Linear address 0x%x.\n", linear_address);
-    printf("        Guest-Physical address 0x%x.\n", vmm_guest_exit_get_physical(&vcpu->vcpu_arch.guest_state));
-    printf("        Instruction pointer 0x%x.\n", vmm_guest_state_get_eip(&vcpu->vcpu_arch.guest_state));
+    printf("        Guest-Physical address 0x%x.\n", vmm_guest_exit_get_physical(vcpu->vcpu_arch.guest_state));
+    printf("        Instruction pointer 0x%x.\n", vmm_guest_state_get_eip(vcpu->vcpu_arch.guest_state));
     printf("    This is most likely due to a bug or misconfiguration.\n" COLOUR_RESET);
 }
 
@@ -51,7 +51,7 @@ static int unhandled_memory_fault(vm_t *vm, vm_vcpu_t *vcpu, uint32_t guest_phys
             return -1;
         case FAULT_HANDLED:
         case FAULT_IGNORE:
-            vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+            vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
             return 0;
     }
     return -1;
@@ -60,8 +60,8 @@ static int unhandled_memory_fault(vm_t *vm, vm_vcpu_t *vcpu, uint32_t guest_phys
 /* Handling EPT violation VMExit Events. */
 int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
     int err;
-    uintptr_t guest_phys = vmm_guest_exit_get_physical(&vcpu->vcpu_arch.guest_state);
-    unsigned int qualification = vmm_guest_exit_get_qualification(&vcpu->vcpu_arch.guest_state);
+    uintptr_t guest_phys = vmm_guest_exit_get_physical(vcpu->vcpu_arch.guest_state);
+    unsigned int qualification = vmm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
 
     int read = EPT_VIOL_READ(qualification);
     int write = EPT_VIOL_WRITE(qualification);
@@ -95,7 +95,7 @@ int vmm_ept_violation_handler(vm_vcpu_t *vcpu) {
             return -1;
         case FAULT_HANDLED:
         case FAULT_IGNORE:
-            vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+            vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
             return VM_EXIT_HANDLED;
         case FAULT_UNHANDLED:
             if (vcpu->vm->mem.unhandled_mem_fault_handler) {

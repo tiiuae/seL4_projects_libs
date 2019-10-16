@@ -52,17 +52,17 @@ int reg_new_handler(vm_t *vm, vmcall_handler func, int token) {
 int vmm_vmcall_handler(vm_vcpu_t *vcpu) {
     int res;
     vmcall_handler_t *h;
-    int token = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
+    int token = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
     h = get_handle(vcpu->vm, token);
     if(h == NULL) {
         DPRINTF(2, "Failed to find handler for token:%x\n", token);
-        vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }
 
     res = h->func(vcpu);
     if(res == 0) {
-        vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }
 

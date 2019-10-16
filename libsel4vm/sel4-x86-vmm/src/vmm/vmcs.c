@@ -79,10 +79,10 @@ void vmm_vmcs_init_guest(vm_vcpu_t *vcpu) {
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_LDTR_ACCESS_RIGHTS, BIT(16));
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_TR_ACCESS_RIGHTS, 0x8B);
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_SYSENTER_CS, 0);
-    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR0_MASK, vcpu->vcpu_arch.guest_state.virt.cr.cr0_mask);
-    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_MASK, vcpu->vcpu_arch.guest_state.virt.cr.cr4_mask);
-    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR0_READ_SHADOW, vcpu->vcpu_arch.guest_state.virt.cr.cr0_shadow);
-    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_READ_SHADOW, vcpu->vcpu_arch.guest_state.virt.cr.cr4_shadow);
+    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR0_MASK, vcpu->vcpu_arch.guest_state->virt.cr.cr0_mask);
+    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_MASK, vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask);
+    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR0_READ_SHADOW, vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow);
+    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_READ_SHADOW, vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow);
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_ES_BASE, 0);
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_CS_BASE, 0);
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_SS_BASE, 0);
@@ -96,9 +96,9 @@ void vmm_vmcs_init_guest(vm_vcpu_t *vcpu) {
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_RFLAGS, BIT(1));
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_SYSENTER_ESP, 0);
     vmm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_SYSENTER_EIP, 0);
-    vcpu->vcpu_arch.guest_state.machine.control_ppc = VMX_CONTROL_PPC_HLT_EXITING | VMX_CONTROL_PPC_CR3_LOAD_EXITING | VMX_CONTROL_PPC_CR3_STORE_EXITING;
-    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS, vcpu->vcpu_arch.guest_state.machine.control_ppc);
-    vmm_vmcs_read(vcpu->vcpu.cptr, VMX_CONTROL_ENTRY_INTERRUPTION_INFO, &vcpu->vcpu_arch.guest_state.machine.control_entry);
+    vcpu->vcpu_arch.guest_state->machine.control_ppc = VMX_CONTROL_PPC_HLT_EXITING | VMX_CONTROL_PPC_CR3_LOAD_EXITING | VMX_CONTROL_PPC_CR3_STORE_EXITING;
+    vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS, vcpu->vcpu_arch.guest_state->machine.control_ppc);
+    vmm_vmcs_read(vcpu->vcpu.cptr, VMX_CONTROL_ENTRY_INTERRUPTION_INFO, &vcpu->vcpu_arch.guest_state->machine.control_entry);
 
 #ifdef CONFIG_LIB_VMM_VMX_TIMER_DEBUG
     /* Enable pre-emption timer */

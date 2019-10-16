@@ -17,11 +17,11 @@
 #include <sel4vm/processor/decode.h>
 
 seL4_Word get_vcpu_fault_address(vm_vcpu_t *vcpu) {
-    return vmm_guest_exit_get_physical(&vcpu->vcpu_arch.guest_state);
+    return vmm_guest_exit_get_physical(vcpu->vcpu_arch.guest_state);
 }
 
 seL4_Word get_vcpu_fault_ip(vm_vcpu_t *vcpu) {
-    return vmm_guest_state_get_eip(&vcpu->vcpu_arch.guest_state);
+    return vmm_guest_state_get_eip(vcpu->vcpu_arch.guest_state);
 }
 
 seL4_Word get_vcpu_fault_data(vm_vcpu_t *vcpu) {
@@ -30,7 +30,7 @@ seL4_Word get_vcpu_fault_data(vm_vcpu_t *vcpu) {
     int size;
     vmm_decode_ept_violation(vcpu, &reg, &imm, &size);
     int vcpu_reg = vmm_decoder_reg_mapw[reg];
-    return vmm_read_user_context(&vcpu->vcpu_arch.guest_state, vcpu_reg);
+    return vmm_read_user_context(vcpu->vcpu_arch.guest_state, vcpu_reg);
 }
 
 size_t get_vcpu_fault_size(vm_vcpu_t *vcpu) {
@@ -64,7 +64,7 @@ seL4_Word get_vcpu_fault_data_mask(vm_vcpu_t *vcpu) {
 }
 
 bool is_vcpu_read_fault(vm_vcpu_t *vcpu) {
-    unsigned int qualification = vmm_guest_exit_get_qualification(&vcpu->vcpu_arch.guest_state);
+    unsigned int qualification = vmm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
     return true ? qualification & BIT(0) : false;
 }
 
@@ -74,10 +74,10 @@ int set_vcpu_fault_data(vm_vcpu_t *vcpu, seL4_Word data) {
     int size;
     vmm_decode_ept_violation(vcpu, &reg, &imm, &size);
     int vcpu_reg = vmm_decoder_reg_mapw[reg];
-    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, vcpu_reg, data);
+    vmm_set_user_context(vcpu->vcpu_arch.guest_state, vcpu_reg, data);
     return 0;
 }
 
 void advance_vcpu_fault(vm_vcpu_t *vcpu) {
-    vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 }

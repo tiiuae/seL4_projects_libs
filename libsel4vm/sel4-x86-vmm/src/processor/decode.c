@@ -57,7 +57,7 @@ int vmm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
     uintptr_t instr_phys = 0;
 
     /* ensure that PAE is not enabled */
-    if (vmm_guest_state_get_cr4(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr) & X86_CR4_PAE) {
+    if (vmm_guest_state_get_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr) & X86_CR4_PAE) {
         ZF_LOGE("Do not support walking PAE paging structures");
         return -1;
     }
@@ -182,10 +182,10 @@ int vmm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *im
 void vmm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *size) {
     /* Decode instruction */
     uint8_t ibuf[15];
-    int instr_len = vmm_guest_exit_get_int_len(&vcpu->vcpu_arch.guest_state);
+    int instr_len = vmm_guest_exit_get_int_len(vcpu->vcpu_arch.guest_state);
     vmm_fetch_instruction(vcpu,
-            vmm_guest_state_get_eip(&vcpu->vcpu_arch.guest_state),
-            vmm_guest_state_get_cr3(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr),
+            vmm_guest_state_get_eip(vcpu->vcpu_arch.guest_state),
+            vmm_guest_state_get_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr),
             instr_len, ibuf);
 
     vmm_decode_instruction(ibuf, instr_len, reg, imm, size);

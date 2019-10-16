@@ -59,24 +59,24 @@ static vm_ioport_entry_t *search_port(vm_io_port_list_t *ioports, unsigned int p
 static void set_io_in_unhandled(vm_vcpu_t *vcpu, unsigned int size) {
     uint32_t eax;
     if (size < 4) {
-        eax = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
+        eax = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
         eax |= MASK(size * 8);
     } else {
         eax = -1;
     }
-    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, eax);
+    vmm_set_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, eax);
 }
 
 static void set_io_in_value(vm_vcpu_t *vcpu, unsigned int value, unsigned int size) {
     uint32_t eax;
     if (size < 4) {
-        eax = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
+        eax = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
         eax &= ~MASK(size * 8);
         eax |= value;
     } else {
         eax = value;
     }
-    vmm_set_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, eax);
+    vmm_set_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, eax);
 }
 
 static int add_io_port_range(vm_io_port_list_t *ioport_list, vm_ioport_entry_t port)
@@ -127,7 +127,7 @@ int vm_enable_passthrough_ioport(vm_vcpu_t *vcpu, uint16_t port_start, uint16_t 
 /* IO instruction execution handler. */
 int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
 
-    unsigned int exit_qualification = vmm_guest_exit_get_qualification(&vcpu->vcpu_arch.guest_state);
+    unsigned int exit_qualification = vmm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
     unsigned int string, rep;
     int ret;
     unsigned int port_no;
@@ -149,7 +149,7 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
     }
 
     if (!is_in) {
-        value = vmm_read_user_context(&vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
+        value = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
         if (size < 4) {
             value &= MASK(size * 8);
         }
@@ -173,7 +173,7 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
         if (is_in) {
             set_io_in_unhandled(vcpu, size);
         }
-        vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }
 
@@ -191,7 +191,7 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
         return VM_EXIT_HANDLE_ERROR;
     }
 
-    vmm_guest_exit_next_instruction(&vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 
     return VM_EXIT_HANDLED;
 }

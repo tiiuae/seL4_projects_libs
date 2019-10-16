@@ -156,17 +156,21 @@ vm_create_vcpu_arch(vm_t *vm, void* cookie, vm_vcpu_t *vcpu) {
     assert(err == seL4_NoError);
     /* All LAPICs are created enabled, in virtual wire mode */
     vmm_create_lapic(vcpu, 1);
+    vcpu->vcpu_arch.guest_state = calloc(1, sizeof(guest_state_t));
+    if (!vcpu->vcpu_arch.guest_state) {
+        return -1;
+    }
     /* Set the initial CR state */
-    vcpu->vcpu_arch.guest_state.virt.cr.cr0_mask = VMM_VMCS_CR0_MASK;
-    vcpu->vcpu_arch.guest_state.virt.cr.cr0_shadow = 0;
-    vcpu->vcpu_arch.guest_state.virt.cr.cr0_host_bits = VMM_VMCS_CR0_VALUE;
-    vcpu->vcpu_arch.guest_state.virt.cr.cr4_mask = VMM_VMCS_CR4_MASK;
-    vcpu->vcpu_arch.guest_state.virt.cr.cr4_shadow = 0;
-    vcpu->vcpu_arch.guest_state.virt.cr.cr4_host_bits = VMM_VMCS_CR4_VALUE;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr0_mask = VMM_VMCS_CR0_MASK;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow = 0;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr0_host_bits = VMM_VMCS_CR0_VALUE;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask = VMM_VMCS_CR4_MASK;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow = 0;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr4_host_bits = VMM_VMCS_CR4_VALUE;
     /* Set the initial CR states */
-    vmm_guest_state_set_cr0(&vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state.virt.cr.cr0_host_bits);
-    vmm_guest_state_set_cr3(&vcpu->vcpu_arch.guest_state, vm->arch.guest_pd);
-    vmm_guest_state_set_cr4(&vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state.virt.cr.cr4_host_bits);
+    vmm_guest_state_set_cr0(vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state->virt.cr.cr0_host_bits);
+    vmm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, vm->arch.guest_pd);
+    vmm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state->virt.cr.cr4_host_bits);
     /* Init guest OS vcpu state. */
     vmm_vmcs_init_guest(vcpu);
     return 0;
