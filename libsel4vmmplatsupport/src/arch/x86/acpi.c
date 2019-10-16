@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -23,12 +23,11 @@ Author: W.A. */
 #include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_memory.h>
 #include <sel4vm/guest_memory_util.h>
+#include <sel4vm/debug.h>
+#include <sel4vm/processor/apicdef.h>
+#include <platsupport/plat/acpi/acpi.h>
 
-#include "sel4vm/debug.h"
-#include "sel4vm/platform/acpi.h"
-#include "sel4vm/processor/apicdef.h"
-
-#include "platsupport/plat/acpi/acpi.h"
+#include <sel4vmmplatsupport/acpi.h>
 
 #define APIC_FLAGS_ENABLED (1)
 

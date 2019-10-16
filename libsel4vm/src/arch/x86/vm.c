@@ -32,7 +32,6 @@
 #include "sel4vm/debug.h"
 #include "sel4vm/vmm.h"
 #include "sel4vm/interrupt.h"
-#include "sel4vm/platform/boot_guest.h"
 #include "guest_state.h"
 
 static vm_exit_handler_fn_t x86_exit_handlers[] = {

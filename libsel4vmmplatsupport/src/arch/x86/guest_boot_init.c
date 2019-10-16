@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -10,8 +10,7 @@
  * @TAG(DATA61_GPL)
  */
 
-/* Guest specific booting to do with elf loading and bootinfo
- * manipulation */
+/* Guest specific booting to do bootinfo manipulation */
 
 #include <autoconf.h>
 #include <sel4vm/gen_config.h>
@@ -21,7 +20,6 @@
 #include <string.h>
 
 #include <cpio/cpio.h>
-#include <elf/elf.h>
 #include <sel4utils/mapping.h>
 #include <vka/capops.h>
 
@@ -29,19 +27,15 @@
 #include <sel4vm/guest_x86_context.h>
 #include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_memory_util.h>
+#include <sel4vm/processor/platfeature.h>
+#include <sel4vm/guest_memory.h>
 
-#include "sel4vm/debug.h"
-#include "sel4vm/processor/platfeature.h"
-#include "sel4vm/platform/boot_guest.h"
-#include "sel4vm/guest_memory.h"
-#include "sel4vm/platform/e820.h"
-#include "sel4vm/platform/bootinfo.h"
-#include "sel4vm/platform/elf_helper.h"
-#include "sel4vm/platform/acpi.h"
+#include <sel4vmmplatsupport/guest_boot_init.h>
+#include <sel4vmmplatsupport/guest_boot_info.h>
+#include <sel4vmmplatsupport/e820.h>
+#include <sel4vmmplatsupport/acpi.h>
 
 #include <sel4/arch/bootinfo_types.h>
-
-#include "guest_state.h"
 
 static int guest_elf_write_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset,
         void *cookie) {
