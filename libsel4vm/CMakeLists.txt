@@ -153,7 +153,8 @@ elseif("${KernelArch}" STREQUAL "x86")
             sel4-x86-vmm/src/manager/*.c
             sel4-x86-vmm/src/processor/*.c
     )
-    list(APPEND sources ${x86_sources} src/arch/${KernelArch}/ioports.c src/arch/${KernelArch}/i8259/i8259.c)
+    list(APPEND sources ${x86_sources} src/arch/${KernelArch}/ioports.c src/arch/${KernelArch}/i8259/i8259.c
+        src/arch/${KernelArch}/guest_x86_context.c)
     add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
 
     target_include_directories(
