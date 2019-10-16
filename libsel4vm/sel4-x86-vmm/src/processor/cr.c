@@ -28,6 +28,7 @@
 
 #include "vm.h"
 #include "guest_state.h"
+#include "vmcs.h"
 
 static inline unsigned int apply_cr_bits(unsigned int cr, unsigned int mask, unsigned int host_bits) {
     /* force any bit in the mask to be the value from the shadow (both enabled and disabled) */
@@ -51,7 +52,7 @@ static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
         cr4_value = apply_cr_bits(cr4_value, new_mask ^ vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow);
         /* update mask and cr4 value */
         vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask = new_mask;
-        err = vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_MASK, new_mask);
+        err = vm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_MASK, new_mask);
         if (err) {
             return -1;
         }
@@ -74,7 +75,7 @@ static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
 
     /* update the guest shadow */
     vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow = value;
-    err = vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR0_READ_SHADOW, value);
+    err = vm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR0_READ_SHADOW, value);
     if (err) {
         return -1;
     }
@@ -111,7 +112,7 @@ static int vmm_cr_set_cr4(vm_vcpu_t *vcpu, unsigned int value) {
 
     /* update the guest shadow */
     vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow = value;
-    int err = vmm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_READ_SHADOW, value);
+    int err = vm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_READ_SHADOW, value);
     if (err) {
         return -1;
     }

@@ -14,9 +14,9 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_x86_context.h>
-#include <sel4vm/vmcs.h>
 
 #include "guest_state.h"
+#include "vmcs.h"
 
 int vm_set_thread_context(vm_vcpu_t *vcpu, seL4_VCPUContext context) {
     MACHINE_STATE_DIRTY(vcpu->vcpu_arch.guest_state->machine.context);
@@ -89,7 +89,7 @@ int vm_set_vmcs_field(vm_vcpu_t *vcpu, seL4_Word field, uint32_t value) {
         break;
     default:
         /* Write through to VMCS */
-        err = vmm_vmcs_write(vcpu->vcpu.cptr, field, value);
+        err = vm_vmcs_write(vcpu->vcpu.cptr, field, value);
     }
     return err;
 }
@@ -136,8 +136,39 @@ int vm_get_vmcs_field(vm_vcpu_t *vcpu, seL4_Word field, uint32_t *value) {
         break;
     default:
         /* Write through to VMCS */
-        err = vmm_vmcs_read(vcpu->vcpu.cptr, field, &val);
+        err = vm_vmcs_read(vcpu->vcpu.cptr, field, &val);
     }
     *value = val;
     return err;
+}
+
+int vm_vmcs_read(seL4_CPtr vcpu, seL4_Word field, unsigned int *value) {
+
+    seL4_X86_VCPU_ReadVMCS_t UNUSED result;
+
+    if (!vcpu) {
+        return -1;
+    }
+
+    result = seL4_X86_VCPU_ReadVMCS(vcpu, field);
+    if (result.error != seL4_NoError) {
+        return -1;
+    }
+    *value = result.value;
+    return 0;
+}
+
+/*write a field and its value into the VMCS*/
+int vm_vmcs_write(seL4_CPtr vcpu, seL4_Word field, seL4_Word value) {
+
+    seL4_X86_VCPU_WriteVMCS_t UNUSED result;
+    if (!vcpu) {
+        return -1;
+    }
+
+    result = seL4_X86_VCPU_WriteVMCS(vcpu, field, value);
+    if (result.error != seL4_NoError) {
+        return -1;
+    }
+    return 0;
 }

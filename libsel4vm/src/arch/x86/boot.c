@@ -36,6 +36,7 @@
 #include "guest_vspace.h"
 #include "guest_memory_map.h"
 #include "guest_state.h"
+#include "vmcs.h"
 
 #define VMM_VMCS_CR0_MASK           (X86_CR0_PG | X86_CR0_PE)
 #define VMM_VMCS_CR0_VALUE          VMM_VMCS_CR0_MASK

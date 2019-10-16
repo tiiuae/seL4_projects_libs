@@ -26,6 +26,7 @@
 
 #include "vm.h"
 #include "guest_state.h"
+#include "vmcs.h"
 
 #define EPT_VIOL_READ(qual) ((qual) & BIT(0))
 #define EPT_VIOL_WRITE(qual) ((qual) & BIT(1))
@@ -34,7 +35,7 @@
 void print_ept_violation(vm_vcpu_t *vcpu) {
     /* Read linear address that guest is trying to access. */
     unsigned int linear_address;
-    vmm_vmcs_read(vcpu->vcpu.cptr, VMX_DATA_GUEST_LINEAR_ADDRESS, &linear_address);
+    vm_vmcs_read(vcpu->vcpu.cptr, VMX_DATA_GUEST_LINEAR_ADDRESS, &linear_address);
     printf(COLOUR_R "!!!!!!!! ALERT :: GUEST OS PAGE FAULT !!!!!!!!\n");
     printf("    Guest OS VMExit due to EPT Violation:\n");
     printf("        Linear address 0x%x.\n", linear_address);

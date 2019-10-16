@@ -25,12 +25,13 @@
 #include "sel4vm/debug.h"
 
 #include "guest_state.h"
+#include "vmcs.h"
 
 /* Print out the context of a guest OS thread. */
 void vmm_print_guest_context(int level, vm_vcpu_t *vcpu) {
     unsigned int data_exit_info, data_exit_error;
-    if (vmm_vmcs_read(vcpu->vcpu.cptr, VMX_DATA_EXIT_INTERRUPT_INFO, &data_exit_info) ||
-            vmm_vmcs_read(vcpu->vcpu.cptr, VMX_DATA_EXIT_INTERRUPT_ERROR, &data_exit_error)) {
+    if (vm_vmcs_read(vcpu->vcpu.cptr, VMX_DATA_EXIT_INTERRUPT_INFO, &data_exit_info) ||
+            vm_vmcs_read(vcpu->vcpu.cptr, VMX_DATA_EXIT_INTERRUPT_ERROR, &data_exit_error)) {
         return;
     }
     DPRINTF(level, "================== GUEST OS CONTEXT =================\n");
