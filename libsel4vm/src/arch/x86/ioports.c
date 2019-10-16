@@ -26,6 +26,7 @@
 #include "sel4vm/vmm.h"
 
 #include "vm.h"
+#include "guest_state.h"
 
 static int io_port_compare_by_range(const void *pkey, const void *pelem)
 {

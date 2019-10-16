@@ -26,6 +26,7 @@
 
 #include "vm.h"
 #include "i8259/i8259.h"
+#include "guest_state.h"
 
 #define TRAMPOLINE_LENGTH (100)
 

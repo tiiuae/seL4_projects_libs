@@ -23,6 +23,8 @@
 #include <sel4vm/guest_vm.h>
 #include "sel4vm/debug.h"
 
+#include "guest_state.h"
+
 /* Print out the context of a guest OS thread. */
 void vmm_print_guest_context(int level, vm_vcpu_t *vcpu) {
     unsigned int data_exit_info, data_exit_error;

@@ -16,6 +16,7 @@
 #include "sel4vm/vmcall.h"
 
 #include "vm.h"
+#include "guest_state.h"
 
 static vmcall_handler_t *get_handle(vm_t *vm, int token);
 

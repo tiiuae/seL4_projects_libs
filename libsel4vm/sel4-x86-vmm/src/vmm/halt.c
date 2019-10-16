@@ -21,6 +21,7 @@
 #include "sel4vm/vmm.h"
 
 #include "vm.h"
+#include "guest_state.h"
 
 /* Handling halt instruction VMExit Events. */
 int vmm_hlt_handler(vm_vcpu_t *vcpu) {

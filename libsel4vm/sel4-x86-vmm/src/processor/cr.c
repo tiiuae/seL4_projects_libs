@@ -26,6 +26,7 @@
 #include "sel4vm/vmm.h"
 
 #include "vm.h"
+#include "guest_state.h"
 
 static inline unsigned int apply_cr_bits(unsigned int cr, unsigned int mask, unsigned int host_bits) {
     /* force any bit in the mask to be the value from the shadow (both enabled and disabled) */

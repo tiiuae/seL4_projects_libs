@@ -23,6 +23,7 @@
 #include "sel4vm/processor/msr.h"
 
 #include "vm.h"
+#include "guest_state.h"
 
 int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
 

@@ -40,6 +40,8 @@
 
 #include <sel4/arch/bootinfo_types.h>
 
+#include "guest_state.h"
+
 static int guest_elf_write_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset,
         void *cookie) {
     memcpy(vaddr, cookie + offset, size);

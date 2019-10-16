@@ -25,6 +25,7 @@
 #include "sel4vm/processor/decode.h"
 
 #include "vm.h"
+#include "guest_state.h"
 
 #define EPT_VIOL_READ(qual) ((qual) & BIT(0))
 #define EPT_VIOL_WRITE(qual) ((qual) & BIT(1))

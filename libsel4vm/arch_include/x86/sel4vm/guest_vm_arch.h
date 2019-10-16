@@ -14,7 +14,6 @@
 
 #include <sel4/sel4.h>
 
-#include <sel4vm/guest_state.h>
 #include <sel4vm/platform/vmexit.h>
 #include <sel4vm/processor/lapic.h>
 #include <sel4vm/ioports.h>
@@ -30,6 +29,7 @@ typedef struct guest_boot_info {
 /* ============================================================================ */
 
 typedef struct i8259 i8259_t;
+typedef struct guest_state guest_state_t;
 
 /* Function prototype for vm exit handlers */
 typedef int(*vmexit_handler_ptr)(vm_vcpu_t *vcpu);

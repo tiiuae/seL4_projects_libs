@@ -24,8 +24,9 @@ Author: W.A.
 
 #include "sel4vm/debug.h"
 #include "sel4vm/guest_memory.h"
-#include "sel4vm/guest_state.h"
 #include "sel4vm/processor/platfeature.h"
+
+#include "guest_state.h"
 
 /* TODO are these defined elsewhere? */
 #define IA32_PDE_SIZE(pde) (pde & BIT(7))

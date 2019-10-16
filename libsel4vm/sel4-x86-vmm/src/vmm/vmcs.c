@@ -19,6 +19,8 @@
 #include "sel4vm/vmm.h"
 #include "sel4vm/platform/vmcs.h"
 
+#include "guest_state.h"
+
 int vmm_vmcs_read(seL4_CPtr vcpu, seL4_Word field, unsigned int *value) {
 
     seL4_X86_VCPU_ReadVMCS_t UNUSED result;

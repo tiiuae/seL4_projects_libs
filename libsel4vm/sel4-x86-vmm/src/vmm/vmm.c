@@ -32,6 +32,8 @@
 #include "sel4vm/interrupt.h"
 #include "sel4vm/platform/boot_guest.h"
 
+#include "guest_state.h"
+
 void vmm_sync_guest_context(vm_vcpu_t *vcpu) {
     if (IS_MACHINE_STATE_MODIFIED(vcpu->vcpu_arch.guest_state->machine.context)) {
         seL4_VCPUContext context;

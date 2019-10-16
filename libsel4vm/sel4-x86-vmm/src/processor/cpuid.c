@@ -31,6 +31,7 @@
 #include "sel4vm/processor/cpufeature.h"
 
 #include "vm.h"
+#include "guest_state.h"
 
 static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
                 unsigned int *ecx, unsigned int *edx) {
