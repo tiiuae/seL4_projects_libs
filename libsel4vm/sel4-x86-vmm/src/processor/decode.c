@@ -202,7 +202,7 @@ void vmm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *siz
 
 /* Interpret just enough virtual 8086 instructions to run trampoline code.
    Returns the final jump address */
-uintptr_t vmm_emulate_realmode(vm_t *vm, uint8_t *instr_buf,
+uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
         uint16_t *segment, uintptr_t eip, uint32_t len, guest_state_t *gs)
 {
     /* We only track one segment, and assume that code and data are in the same
@@ -235,9 +235,9 @@ uintptr_t vmm_emulate_realmode(vm_t *vm, uint8_t *instr_buf,
                     instr += 2;
 
                     /* Limit is first 2 bytes, base is next 4 bytes */
-                    vm_ram_touch(vm, mem,
+                    vm_ram_touch(vcpu->vm, mem,
                             2, vm_guest_ram_read_callback, &limit);
-                    vm_ram_touch(vm, mem + 2,
+                    vm_ram_touch(vcpu->vm, mem + 2,
                             4, vm_guest_ram_read_callback, &base);
                     DPRINTF(4, "lidtl %p\n", (void*)mem);
 
@@ -251,9 +251,9 @@ uintptr_t vmm_emulate_realmode(vm_t *vm, uint8_t *instr_buf,
                     instr += 2;
 
                     /* Limit is first 2 bytes, base is next 4 bytes */
-                    vm_ram_touch(vm, mem,
+                    vm_ram_touch(vcpu->vm, mem,
                             2, vm_guest_ram_read_callback, &limit);
-                    vm_ram_touch(vm, mem + 2,
+                    vm_ram_touch(vcpu->vm, mem + 2,
                             4, vm_guest_ram_read_callback, &base);
                     DPRINTF(4, "lgdtl %p; base = %x, limit = %x\n", (void*)mem,
                             base, limit);
@@ -308,7 +308,7 @@ uintptr_t vmm_emulate_realmode(vm_t *vm, uint8_t *instr_buf,
                     mem += *segment * SEG_MULT;
                     DPRINTF(4, "mov %p, eax\n", (void*)mem);
                     uint32_t eax;
-                    vm_ram_touch(vm, mem,
+                    vm_ram_touch(vcpu->vm, mem,
                             4, vm_guest_ram_read_callback, &eax);
                     vmm_set_user_context(gs, USER_CONTEXT_EAX, eax);
                     break;
@@ -330,7 +330,7 @@ uintptr_t vmm_emulate_realmode(vm_t *vm, uint8_t *instr_buf,
                         }
                         instr += size;
                         DPRINTF(4, "mov $0x%x, %p\n", lit, (void*)mem);
-                        vm_ram_touch(vm, mem,
+                        vm_ram_touch(vcpu->vm, mem,
                                 size, vm_guest_ram_write_callback, &lit);
                     }
                     break;

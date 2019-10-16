@@ -24,7 +24,7 @@ void vmm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *siz
 
 /* Interpret just enough virtual 8086 instructions to run trampoline code.
    Returns the final jump address */
-uintptr_t vmm_emulate_realmode(vm_t *vm, uint8_t *instr_buf,
+uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
         uint16_t *segment, uintptr_t eip, uint32_t len, guest_state_t *gs);
 
 // TODO don't have these in a header, make them inline functions

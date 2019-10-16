@@ -140,7 +140,7 @@ void vmm_start_ap_vcpu(vm_vcpu_t *vcpu, unsigned int sipi_vector)
     vmm_fetch_instruction(vcpu, eip, vmm_guest_state_get_cr3(gs, vcpu->vcpu.cptr),
             TRAMPOLINE_LENGTH, instr);
 
-    eip = vmm_emulate_realmode(vcpu->vm, instr, &segment, eip,
+    eip = vmm_emulate_realmode(vcpu, instr, &segment, eip,
             TRAMPOLINE_LENGTH, gs);
 
     vmm_guest_state_set_eip(vcpu->vcpu_arch.guest_state, eip);
