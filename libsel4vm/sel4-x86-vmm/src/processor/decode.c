@@ -21,6 +21,7 @@ Author: W.A.
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_ram.h>
+#include <sel4vm/guest_x86_context.h>
 
 #include "sel4vm/debug.h"
 #include "sel4vm/guest_memory.h"
@@ -310,7 +311,7 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                     uint32_t eax;
                     vm_ram_touch(vcpu->vm, mem,
                             4, vm_guest_ram_read_callback, &eax);
-                    vmm_set_user_context(gs, USER_CONTEXT_EAX, eax);
+                    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, eax);
                     break;
                 case 0xc7:
                     instr++;

@@ -26,6 +26,7 @@
 #include <vka/capops.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_x86_context.h>
 #include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_memory_util.h>
 
@@ -269,14 +270,14 @@ void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
 }
 
 void vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr) {
-    vmm_set_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, 0);
-    vmm_set_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EBX, 0);
-    vmm_set_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_ECX, 0);
-    vmm_set_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX, 0);
+    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, 0);
+    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EBX, 0);
+    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_ECX, 0);
+    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EDX, 0);
 
     /* Entry point. */
     printf("Initializing guest to start running at 0x%x\n", (unsigned int) guest_entry_addr);
     vmm_guest_state_set_eip(vcpu->vcpu_arch.guest_state, guest_entry_addr);
     /* The boot_param structure. */
-    vmm_set_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_ESI, vcpu->vm->arch.guest_boot_info.boot_info);
+    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_ESI, vcpu->vm->arch.guest_boot_info.boot_info);
 }

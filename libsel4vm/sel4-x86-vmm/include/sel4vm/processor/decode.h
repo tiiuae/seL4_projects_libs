@@ -12,9 +12,8 @@
 #pragma once
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_x86_context.h>
 #include "sel4vm/vmm.h"
-
-#include "guest_state.h"
 
 int vmm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3, int len, uint8_t *buf);
 
@@ -29,24 +28,24 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
 
 // TODO don't have these in a header, make them inline functions
 const static int vmm_decoder_reg_mapw[] = {
-    USER_CONTEXT_EAX,
-    USER_CONTEXT_ECX,
-    USER_CONTEXT_EDX,
-    USER_CONTEXT_EBX,
-    /*USER_CONTEXT_ESP*/-1,
-    USER_CONTEXT_EBP,
-    USER_CONTEXT_ESI,
-    USER_CONTEXT_EDI
+    VCPU_CONTEXT_EAX,
+    VCPU_CONTEXT_ECX,
+    VCPU_CONTEXT_EDX,
+    VCPU_CONTEXT_EBX,
+    /*VCPU_CONTEXT_ESP*/-1,
+    VCPU_CONTEXT_EBP,
+    VCPU_CONTEXT_ESI,
+    VCPU_CONTEXT_EDI
 };
 
 const static int vmm_decoder_reg_mapb[] = {
-    USER_CONTEXT_EAX,
-    USER_CONTEXT_ECX,
-    USER_CONTEXT_EDX,
-    USER_CONTEXT_EBX,
-    USER_CONTEXT_EAX,
-    USER_CONTEXT_ECX,
-    USER_CONTEXT_EDX,
-    USER_CONTEXT_EBX
+    VCPU_CONTEXT_EAX,
+    VCPU_CONTEXT_ECX,
+    VCPU_CONTEXT_EDX,
+    VCPU_CONTEXT_EBX,
+    VCPU_CONTEXT_EAX,
+    VCPU_CONTEXT_ECX,
+    VCPU_CONTEXT_EDX,
+    VCPU_CONTEXT_EBX
 };
 

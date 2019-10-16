@@ -32,7 +32,9 @@ seL4_Word get_vcpu_fault_data(vm_vcpu_t *vcpu) {
     int size;
     vmm_decode_ept_violation(vcpu, &reg, &imm, &size);
     int vcpu_reg = vmm_decoder_reg_mapw[reg];
-    return vmm_read_user_context(vcpu->vcpu_arch.guest_state, vcpu_reg);
+    unsigned int data;
+    vm_get_thread_context_reg(vcpu, vcpu_reg, &data);
+    return data;
 }
 
 size_t get_vcpu_fault_size(vm_vcpu_t *vcpu) {
@@ -76,8 +78,7 @@ int set_vcpu_fault_data(vm_vcpu_t *vcpu, seL4_Word data) {
     int size;
     vmm_decode_ept_violation(vcpu, &reg, &imm, &size);
     int vcpu_reg = vmm_decoder_reg_mapw[reg];
-    vmm_set_user_context(vcpu->vcpu_arch.guest_state, vcpu_reg, data);
-    return 0;
+    return vm_set_thread_context_reg(vcpu, vcpu_reg, data);
 }
 
 void advance_vcpu_fault(vm_vcpu_t *vcpu) {

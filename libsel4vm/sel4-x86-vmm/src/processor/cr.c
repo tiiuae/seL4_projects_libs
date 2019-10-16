@@ -19,6 +19,7 @@
 #include <utils/util.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_x86_context.h>
 #include "sel4vm/debug.h"
 #include "sel4vm/processor/platfeature.h"
 #include "sel4vm/platform/vmcs.h"
@@ -137,14 +138,14 @@ static int vmm_cr_lmsw(vm_vcpu_t *vcpu, unsigned int value) {
 
 /* Convert exit regs to seL4 user context */
 static int crExitRegs[] = {
-    USER_CONTEXT_EAX,
-    USER_CONTEXT_ECX,
-    USER_CONTEXT_EDX,
-    USER_CONTEXT_EBX,
-    /*USER_CONTEXT_ESP*/-1,
-    USER_CONTEXT_EBP,
-    USER_CONTEXT_ESI,
-    USER_CONTEXT_EDI
+    VCPU_CONTEXT_EAX,
+    VCPU_CONTEXT_ECX,
+    VCPU_CONTEXT_EDX,
+    VCPU_CONTEXT_EBX,
+    /*VCPU_CONTEXT_ESP*/-1,
+    VCPU_CONTEXT_EBP,
+    VCPU_CONTEXT_ESI,
+    VCPU_CONTEXT_EDI
 };
 
 int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
@@ -161,7 +162,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
             if (crExitRegs[reg] < 0) {
                 return -1;
             }
-            val = vmm_read_user_context(vcpu->vcpu_arch.guest_state, crExitRegs[reg]);
+            vm_get_thread_context_reg(vcpu, crExitRegs[reg], &val);
 
             switch (cr) {
                 case 0:
@@ -203,7 +204,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
 
                     ret = vmm_cr_get_cr3(vcpu, &val);
                     if (!ret)
-                        vmm_set_user_context(vcpu->vcpu_arch.guest_state, crExitRegs[reg], val);
+                        ret = vm_set_thread_context_reg(vcpu, crExitRegs[reg], val);
 
                     break;
                 case 8:

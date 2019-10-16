@@ -147,12 +147,6 @@ static inline void vmm_guest_state_invalidate_all(guest_state_t *gs) {
 }
 
 /* get */
-static inline uint32_t vmm_read_user_context(guest_state_t *gs, int reg) {
-    assert(!IS_MACHINE_STATE_UNKNOWN(gs->machine.context));
-    assert(reg >= 0 && reg <= USER_CONTEXT_EBP);
-    return (&gs->machine.context.eax)[reg];
-}
-
 static inline unsigned int vmm_guest_state_get_eip(guest_state_t *gs) {
     return gs->machine.eip;
 }
@@ -266,12 +260,6 @@ static inline unsigned int vmm_guest_state_get_cs_selector(guest_state_t *gs, se
 }
 
 /* set */
-static inline void vmm_set_user_context(guest_state_t *gs, int reg, uint32_t val) {
-    MACHINE_STATE_DIRTY(gs->machine.context);
-    assert(reg >= 0 && reg <= USER_CONTEXT_EBP);
-    (&gs->machine.context.eax)[reg] = val;
-}
-
 static inline void vmm_guest_state_set_eip(guest_state_t *gs, unsigned int val) {
     gs->machine.eip = val;
 }

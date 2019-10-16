@@ -18,6 +18,7 @@
 #include <sel4/sel4.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_x86_context.h>
 #include "sel4vm/debug.h"
 #include "sel4vm/vmm.h"
 #include "sel4vm/processor/msr.h"
@@ -28,7 +29,10 @@
 int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
 
     int ret = 0;
-    unsigned int msr_no = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_ECX);
+    unsigned int msr_no;
+    if (vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_ECX, &msr_no)) {
+        return VM_EXIT_HANDLE_ERROR;
+    }
     uint64_t data = 0;
 
     DPRINTF(4, "rdmsr ecx 0x%x\n", msr_no);
@@ -80,8 +84,8 @@ int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
    }
 
     if (!ret) {
-        vmm_set_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX, (uint32_t)(data & 0xffffffff));
-        vmm_set_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX, (uint32_t)(data >> 32));
+        vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, (uint32_t)(data & 0xffffffff));
+        vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EDX, (uint32_t)(data >> 32));
         vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }
@@ -93,9 +97,16 @@ int vmm_wrmsr_handler(vm_vcpu_t *vcpu) {
 
     int ret = 0;
 
-    unsigned int msr_no = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_ECX);
-    unsigned int val_high = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX);
-    unsigned int val_low = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
+    unsigned int msr_no;
+    if (vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_ECX, &msr_no)) {
+        return VM_EXIT_HANDLE_ERROR;
+    }
+    unsigned int val_high, val_low;
+
+    if (vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EDX, &val_high)
+            || vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, &val_low)) {
+        return VM_EXIT_HANDLE_ERROR;
+    }
 
     DPRINTF(4, "wrmsr ecx 0x%x   value: 0x%x  0x%x\n", msr_no, val_high, val_low);
 

@@ -11,6 +11,7 @@
  */
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_x86_context.h>
 #include "sel4vm/vmm.h"
 #include "sel4vm/debug.h"
 #include "sel4vm/vmcall.h"
@@ -53,7 +54,10 @@ int reg_new_handler(vm_t *vm, vmcall_handler func, int token) {
 int vmm_vmcall_handler(vm_vcpu_t *vcpu) {
     int res;
     vmcall_handler_t *h;
-    int token = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
+    int token;
+    if (vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, &token)) {
+        return VM_EXIT_HANDLE_ERROR;
+    }
     h = get_handle(vcpu->vm, token);
     if(h == NULL) {
         DPRINTF(2, "Failed to find handler for token:%x\n", token);

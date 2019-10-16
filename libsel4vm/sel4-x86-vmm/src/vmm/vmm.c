@@ -26,6 +26,7 @@
 #include <sel4/arch/vmenter.h>
 
 #include <sel4vm/guest_vm.h>
+#include <sel4vm/guest_x86_context.h>
 #include <sel4vm/boot.h>
 #include "sel4vm/debug.h"
 #include "sel4vm/vmm.h"
@@ -37,13 +38,13 @@
 void vmm_sync_guest_context(vm_vcpu_t *vcpu) {
     if (IS_MACHINE_STATE_MODIFIED(vcpu->vcpu_arch.guest_state->machine.context)) {
         seL4_VCPUContext context;
-        context.eax = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EAX);
-        context.ebx = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EBX);
-        context.ecx = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_ECX);
-        context.edx = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDX);
-        context.esi = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_ESI);
-        context.edi = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EDI);
-        context.ebp = vmm_read_user_context(vcpu->vcpu_arch.guest_state, USER_CONTEXT_EBP);
+        vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, &context.eax);
+        vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EBX, &context.ebx);
+        vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_ECX, &context.ecx);
+        vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EDX, &context.edx);
+        vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_ESI, &context.esi);
+        vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EDI, &context.edi);
+        vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EBP, &context.ebp);
         seL4_X86_VCPU_WriteRegisters(vcpu->vcpu.cptr, &context);
         /* Sync our context */
         MACHINE_STATE_SYNC(vcpu->vcpu_arch.guest_state->machine.context);
