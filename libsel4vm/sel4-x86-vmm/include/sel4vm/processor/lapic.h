@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <sel4vm/guest_memory.h>
+
 enum vmm_lapic_state {
     LAPIC_STATE_NEW,
     LAPIC_STATE_WAITSIPI,
