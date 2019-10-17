@@ -14,8 +14,9 @@
 
 #include <stdint.h>
 
+#include <sel4vmmplatsupport/guest_image.h>
+
 void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
-        uintptr_t guest_kernel_load_addr, size_t guest_kernel_alignment,
-        uintptr_t guest_ramdisk_load_addr, size_t guest_ramdisk_size);
+        guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image);
 void vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr);
 

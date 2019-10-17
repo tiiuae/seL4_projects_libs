@@ -193,8 +193,7 @@ static int make_guest_e820_map(struct e820entry *e820, vm_mem_t *guest_memory) {
 }
 
 static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest_cmd_len,
-        uintptr_t guest_kernel_load_addr, size_t guest_kernel_alignment,
-        uintptr_t guest_ramdisk_load_addr, size_t guest_ramdisk_size) {
+        guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image) {
     /* TODO: Bootinfo struct needs to be allocated in location accessable by real mode? */
     uintptr_t addr = vm_ram_allocate(vm, sizeof(struct boot_params));
     if (addr == 0) {
@@ -212,8 +211,8 @@ static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest
     boot_info.hdr.header = 0x53726448; /* Magic number 'HdrS' */
     boot_info.hdr.boot_flag = 0xAA55; /* Magic number for Linux. */
     boot_info.hdr.type_of_loader = 0xFF; /* Undefined loeader type. */
-    boot_info.hdr.code32_start = guest_kernel_load_addr;
-    boot_info.hdr.kernel_alignment = guest_kernel_alignment;
+    boot_info.hdr.code32_start = guest_kernel_image.kernel_image.load_paddr;
+    boot_info.hdr.kernel_alignment = guest_kernel_image.kernel_image.alignment;
     boot_info.hdr.relocatable_kernel = true;
 
     /* Set up screen information. */
@@ -233,9 +232,9 @@ static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest
     boot_info.alt_mem_k = 0;//((32 * 0x100000) >> 10);
 
     /* Pass in initramfs. */
-    if (guest_ramdisk_load_addr) {
-        boot_info.hdr.ramdisk_image = (uint32_t) guest_ramdisk_load_addr;
-        boot_info.hdr.ramdisk_size = guest_ramdisk_size;
+    if (guest_ramdisk_image.load_paddr) {
+        boot_info.hdr.ramdisk_image = (uint32_t) guest_ramdisk_image.load_paddr;
+        boot_info.hdr.ramdisk_size = guest_ramdisk_image.size;
         boot_info.hdr.root_dev = 0x0100;
         boot_info.hdr.version = 0x0204; /* Report version 2.04 in order to report ramdisk_image. */
     } else {
@@ -246,8 +245,7 @@ static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest
 
 /* Init the guest page directory, cmd line args and boot info structures. */
 void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
-        uintptr_t guest_kernel_load_addr, size_t guest_kernel_alignment,
-        uintptr_t guest_ramdisk_load_addr, size_t guest_ramdisk_size) {
+        guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image) {
     int UNUSED err;
     uintptr_t guest_cmd_addr;
     size_t guest_cmd_size;
@@ -256,8 +254,7 @@ void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
     assert(!err);
 
     err = make_guest_boot_info(vm, guest_cmd_addr, guest_cmd_size,
-            guest_kernel_load_addr, guest_kernel_alignment,
-            guest_ramdisk_load_addr, guest_ramdisk_size);
+            guest_kernel_image, guest_ramdisk_image);
     assert(!err);
 
     err = make_guest_acpi_tables(vm);
