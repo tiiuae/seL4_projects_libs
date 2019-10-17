@@ -161,6 +161,7 @@ vm_create_vcpu_arch(vm_t *vm, void* cookie, vm_vcpu_t *vcpu) {
     if (!vcpu->vcpu_arch.guest_state) {
         return -1;
     }
+    vmm_guest_state_initialise(vcpu->vcpu_arch.guest_state);
     /* Set the initial CR state */
     vcpu->vcpu_arch.guest_state->virt.cr.cr0_mask = VMM_VMCS_CR0_MASK;
     vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow = 0;

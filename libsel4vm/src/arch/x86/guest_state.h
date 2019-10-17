@@ -64,6 +64,7 @@ typedef enum machine_state_status {
 #define MACHINE_STATE_SYNC(name) do { assert(name##_status == machine_state_modified); name##_status = machine_state_valid; } while(0)
 #define MACHINE_STATE_INVAL(name) do { assert(name##_status != machine_state_modified); name##_status = machine_state_unknown; } while(0)
 #define MACHINE_STATE_SYNC_INVAL(name) do { MACHINE_STATE_SYNC(name); MACHINE_STATE_INVAL(name); } while(0)
+#define MACHINE_STATE_INIT(name) do { name##_status = machine_state_valid; } while(0)
 #define IS_MACHINE_STATE_VALID(name) (name##_status == machine_state_valid)
 #define IS_MACHINE_STATE_UNKNOWN(name) (name##_status == machine_state_unknown)
 #define IS_MACHINE_STATE_MODIFIED(name) (name##_status == machine_state_modified)
@@ -130,6 +131,22 @@ static inline bool vmm_guest_state_no_modified(guest_state_t *gs) {
         IS_MACHINE_STATE_MODIFIED(gs->machine.cs_selector) ||
         IS_MACHINE_STATE_MODIFIED(gs->machine.entry_exception_error_code)
     );
+}
+
+static inline void vmm_guest_state_initialise(guest_state_t *gs) {
+    memset(gs, 0, sizeof(guest_state_t));
+    MACHINE_STATE_INIT(gs->machine.context);
+    MACHINE_STATE_INIT(gs->machine.cr0);
+    MACHINE_STATE_INIT(gs->machine.cr3);
+    MACHINE_STATE_INIT(gs->machine.cr4);
+    MACHINE_STATE_INIT(gs->machine.rflags);
+    MACHINE_STATE_INIT(gs->machine.guest_interruptibility);
+    MACHINE_STATE_INIT(gs->machine.idt_base);
+    MACHINE_STATE_INIT(gs->machine.idt_limit);
+    MACHINE_STATE_INIT(gs->machine.gdt_base);
+    MACHINE_STATE_INIT(gs->machine.gdt_limit);
+    MACHINE_STATE_INIT(gs->machine.cs_selector);
+    MACHINE_STATE_INIT(gs->machine.entry_exception_error_code);
 }
 
 static inline void vmm_guest_state_invalidate_all(guest_state_t *gs) {
