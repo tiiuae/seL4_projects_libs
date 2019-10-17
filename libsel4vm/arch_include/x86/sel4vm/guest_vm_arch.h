@@ -18,16 +18,6 @@
 #include <sel4vm/processor/lapic.h>
 #include <sel4vm/ioports.h>
 
-/* ================ To be removed: will be refactored/removed ================ */
-/* Stores informatoin about the guest image we are loading. This information probably stops
- * being relevant / useful after we start running. Most of this assumes
- * we are loading a guest kernel elf image and that we are acting as some kind of bootloader */
-typedef struct guest_boot_info {
-    /* Guest physical address of where we created the boot information */
-    uintptr_t boot_info;
-} guest_boot_info_t;
-/* ============================================================================ */
-
 typedef struct i8259 i8259_t;
 typedef struct guest_state guest_state_t;
 
@@ -56,9 +46,6 @@ struct vm_arch {
     vm_io_port_list_t ioport_list;
     /* PIC machine state */
     i8259_t *i8259_gs;
-    /* ====== To be removed: will be refactored/removed ====== */
-    guest_boot_info_t guest_boot_info;
-    /* ======================================================= */
 };
 
 struct vm_vcpu_arch {
