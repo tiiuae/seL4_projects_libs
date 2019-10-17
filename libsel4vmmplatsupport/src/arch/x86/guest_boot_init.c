@@ -38,18 +38,6 @@
 
 #include <sel4/arch/bootinfo_types.h>
 
-static int guest_elf_write_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset,
-        void *cookie) {
-    memcpy(vaddr, cookie + offset, size);
-    return 0;
-}
-
-static int guest_elf_read_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset,
-        void *cookie) {
-    memcpy(cookie + offset, vaddr, size);
-    return 0;
-}
-
 static inline uint32_t vmm_plat_vesa_fbuffer_size(seL4_VBEModeInfoBlock_t *block)
 {
     assert(block);
@@ -239,7 +227,7 @@ static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest
     } else {
         boot_info.hdr.version = 0x0202;
     }
-    int err = vm_ram_touch(vm, addr, sizeof(boot_info), guest_elf_write_address, &boot_info);
+    int err = vm_ram_touch(vm, addr, sizeof(boot_info), vm_guest_ram_write_callback, &boot_info);
     if (err) {
         ZF_LOGE("Failed to populalte guest boot info region");
         return -1;
