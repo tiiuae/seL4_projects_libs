@@ -259,7 +259,7 @@ int vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
     return err;
 }
 
-int vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr,
+int vmm_plat_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr,
         uintptr_t guest_boot_info_addr) {
     int err;
     seL4_VCPUContext context;
