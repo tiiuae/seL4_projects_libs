@@ -28,6 +28,7 @@
 #include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_memory_util.h>
 #include <sel4vm/processor/platfeature.h>
+#include <sel4vm/platform/vmcs.h>
 #include <sel4vm/guest_memory.h>
 
 #include <sel4vmmplatsupport/guest_boot_init.h>
@@ -271,7 +272,7 @@ void vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr) {
 
     /* Entry point. */
     printf("Initializing guest to start running at 0x%x\n", (unsigned int) guest_entry_addr);
-    vmm_guest_state_set_eip(vcpu->vcpu_arch.guest_state, guest_entry_addr);
+    vm_set_vmcs_field(vcpu, VMX_GUEST_RIP, (unsigned int) guest_entry_addr);
     /* The boot_param structure. */
     vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_ESI, vcpu->vm->arch.guest_boot_info.boot_info);
 }
