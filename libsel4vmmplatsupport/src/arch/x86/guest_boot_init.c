@@ -193,7 +193,8 @@ static int make_guest_e820_map(struct e820entry *e820, vm_mem_t *guest_memory) {
 }
 
 static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest_cmd_len,
-        guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image) {
+        guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image,
+        uintptr_t *guest_boot_info_addr) {
     /* TODO: Bootinfo struct needs to be allocated in location accessable by real mode? */
     uintptr_t addr = vm_ram_allocate(vm, sizeof(struct boot_params));
     if (addr == 0) {
@@ -201,8 +202,6 @@ static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest
         return -1;
     }
     printf("Guest boot info allocated at %p. Populating...\n", (void*)addr);
-    vm->arch.guest_boot_info.boot_info = addr;
-
     /* Map in BIOS boot info structure. */
     struct boot_params boot_info;
     memset(&boot_info, 0, sizeof(struct boot_params));
@@ -240,12 +239,19 @@ static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest
     } else {
         boot_info.hdr.version = 0x0202;
     }
-    return vm_ram_touch(vm, addr, sizeof(boot_info), guest_elf_write_address, &boot_info);
+    int err = vm_ram_touch(vm, addr, sizeof(boot_info), guest_elf_write_address, &boot_info);
+    if (err) {
+        ZF_LOGE("Failed to populalte guest boot info region");
+        return -1;
+    }
+    *guest_boot_info_addr = addr;
+    return 0;
 }
 
 /* Init the guest page directory, cmd line args and boot info structures. */
 void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
-        guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image) {
+        guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image,
+        uintptr_t *guest_boot_info_addr) {
     int UNUSED err;
     uintptr_t guest_cmd_addr;
     size_t guest_cmd_size;
@@ -254,14 +260,15 @@ void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
     assert(!err);
 
     err = make_guest_boot_info(vm, guest_cmd_addr, guest_cmd_size,
-            guest_kernel_image, guest_ramdisk_image);
+            guest_kernel_image, guest_ramdisk_image, guest_boot_info_addr);
     assert(!err);
 
     err = make_guest_acpi_tables(vm);
     assert(!err);
 }
 
-int vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr) {
+int vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr,
+        uintptr_t guest_boot_info_addr) {
     int err;
     seL4_VCPUContext context;
     err = vm_get_thread_context(vcpu, &context);
@@ -272,7 +279,7 @@ int vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr) {
     context.ebx = 0;
     context.ecx = 0;
     context.edx = 0;
-    context.esi = vcpu->vm->arch.guest_boot_info.boot_info;
+    context.esi = (unsigned int)guest_boot_info_addr;
     err = vm_set_thread_context(vcpu, context);
     if (err) {
         ZF_LOGE("Failed to init guest state: Unable to set inital thread context");
