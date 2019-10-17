@@ -261,15 +261,29 @@ void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
     assert(!err);
 }
 
-void vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr) {
-    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, 0);
-    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EBX, 0);
-    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_ECX, 0);
-    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EDX, 0);
+int vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr) {
+    int err;
+    seL4_VCPUContext context;
+    err = vm_get_thread_context(vcpu, &context);
+    if (err) {
+        return -1;
+    }
+    context.eax = 0;
+    context.ebx = 0;
+    context.ecx = 0;
+    context.edx = 0;
+    context.esi = vcpu->vm->arch.guest_boot_info.boot_info;
+    err = vm_set_thread_context(vcpu, context);
+    if (err) {
+        ZF_LOGE("Failed to init guest state: Unable to set inital thread context");
+        return -1;
+    }
 
     /* Entry point. */
     printf("Initializing guest to start running at 0x%x\n", (unsigned int) guest_entry_addr);
-    vm_set_vmcs_field(vcpu, VMX_GUEST_RIP, (unsigned int) guest_entry_addr);
-    /* The boot_param structure. */
-    vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_ESI, vcpu->vm->arch.guest_boot_info.boot_info);
+    err = vm_set_vmcs_field(vcpu, VMX_GUEST_RIP, (unsigned int) guest_entry_addr);
+    if (err) {
+        ZF_LOGE("Failed to init guest state: Unable set Guest RIP");
+    }
+    return err;
 }
