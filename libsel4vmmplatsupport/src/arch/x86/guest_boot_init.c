@@ -249,7 +249,7 @@ static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest
 }
 
 /* Init the guest page directory, cmd line args and boot info structures. */
-void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
+int vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
         guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image,
         uintptr_t *guest_boot_info_addr) {
     int UNUSED err;
@@ -257,14 +257,18 @@ void vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
     size_t guest_cmd_size;
 
     err = make_guest_cmd_line(vm, cmdline, &guest_cmd_addr, &guest_cmd_size);
-    assert(!err);
+    if (err) {
+        return -1;
+    }
 
     err = make_guest_boot_info(vm, guest_cmd_addr, guest_cmd_size,
             guest_kernel_image, guest_ramdisk_image, guest_boot_info_addr);
-    assert(!err);
+    if (err) {
+        return -1;
+    }
 
     err = make_guest_acpi_tables(vm);
-    assert(!err);
+    return err;
 }
 
 int vmm_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr,
