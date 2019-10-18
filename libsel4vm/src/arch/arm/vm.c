@@ -70,13 +70,13 @@ vm_decode_exit(seL4_Word label)
     return exit_reason;
 }
 
-static int handle_exception(vm_t* vm, seL4_Word ip)
+static int handle_exception(vm_vcpu_t* vcpu, seL4_Word ip)
 {
     seL4_UserContext regs;
-    seL4_CPtr tcb = vm_get_tcb(vm);
+    seL4_CPtr tcb = vm_get_vcpu_tcb(vcpu);
     int err;
     ZF_LOGE("%sInvalid instruction from [%s] at PC: 0x"XFMT"%s\n",
-           ANSI_COLOR(RED, BOLD), vm->vm_name, seL4_GetMR(0), ANSI_COLOR(RESET));
+           ANSI_COLOR(RED, BOLD), vcpu->vm->vm_name, seL4_GetMR(0), ANSI_COLOR(RESET));
     err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
     print_ctx_regs(&regs);
@@ -87,7 +87,7 @@ static int vm_user_exception_handler(vm_vcpu_t *vcpu) {
     seL4_Word ip;
     int err;
     ip = seL4_GetMR(0);
-    err = handle_exception(vcpu->vm, ip);
+    err = handle_exception(vcpu, ip);
     assert(!err);
     if (!err) {
         seL4_MessageInfo_t reply;
@@ -115,7 +115,7 @@ static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
             new_wfi_fault(fault);
             regs = fault_get_ctx(fault);
             regs->pc += 4;
-            seL4_TCB_WriteRegisters(vm_get_tcb(vcpu->vm), false, 0,
+            seL4_TCB_WriteRegisters(vm_get_vcpu_tcb(vcpu), false, 0,
                     sizeof(*regs) / sizeof(regs->pc), regs);
             restart_fault(fault);
             return VM_EXIT_HANDLED;
@@ -132,22 +132,22 @@ static int vm_unknown_exit_handler(vm_vcpu_t *vcpu) {
 }
 
 static int
-vm_stop(vm_t *vm) {
-    vm->tcb.is_suspended = true;
-    return seL4_TCB_Suspend(vm_get_tcb(vm));
+vcpu_stop(vm_vcpu_t *vcpu) {
+    vcpu->tcb.is_suspended = true;
+    return seL4_TCB_Suspend(vm_get_vcpu_tcb(vcpu));
 }
 
 static int
-vm_resume(vm_t *vm) {
-    vm->tcb.is_suspended = false;
-    return seL4_TCB_Resume(vm_get_tcb(vm));
+vcpu_resume(vm_vcpu_t *vcpu) {
+    vcpu->tcb.is_suspended = false;
+    return seL4_TCB_Resume(vm_get_vcpu_tcb(vcpu));
 }
 
 int vm_run_arch(vm_t *vm) {
     int err;
     int ret;
 
-    err = vm_resume(vm);
+    err = vcpu_resume(vm->vcpus[BOOT_VCPU]);
     if (err) {
         ZF_LOGE("Failed to start VM");
         return -1;

@@ -79,6 +79,8 @@ struct vm_vcpu {
     struct vm *vm;
     /* Kernel vcpu object */
     vka_object_t vcpu;
+    /* vm tcb */
+    struct vm_tcb tcb;
     /* Id of vcpu */
     unsigned int vcpu_id;
     /* is the vcpu online */
@@ -108,8 +110,6 @@ struct vm {
     struct vm_vcpu **vcpus;
     /* vm memory management */
     struct vm_mem mem;
-    /* vm tcb */
-    struct vm_tcb tcb;
     /* vm runtime management */
     struct vm_run run;
     /* Guest vm cspace */

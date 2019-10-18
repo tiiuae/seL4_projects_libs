@@ -16,7 +16,7 @@
 #include <sel4vm/guest_arm_context.h>
 
 int vm_set_thread_context(vm_vcpu_t *vcpu, seL4_UserContext context) {
-    seL4_CPtr tcb = vm_get_tcb(vcpu->vm);
+    seL4_CPtr tcb = vm_get_vcpu_tcb(vcpu);
     int err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(context) / sizeof(context.pc), &context);
     if (err) {
         ZF_LOGE("Failed to set thread context: Unable to write TCB registers");
@@ -27,7 +27,7 @@ int vm_set_thread_context(vm_vcpu_t *vcpu, seL4_UserContext context) {
 
 int vm_set_thread_context_reg(vm_vcpu_t *vcpu, unsigned int reg, uintptr_t value) {
     seL4_UserContext regs;
-    seL4_CPtr tcb = vm_get_tcb(vcpu->vm);
+    seL4_CPtr tcb = vm_get_vcpu_tcb(vcpu);
     int err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     if (err) {
         ZF_LOGE("Failed to set thread context reg: Unable to read TCB registers");
@@ -44,7 +44,7 @@ int vm_set_thread_context_reg(vm_vcpu_t *vcpu, unsigned int reg, uintptr_t value
 
 int vm_get_thread_context(vm_vcpu_t *vcpu, seL4_UserContext *context) {
     seL4_UserContext regs;
-    seL4_CPtr tcb = vm_get_tcb(vcpu->vm);
+    seL4_CPtr tcb = vm_get_vcpu_tcb(vcpu);
     int err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     if (err) {
         ZF_LOGE("Failed to get thread context: Unable to read TCB registers");
@@ -56,7 +56,7 @@ int vm_get_thread_context(vm_vcpu_t *vcpu, seL4_UserContext *context) {
 
 int vm_get_thread_context_reg(vm_vcpu_t *vcpu, unsigned int reg, uintptr_t *value) {
     seL4_UserContext regs;
-    seL4_CPtr tcb = vm_get_tcb(vcpu->vm);
+    seL4_CPtr tcb = vm_get_vcpu_tcb(vcpu);
     int err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     if (err) {
         ZF_LOGE("Failed to get thread context register: Unable to read TCB registers");

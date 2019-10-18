@@ -391,7 +391,7 @@ int ignore_fault(fault_t *fault)
     /* Advance the PC */
     regs->pc += fault_is_32bit_instruction(fault) ? 4 : 2;
     /* Write back CPU registers */
-    err = seL4_TCB_WriteRegisters(vm_get_tcb(fault->vcpu->vm), false, 0,
+    err = seL4_TCB_WriteRegisters(vm_get_vcpu_tcb(fault->vcpu), false, 0,
                                   sizeof(*regs) / sizeof(regs->pc), regs);
     assert(!err);
     if (err) {
@@ -552,7 +552,7 @@ seL4_UserContext *fault_get_ctx(fault_t *f)
 {
     if ((f->content & CONTENT_REGS) == 0) {
         int err;
-        err = seL4_TCB_ReadRegisters(vm_get_tcb(f->vcpu->vm), false, 0,
+        err = seL4_TCB_ReadRegisters(vm_get_vcpu_tcb(f->vcpu), false, 0,
                                      sizeof(f->regs) / sizeof(f->regs.pc),
                                      &f->regs);
         assert(!err);

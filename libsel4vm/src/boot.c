@@ -26,7 +26,7 @@
 static int curr_vcpu_index = 0;
 
 int
-vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace, int priority,
+vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace,
         ps_io_ops_t* io_ops, const char* name, void *cookie) {
     int err;
     bzero(vm, sizeof(vm_t));
@@ -36,7 +36,6 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
     vm->allocman = allocman;
     vm->io_ops = io_ops;
     vm->mem.vmm_vspace = host_vspace;
-    vm->tcb.priority = priority;
     vm->vm_name = strndup(name, strlen(name));
     vm->run.exit_reason = VM_GUEST_UNKNOWN_EXIT;
     /* Initialise ram region */
@@ -68,7 +67,7 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
 }
 
 vm_vcpu_t*
-vm_create_vcpu(vm_t *vm, void *cookie) {
+vm_create_vcpu(vm_t *vm, int priority, void *cookie) {
     int err;
     if( vm->num_vcpus >= MAX_NUM_VCPUS) {
         ZF_LOGE("Failed to create vcpu, reached maximum number of support vcpus");
@@ -83,6 +82,7 @@ vm_create_vcpu(vm_t *vm, void *cookie) {
     /* Initialise vcpu fields */
     vcpu_new->vm = vm;
     vcpu_new->vcpu_id = curr_vcpu_index++;
+    vcpu_new->tcb.priority = priority;
     err = vm_create_vcpu_arch(vm, cookie, vcpu_new);
     assert(!err);
     vm->vcpus[vm->num_vcpus] = vcpu_new;

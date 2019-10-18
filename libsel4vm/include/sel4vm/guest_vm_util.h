@@ -14,9 +14,9 @@
 
 #include <sel4vm/guest_vm.h>
 
-static inline seL4_CPtr vm_get_tcb(vm_t* vm)
+static inline seL4_CPtr vm_get_vcpu_tcb(vm_vcpu_t* vcpu)
 {
-    return vm->tcb.tcb.cptr;
+    return vcpu->tcb.tcb.cptr;
 }
 
 static inline seL4_CPtr vm_get_vcpu(vm_t* vm, int vcpu_id)

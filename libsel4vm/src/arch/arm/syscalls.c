@@ -84,17 +84,19 @@ sys_nop(vm_t* vm, seL4_UserContext* regs)
 }
 
 static int
-handle_syscall(vm_t* vm)
+handle_syscall(vm_vcpu_t *vcpu)
 {
     seL4_Word syscall, ip;
     seL4_UserContext regs;
     seL4_CPtr tcb;
+    vm_t *vm;
     int err;
 
+    vm = vcpu->vm;
     syscall = seL4_GetMR(seL4_UnknownSyscall_Syscall);
     ip = seL4_GetMR(seL4_UnknownSyscall_FaultIP);
 
-    tcb = vm_get_tcb(vm);
+    tcb = vm_get_vcpu_tcb(vcpu);
     err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
     assert(!err);
     regs.pc += 4;
@@ -109,7 +111,7 @@ handle_syscall(vm_t* vm)
         /* sys_ipa_to_pa currently not supported
          * TODO: Re-enable or re-evaluate support for syscall
          */
-        sys_ipa_to_pa(vm, &regs);
+        sys_ipa_to_pa(vcpu->vm, &regs);
         break;
 #endif
     case SYS_NOP:
@@ -127,7 +129,7 @@ handle_syscall(vm_t* vm)
 
 int vm_syscall_handler(vm_vcpu_t *vcpu) {
     int err;
-    err = handle_syscall(vcpu->vm);
+    err = handle_syscall(vcpu);
     if (!err) {
         seL4_MessageInfo_t reply;
         reply = seL4_MessageInfo_new(0, 0, 0, 0);
