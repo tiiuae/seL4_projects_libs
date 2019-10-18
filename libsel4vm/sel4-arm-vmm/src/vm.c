@@ -70,24 +70,6 @@
 
 extern char _cpio_archive[];
 
-
-int
-vm_set_bootargs(vm_t* vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags)
-{
-    seL4_UserContext regs;
-    seL4_CPtr tcb;
-    int err;
-    assert(vm);
-    /* Write CPU registers */
-    tcb = vm_get_tcb(vm);
-    err = seL4_TCB_ReadRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
-    assert(!err);
-    sel4arch_set_bootargs(&regs, pc, mach_type, atags);
-    err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
-    assert(!err);
-    return err;
-}
-
 int
 vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
 {

@@ -45,21 +45,6 @@ typedef struct virq_handle *virq_handle_t;
 int vm_copyout_atags(vm_t *vm, struct atag_list *atags, uint32_t addr);
 
 /**
- * Set the boot args and pc for the VM.
- * For linux:
- *   r0 -> 0
- *   r1 -> MACH_TYPE  (#4151 for EXYNOS5410 eval. platform smdk5410)
- *   r2 -> atags address
- * @param[in] vm        A handle to a VM
- * @param[in] pc        The initial PC for the VM
- * @param[in] mach_type Linux specific machine ID
- *                      see http://www.arm.linux.org.uk/developer/machines/
- * @param[in] atags     Linux specific IPA of atags
- * @return              0 on success
- */
-int vm_set_bootargs(vm_t *vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags);
-
-/**
  * Handle a VM event
  * @param[in] vm   A handle to the VM that triggered the event
  * @param[in] tag  The tag of the incomming message

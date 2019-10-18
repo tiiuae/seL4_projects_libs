@@ -32,5 +32,9 @@ endif()
 
 add_library(sel4vmmplatsupport STATIC EXCLUDE_FROM_ALL ${sources})
 target_include_directories(sel4vmmplatsupport PUBLIC include arch_include/${KernelArch} plat_include/${KernelPlatform})
+if ("${KernelArch}" STREQUAL "arm")
+    target_include_directories(sel4vmmplatsupport PRIVATE src/arch/arm/${KernelSel4Arch})
+endif()
+
 target_link_libraries(sel4vmmplatsupport muslc sel4 utils sel4utils platsupport pci ethdrivers sel4vm sel4_autoconf
         sel4vm_Config)
