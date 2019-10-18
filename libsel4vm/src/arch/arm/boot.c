@@ -59,14 +59,14 @@ vm_init_arch(vm_t *vm, void *cookie) {
 
     /* Create a cspace */
     vka = vm->vka;
-    err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE_BITS, &vm->tcb.cspace);
+    err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE_BITS, &vm->cspace.cspace_obj);
     assert(!err);
-    vka_cspace_make_path(vka, vm->tcb.cspace.cptr, &src);
-    cspace_root_data = api_make_guard_skip_word(seL4_WordBits - VM_CSPACE_SIZE_BITS);
-    dst.root = vm->tcb.cspace.cptr;
+    vka_cspace_make_path(vka, vm->cspace.cspace_obj.cptr, &src);
+    vm->cspace.cspace_root_data = api_make_guard_skip_word(seL4_WordBits - VM_CSPACE_SIZE_BITS);
+    dst.root = vm->cspace.cspace_obj.cptr;
     dst.capPtr = VM_CSPACE_SLOT;
     dst.capDepth = VM_CSPACE_SIZE_BITS;
-    err = vka_cnode_mint(&dst, &src, seL4_AllRights, cspace_root_data);
+    err = vka_cnode_mint(&dst, &src, seL4_AllRights, vm->cspace.cspace_root_data);
     assert(!err);
 
     /* Create a vspace */
@@ -85,7 +85,7 @@ vm_init_arch(vm_t *vm, void *cookie) {
     assert(!err);
     /* Copy it to the cspace of the VM for fault IPC */
     src = dst;
-    dst.root = vm->tcb.cspace.cptr;
+    dst.root = vm->cspace.cspace_obj.cptr;
     dst.capPtr = VM_FAULT_EP_SLOT;
     dst.capDepth = VM_CSPACE_SIZE_BITS;
     err = vka_cnode_copy(&dst, &src, seL4_AllRights);
@@ -95,7 +95,7 @@ vm_init_arch(vm_t *vm, void *cookie) {
     err = vka_alloc_tcb(vka, &vm->tcb.tcb);
     assert(!err);
     err = seL4_TCB_Configure(vm->tcb.tcb.cptr, VM_FAULT_EP_SLOT,
-                             vm->tcb.cspace.cptr, cspace_root_data,
+                             vm->cspace.cspace_obj.cptr, vm->cspace.cspace_root_data,
                              vm->mem.vm_vspace_root.cptr, null_cap_data, 0, seL4_CapNull);
     assert(!err);
     err = seL4_TCB_SetSchedParams(vm->tcb.tcb.cptr, simple_get_tcb(vm->simple), vm->tcb.priority - 1, vm->tcb.priority - 1);

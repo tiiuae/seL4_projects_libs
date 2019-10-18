@@ -70,8 +70,6 @@ struct vm_tcb {
     vka_object_t sched_ctrl;
     /* Guest vm scheduling priority */
     int priority;
-    /* Guest vm cspace */
-    vka_object_t cspace;
     /* TCB State */
     bool is_suspended;
 };
@@ -96,6 +94,12 @@ struct vm_run {
     void *notification_callback_cookie;
 };
 
+struct vm_cspace {
+    /* Kernel cspace object */
+    vka_object_t cspace_obj;
+    seL4_Word cspace_root_data;
+};
+
 struct vm {
     /* Architecture specfic vm structure */
     struct vm_arch arch;
@@ -108,6 +112,8 @@ struct vm {
     struct vm_tcb tcb;
     /* vm runtime management */
     struct vm_run run;
+    /* Guest vm cspace */
+    struct vm_cspace cspace;
     /* Support & Resource Managements */
     vka_t *vka;
     ps_io_ops_t* io_ops;

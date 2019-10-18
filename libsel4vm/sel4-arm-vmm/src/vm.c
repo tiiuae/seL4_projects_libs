@@ -144,7 +144,7 @@ vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t b)
     seL4_Word badge = b;
     int err;
     vka_cspace_make_path(vm->vka, service, &src);
-    dst.root = vm->tcb.cspace.cptr;
+    dst.root = vm->cspace.cspace_obj.cptr;
     dst.capPtr = index;
     dst.capDepth = VM_CSPACE_SIZE_BITS;
     err =  vka_cnode_mint(&dst, &src, seL4_AllRights, badge);
