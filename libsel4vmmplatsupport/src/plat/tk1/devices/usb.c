@@ -19,6 +19,7 @@
 
 #include <sel4vmmplatsupport/plat/usb.h>
 #include <sel4vmmplatsupport/device.h>
+#include <sel4vmmplatsupport/guest_reboot.h>
 #include <utils/io.h>
 
 #define USB2_CONTROLLER_USB2D_USBCMD_0_OFFSET 0x130
@@ -46,7 +47,7 @@ handle_usb_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_l
     return FAULT_ERROR;
 }
 
-int vm_install_tk1_usb_passthrough_device(vm_t *vm)
+int vm_install_tk1_usb_passthrough_device(vm_t *vm, reboot_hooks_list_t *reboot_hooks)
 {
     /* Add the device */
     void *vmm_addr = create_device_reservation_frame(vm, dev_usb.pstart, seL4_AllRights, handle_usb_fault, NULL);
@@ -55,7 +56,7 @@ int vm_install_tk1_usb_passthrough_device(vm_t *vm)
         return -1;
     }
 
-    int err = vm_register_reboot_callback(vm, usb_vm_reboot_hook, vmm_addr);
+    int err = vmm_register_reboot_callback(reboot_hooks, usb_vm_reboot_hook, vmm_addr);
     if (err) {
         ZF_LOGE("vm_register_reboot_callback returned error: %d", err);
         return -1;

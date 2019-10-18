@@ -190,38 +190,3 @@ uintptr_t vm_ipa_to_pa(vm_t *vm, uintptr_t ipa_base, size_t size)
     } while (ipa - ipa_base < size);
     return pa_base;
 }
-
-int vm_register_reboot_callback(vm_t *vm, reboot_hook_fn hook, void *token)
-{
-    if (hook == NULL) {
-        ZF_LOGE("hook is NULL");
-        return -1;
-    }
-    struct reboot_hooks rb = {
-        .fn = hook,
-        .token = token
-    };
-    if (vm->arch.nhooks < MAX_REBOOT_HOOKS_PER_VM) {
-        vm->arch.rb_hooks[vm->arch.nhooks++] = rb;
-        return 0;
-    } else {
-        return -1;
-    }
-
-}
-
-int vm_process_reboot_callbacks(vm_t *vm) {
-    for (int i = 0; i < vm->arch.nhooks; i++) {
-        struct reboot_hooks rb = vm->arch.rb_hooks[i];
-        if (rb.fn == NULL) {
-            ZF_LOGE("NULL call back has been registered");
-            return -1;
-        }
-        int err = rb.fn(vm, rb.token);
-        if (err) {
-            ZF_LOGE("Callback returned error: %d", err);
-            return err;
-        }
-    }
-    return 0;
-}

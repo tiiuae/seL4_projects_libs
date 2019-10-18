@@ -23,14 +23,6 @@
 #endif /*CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT */
 
 #define MAX_DEVICES_PER_VM 50
-#define MAX_REBOOT_HOOKS_PER_VM 10
-
-typedef int (*reboot_hook_fn)(vm_t* vm, void *token);
-
-struct reboot_hooks {
-    reboot_hook_fn fn;
-    void *token;
-};
 /* ======================================================== */
 
 #define VM_CSPACE_SIZE_BITS    4
@@ -45,9 +37,6 @@ struct vm_arch {
     /* Endpoint */
     seL4_CPtr fault_endpoint;
     /* ====== NOTE: Not permanent - will be refactored ====== */
-    /* Installed reboot hooks */
-    struct reboot_hooks rb_hooks[MAX_REBOOT_HOOKS_PER_VM];
-    int nhooks;
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     /* Installed vchan connections */
     camkes_vchan_con_t **vchan_cons;

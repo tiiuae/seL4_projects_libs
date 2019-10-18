@@ -91,21 +91,3 @@ int vm_install_service(vm_t *vm, seL4_CPtr service, int index, uint32_t badge);
  *                     not provide a contiguous region of the requested size.
  */
 uintptr_t vm_ipa_to_pa(vm_t *vm, uintptr_t ipa, size_t size);
-
-/**
- * Add a function to be called when the vm is reset by the vmm.
- * @param  vm    The VM
- * @param  hook  reboot_hook_fn to be called when vm resets
- * @param  token token to be passed to hook function
- * @return       0 if callback is successfully registerd.  -1 otherwise.
- */
-int vm_register_reboot_callback(vm_t *vm, reboot_hook_fn hook, void *token);
-
-/**
- * Calls all reboot callbacks.  Should be called when VM is rebooted by vmm.
- * @param  vm The VM
- * @return    0 if all callbacks successfully called. If a callback fails with
- *            an error then this returns with that error and callbacks registered
- *            after failing callback will not be called.
- */
-int vm_process_reboot_callbacks(vm_t *vm);

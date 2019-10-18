@@ -52,10 +52,6 @@ vm_init_arch(vm_t *vm, void *cookie) {
     vm->arch.entry_point = NULL;
     vm->arch.fault_endpoint = vm_init_arm_params->vmm_endpoint;
 
-    /* ====== NOTE: Not permanent - will be refactored ====== */
-    vm->arch.nhooks = 0;
-    /* ====================================================== */
-
     /* Create a cspace */
     vka = vm->vka;
     err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE_BITS, &vm->cspace.cspace_obj);

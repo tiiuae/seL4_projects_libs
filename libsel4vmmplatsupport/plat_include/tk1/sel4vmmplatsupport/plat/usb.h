@@ -14,4 +14,6 @@
 
 #include <sel4vm/guest_vm.h>
 
-int vm_install_tk1_usb_passthrough_device(vm_t *vm);
+#include <sel4vmmplatsupport/guest_reboot.h>
+
+int vm_install_tk1_usb_passthrough_device(vm_t *vm, reboot_hooks_list_t *reboot_hooks);
