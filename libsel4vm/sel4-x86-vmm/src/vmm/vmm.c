@@ -34,16 +34,6 @@
 
 #include "guest_state.h"
 
-void vmm_reply_vm_exit(vm_vcpu_t *vcpu) {
-    assert(vcpu->vcpu_arch.guest_state->exit.in_exit);
-    vm_sync_guest_context(vcpu);
-    /* Before we resume the guest, ensure there is no dirty state around */
-    assert(vmm_guest_state_no_modified(vcpu->vcpu_arch.guest_state));
-    vmm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
-
-    vcpu->vcpu_arch.guest_state->exit.in_exit = 0;
-}
-
 seL4_CPtr vmm_create_async_event_notification_cap(vm_t *vm, seL4_Word badge) {
 
     if (!(badge & BIT(27))) {

@@ -31,8 +31,5 @@ typedef struct vm_vcpu vm_vcpu_t;
 #include "sel4vm/processor/lapic.h"
 #include "sel4vm/vmm_manager.h"
 
-/* TODO htf did these get here? lets refactor everything  */
-void vmm_reply_vm_exit(vm_vcpu_t *vcpu);
-
 /* mint a badged copy of the vmm's async event notification cap */
 seL4_CPtr vmm_create_async_event_notification_cap(vm_t *vmm, seL4_Word badge);

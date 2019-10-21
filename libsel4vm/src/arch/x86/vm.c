@@ -52,7 +52,12 @@ static void vm_resume(vm_vcpu_t *vcpu) {
     vm_sync_guest_vmcs_state(vcpu);
     if (vcpu->vcpu_arch.guest_state->exit.in_exit && !vcpu->vcpu_arch.guest_state->virt.interrupt_halt) {
         /* Guest is blocked, but we are no longer halted. Reply to it */
-        vmm_reply_vm_exit(vcpu);
+        assert(vcpu->vcpu_arch.guest_state->exit.in_exit);
+        vm_sync_guest_context(vcpu);
+        /* Before we resume the guest, ensure there is no dirty state around */
+        assert(vmm_guest_state_no_modified(vcpu->vcpu_arch.guest_state));
+        vmm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
+        vcpu->vcpu_arch.guest_state->exit.in_exit = 0;
     }
 }
 
