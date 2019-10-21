@@ -32,8 +32,6 @@ typedef struct vm_vcpu vm_vcpu_t;
 #include "sel4vm/vmm_manager.h"
 
 /* TODO htf did these get here? lets refactor everything  */
-void vmm_sync_guest_state(vm_vcpu_t *vcpu);
-void vmm_sync_guest_context(vm_vcpu_t *vcpu);
 void vmm_reply_vm_exit(vm_vcpu_t *vcpu);
 
 /* mint a badged copy of the vmm's async event notification cap */

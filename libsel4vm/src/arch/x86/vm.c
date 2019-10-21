@@ -48,7 +48,7 @@ static vm_exit_handler_fn_t x86_exit_handlers[] = {
 };
 
 static void vm_resume(vm_vcpu_t *vcpu) {
-    vmm_sync_guest_state(vcpu);
+    vm_sync_guest_vmcs_state(vcpu);
     if (vcpu->vcpu_arch.guest_state->exit.in_exit && !vcpu->vcpu_arch.guest_state->virt.interrupt_halt) {
         /* Guest is blocked, but we are no longer halted. Reply to it */
         vmm_reply_vm_exit(vcpu);
@@ -129,8 +129,8 @@ int vm_run_arch(vm_t *vm) {
     vcpu->vcpu_arch.guest_state->exit.in_exit = 0;
 
     /* Sync the existing guest state */
-    vmm_sync_guest_state(vcpu);
-    vmm_sync_guest_context(vcpu);
+    vm_sync_guest_vmcs_state(vcpu);
+    vm_sync_guest_context(vcpu);
     /* Now invalidate everything */
     assert(vmm_guest_state_no_modified(vcpu->vcpu_arch.guest_state));
     vmm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);

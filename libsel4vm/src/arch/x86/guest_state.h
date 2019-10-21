@@ -421,6 +421,26 @@ static inline void vmm_guest_state_sync_entry_exception_error_code(guest_state_t
     }
 }
 
+static inline void vm_sync_guest_vmcs_state(vm_vcpu_t *vcpu) {
+    vmm_guest_state_sync_cr0(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_idt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_idt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_gdt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_gdt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_cs_selector(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vmm_guest_state_sync_entry_exception_error_code(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+}
+
+/**
+ * Sync a VCPU's current context state (seL4_VCPUContext)
+ * @param[in] vcpu      Handle to the vcpu
+ * @return              0 on success, otherwise -1 for error
+ */
+int vm_sync_guest_context(vm_vcpu_t *vcpu);
+
 /* Exit */
 static inline unsigned int vmm_guest_exit_get_reason(guest_state_t *gs) {
     assert(gs->exit.in_exit);

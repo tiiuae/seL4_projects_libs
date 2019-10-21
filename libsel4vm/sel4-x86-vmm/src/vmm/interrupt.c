@@ -88,7 +88,7 @@ void vmm_have_pending_interrupt(vm_vcpu_t *vcpu) {
                  * in a state where it can inject again */
                 wait_for_guest_ready(vcpu);
                 vcpu->vcpu_arch.guest_state->virt.interrupt_halt = 0;
-                vmm_sync_guest_state(vcpu);
+                vm_sync_guest_vmcs_state(vcpu);
                 vmm_reply_vm_exit(vcpu); /* unblock the guest */
             } else {
                 int irq = vmm_apic_get_interrupt(vcpu);
@@ -102,7 +102,7 @@ void vmm_have_pending_interrupt(vm_vcpu_t *vcpu) {
             wait_for_guest_ready(vcpu);
             if (vcpu->vcpu_arch.guest_state->virt.interrupt_halt) {
                 vcpu->vcpu_arch.guest_state->virt.interrupt_halt = 0;
-                vmm_sync_guest_state(vcpu);
+                vm_sync_guest_vmcs_state(vcpu);
                 vmm_reply_vm_exit(vcpu); /* unblock the guest */
             }
         }
@@ -145,8 +145,8 @@ void vmm_start_ap_vcpu(vm_vcpu_t *vcpu, unsigned int sipi_vector)
 
     vmm_guest_state_set_eip(vcpu->vcpu_arch.guest_state, eip);
 
-    vmm_sync_guest_context(vcpu);
-    vmm_sync_guest_state(vcpu);
+    vm_sync_guest_context(vcpu);
+    vm_sync_guest_vmcs_state(vcpu);
 
     assert(!"no tcb");
 //    seL4_TCB_Resume(vcpu->guest_tcb);

@@ -172,3 +172,18 @@ int vm_vmcs_write(seL4_CPtr vcpu, seL4_Word field, seL4_Word value) {
     }
     return 0;
 }
+
+int vm_sync_guest_context(vm_vcpu_t *vcpu) {
+    if (IS_MACHINE_STATE_MODIFIED(vcpu->vcpu_arch.guest_state->machine.context)) {
+        seL4_VCPUContext context;
+        int err = vm_get_thread_context(vcpu, &context);
+        if (err) {
+            ZF_LOGE("Failed to sync guest context");
+            return -1;
+        }
+        seL4_X86_VCPU_WriteRegisters(vcpu->vcpu.cptr, &context);
+        /* Sync our context */
+        MACHINE_STATE_SYNC(vcpu->vcpu_arch.guest_state->machine.context);
+    }
+    return 0;
+}
