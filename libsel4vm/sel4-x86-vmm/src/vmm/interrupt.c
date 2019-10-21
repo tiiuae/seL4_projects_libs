@@ -125,7 +125,7 @@ int vmm_pending_interrupt_handler(vm_vcpu_t *vcpu) {
 /* Start an AP vcpu after a sipi with the requested vector */
 void vmm_start_ap_vcpu(vm_vcpu_t *vcpu, unsigned int sipi_vector)
 {
-    DPRINTF(1, "trying to start vcpu %d\n", vcpu->vcpu_id);
+    ZF_LOGD("trying to start vcpu %d\n", vcpu->vcpu_id);
 
     uint16_t segment = sipi_vector * 0x100;
     uintptr_t eip = sipi_vector * 0x1000;

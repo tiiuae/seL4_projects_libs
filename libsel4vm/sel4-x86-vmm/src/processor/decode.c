@@ -240,7 +240,7 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                             2, vm_guest_ram_read_callback, &limit);
                     vm_ram_touch(vcpu->vm, mem + 2,
                             4, vm_guest_ram_read_callback, &base);
-                    DPRINTF(4, "lidtl %p\n", (void*)mem);
+                    ZF_LOGD("lidtl %p\n", (void*)mem);
 
                     vmm_guest_state_set_idt_base(gs, base);
                     vmm_guest_state_set_idt_limit(gs, limit);
@@ -256,7 +256,7 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                             2, vm_guest_ram_read_callback, &limit);
                     vm_ram_touch(vcpu->vm, mem + 2,
                             4, vm_guest_ram_read_callback, &base);
-                    DPRINTF(4, "lgdtl %p; base = %x, limit = %x\n", (void*)mem,
+                    ZF_LOGD("lgdtl %p; base = %x, limit = %x\n", (void*)mem,
                             base, limit);
 
                     vmm_guest_state_set_gdt_base(gs, base);
@@ -292,7 +292,7 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                 jmp_addr = *segment * SEG_MULT + base;
             }
             instr += 2;
-            DPRINTF(4, "absolute jmpf $%p, cs now %04x\n", (void*)jmp_addr, *segment);
+            ZF_LOGD("absolute jmpf $%p, cs now %04x\n", (void*)jmp_addr, *segment);
             if (((int64_t)jmp_addr - (int64_t)(len + eip)) >= 0) {
                 vmm_guest_state_set_cs_selector(gs, *segment);
                 return jmp_addr;
@@ -307,7 +307,7 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                     memcpy(&mem, instr, 2);
                     instr += 2;
                     mem += *segment * SEG_MULT;
-                    DPRINTF(4, "mov %p, eax\n", (void*)mem);
+                    ZF_LOGD("mov %p, eax\n", (void*)mem);
                     uint32_t eax;
                     vm_ram_touch(vcpu->vm, mem,
                             4, vm_guest_ram_read_callback, &eax);
@@ -330,7 +330,7 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                             size = 2;
                         }
                         instr += size;
-                        DPRINTF(4, "mov $0x%x, %p\n", lit, (void*)mem);
+                        ZF_LOGD("mov $0x%x, %p\n", lit, (void*)mem);
                         vm_ram_touch(vcpu->vm, mem,
                                 size, vm_guest_ram_write_callback, &lit);
                     }
@@ -351,7 +351,7 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
             }
         }
 
-        DPRINTF(6, "read %zu bytes\n", (size_t)(instr - instr_buf));
+        ZF_LOGI("read %zu bytes\n", (size_t)(instr - instr_buf));
     }
 
     return 0;

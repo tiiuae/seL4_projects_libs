@@ -140,7 +140,7 @@ static void *alloc_bios_memory(vm_t *vm, cspacepath_t **bios_frames) {
 
 // Give some ACPI tables to the guest
 int make_guest_acpi_tables(vm_t *vm) {
-    DPRINTF(2, "Making ACPI tables\n");
+    ZF_LOGD("Making ACPI tables\n");
 
     int cpus = vm->num_vcpus;
 
@@ -236,7 +236,7 @@ int make_guest_acpi_tables(vm_t *vm) {
     // Copy all the tables to guest
     table_paddr = xsdt_addr;
     for (int i = 0; i < num_tables; i++) {
-        DPRINTF(2, "ACPI table \"%.4s\", addr = %p, size = %zu bytes\n",
+        ZF_LOGD("ACPI table \"%.4s\", addr = %p, size = %zu bytes\n",
                 (char *)tables[i], (void*)table_paddr, table_sizes[i]);
         memcpy((void *)table_paddr, (char *)tables[i], table_sizes[i]);
         table_paddr += table_sizes[i];
@@ -261,7 +261,7 @@ int make_guest_acpi_tables(vm_t *vm) {
     rsdp.checksum = acpi_calc_checksum((char *)&rsdp, 20);
     rsdp.extended_checksum = acpi_calc_checksum((char *)&rsdp, sizeof(rsdp));
 
-    DPRINTF(2, "ACPI RSDP addr = %p\n", (void*)rsdp_addr);
+    ZF_LOGD("ACPI RSDP addr = %p\n", (void*)rsdp_addr);
 
     memcpy((void *)rsdp_addr, (char *)&rsdp, sizeof(rsdp));
 

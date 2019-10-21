@@ -35,7 +35,7 @@ int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
     }
     uint64_t data = 0;
 
-    DPRINTF(4, "rdmsr ecx 0x%x\n", msr_no);
+    ZF_LOGD("rdmsr ecx 0x%x\n", msr_no);
 
     // src reference: Linux kernel 3.11 kvm arch/x86/kvm/x86.c
     switch (msr_no) {
@@ -76,7 +76,7 @@ int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
             break;
 
         default:
-            DPRINTF(1, "rdmsr WARNING unsupported msr_no 0x%x\n", msr_no);
+            ZF_LOGW("rdmsr WARNING unsupported msr_no 0x%x\n", msr_no);
             // generate a GP fault
             vmm_inject_exception(vcpu, 13, 1, 0);
             return VM_EXIT_HANDLED;
@@ -108,7 +108,7 @@ int vmm_wrmsr_handler(vm_vcpu_t *vcpu) {
         return VM_EXIT_HANDLE_ERROR;
     }
 
-    DPRINTF(4, "wrmsr ecx 0x%x   value: 0x%x  0x%x\n", msr_no, val_high, val_low);
+    ZF_LOGD("wrmsr ecx 0x%x   value: 0x%x  0x%x\n", msr_no, val_high, val_low);
 
     // src reference: Linux kernel 3.11 kvm arch/x86/kvm/x86.c
     switch (msr_no) {
@@ -129,7 +129,7 @@ int vmm_wrmsr_handler(vm_vcpu_t *vcpu) {
             break;
 
         default:
-            DPRINTF(1, "wrmsr WARNING unsupported msr_no 0x%x\n", msr_no);
+            ZF_LOGW("wrmsr WARNING unsupported msr_no 0x%x\n", msr_no);
             // generate a GP fault
             vmm_inject_exception(vcpu, 13, 1, 0);
             return VM_EXIT_HANDLED;

@@ -192,7 +192,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
 #endif
 
                 default:
-                    DPRINTF(4, "unhandled control register: op %d cr %d\n",
+                    ZF_LOGD("unhandled control register: op %d cr %d\n",
                             (int)(exit_qualification >> 4) & 3, cr);
                     break;
 
@@ -217,7 +217,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
                     return 1;
 #endif
                 default:
-                    DPRINTF(4, "unhandled control register: op %d cr %d\n",
+                    ZF_LOGD("unhandled control register: op %d cr %d\n",
                             (int)(exit_qualification >> 4) & 3, cr);
                     break;
 
@@ -233,7 +233,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
             break;
 
         default:
-            DPRINTF(4, "unhandled control register: op %d cr %d\n",
+            ZF_LOGD("unhandled control register: op %d cr %d\n",
                     (int)(exit_qualification >> 4) & 3, cr);
             break;
     }

@@ -47,7 +47,7 @@ int reg_new_handler(vm_t *vm, vmcall_handler func, int token) {
     vm->arch.vmcall_handlers[*hnum].token = token;
     vm->arch.vmcall_num_handlers++;
 
-    DPRINTF(4, "Reg. handler %u for vmm, total = %u\n", *hnum - 1, *hnum);
+    ZF_LOGD("Reg. handler %u for vmm, total = %u\n", *hnum - 1, *hnum);
     return 0;
 }
 
@@ -60,7 +60,7 @@ int vmm_vmcall_handler(vm_vcpu_t *vcpu) {
     }
     h = get_handle(vcpu->vm, token);
     if(h == NULL) {
-        DPRINTF(2, "Failed to find handler for token:%x\n", token);
+        ZF_LOGE("Failed to find handler for token:%x\n", token);
         vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }

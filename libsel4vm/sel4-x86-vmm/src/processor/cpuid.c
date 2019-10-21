@@ -98,7 +98,7 @@ static int vmm_cpuid_virt(unsigned int function, unsigned int index, struct cpui
 
     /* Virtualize the return value according to the function. */
 
-    DPRINTF(4, "cpuid function 0x%x index 0x%x eax 0x%x ebx 0%x ecx 0x%x edx 0x%x\n", function, index, eax, ebx, ecx, edx);
+    ZF_LOGD("cpuid function 0x%x index 0x%x eax 0x%x ebx 0%x ecx 0x%x edx 0x%x\n", function, index, eax, ebx, ecx, edx);
 
     /* ref: http://www.sandpile.org/x86/cpuid.htm */
 
@@ -167,7 +167,7 @@ static int vmm_cpuid_virt(unsigned int function, unsigned int index, struct cpui
 
         default:
             /* TODO: Adding more CPUID functions whenever necessary */
-            DPRINTF(1, "CPUID unimplemented function 0x%x\n", function);
+            ZF_LOGE("CPUID unimplemented function 0x%x\n", function);
             return -1;
 
     }
@@ -177,7 +177,7 @@ static int vmm_cpuid_virt(unsigned int function, unsigned int index, struct cpui
     val->ecx = ecx;
     val->edx = edx;
 
-    DPRINTF(4, "cpuid virt value eax 0x%x ebx 0x%x ecx 0x%x edx 0x%x\n", eax, ebx, ecx, edx);
+    ZF_LOGD("cpuid virt value eax 0x%x ebx 0x%x ecx 0x%x edx 0x%x\n", eax, ebx, ecx, edx);
 
     return 0;
 
