@@ -29,13 +29,24 @@
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_irq_controller.h>
 #include <sel4vm/ioports.h>
-#include <sel4vm/platform/ioports.h>
 #include "i8259.h"
 
 #define I8259_MASTER   0
 #define I8259_SLAVE    1
 
 #define PIC_NUM_PINS 16
+
+/*first programmable interrupt controller, master*/
+#define X86_IO_PIC_1_START   0x20
+#define X86_IO_PIC_1_END     0x21
+
+/*second programmable interrupt controller, slave*/
+#define X86_IO_PIC_2_START    0xa0
+#define X86_IO_PIC_2_END      0xa1
+
+/*ELCR (edge/level control register) for IRQ line*/
+#define X86_IO_ELCR_START      0x4d0
+#define X86_IO_ELCR_END        0x4d1
 
 typedef struct i8259_irq_ack {
     irq_ack_fn_t callback;

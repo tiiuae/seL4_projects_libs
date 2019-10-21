@@ -14,10 +14,6 @@
 
 /* Some IO ports in x86 systems. */
 
-/*first programmable interrupt controller, master*/
-#define X86_IO_PIC_1_START   0x20
-#define X86_IO_PIC_1_END     0x21
-
 /*programmable interval timer*/
 #define X86_IO_PIT_START      0x40
 #define X86_IO_PIT_END        0x5f
@@ -33,10 +29,6 @@
 /*ISA DMA*/
 #define X86_IO_ISA_DMA_START      0x80
 #define X86_IO_ISA_DMA_END        0x8f
-
-/*second programmable interrupt controller, slave*/
-#define X86_IO_PIC_2_START    0xa0
-#define X86_IO_PIC_2_END      0xa1
 
 /*POS Programmable Option Select (PS/2)*/
 #define X86_IO_POS_START      0x100
@@ -57,10 +49,6 @@
 /*serial port 4*/
 #define X86_IO_SERIAL_4_START  0x2e8
 #define X86_IO_SERIAL_4_END    0x2ef
-
-/*ELCR (edge/level control register) for IRQ line*/
-#define X86_IO_ELCR_START      0x4d0
-#define X86_IO_ELCR_END        0x4d1
 
 /*pci configuration space*/
 #define X86_IO_PCI_CONFIG_START 0xcf8
