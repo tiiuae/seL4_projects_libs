@@ -65,10 +65,6 @@ static void vm_resume(vm_vcpu_t *vcpu) {
 static int handle_vm_exit(vm_vcpu_t *vcpu) {
     int ret;
     int reason = vmm_guest_exit_get_reason(vcpu->vcpu_arch.guest_state);
-
-    /* Distribute the task according to the exit info. */
-    vmm_print_guest_context(3, vcpu);
-
     if (reason == -1) {
         ZF_LOGF("Kernel failed to perform vmlaunch or vmresume, we have no recourse");
     }
