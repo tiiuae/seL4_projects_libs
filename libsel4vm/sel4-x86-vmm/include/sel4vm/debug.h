@@ -28,39 +28,5 @@
 #define COLOUR_RESET "\033[0m"
 #endif
 
-#ifdef CONFIG_LIB_VMM_DEBUG
-
-#define DPRINTF(lvl, ...) \
-        do{ \
-            if(lvl <= 0 || lvl < CONFIG_LIB_VMM_DEBUG_LEVEL){ \
-                printf("%s:%d | ", __func__, __LINE__); \
-                printf(__VA_ARGS__); \
-            } \
-        }while(0)
-
-#define drun(lvl, cmd) \
-        do{ \
-            if(lvl < LIB_VMM_DEBUG_LEVEL){ \
-                cmd; \
-            } \
-        }while(0)
-
-#else /* CONFIG_LIB_VMM_DEBUG */
-
-#define DPRINTF(lvl, ...) do{ /* nothing */ }while(0)
-#define drun() do{ /* nothing */ }while(0)
-
-#endif /* CONFIG_LIB_VMM_DEBUG */
-
-#ifndef panic
-#define panic(msg) \
-        do{ \
-            printf(COLOUR_R "!!!!!!!!!!!! LIBVMM PANIC !!!!!!!!!!!!! \n"\
-                   "    @ %s: %d | %s\n" COLOUR_RESET, __func__, __LINE__, msg);\
-            assert(!msg);\
-            while(1);\
-        }while(0)
-#endif
-
 void vmm_print_guest_context(vm_vcpu_t*);
 
