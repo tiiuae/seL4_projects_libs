@@ -23,7 +23,6 @@ Author: W.A.
 #include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_x86_context.h>
 
-#include "sel4vm/debug.h"
 #include "sel4vm/guest_memory.h"
 #include "sel4vm/processor/platfeature.h"
 

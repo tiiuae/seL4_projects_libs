@@ -22,8 +22,6 @@
 
 #include <sel4/sel4.h>
 
-#include "sel4vm/debug.h"
-
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_x86_context.h>
 #include "sel4vm/vmm.h"

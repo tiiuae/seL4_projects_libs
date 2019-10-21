@@ -25,6 +25,7 @@
 
 #include "vm.h"
 #include "vmcs.h"
+#include "debug.h"
 
 int vmm_vmx_timer_handler(vm_vcpu_t *vcpu) {
 #ifdef CONFIG_LIB_VMM_VMX_TIMER_DEBUG

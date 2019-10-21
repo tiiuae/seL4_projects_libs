@@ -14,7 +14,6 @@
 #include "sel4vm/vmm.h"
 #include "sel4vm/vmm_manager.h"
 #include "sel4vm/vchan_component.h"
-#include "sel4vm/debug.h"
 #include "sel4vm/vchan_sharemem.h"
 
 static libvchan_t *vchan_init(int domain, int port, int server);

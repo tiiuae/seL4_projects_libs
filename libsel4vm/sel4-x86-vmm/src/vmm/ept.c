@@ -19,7 +19,6 @@
 
 #include <sel4vm/guest_memory.h>
 
-#include "sel4vm/debug.h"
 #include "sel4vm/vmm.h"
 #include "sel4vm/platform/vmcs.h"
 #include "sel4vm/processor/decode.h"
@@ -27,6 +26,7 @@
 #include "vm.h"
 #include "guest_state.h"
 #include "vmcs.h"
+#include "debug.h"
 
 #define EPT_VIOL_READ(qual) ((qual) & BIT(0))
 #define EPT_VIOL_WRITE(qual) ((qual) & BIT(1))

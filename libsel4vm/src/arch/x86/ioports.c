@@ -23,7 +23,6 @@
 #include <sel4vm/ioports.h>
 #include <sel4vm/guest_x86_context.h>
 
-#include "sel4vm/debug.h"
 #include "sel4vm/vmm.h"
 
 #include "vm.h"

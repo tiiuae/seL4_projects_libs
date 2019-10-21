@@ -24,8 +24,6 @@
 #include <string.h>
 #include <utils/util.h>
 
-#include "sel4vm/debug.h"
-
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_vcpu_fault.h>
