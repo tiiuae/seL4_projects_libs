@@ -62,5 +62,5 @@
         }while(0)
 #endif
 
-void vmm_print_guest_context(int, vm_vcpu_t*);
+void vmm_print_guest_context(vm_vcpu_t*);
 

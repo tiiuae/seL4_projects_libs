@@ -71,7 +71,7 @@ static int handle_vm_exit(vm_vcpu_t *vcpu) {
 
     if (!x86_exit_handlers[reason]) {
         printf("VM_FATAL_ERROR ::: vm exit handler is NULL for reason 0x%x.\n", reason);
-        vmm_print_guest_context(0, vcpu);
+        vmm_print_guest_context(vcpu);
         vcpu->vcpu_online = false;
         return -1;
     }
@@ -80,7 +80,7 @@ static int handle_vm_exit(vm_vcpu_t *vcpu) {
     ret = x86_exit_handlers[reason](vcpu);
     if (ret == -1) {
         printf("VM_FATAL_ERROR ::: vmexit handler return error\n");
-        vmm_print_guest_context(0, vcpu);
+        vmm_print_guest_context(vcpu);
         vcpu->vcpu_online = false;
         return ret;
     }
