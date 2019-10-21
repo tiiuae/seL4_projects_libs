@@ -47,6 +47,7 @@ static vm_exit_handler_fn_t x86_exit_handlers[] = {
     [EXIT_REASON_VMCALL] = vmm_vmcall_handler,
 };
 
+/* Reply to the VM exit exception to resume guest. */
 static void vm_resume(vm_vcpu_t *vcpu) {
     vm_sync_guest_vmcs_state(vcpu);
     if (vcpu->vcpu_arch.guest_state->exit.in_exit && !vcpu->vcpu_arch.guest_state->virt.interrupt_halt) {
@@ -83,8 +84,6 @@ static int handle_vm_exit(vm_vcpu_t *vcpu) {
         return ret;
     }
 
-    /* Reply to the VM exit exception to resume guest. */
-    vm_resume(vcpu);
     return ret;
 }
 
@@ -195,6 +194,8 @@ int vm_run_arch(vm_t *vm) {
 
         if (ret == VM_EXIT_HANDLE_ERROR) {
             vm->run.exit_reason = VM_GUEST_ERROR_EXIT;
+        } else {
+            vm_resume(vcpu);
         }
 
     }

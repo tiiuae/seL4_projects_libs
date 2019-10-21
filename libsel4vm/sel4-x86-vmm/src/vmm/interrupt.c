@@ -88,8 +88,6 @@ void vmm_have_pending_interrupt(vm_vcpu_t *vcpu) {
                  * in a state where it can inject again */
                 wait_for_guest_ready(vcpu);
                 vcpu->vcpu_arch.guest_state->virt.interrupt_halt = 0;
-                vm_sync_guest_vmcs_state(vcpu);
-                vmm_reply_vm_exit(vcpu); /* unblock the guest */
             } else {
                 int irq = vmm_apic_get_interrupt(vcpu);
                 inject_irq(vcpu, irq);
@@ -102,8 +100,6 @@ void vmm_have_pending_interrupt(vm_vcpu_t *vcpu) {
             wait_for_guest_ready(vcpu);
             if (vcpu->vcpu_arch.guest_state->virt.interrupt_halt) {
                 vcpu->vcpu_arch.guest_state->virt.interrupt_halt = 0;
-                vm_sync_guest_vmcs_state(vcpu);
-                vmm_reply_vm_exit(vcpu); /* unblock the guest */
             }
         }
     }
