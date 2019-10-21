@@ -36,11 +36,7 @@
 
 void vmm_reply_vm_exit(vm_vcpu_t *vcpu) {
     assert(vcpu->vcpu_arch.guest_state->exit.in_exit);
-
-    if (IS_MACHINE_STATE_MODIFIED(vcpu->vcpu_arch.guest_state->machine.context)) {
-        vm_sync_guest_context(vcpu);
-    }
-
+    vm_sync_guest_context(vcpu);
     /* Before we resume the guest, ensure there is no dirty state around */
     assert(vmm_guest_state_no_modified(vcpu->vcpu_arch.guest_state));
     vmm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
