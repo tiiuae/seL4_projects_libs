@@ -27,16 +27,16 @@
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_memory.h>
 #include <sel4vm/guest_memory_util.h>
-#include <sel4vm/processor/decode.h>
-#include <sel4vm/processor/apicdef.h>
-#include <sel4vm/processor/lapic.h>
-#include <sel4vm/processor/platfeature.h>
 
 #include "vm_boot.h"
 #include "guest_vspace.h"
 #include "guest_memory_map.h"
 #include "guest_state.h"
 #include "vmcs.h"
+#include "processor/decode.h"
+#include "processor/apicdef.h"
+#include "processor/lapic.h"
+#include "processor/platfeature.h"
 
 #define VMM_VMCS_CR0_MASK           (X86_CR0_PG | X86_CR0_PE)
 #define VMM_VMCS_CR0_VALUE          VMM_VMCS_CR0_MASK

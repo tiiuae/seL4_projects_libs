@@ -27,7 +27,6 @@
 #include <sel4vm/guest_x86_context.h>
 #include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_memory_util.h>
-#include <sel4vm/processor/platfeature.h>
 #include <sel4vm/platform/vmcs.h>
 #include <sel4vm/guest_memory.h>
 

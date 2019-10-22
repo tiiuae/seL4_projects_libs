@@ -21,6 +21,7 @@
 
 #include "vm.h"
 #include "guest_state.h"
+#include "processor/lapic.h"
 
 /* Handling halt instruction VMExit Events. */
 int vmm_hlt_handler(vm_vcpu_t *vcpu) {

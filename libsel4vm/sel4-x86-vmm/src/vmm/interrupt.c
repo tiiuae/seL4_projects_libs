@@ -19,12 +19,13 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
-
-#include "sel4vm/processor/decode.h"
+#include <sel4vm/interrupt.h>
 
 #include "vm.h"
 #include "i8259/i8259.h"
 #include "guest_state.h"
+#include "processor/decode.h"
+#include "processor/lapic.h"
 
 #define TRAMPOLINE_LENGTH (100)
 

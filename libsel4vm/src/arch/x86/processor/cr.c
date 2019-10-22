@@ -20,12 +20,12 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_x86_context.h>
-#include "sel4vm/processor/platfeature.h"
 #include "sel4vm/platform/vmcs.h"
 
 #include "vm.h"
 #include "guest_state.h"
 #include "vmcs.h"
+#include "processor/platfeature.h"
 
 static inline unsigned int apply_cr_bits(unsigned int cr, unsigned int mask, unsigned int host_bits) {
     /* force any bit in the mask to be the value from the shadow (both enabled and disabled) */

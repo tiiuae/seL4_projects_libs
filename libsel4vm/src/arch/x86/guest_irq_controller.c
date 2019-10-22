@@ -12,10 +12,10 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory.h>
-#include <sel4vm/processor/apicdef.h>
-#include <sel4vm/processor/lapic.h>
 
 #include "i8259/i8259.h"
+#include "processor/apicdef.h"
+#include "processor/lapic.h"
 
 int vm_create_default_irq_controller(vm_t *vm) {
     int err;

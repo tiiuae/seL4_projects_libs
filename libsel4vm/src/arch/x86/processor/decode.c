@@ -24,8 +24,8 @@ Author: W.A.
 #include <sel4vm/guest_x86_context.h>
 
 #include "sel4vm/guest_memory.h"
-#include "sel4vm/processor/platfeature.h"
 
+#include "processor/platfeature.h"
 #include "guest_state.h"
 
 /* TODO are these defined elsewhere? */

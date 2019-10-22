@@ -13,9 +13,9 @@
 #include <sel4vm/guest_vcpu_fault.h>
 
 #include <sel4vm/platform/vmcs.h>
-#include <sel4vm/processor/decode.h>
 
 #include "guest_state.h"
+#include "processor/decode.h"
 
 seL4_Word get_vcpu_fault_address(vm_vcpu_t *vcpu) {
     return vmm_guest_exit_get_physical(vcpu->vcpu_arch.guest_state);
