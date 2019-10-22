@@ -60,7 +60,7 @@ inline static int pic_has_interrupt(vm_t *vm)
     return i8259_has_interrupt(vm);
 }
 
-struct vmm_lapic_irq {
+struct vm_lapic_irq {
     uint32_t vector;
     uint32_t delivery_mode;
     uint32_t dest_mode;
@@ -111,21 +111,21 @@ static uint32_t hweight32(unsigned int w)
 }
 /* End generic bit ops */
 
-void vmm_lapic_reset(vm_vcpu_t *vcpu);
+void vm_lapic_reset(vm_vcpu_t *vcpu);
 
 // Returns whether the irq delivery mode is lowest prio
-inline static bool vmm_is_dm_lowest_prio(struct vmm_lapic_irq *irq)
+inline static bool vm_is_dm_lowest_prio(struct vm_lapic_irq *irq)
 {
     return irq->delivery_mode == APIC_DM_LOWEST;
 }
 
 // Access register field
-static inline void apic_set_reg(vmm_lapic_t *apic, int reg_off, uint32_t val)
+static inline void apic_set_reg(vm_lapic_t *apic, int reg_off, uint32_t val)
 {
     *((uint32_t *) (apic->regs + reg_off)) = val;
 }
 
-static inline uint32_t vmm_apic_get_reg(vmm_lapic_t *apic, int reg_off)
+static inline uint32_t vm_apic_get_reg(vm_lapic_t *apic, int reg_off)
 {
     return *((uint32_t *) (apic->regs + reg_off));
 }
@@ -135,9 +135,9 @@ static inline int apic_test_vector(int vec, void *bitmap)
     return ((1UL << (vec & 31)) & ((uint32_t *)bitmap)[vec >> 5]) != 0;
 }
 
-bool vmm_apic_pending_eoi(vm_vcpu_t *vcpu, int vector)
+bool vm_apic_pending_eoi(vm_vcpu_t *vcpu, int vector)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
 
     return apic_test_vector(vector, apic->regs + APIC_ISR) ||
         apic_test_vector(vector, apic->regs + APIC_IRR);
@@ -153,19 +153,19 @@ static inline void apic_clear_vector(int vec, void *bitmap)
     ((uint32_t *)bitmap)[vec >> 5] &= ~(1UL << (vec & 31));
 }
 
-static inline int vmm_apic_sw_enabled(vmm_lapic_t *apic)
+static inline int vm_apic_sw_enabled(vm_lapic_t *apic)
 {
-    return vmm_apic_get_reg(apic, APIC_SPIV) & APIC_SPIV_APIC_ENABLED;
+    return vm_apic_get_reg(apic, APIC_SPIV) & APIC_SPIV_APIC_ENABLED;
 }
 
-static inline int vmm_apic_hw_enabled(vmm_lapic_t *apic)
+static inline int vm_apic_hw_enabled(vm_lapic_t *apic)
 {
     return apic->apic_base & MSR_IA32_APICBASE_ENABLE;
 }
 
-inline int vmm_apic_enabled(vmm_lapic_t *apic)
+inline int vm_apic_enabled(vm_lapic_t *apic)
 {
-    return vmm_apic_sw_enabled(apic) && vmm_apic_hw_enabled(apic);
+    return vm_apic_sw_enabled(apic) && vm_apic_hw_enabled(apic);
 }
 
 #define LVT_MASK    \
@@ -175,12 +175,12 @@ inline int vmm_apic_enabled(vmm_lapic_t *apic)
     (LVT_MASK | APIC_MODE_MASK | APIC_INPUT_POLARITY | \
      APIC_LVT_REMOTE_IRR | APIC_LVT_LEVEL_TRIGGER)
 
-static inline int vmm_apic_id(vmm_lapic_t *apic)
+static inline int vm_apic_id(vm_lapic_t *apic)
 {
-    return (vmm_apic_get_reg(apic, APIC_ID) >> 24) & 0xff;
+    return (vm_apic_get_reg(apic, APIC_ID) >> 24) & 0xff;
 }
 
-static inline void apic_set_spiv(vmm_lapic_t *apic, uint32_t val)
+static inline void apic_set_spiv(vm_lapic_t *apic, uint32_t val)
 {
     apic_set_reg(apic, APIC_SPIV, val);
 }
@@ -193,27 +193,27 @@ static const unsigned int apic_lvt_mask[APIC_LVT_NUM] = {
     LVT_MASK        /* LVTERR */
 };
 
-static inline void vmm_apic_set_id(vmm_lapic_t *apic, uint8_t id)
+static inline void vm_apic_set_id(vm_lapic_t *apic, uint8_t id)
 {
     apic_set_reg(apic, APIC_ID, id << 24);
 }
 
-static inline void vmm_apic_set_ldr(vmm_lapic_t *apic, uint32_t id)
+static inline void vm_apic_set_ldr(vm_lapic_t *apic, uint32_t id)
 {
     apic_set_reg(apic, APIC_LDR, id);
 }
 
-static inline int apic_lvt_enabled(vmm_lapic_t *apic, int lvt_type)
+static inline int apic_lvt_enabled(vm_lapic_t *apic, int lvt_type)
 {
-    return !(vmm_apic_get_reg(apic, lvt_type) & APIC_LVT_MASKED);
+    return !(vm_apic_get_reg(apic, lvt_type) & APIC_LVT_MASKED);
 }
 
-static inline int apic_lvt_vector(vmm_lapic_t *apic, int lvt_type)
+static inline int apic_lvt_vector(vm_lapic_t *apic, int lvt_type)
 {
-    return vmm_apic_get_reg(apic, lvt_type) & APIC_VECTOR_MASK;
+    return vm_apic_get_reg(apic, lvt_type) & APIC_VECTOR_MASK;
 }
 
-static inline int vmm_vcpu_is_bsp(vm_vcpu_t *vcpu)
+static inline int vm_vcpu_is_bsp(vm_vcpu_t *vcpu)
 {
     return vcpu->vcpu_id == BOOT_VCPU;
 }
@@ -223,7 +223,7 @@ static inline int apic_lvt_nmi_mode(uint32_t lvt_val)
     return (lvt_val & (APIC_MODE_MASK | APIC_LVT_MASKED)) == APIC_DM_NMI;
 }
 
-int vmm_apic_compare_prio(vm_vcpu_t *vcpu1, vm_vcpu_t *vcpu2)
+int vm_apic_compare_prio(vm_vcpu_t *vcpu1, vm_vcpu_t *vcpu2)
 {
     return vcpu1->vcpu_arch.lapic->arb_prio - vcpu2->vcpu_arch.lapic->arb_prio;
 }
@@ -270,12 +270,12 @@ static uint8_t UNUSED count_vectors(void *bitmap)
     return count;
 }
 
-static inline int apic_search_irr(vmm_lapic_t *apic)
+static inline int apic_search_irr(vm_lapic_t *apic)
 {
     return find_highest_vector(apic->regs + APIC_IRR);
 }
 
-static inline int apic_find_highest_irr(vmm_lapic_t *apic)
+static inline int apic_find_highest_irr(vm_lapic_t *apic)
 {
     int result;
 
@@ -288,7 +288,7 @@ static inline int apic_find_highest_irr(vmm_lapic_t *apic)
     return result;
 }
 
-static inline void apic_set_irr(int vec, vmm_lapic_t *apic)
+static inline void apic_set_irr(int vec, vm_lapic_t *apic)
 {
     if (vec != 0x30) {
         apic_debug(5, "!settting irr 0x%x\n", vec);
@@ -298,7 +298,7 @@ static inline void apic_set_irr(int vec, vmm_lapic_t *apic)
     apic_set_vector(vec, apic->regs + APIC_IRR);
 }
 
-static inline void apic_clear_irr(int vec, vmm_lapic_t *apic)
+static inline void apic_clear_irr(int vec, vm_lapic_t *apic)
 {
     apic_clear_vector(vec, apic->regs + APIC_IRR);
 
@@ -306,7 +306,7 @@ static inline void apic_clear_irr(int vec, vmm_lapic_t *apic)
     apic->irr_pending = (vec != -1);
 }
 
-static inline void apic_set_isr(int vec, vmm_lapic_t *apic)
+static inline void apic_set_isr(int vec, vm_lapic_t *apic)
 {
     if (apic_test_vector(vec, apic->regs + APIC_ISR)) {
         return;
@@ -321,7 +321,7 @@ static inline void apic_set_isr(int vec, vmm_lapic_t *apic)
      */
 }
 
-static inline int apic_find_highest_isr(vmm_lapic_t *apic)
+static inline int apic_find_highest_isr(vm_lapic_t *apic)
 {
     int result;
 
@@ -340,7 +340,7 @@ static inline int apic_find_highest_isr(vmm_lapic_t *apic)
     return result;
 }
 
-static inline void apic_clear_isr(int vec, vmm_lapic_t *apic)
+static inline void apic_clear_isr(int vec, vm_lapic_t *apic)
 {
     if (!apic_test_vector(vec, apic->regs + APIC_ISR)) {
         return;
@@ -351,7 +351,7 @@ static inline void apic_clear_isr(int vec, vmm_lapic_t *apic)
     apic->highest_isr_cache = -1;
 }
 
-int vmm_lapic_find_highest_irr(vm_vcpu_t *vcpu)
+int vm_lapic_find_highest_irr(vm_vcpu_t *vcpu)
 {
     int highest_irr;
 
@@ -364,16 +364,16 @@ static int __apic_accept_irq(vm_vcpu_t *vcpu, int delivery_mode,
                  int vector, int level, int trig_mode,
                  unsigned long *dest_map);
 
-int vmm_apic_set_irq(vm_vcpu_t *vcpu, struct vmm_lapic_irq *irq,
+int vm_apic_set_irq(vm_vcpu_t *vcpu, struct vm_lapic_irq *irq,
         unsigned long *dest_map)
 {
     return __apic_accept_irq(vcpu, irq->delivery_mode, irq->vector,
             irq->level, irq->trig_mode, dest_map);
 }
 
-void vmm_apic_update_tmr(vm_vcpu_t *vcpu, uint32_t *tmr)
+void vm_apic_update_tmr(vm_vcpu_t *vcpu, uint32_t *tmr)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
     int i;
 
     for (i = 0; i < 8; i++)
@@ -384,10 +384,10 @@ static void apic_update_ppr(vm_vcpu_t *vcpu)
 {
     uint32_t tpr, isrv, ppr, old_ppr;
     int isr;
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
 
-    old_ppr = vmm_apic_get_reg(apic, APIC_PROCPRI);
-    tpr = vmm_apic_get_reg(apic, APIC_TASKPRI);
+    old_ppr = vm_apic_get_reg(apic, APIC_PROCPRI);
+    tpr = vm_apic_get_reg(apic, APIC_TASKPRI);
     isr = apic_find_highest_isr(apic);
     isrv = (isr != -1) ? isr : 0;
 
@@ -403,7 +403,7 @@ static void apic_update_ppr(vm_vcpu_t *vcpu)
         apic_set_reg(apic, APIC_PROCPRI, ppr);
         if (ppr < old_ppr) {
             /* Might have unmasked some pending interrupts */
-            vmm_vcpu_accept_interrupt(vcpu);
+            vm_vcpu_accept_interrupt(vcpu);
         }
     }
 }
@@ -415,19 +415,19 @@ static void apic_set_tpr(vm_vcpu_t *vcpu, uint32_t tpr)
     apic_update_ppr(vcpu);
 }
 
-int vmm_apic_match_physical_addr(vmm_lapic_t *apic, uint16_t dest)
+int vm_apic_match_physical_addr(vm_lapic_t *apic, uint16_t dest)
 {
-    return dest == 0xff || vmm_apic_id(apic) == dest;
+    return dest == 0xff || vm_apic_id(apic) == dest;
 }
 
-int vmm_apic_match_logical_addr(vmm_lapic_t *apic, uint8_t mda)
+int vm_apic_match_logical_addr(vm_lapic_t *apic, uint8_t mda)
 {
     int result = 0;
     uint32_t logical_id;
 
-    logical_id = GET_APIC_LOGICAL_ID(vmm_apic_get_reg(apic, APIC_LDR));
+    logical_id = GET_APIC_LOGICAL_ID(vm_apic_get_reg(apic, APIC_LDR));
 
-    switch (vmm_apic_get_reg(apic, APIC_DFR)) {
+    switch (vm_apic_get_reg(apic, APIC_DFR)) {
     case APIC_DFR_FLAT:
         if (logical_id & mda)
             result = 1;
@@ -438,28 +438,28 @@ int vmm_apic_match_logical_addr(vmm_lapic_t *apic, uint8_t mda)
             result = 1;
         break;
     default:
-        apic_debug(1, "Bad DFR: %08x\n", vmm_apic_get_reg(apic, APIC_DFR));
+        apic_debug(1, "Bad DFR: %08x\n", vm_apic_get_reg(apic, APIC_DFR));
         break;
     }
 
     return result;
 }
 
-int vmm_apic_match_dest(vm_vcpu_t *vcpu, vmm_lapic_t *source,
+int vm_apic_match_dest(vm_vcpu_t *vcpu, vm_lapic_t *source,
                int short_hand, int dest, int dest_mode)
 {
     int result = 0;
-    vmm_lapic_t *target = vcpu->vcpu_arch.lapic;
+    vm_lapic_t *target = vcpu->vcpu_arch.lapic;
 
     assert(target);
     switch (short_hand) {
     case APIC_DEST_NOSHORT:
         if (dest_mode == 0)
             /* Physical mode. */
-            result = vmm_apic_match_physical_addr(target, dest);
+            result = vm_apic_match_physical_addr(target, dest);
         else
             /* Logical mode. */
-            result = vmm_apic_match_logical_addr(target, dest);
+            result = vm_apic_match_logical_addr(target, dest);
         break;
     case APIC_DEST_SELF:
         result = (target == source);
@@ -488,31 +488,31 @@ int vmm_apic_match_dest(vm_vcpu_t *vcpu, vmm_lapic_t *source,
     return result;
 }
 
-int vmm_irq_delivery_to_apic(vm_vcpu_t *src_vcpu, struct vmm_lapic_irq *irq, unsigned long *dest_map)
+int vm_irq_delivery_to_apic(vm_vcpu_t *src_vcpu, struct vm_lapic_irq *irq, unsigned long *dest_map)
 {
     int i, r = -1;
-    vmm_lapic_t *src = src_vcpu->vcpu_arch.lapic;
+    vm_lapic_t *src = src_vcpu->vcpu_arch.lapic;
     vm_t *vm = src_vcpu->vm;
 
     vm_vcpu_t *lowest = NULL;
 
     if (irq->shorthand == APIC_DEST_SELF) {
-        return vmm_apic_set_irq(src_vcpu, irq, dest_map);
+        return vm_apic_set_irq(src_vcpu, irq, dest_map);
     }
 
     vm_vcpu_t *dest_vcpu = vm->vcpus[BOOT_VCPU];
 
-    if (!vmm_apic_hw_enabled(dest_vcpu->vcpu_arch.lapic)) {
+    if (!vm_apic_hw_enabled(dest_vcpu->vcpu_arch.lapic)) {
         return r;
     }
 
-    if (!vmm_apic_match_dest(dest_vcpu, src, irq->shorthand,
+    if (!vm_apic_match_dest(dest_vcpu, src, irq->shorthand,
                     irq->dest_id, irq->dest_mode)) {
         return r;
     }
 
-    if (!vmm_is_dm_lowest_prio(irq) || (vmm_apic_enabled(dest_vcpu->vcpu_arch.lapic))) {
-        r = vmm_apic_set_irq(dest_vcpu, irq, dest_map);
+    if (!vm_is_dm_lowest_prio(irq) || (vm_apic_enabled(dest_vcpu->vcpu_arch.lapic))) {
+        r = vm_apic_set_irq(dest_vcpu, irq, dest_map);
     }
 
     return r;
@@ -527,27 +527,27 @@ static int __apic_accept_irq(vm_vcpu_t *vcpu, int delivery_mode,
                  unsigned long *dest_map)
 {
     int result = 0;
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
 
     switch (delivery_mode) {
     case APIC_DM_LOWEST:
         apic->arb_prio++;
     case APIC_DM_FIXED:
         /* FIXME add logic for vcpu on reset */
-        if (!vmm_apic_enabled(apic)) {
+        if (!vm_apic_enabled(apic)) {
             break;
         }
         apic_debug(4, "####fixed ipi 0x%x to vcpu %d\n", vector, vcpu->vcpu_id);
 
         result = 1;
         apic_set_irr(vector, apic);
-        vmm_vcpu_accept_interrupt(vcpu);
+        vm_vcpu_accept_interrupt(vcpu);
         break;
 
     case APIC_DM_NMI:
     case APIC_DM_REMRD:
         result = 1;
-        vmm_vcpu_accept_interrupt(vcpu);
+        vm_vcpu_accept_interrupt(vcpu);
         break;
 
     case APIC_DM_SMI:
@@ -562,8 +562,8 @@ static int __apic_accept_irq(vm_vcpu_t *vcpu, int delivery_mode,
                 break;
             }
             result = 1;
-            vmm_lapic_reset(vcpu);
-            apic->arb_prio = vmm_apic_id(apic);
+            vm_lapic_reset(vcpu);
+            apic->arb_prio = vm_apic_id(apic);
             apic->state = LAPIC_STATE_WAITSIPI;
         } else {
             apic_debug(2, "Ignoring de-assert INIT to vcpu %d\n",
@@ -582,12 +582,12 @@ static int __apic_accept_irq(vm_vcpu_t *vcpu, int delivery_mode,
             apic->state = LAPIC_STATE_RUN;
 
             /* Start the VCPU thread. */
-            vmm_start_ap_vcpu(vcpu, vector);
+            vm_start_ap_vcpu(vcpu, vector);
         }
         break;
 
     case APIC_DM_EXTINT:
-        /* extints are handled by vmm_apic_consume_extints */
+        /* extints are handled by vm_apic_consume_extints */
         printf("extint should not come to this function. vcpu %d\n", vcpu->vcpu_id);
         assert(0);
         break;
@@ -602,7 +602,7 @@ static int __apic_accept_irq(vm_vcpu_t *vcpu, int delivery_mode,
 
 static int apic_set_eoi(vm_vcpu_t *vcpu)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
     int vector = apic_find_highest_isr(apic);
 
     /*
@@ -616,17 +616,17 @@ static int apic_set_eoi(vm_vcpu_t *vcpu)
     apic_update_ppr(vcpu);
 
     /* If another interrupt is pending, raise it */
-    vmm_vcpu_accept_interrupt(vcpu);
+    vm_vcpu_accept_interrupt(vcpu);
 
     return vector;
 }
 
 static void apic_send_ipi(vm_vcpu_t *vcpu)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
-    uint32_t icr_low = vmm_apic_get_reg(apic, APIC_ICR);
-    uint32_t icr_high = vmm_apic_get_reg(apic, APIC_ICR2);
-    struct vmm_lapic_irq irq;
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    uint32_t icr_low = vm_apic_get_reg(apic, APIC_ICR);
+    uint32_t icr_high = vm_apic_get_reg(apic, APIC_ICR2);
+    struct vm_lapic_irq irq;
 
     irq.vector = icr_low & APIC_VECTOR_MASK;
     irq.delivery_mode = icr_low & APIC_MODE_MASK;
@@ -643,10 +643,10 @@ static void apic_send_ipi(vm_vcpu_t *vcpu)
            irq.trig_mode, irq.level, irq.dest_mode, irq.delivery_mode,
            irq.vector);
 
-    vmm_irq_delivery_to_apic(vcpu, &irq, NULL);
+    vm_irq_delivery_to_apic(vcpu, &irq, NULL);
 }
 
-static uint32_t __apic_read(vmm_lapic_t *apic, unsigned int offset)
+static uint32_t __apic_read(vm_lapic_t *apic, unsigned int offset)
 {
     uint32_t val = 0;
 
@@ -655,7 +655,7 @@ static uint32_t __apic_read(vmm_lapic_t *apic, unsigned int offset)
 
     switch (offset) {
     case APIC_ID:
-        val = vmm_apic_id(apic) << 24;
+        val = vm_apic_id(apic) << 24;
         break;
     case APIC_ARBPRI:
         apic_debug(2, "Access APIC ARBPRI register which is for P6\n");
@@ -664,19 +664,19 @@ static uint32_t __apic_read(vmm_lapic_t *apic, unsigned int offset)
     case APIC_TMCCT:    /* Timer CCR */
         break;
     case APIC_PROCPRI:
-        val = vmm_apic_get_reg(apic, offset);
+        val = vm_apic_get_reg(apic, offset);
         break;
     default:
-        val = vmm_apic_get_reg(apic, offset);
+        val = vm_apic_get_reg(apic, offset);
         break;
     }
 
     return val;
 }
 
-static void apic_manage_nmi_watchdog(vmm_lapic_t *apic, uint32_t lvt0_val)
+static void apic_manage_nmi_watchdog(vm_lapic_t *apic, uint32_t lvt0_val)
 {
-    int nmi_wd_enabled = apic_lvt_nmi_mode(vmm_apic_get_reg(apic, APIC_LVT0));
+    int nmi_wd_enabled = apic_lvt_nmi_mode(vm_apic_get_reg(apic, APIC_LVT0));
 
     if (apic_lvt_nmi_mode(lvt0_val)) {
         if (!nmi_wd_enabled) {
@@ -687,12 +687,12 @@ static void apic_manage_nmi_watchdog(vmm_lapic_t *apic, uint32_t lvt0_val)
 
 static int apic_reg_write(vm_vcpu_t *vcpu, uint32_t reg, uint32_t val)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
     int ret = 0;
 
     switch (reg) {
     case APIC_ID:       /* Local APIC ID */
-        vmm_apic_set_id(apic, val >> 24);
+        vm_apic_set_id(apic, val >> 24);
         break;
 
     case APIC_TASKPRI:
@@ -704,7 +704,7 @@ static int apic_reg_write(vm_vcpu_t *vcpu, uint32_t reg, uint32_t val)
         break;
 
     case APIC_LDR:
-        vmm_apic_set_ldr(apic, val & APIC_LDR_MASK);
+        vm_apic_set_ldr(apic, val & APIC_LDR_MASK);
         break;
 
     case APIC_DFR:
@@ -713,7 +713,7 @@ static int apic_reg_write(vm_vcpu_t *vcpu, uint32_t reg, uint32_t val)
 
     case APIC_SPIV: {
         uint32_t mask = 0x3ff;
-        if (vmm_apic_get_reg(apic, APIC_LVR) & APIC_LVR_DIRECTED_EOI)
+        if (vm_apic_get_reg(apic, APIC_LVR) & APIC_LVR_DIRECTED_EOI)
             mask |= APIC_SPIV_DIRECTED_EOI;
         apic_set_spiv(apic, val & mask);
         if (!(val & APIC_SPIV_APIC_ENABLED)) {
@@ -721,7 +721,7 @@ static int apic_reg_write(vm_vcpu_t *vcpu, uint32_t reg, uint32_t val)
             uint32_t lvt_val;
 
             for (i = 0; i < APIC_LVT_NUM; i++) {
-                lvt_val = vmm_apic_get_reg(apic,
+                lvt_val = vm_apic_get_reg(apic,
                                APIC_LVTT + 0x10 * i);
                 apic_set_reg(apic, APIC_LVTT + 0x10 * i,
                          lvt_val | APIC_LVT_MASKED);
@@ -749,7 +749,7 @@ static int apic_reg_write(vm_vcpu_t *vcpu, uint32_t reg, uint32_t val)
     case APIC_LVT1:
     case APIC_LVTERR:
         /* TODO: Check vector */
-        if (!vmm_apic_sw_enabled(apic))
+        if (!vm_apic_sw_enabled(apic))
             val |= APIC_LVT_MASKED;
 
         val &= apic_lvt_mask[(reg - APIC_LVTT) >> 4];
@@ -778,7 +778,7 @@ static int apic_reg_write(vm_vcpu_t *vcpu, uint32_t reg, uint32_t val)
     return ret;
 }
 
-void vmm_apic_mmio_write(vm_vcpu_t *vcpu, void *cookie, uint32_t offset,
+void vm_apic_mmio_write(vm_vcpu_t *vcpu, void *cookie, uint32_t offset,
         int len, const uint32_t data)
 {
     (void)cookie;
@@ -801,7 +801,7 @@ void vmm_apic_mmio_write(vm_vcpu_t *vcpu, void *cookie, uint32_t offset,
     apic_reg_write(vcpu, offset & 0xff0, data);
 }
 
-static int apic_reg_read(vmm_lapic_t *apic, uint32_t offset, int len,
+static int apic_reg_read(vm_lapic_t *apic, uint32_t offset, int len,
         void *data)
 {
     unsigned char alignment = offset & 0xf;
@@ -837,10 +837,10 @@ static int apic_reg_read(vmm_lapic_t *apic, uint32_t offset, int len,
     return 0;
 }
 
-void vmm_apic_mmio_read(vm_vcpu_t *vcpu, void *cookie, uint32_t offset,
+void vm_apic_mmio_read(vm_vcpu_t *vcpu, void *cookie, uint32_t offset,
         int len, uint32_t *data)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
     (void)cookie;
 
     apic_reg_read(apic, offset, len, data);
@@ -854,18 +854,18 @@ memory_fault_result_t apic_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t f
         void *cookie) {
     uint32_t data;
     if(is_vcpu_read_fault(vcpu)) {
-        vmm_apic_mmio_read(vcpu, cookie, APIC_DEFAULT_PHYS_BASE - fault_addr, fault_length, &data);
+        vm_apic_mmio_read(vcpu, cookie, APIC_DEFAULT_PHYS_BASE - fault_addr, fault_length, &data);
         set_vcpu_fault_data(vcpu, data);
     } else {
         data = get_vcpu_fault_data(vcpu);
-        vmm_apic_mmio_write(vcpu, cookie, APIC_DEFAULT_PHYS_BASE - fault_addr, fault_length, data);
+        vm_apic_mmio_write(vcpu, cookie, APIC_DEFAULT_PHYS_BASE - fault_addr, fault_length, data);
     }
     return FAULT_HANDLED;
 }
 
-void vmm_free_lapic(vm_vcpu_t *vcpu)
+void vm_free_lapic(vm_vcpu_t *vcpu)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
 
     if (!apic)
         return;
@@ -877,7 +877,7 @@ void vmm_free_lapic(vm_vcpu_t *vcpu)
     free(apic);
 }
 
-void vmm_lapic_set_base_msr(vm_vcpu_t *vcpu, uint32_t value)
+void vm_lapic_set_base_msr(vm_vcpu_t *vcpu, uint32_t value)
 {
     apic_debug(2, "IA32_APIC_BASE MSR set to %08x on vcpu %d\n", value, vcpu->vcpu_id);
 
@@ -889,11 +889,11 @@ void vmm_lapic_set_base_msr(vm_vcpu_t *vcpu, uint32_t value)
     vcpu->vcpu_arch.lapic->apic_base = value;
 }
 
-uint32_t vmm_lapic_get_base_msr(vm_vcpu_t *vcpu)
+uint32_t vm_lapic_get_base_msr(vm_vcpu_t *vcpu)
 {
     uint32_t value = vcpu->vcpu_arch.lapic->apic_base;
 
-    if (vmm_vcpu_is_bsp(vcpu)) {
+    if (vm_vcpu_is_bsp(vcpu)) {
         value |= MSR_IA32_APICBASE_BSP;
     } else {
         value &= ~MSR_IA32_APICBASE_BSP;
@@ -904,9 +904,9 @@ uint32_t vmm_lapic_get_base_msr(vm_vcpu_t *vcpu)
     return value;
 }
 
-void vmm_lapic_reset(vm_vcpu_t *vcpu)
+void vm_lapic_reset(vm_vcpu_t *vcpu)
 {
-    vmm_lapic_t *apic;
+    vm_lapic_t *apic;
     int i;
 
     apic_debug(4, "%s\n", __func__);
@@ -917,7 +917,7 @@ void vmm_lapic_reset(vm_vcpu_t *vcpu)
 
     /* Stop the timer in case it's a reset to an active apic */
 
-    vmm_apic_set_id(apic, vcpu->vcpu_id); /* In agreement with ACPI code */
+    vm_apic_set_id(apic, vcpu->vcpu_id); /* In agreement with ACPI code */
     apic_set_reg(apic, APIC_LVR, APIC_VERSION);
 
     for (i = 0; i < APIC_LVT_NUM; i++)
@@ -926,7 +926,7 @@ void vmm_lapic_reset(vm_vcpu_t *vcpu)
     apic_set_reg(apic, APIC_DFR, 0xffffffffU);
     apic_set_spiv(apic, 0xff);
     apic_set_reg(apic, APIC_TASKPRI, 0);
-    vmm_apic_set_ldr(apic, 0);
+    vm_apic_set_ldr(apic, 0);
     apic_set_reg(apic, APIC_ESR, 0);
     apic_set_reg(apic, APIC_ICR, 0);
     apic_set_reg(apic, APIC_ICR2, 0);
@@ -946,7 +946,7 @@ void vmm_lapic_reset(vm_vcpu_t *vcpu)
 
     apic_debug(4, "%s: vcpu=%p, id=%d, base_msr="
            "0x%016x\n", __func__,
-           vcpu, vmm_apic_id(apic),
+           vcpu, vm_apic_id(apic),
            apic->apic_base);
 
     if (vcpu->vcpu_id == BOOT_VCPU) {
@@ -955,15 +955,15 @@ void vmm_lapic_reset(vm_vcpu_t *vcpu)
              SET_APIC_DELIVERY_MODE(0, APIC_MODE_EXTINT));
         apic_set_reg(apic, APIC_SPIV, APIC_SPIV_APIC_ENABLED);
 
-        assert(vmm_apic_sw_enabled(apic));
+        assert(vm_apic_sw_enabled(apic));
     } else {
         apic_set_reg(apic, APIC_SPIV, 0);
     }
 }
 
-int vmm_create_lapic(vm_vcpu_t *vcpu, int enabled)
+int vm_create_lapic(vm_vcpu_t *vcpu, int enabled)
 {
-    vmm_lapic_t *apic;
+    vm_lapic_t *apic;
 
     assert(vcpu != NULL);
     apic_debug(2, "apic_init %d\n", vcpu->vcpu_id);
@@ -982,13 +982,13 @@ int vmm_create_lapic(vm_vcpu_t *vcpu, int enabled)
     }
 
     if (enabled) {
-        vmm_lapic_set_base_msr(vcpu, APIC_DEFAULT_PHYS_BASE | MSR_IA32_APICBASE_ENABLE);
+        vm_lapic_set_base_msr(vcpu, APIC_DEFAULT_PHYS_BASE | MSR_IA32_APICBASE_ENABLE);
     } else {
-        vmm_lapic_set_base_msr(vcpu, APIC_DEFAULT_PHYS_BASE);
+        vm_lapic_set_base_msr(vcpu, APIC_DEFAULT_PHYS_BASE);
     }
 
     /* mainly init registers */
-    vmm_lapic_reset(vcpu);
+    vm_lapic_reset(vcpu);
 
     return 0;
 nomem_free_apic:
@@ -998,21 +998,21 @@ nomem:
 }
 
 /* Return 1 if this vcpu should accept a PIC interrupt */
-int vmm_apic_accept_pic_intr(vm_vcpu_t *vcpu)
+int vm_apic_accept_pic_intr(vm_vcpu_t *vcpu)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
-    uint32_t lvt0 = vmm_apic_get_reg(apic, APIC_LVT0);
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    uint32_t lvt0 = vm_apic_get_reg(apic, APIC_LVT0);
 
     return ((lvt0 & APIC_LVT_MASKED) == 0 &&
         GET_APIC_DELIVERY_MODE(lvt0) == APIC_MODE_EXTINT &&
-        vmm_apic_sw_enabled(vcpu->vcpu_arch.lapic));
+        vm_apic_sw_enabled(vcpu->vcpu_arch.lapic));
 }
 
 /* Service an interrupt */
-int vmm_apic_get_interrupt(vm_vcpu_t *vcpu)
+int vm_apic_get_interrupt(vm_vcpu_t *vcpu)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
-    int vector = vmm_apic_has_interrupt(vcpu);
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    int vector = vm_apic_has_interrupt(vcpu);
 
     if (vector == 1) {
         return pic_get_interrupt(vcpu->vm);
@@ -1027,18 +1027,18 @@ int vmm_apic_get_interrupt(vm_vcpu_t *vcpu)
 }
 
 /* Return which vector is next up for servicing */
-int vmm_apic_has_interrupt(vm_vcpu_t *vcpu)
+int vm_apic_has_interrupt(vm_vcpu_t *vcpu)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
     int highest_irr;
 
-    if (vmm_apic_accept_pic_intr(vcpu) && pic_has_interrupt(vcpu->vm)) {
+    if (vm_apic_accept_pic_intr(vcpu) && pic_has_interrupt(vcpu->vm)) {
         return 1;
     }
 
     highest_irr = apic_find_highest_irr(apic);
     if ((highest_irr == -1) ||
-        ((highest_irr & 0xF0) <= vmm_apic_get_reg(apic, APIC_PROCPRI))) {
+        ((highest_irr & 0xF0) <= vm_apic_get_reg(apic, APIC_PROCPRI))) {
         return -1;
     }
 
@@ -1046,10 +1046,10 @@ int vmm_apic_has_interrupt(vm_vcpu_t *vcpu)
 }
 
 #if 0
-int vmm_apic_local_deliver(vmm_vcpu_t *vcpu, int lvt_type)
+int vm_apic_local_deliver(vm_vcpu_t *vcpu, int lvt_type)
 {
-    vmm_lapic_t *apic = vcpu->vcpu_arch.lapic;
-    uint32_t reg = vmm_apic_get_reg(apic, lvt_type);
+    vm_lapic_t *apic = vcpu->vcpu_arch.lapic;
+    uint32_t reg = vm_apic_get_reg(apic, lvt_type);
     int vector, mode, trig_mode;
 
     if (!(reg & APIC_LVT_MASKED)) {

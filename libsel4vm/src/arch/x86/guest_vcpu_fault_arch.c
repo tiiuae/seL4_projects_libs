@@ -18,19 +18,19 @@
 #include "processor/decode.h"
 
 seL4_Word get_vcpu_fault_address(vm_vcpu_t *vcpu) {
-    return vmm_guest_exit_get_physical(vcpu->vcpu_arch.guest_state);
+    return vm_guest_exit_get_physical(vcpu->vcpu_arch.guest_state);
 }
 
 seL4_Word get_vcpu_fault_ip(vm_vcpu_t *vcpu) {
-    return vmm_guest_state_get_eip(vcpu->vcpu_arch.guest_state);
+    return vm_guest_state_get_eip(vcpu->vcpu_arch.guest_state);
 }
 
 seL4_Word get_vcpu_fault_data(vm_vcpu_t *vcpu) {
     int reg;
     uint32_t imm;
     int size;
-    vmm_decode_ept_violation(vcpu, &reg, &imm, &size);
-    int vcpu_reg = vmm_decoder_reg_mapw[reg];
+    vm_decode_ept_violation(vcpu, &reg, &imm, &size);
+    int vcpu_reg = vm_decoder_reg_mapw[reg];
     unsigned int data;
     vm_get_thread_context_reg(vcpu, vcpu_reg, &data);
     return data;
@@ -40,7 +40,7 @@ size_t get_vcpu_fault_size(vm_vcpu_t *vcpu) {
     int reg;
     uint32_t imm;
     int size;
-    vmm_decode_ept_violation(vcpu, &reg, &imm, &size);
+    vm_decode_ept_violation(vcpu, &reg, &imm, &size);
     return size;
 }
 
@@ -67,7 +67,7 @@ seL4_Word get_vcpu_fault_data_mask(vm_vcpu_t *vcpu) {
 }
 
 bool is_vcpu_read_fault(vm_vcpu_t *vcpu) {
-    unsigned int qualification = vmm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
+    unsigned int qualification = vm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
     return true ? qualification & BIT(0) : false;
 }
 
@@ -75,11 +75,11 @@ int set_vcpu_fault_data(vm_vcpu_t *vcpu, seL4_Word data) {
     int reg;
     uint32_t imm;
     int size;
-    vmm_decode_ept_violation(vcpu, &reg, &imm, &size);
-    int vcpu_reg = vmm_decoder_reg_mapw[reg];
+    vm_decode_ept_violation(vcpu, &reg, &imm, &size);
+    int vcpu_reg = vm_decoder_reg_mapw[reg];
     return vm_set_thread_context_reg(vcpu, vcpu_reg, data);
 }
 
 void advance_vcpu_fault(vm_vcpu_t *vcpu) {
-    vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 }

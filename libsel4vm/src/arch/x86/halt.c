@@ -24,16 +24,16 @@
 #include "processor/lapic.h"
 
 /* Handling halt instruction VMExit Events. */
-int vmm_hlt_handler(vm_vcpu_t *vcpu) {
-    if (!(vmm_guest_state_get_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr) & BIT(9))) {
+int vm_hlt_handler(vm_vcpu_t *vcpu) {
+    if (!(vm_guest_state_get_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr) & BIT(9))) {
         printf("vcpu %d is halted forever :(\n", vcpu->vcpu_id);
     }
 
-    if (vmm_apic_has_interrupt(vcpu) == -1) {
+    if (vm_apic_has_interrupt(vcpu) == -1) {
         /* Halted, don't reply until we get an interrupt */
         vcpu->vcpu_arch.guest_state->virt.interrupt_halt = 1;
     }
 
-    vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     return VM_EXIT_HANDLED;
 }

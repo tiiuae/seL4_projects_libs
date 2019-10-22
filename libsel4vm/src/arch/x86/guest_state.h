@@ -116,7 +116,7 @@ typedef struct guest_state {
     guest_exit_information_t exit;
 } guest_state_t;
 
-static inline bool vmm_guest_state_no_modified(guest_state_t *gs) {
+static inline bool vm_guest_state_no_modified(guest_state_t *gs) {
     return !(
         IS_MACHINE_STATE_MODIFIED(gs->machine.context) ||
         IS_MACHINE_STATE_MODIFIED(gs->machine.cr0) ||
@@ -133,7 +133,7 @@ static inline bool vmm_guest_state_no_modified(guest_state_t *gs) {
     );
 }
 
-static inline void vmm_guest_state_initialise(guest_state_t *gs) {
+static inline void vm_guest_state_initialise(guest_state_t *gs) {
     memset(gs, 0, sizeof(guest_state_t));
     MACHINE_STATE_INIT(gs->machine.context);
     MACHINE_STATE_INIT(gs->machine.cr0);
@@ -149,7 +149,7 @@ static inline void vmm_guest_state_initialise(guest_state_t *gs) {
     MACHINE_STATE_INIT(gs->machine.entry_exception_error_code);
 }
 
-static inline void vmm_guest_state_invalidate_all(guest_state_t *gs) {
+static inline void vm_guest_state_invalidate_all(guest_state_t *gs) {
     MACHINE_STATE_INVAL(gs->machine.context);
     MACHINE_STATE_INVAL(gs->machine.cr0);
     MACHINE_STATE_INVAL(gs->machine.cr3);
@@ -165,11 +165,11 @@ static inline void vmm_guest_state_invalidate_all(guest_state_t *gs) {
 }
 
 /* get */
-static inline unsigned int vmm_guest_state_get_eip(guest_state_t *gs) {
+static inline unsigned int vm_guest_state_get_eip(guest_state_t *gs) {
     return gs->machine.eip;
 }
 
-static inline unsigned int vmm_guest_state_get_cr0(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline unsigned int vm_guest_state_get_cr0(guest_state_t *gs, seL4_CPtr vcpu) {
     int err; unsigned int value;
     if (IS_MACHINE_STATE_UNKNOWN(gs->machine.cr0)) {
         err = vm_vmcs_read(vcpu, VMX_GUEST_CR0, &value);
@@ -179,7 +179,7 @@ static inline unsigned int vmm_guest_state_get_cr0(guest_state_t *gs, seL4_CPtr 
     return gs->machine.cr0;
 }
 
-static inline unsigned int vmm_guest_state_get_cr3(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline unsigned int vm_guest_state_get_cr3(guest_state_t *gs, seL4_CPtr vcpu) {
     int err; unsigned int value;
     if (IS_MACHINE_STATE_UNKNOWN(gs->machine.cr3)) {
         err = vm_vmcs_read(vcpu, VMX_GUEST_CR3, &value);
@@ -189,7 +189,7 @@ static inline unsigned int vmm_guest_state_get_cr3(guest_state_t *gs, seL4_CPtr 
     return gs->machine.cr3;
 }
 
-static inline unsigned int vmm_guest_state_get_cr4(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline unsigned int vm_guest_state_get_cr4(guest_state_t *gs, seL4_CPtr vcpu) {
     int err; unsigned int value;
     if (IS_MACHINE_STATE_UNKNOWN(gs->machine.cr4)) {
         err = vm_vmcs_read(vcpu, VMX_GUEST_CR4, &value);
@@ -199,7 +199,7 @@ static inline unsigned int vmm_guest_state_get_cr4(guest_state_t *gs, seL4_CPtr 
     return gs->machine.cr4;
 }
 
-static inline unsigned int vmm_guest_state_get_rflags(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline unsigned int vm_guest_state_get_rflags(guest_state_t *gs, seL4_CPtr vcpu) {
     int err; unsigned int value;
     if (IS_MACHINE_STATE_UNKNOWN(gs->machine.rflags)) {
         err = vm_vmcs_read(vcpu, VMX_GUEST_RFLAGS, &value);
@@ -209,7 +209,7 @@ static inline unsigned int vmm_guest_state_get_rflags(guest_state_t *gs, seL4_CP
     return gs->machine.rflags;
 }
 
-static inline unsigned int vmm_guest_state_get_interruptibility(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline unsigned int vm_guest_state_get_interruptibility(guest_state_t *gs, seL4_CPtr vcpu) {
     int err; unsigned int value;
     if (IS_MACHINE_STATE_UNKNOWN(gs->machine.guest_interruptibility)) {
         err = vm_vmcs_read(vcpu, VMX_GUEST_INTERRUPTABILITY, &value);
@@ -219,15 +219,15 @@ static inline unsigned int vmm_guest_state_get_interruptibility(guest_state_t *g
     return gs->machine.guest_interruptibility;
 }
 
-static inline unsigned int vmm_guest_state_get_control_entry(guest_state_t *gs) {
+static inline unsigned int vm_guest_state_get_control_entry(guest_state_t *gs) {
     return gs->machine.control_entry;
 }
 
-static inline unsigned int vmm_guest_state_get_control_ppc(guest_state_t *gs) {
+static inline unsigned int vm_guest_state_get_control_ppc(guest_state_t *gs) {
     return gs->machine.control_ppc;
 }
 
-static inline unsigned int vmm_guest_state_get_idt_base(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline unsigned int vm_guest_state_get_idt_base(guest_state_t *gs, seL4_CPtr vcpu) {
     int err; unsigned int value;
     if (IS_MACHINE_STATE_UNKNOWN(gs->machine.idt_base)) {
         err = vm_vmcs_read(vcpu, VMX_GUEST_IDTR_BASE, &value);
@@ -237,7 +237,7 @@ static inline unsigned int vmm_guest_state_get_idt_base(guest_state_t *gs, seL4_
     return gs->machine.idt_base;
 }
 
-static inline unsigned int vmm_guest_state_get_idt_limit(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline unsigned int vm_guest_state_get_idt_limit(guest_state_t *gs, seL4_CPtr vcpu) {
     int err; unsigned int value;
     if (IS_MACHINE_STATE_UNKNOWN(gs->machine.idt_limit)) {
         err = vm_vmcs_read(vcpu, VMX_GUEST_IDTR_LIMIT, &value);
@@ -247,7 +247,7 @@ static inline unsigned int vmm_guest_state_get_idt_limit(guest_state_t *gs, seL4
     return gs->machine.idt_limit;
 }
 
-static inline unsigned int vmm_guest_state_get_gdt_base(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline unsigned int vm_guest_state_get_gdt_base(guest_state_t *gs, seL4_CPtr vcpu) {
     int err; unsigned int value;
     if (IS_MACHINE_STATE_UNKNOWN(gs->machine.gdt_base)) {
         err = vm_vmcs_read(vcpu, VMX_GUEST_GDTR_BASE, &value);
@@ -257,7 +257,7 @@ static inline unsigned int vmm_guest_state_get_gdt_base(guest_state_t *gs, seL4_
     return gs->machine.gdt_base;
 }
 
-static inline unsigned int vmm_guest_state_get_gdt_limit(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline unsigned int vm_guest_state_get_gdt_limit(guest_state_t *gs, seL4_CPtr vcpu) {
     int err; unsigned int value;
     if (IS_MACHINE_STATE_UNKNOWN(gs->machine.gdt_limit)) {
         err = vm_vmcs_read(vcpu, VMX_GUEST_GDTR_LIMIT, &value);
@@ -267,7 +267,7 @@ static inline unsigned int vmm_guest_state_get_gdt_limit(guest_state_t *gs, seL4
     return gs->machine.gdt_limit;
 }
 
-static inline unsigned int vmm_guest_state_get_cs_selector(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline unsigned int vm_guest_state_get_cs_selector(guest_state_t *gs, seL4_CPtr vcpu) {
     int err; unsigned int value;
     if (IS_MACHINE_STATE_UNKNOWN(gs->machine.cs_selector)) {
         err = vm_vmcs_read(vcpu, VMX_GUEST_CS_SELECTOR, &value);
@@ -278,70 +278,70 @@ static inline unsigned int vmm_guest_state_get_cs_selector(guest_state_t *gs, se
 }
 
 /* set */
-static inline void vmm_guest_state_set_eip(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_eip(guest_state_t *gs, unsigned int val) {
     gs->machine.eip = val;
 }
 
-static inline void vmm_guest_state_set_cr0(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_cr0(guest_state_t *gs, unsigned int val) {
     MACHINE_STATE_DIRTY(gs->machine.cr0);
     gs->machine.cr0 = val;
 }
 
-static inline void vmm_guest_state_set_cr3(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_cr3(guest_state_t *gs, unsigned int val) {
     MACHINE_STATE_DIRTY(gs->machine.cr3);
     gs->machine.cr3 = val;
 }
 
-static inline void vmm_guest_state_set_cr4(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_cr4(guest_state_t *gs, unsigned int val) {
     MACHINE_STATE_DIRTY(gs->machine.cr4);
     gs->machine.cr4 = val;
 }
 
-static inline void vmm_guest_state_set_rflags(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_rflags(guest_state_t *gs, unsigned int val) {
     MACHINE_STATE_DIRTY(gs->machine.rflags);
     gs->machine.rflags = val;
 }
 
-static inline void vmm_guest_state_set_control_entry(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_control_entry(guest_state_t *gs, unsigned int val) {
     gs->machine.control_entry = val;
 }
 
-static inline void vmm_guest_state_set_control_ppc(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_control_ppc(guest_state_t *gs, unsigned int val) {
     gs->machine.control_ppc = val;
 }
 
-static inline void vmm_guest_state_set_idt_base(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_idt_base(guest_state_t *gs, unsigned int val) {
     MACHINE_STATE_DIRTY(gs->machine.idt_base);
     gs->machine.idt_base = val;
 }
 
-static inline void vmm_guest_state_set_idt_limit(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_idt_limit(guest_state_t *gs, unsigned int val) {
     MACHINE_STATE_DIRTY(gs->machine.idt_limit);
     gs->machine.idt_limit = val;
 }
 
-static inline void vmm_guest_state_set_gdt_base(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_gdt_base(guest_state_t *gs, unsigned int val) {
     MACHINE_STATE_DIRTY(gs->machine.gdt_base);
     gs->machine.gdt_base = val;
 }
 
-static inline void vmm_guest_state_set_gdt_limit(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_gdt_limit(guest_state_t *gs, unsigned int val) {
     MACHINE_STATE_DIRTY(gs->machine.gdt_limit);
     gs->machine.gdt_limit = val;
 }
 
-static inline void vmm_guest_state_set_cs_selector(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_cs_selector(guest_state_t *gs, unsigned int val) {
     MACHINE_STATE_DIRTY(gs->machine.cs_selector);
     gs->machine.cs_selector = val;
 }
 
-static inline void vmm_guest_state_set_entry_exception_error_code(guest_state_t *gs, unsigned int val) {
+static inline void vm_guest_state_set_entry_exception_error_code(guest_state_t *gs, unsigned int val) {
     MACHINE_STATE_DIRTY(gs->machine.entry_exception_error_code);
     gs->machine.entry_exception_error_code = val;
 }
 
 /* sync */
-static inline void vmm_guest_state_sync_cr0(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline void vm_guest_state_sync_cr0(guest_state_t *gs, seL4_CPtr vcpu) {
     if(IS_MACHINE_STATE_MODIFIED(gs->machine.cr0)) {
         int err = vm_vmcs_write(vcpu, VMX_GUEST_CR0, gs->machine.cr0);
         assert(!err);
@@ -349,7 +349,7 @@ static inline void vmm_guest_state_sync_cr0(guest_state_t *gs, seL4_CPtr vcpu) {
     }
 }
 
-static inline void vmm_guest_state_sync_cr3(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline void vm_guest_state_sync_cr3(guest_state_t *gs, seL4_CPtr vcpu) {
     if(IS_MACHINE_STATE_MODIFIED(gs->machine.cr3)) {
         int err = vm_vmcs_write(vcpu, VMX_GUEST_CR3, gs->machine.cr3);
         assert(!err);
@@ -357,7 +357,7 @@ static inline void vmm_guest_state_sync_cr3(guest_state_t *gs, seL4_CPtr vcpu) {
     }
 }
 
-static inline void vmm_guest_state_sync_cr4(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline void vm_guest_state_sync_cr4(guest_state_t *gs, seL4_CPtr vcpu) {
     if(IS_MACHINE_STATE_MODIFIED(gs->machine.cr4)) {
         int err = vm_vmcs_write(vcpu, VMX_GUEST_CR4, gs->machine.cr4);
         assert(!err);
@@ -365,7 +365,7 @@ static inline void vmm_guest_state_sync_cr4(guest_state_t *gs, seL4_CPtr vcpu) {
     }
 }
 
-static inline void vmm_guest_state_sync_rflags(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline void vm_guest_state_sync_rflags(guest_state_t *gs, seL4_CPtr vcpu) {
     if(IS_MACHINE_STATE_MODIFIED(gs->machine.rflags)) {
         int err = vm_vmcs_write(vcpu, VMX_GUEST_RFLAGS, gs->machine.rflags);
         assert(!err);
@@ -373,7 +373,7 @@ static inline void vmm_guest_state_sync_rflags(guest_state_t *gs, seL4_CPtr vcpu
     }
 }
 
-static inline void vmm_guest_state_sync_idt_base(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline void vm_guest_state_sync_idt_base(guest_state_t *gs, seL4_CPtr vcpu) {
     if(IS_MACHINE_STATE_MODIFIED(gs->machine.idt_base)) {
         int err = vm_vmcs_write(vcpu, VMX_GUEST_IDTR_BASE, gs->machine.idt_base);
         assert(!err);
@@ -381,7 +381,7 @@ static inline void vmm_guest_state_sync_idt_base(guest_state_t *gs, seL4_CPtr vc
     }
 }
 
-static inline void vmm_guest_state_sync_idt_limit(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline void vm_guest_state_sync_idt_limit(guest_state_t *gs, seL4_CPtr vcpu) {
     if(IS_MACHINE_STATE_MODIFIED(gs->machine.idt_limit)) {
         int err = vm_vmcs_write(vcpu, VMX_GUEST_IDTR_LIMIT, gs->machine.idt_limit);
         assert(!err);
@@ -389,7 +389,7 @@ static inline void vmm_guest_state_sync_idt_limit(guest_state_t *gs, seL4_CPtr v
     }
 }
 
-static inline void vmm_guest_state_sync_gdt_base(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline void vm_guest_state_sync_gdt_base(guest_state_t *gs, seL4_CPtr vcpu) {
     if(IS_MACHINE_STATE_MODIFIED(gs->machine.gdt_base)) {
         int err = vm_vmcs_write(vcpu, VMX_GUEST_GDTR_BASE, gs->machine.gdt_base);
         assert(!err);
@@ -397,7 +397,7 @@ static inline void vmm_guest_state_sync_gdt_base(guest_state_t *gs, seL4_CPtr vc
     }
 }
 
-static inline void vmm_guest_state_sync_gdt_limit(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline void vm_guest_state_sync_gdt_limit(guest_state_t *gs, seL4_CPtr vcpu) {
     if(IS_MACHINE_STATE_MODIFIED(gs->machine.gdt_limit)) {
         int err = vm_vmcs_write(vcpu, VMX_GUEST_GDTR_LIMIT, gs->machine.gdt_limit);
         assert(!err);
@@ -405,7 +405,7 @@ static inline void vmm_guest_state_sync_gdt_limit(guest_state_t *gs, seL4_CPtr v
     }
 }
 
-static inline void vmm_guest_state_sync_cs_selector(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline void vm_guest_state_sync_cs_selector(guest_state_t *gs, seL4_CPtr vcpu) {
     if(IS_MACHINE_STATE_MODIFIED(gs->machine.cs_selector)) {
         int err = vm_vmcs_write(vcpu, VMX_GUEST_CS_SELECTOR, gs->machine.cs_selector);
         assert(!err);
@@ -413,7 +413,7 @@ static inline void vmm_guest_state_sync_cs_selector(guest_state_t *gs, seL4_CPtr
     }
 }
 
-static inline void vmm_guest_state_sync_entry_exception_error_code(guest_state_t *gs, seL4_CPtr vcpu) {
+static inline void vm_guest_state_sync_entry_exception_error_code(guest_state_t *gs, seL4_CPtr vcpu) {
     if (IS_MACHINE_STATE_MODIFIED(gs->machine.entry_exception_error_code)) {
         int err = vm_vmcs_write(vcpu, VMX_CONTROL_ENTRY_EXCEPTION_ERROR_CODE, gs->machine.entry_exception_error_code);
         assert(!err);
@@ -422,16 +422,16 @@ static inline void vmm_guest_state_sync_entry_exception_error_code(guest_state_t
 }
 
 static inline void vm_sync_guest_vmcs_state(vm_vcpu_t *vcpu) {
-    vmm_guest_state_sync_cr0(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_idt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_idt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_gdt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_gdt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_cs_selector(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    vmm_guest_state_sync_entry_exception_error_code(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_state_sync_cr0(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_state_sync_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_state_sync_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_state_sync_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_state_sync_idt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_state_sync_idt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_state_sync_gdt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_state_sync_gdt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_state_sync_cs_selector(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_state_sync_entry_exception_error_code(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 }
 
 /**
@@ -442,27 +442,27 @@ static inline void vm_sync_guest_vmcs_state(vm_vcpu_t *vcpu) {
 int vm_sync_guest_context(vm_vcpu_t *vcpu);
 
 /* Exit */
-static inline unsigned int vmm_guest_exit_get_reason(guest_state_t *gs) {
+static inline unsigned int vm_guest_exit_get_reason(guest_state_t *gs) {
     assert(gs->exit.in_exit);
     return gs->exit.reason;
 }
 
-static inline unsigned int vmm_guest_exit_get_physical(guest_state_t *gs) {
+static inline unsigned int vm_guest_exit_get_physical(guest_state_t *gs) {
     assert(gs->exit.in_exit);
     return gs->exit.guest_physical;
 }
 
-static inline unsigned int vmm_guest_exit_get_int_len(guest_state_t *gs) {
+static inline unsigned int vm_guest_exit_get_int_len(guest_state_t *gs) {
     assert(gs->exit.in_exit);
     return gs->exit.instruction_length;
 }
 
-static inline unsigned int vmm_guest_exit_get_qualification(guest_state_t *gs) {
+static inline unsigned int vm_guest_exit_get_qualification(guest_state_t *gs) {
     assert(gs->exit.in_exit);
     return gs->exit.qualification;
 }
 
-static inline void vmm_guest_exit_next_instruction(guest_state_t *gs, seL4_CPtr vcpu) {
-    vmm_guest_state_set_eip(gs, vmm_guest_state_get_eip(gs) + vmm_guest_exit_get_int_len(gs));
+static inline void vm_guest_exit_next_instruction(guest_state_t *gs, seL4_CPtr vcpu) {
+    vm_guest_state_set_eip(gs, vm_guest_state_get_eip(gs) + vm_guest_exit_get_int_len(gs));
 }
 

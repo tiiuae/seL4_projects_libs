@@ -31,41 +31,41 @@
 
 static void resume_guest(vm_vcpu_t *vcpu) {
     /* Disable exit-for-interrupt in guest state to allow the guest to resume. */
-    uint32_t state = vmm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state);
+    uint32_t state = vm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state);
     state &= ~BIT(2); /* clear the exit for interrupt flag */
-    vmm_guest_state_set_control_ppc(vcpu->vcpu_arch.guest_state, state);
+    vm_guest_state_set_control_ppc(vcpu->vcpu_arch.guest_state, state);
 }
 
 static void inject_irq(vm_vcpu_t *vcpu, int irq) {
     /* Inject a vectored exception into the guest */
     assert(irq >= 16);
-    vmm_guest_state_set_control_entry(vcpu->vcpu_arch.guest_state, BIT(31) | irq);
+    vm_guest_state_set_control_entry(vcpu->vcpu_arch.guest_state, BIT(31) | irq);
 }
 
-void vmm_inject_exception(vm_vcpu_t *vcpu, int exception, int has_error, uint32_t error_code) {
+void vm_inject_exception(vm_vcpu_t *vcpu, int exception, int has_error, uint32_t error_code) {
     assert(exception < 16);
     // ensure we are not already injecting an interrupt or exception
-    uint32_t int_control = vmm_guest_state_get_control_entry(vcpu->vcpu_arch.guest_state);
+    uint32_t int_control = vm_guest_state_get_control_entry(vcpu->vcpu_arch.guest_state);
     if ( (int_control & BIT(31)) != 0) {
         ZF_LOGF("Cannot inject exception");
     }
     if (has_error) {
-        vmm_guest_state_set_entry_exception_error_code(vcpu->vcpu_arch.guest_state, error_code);
+        vm_guest_state_set_entry_exception_error_code(vcpu->vcpu_arch.guest_state, error_code);
     }
-    vmm_guest_state_set_control_entry(vcpu->vcpu_arch.guest_state, BIT(31) | exception | 3 << 8 | (has_error ? BIT(11) : 0));
+    vm_guest_state_set_control_entry(vcpu->vcpu_arch.guest_state, BIT(31) | exception | 3 << 8 | (has_error ? BIT(11) : 0));
 }
 
 void wait_for_guest_ready(vm_vcpu_t *vcpu) {
     /* Request that the guest exit at the earliest point that we can inject an interrupt. */
-    uint32_t state = vmm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state);
+    uint32_t state = vm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state);
     state |= BIT(2); /* set the exit for interrupt flag */
-    vmm_guest_state_set_control_ppc(vcpu->vcpu_arch.guest_state, state);
+    vm_guest_state_set_control_ppc(vcpu->vcpu_arch.guest_state, state);
 }
 
 int can_inject(vm_vcpu_t *vcpu) {
-    uint32_t rflags = vmm_guest_state_get_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    uint32_t guest_int = vmm_guest_state_get_interruptibility(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
-    uint32_t int_control = vmm_guest_state_get_control_entry(vcpu->vcpu_arch.guest_state);
+    uint32_t rflags = vm_guest_state_get_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    uint32_t guest_int = vm_guest_state_get_interruptibility(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    uint32_t int_control = vm_guest_state_get_control_entry(vcpu->vcpu_arch.guest_state);
 
     /* we can only inject if the interrupt mask flag is not set in flags,
        guest is not in an uninterruptable state and we are not already trying to
@@ -78,8 +78,8 @@ int can_inject(vm_vcpu_t *vcpu) {
 }
 
 /* This function is called by the local apic when a new interrupt has occured. */
-void vmm_have_pending_interrupt(vm_vcpu_t *vcpu) {
-    if (vmm_apic_has_interrupt(vcpu) >= 0) {
+void vm_have_pending_interrupt(vm_vcpu_t *vcpu) {
+    if (vm_apic_has_interrupt(vcpu) >= 0) {
         /* there is actually an interrupt to inject */
         if (can_inject(vcpu)) {
             if (vcpu->vcpu_arch.guest_state->virt.interrupt_halt) {
@@ -88,10 +88,10 @@ void vmm_have_pending_interrupt(vm_vcpu_t *vcpu) {
                 wait_for_guest_ready(vcpu);
                 vcpu->vcpu_arch.guest_state->virt.interrupt_halt = 0;
             } else {
-                int irq = vmm_apic_get_interrupt(vcpu);
+                int irq = vm_apic_get_interrupt(vcpu);
                 inject_irq(vcpu, irq);
                 /* see if there are more */
-                if (vmm_apic_has_interrupt(vcpu) >= 0) {
+                if (vm_apic_has_interrupt(vcpu) >= 0) {
                     wait_for_guest_ready(vcpu);
                 }
             }
@@ -104,16 +104,16 @@ void vmm_have_pending_interrupt(vm_vcpu_t *vcpu) {
     }
 }
 
-int vmm_pending_interrupt_handler(vm_vcpu_t *vcpu) {
+int vm_pending_interrupt_handler(vm_vcpu_t *vcpu) {
     /* see if there is actually a pending interrupt */
     assert(can_inject(vcpu));
-    int irq = vmm_apic_get_interrupt(vcpu);
+    int irq = vm_apic_get_interrupt(vcpu);
     if (irq == -1) {
         resume_guest(vcpu);
     } else {
         /* inject the interrupt */
         inject_irq(vcpu, irq);
-        if (!(vmm_apic_has_interrupt(vcpu) >= 0)) {
+        if (!(vm_apic_has_interrupt(vcpu) >= 0)) {
             resume_guest(vcpu);
         }
         vcpu->vcpu_arch.guest_state->virt.interrupt_halt = 0;
@@ -122,7 +122,7 @@ int vmm_pending_interrupt_handler(vm_vcpu_t *vcpu) {
 }
 
 /* Start an AP vcpu after a sipi with the requested vector */
-void vmm_start_ap_vcpu(vm_vcpu_t *vcpu, unsigned int sipi_vector)
+void vm_start_ap_vcpu(vm_vcpu_t *vcpu, unsigned int sipi_vector)
 {
     ZF_LOGD("trying to start vcpu %d\n", vcpu->vcpu_id);
 
@@ -132,13 +132,13 @@ void vmm_start_ap_vcpu(vm_vcpu_t *vcpu, unsigned int sipi_vector)
 
     /* Emulate up to 100 bytes of trampoline code */
     uint8_t instr[TRAMPOLINE_LENGTH];
-    vmm_fetch_instruction(vcpu, eip, vmm_guest_state_get_cr3(gs, vcpu->vcpu.cptr),
+    vm_fetch_instruction(vcpu, eip, vm_guest_state_get_cr3(gs, vcpu->vcpu.cptr),
             TRAMPOLINE_LENGTH, instr);
 
-    eip = vmm_emulate_realmode(vcpu, instr, &segment, eip,
+    eip = vm_emulate_realmode(vcpu, instr, &segment, eip,
             TRAMPOLINE_LENGTH, gs);
 
-    vmm_guest_state_set_eip(vcpu->vcpu_arch.guest_state, eip);
+    vm_guest_state_set_eip(vcpu->vcpu_arch.guest_state, eip);
 
     vm_sync_guest_context(vcpu);
     vm_sync_guest_vmcs_state(vcpu);
@@ -148,24 +148,24 @@ void vmm_start_ap_vcpu(vm_vcpu_t *vcpu, unsigned int sipi_vector)
 }
 
 /* Got interrupt(s) from PIC, propagate to relevant vcpu lapic */
-void vmm_check_external_interrupt(vm_t *vm)
+void vm_check_external_interrupt(vm_t *vm)
 {
     /* TODO if all lapics are enabled, store which lapic
        (only one allowed) receives extints, and short circuit this */
     if (i8259_has_interrupt(vm) != -1) {
         vm_vcpu_t *vcpu = vm->vcpus[BOOT_VCPU];
-        if (vmm_apic_accept_pic_intr(vcpu)) {
-            vmm_vcpu_accept_interrupt(vcpu);
+        if (vm_apic_accept_pic_intr(vcpu)) {
+            vm_vcpu_accept_interrupt(vcpu);
         }
     }
 }
 
-void vmm_vcpu_accept_interrupt(vm_vcpu_t *vcpu)
+void vm_vcpu_accept_interrupt(vm_vcpu_t *vcpu)
 {
-    if (vmm_apic_has_interrupt(vcpu) == -1) {
+    if (vm_apic_has_interrupt(vcpu) == -1) {
         return;
     }
 
     /* in an exit, can call the regular injection method */
-    vmm_have_pending_interrupt(vcpu);
+    vm_have_pending_interrupt(vcpu);
 }

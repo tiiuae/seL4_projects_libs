@@ -35,16 +35,16 @@
 #include "vmexit.h"
 
 static vm_exit_handler_fn_t x86_exit_handlers[] = {
-    [EXIT_REASON_PENDING_INTERRUPT] = vmm_pending_interrupt_handler,
-    [EXIT_REASON_CPUID] = vmm_cpuid_handler,
-    [EXIT_REASON_MSR_READ] = vmm_rdmsr_handler,
-    [EXIT_REASON_MSR_WRITE] = vmm_wrmsr_handler,
-    [EXIT_REASON_EPT_VIOLATION] = vmm_ept_violation_handler,
-    [EXIT_REASON_CR_ACCESS] = vmm_cr_access_handler,
-    [EXIT_REASON_IO_INSTRUCTION] = vmm_io_instruction_handler,
-    [EXIT_REASON_HLT] = vmm_hlt_handler,
-    [EXIT_REASON_VMX_TIMER] = vmm_vmx_timer_handler,
-    [EXIT_REASON_VMCALL] = vmm_vmcall_handler,
+    [EXIT_REASON_PENDING_INTERRUPT] = vm_pending_interrupt_handler,
+    [EXIT_REASON_CPUID] = vm_cpuid_handler,
+    [EXIT_REASON_MSR_READ] = vm_rdmsr_handler,
+    [EXIT_REASON_MSR_WRITE] = vm_wrmsr_handler,
+    [EXIT_REASON_EPT_VIOLATION] = vm_ept_violation_handler,
+    [EXIT_REASON_CR_ACCESS] = vm_cr_access_handler,
+    [EXIT_REASON_IO_INSTRUCTION] = vm_io_instruction_handler,
+    [EXIT_REASON_HLT] = vm_hlt_handler,
+    [EXIT_REASON_VMX_TIMER] = vm_vmx_timer_handler,
+    [EXIT_REASON_VMCALL] = vm_vmcall_handler,
 };
 
 /* Reply to the VM exit exception to resume guest. */
@@ -55,23 +55,23 @@ static void vm_resume(vm_vcpu_t *vcpu) {
         assert(vcpu->vcpu_arch.guest_state->exit.in_exit);
         vm_sync_guest_context(vcpu);
         /* Before we resume the guest, ensure there is no dirty state around */
-        assert(vmm_guest_state_no_modified(vcpu->vcpu_arch.guest_state));
-        vmm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
+        assert(vm_guest_state_no_modified(vcpu->vcpu_arch.guest_state));
+        vm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
         vcpu->vcpu_arch.guest_state->exit.in_exit = 0;
     }
 }
 
-/* Handle VM exit in VMM module. */
+/* Handle VM exit in VM module. */
 static int handle_vm_exit(vm_vcpu_t *vcpu) {
     int ret;
-    int reason = vmm_guest_exit_get_reason(vcpu->vcpu_arch.guest_state);
+    int reason = vm_guest_exit_get_reason(vcpu->vcpu_arch.guest_state);
     if (reason == -1) {
         ZF_LOGF("Kernel failed to perform vmlaunch or vmresume, we have no recourse");
     }
 
     if (!x86_exit_handlers[reason]) {
         printf("VM_FATAL_ERROR ::: vm exit handler is NULL for reason 0x%x.\n", reason);
-        vmm_print_guest_context(vcpu);
+        vm_print_guest_context(vcpu);
         vcpu->vcpu_online = false;
         return -1;
     }
@@ -80,7 +80,7 @@ static int handle_vm_exit(vm_vcpu_t *vcpu) {
     ret = x86_exit_handlers[reason](vcpu);
     if (ret == -1) {
         printf("VM_FATAL_ERROR ::: vmexit handler return error\n");
-        vmm_print_guest_context(vcpu);
+        vm_print_guest_context(vcpu);
         vcpu->vcpu_online = false;
         return ret;
     }
@@ -132,8 +132,8 @@ int vm_run_arch(vm_t *vm) {
     vm_sync_guest_vmcs_state(vcpu);
     vm_sync_guest_context(vcpu);
     /* Now invalidate everything */
-    assert(vmm_guest_state_no_modified(vcpu->vcpu_arch.guest_state));
-    vmm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
+    assert(vm_guest_state_no_modified(vcpu->vcpu_arch.guest_state));
+    vm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
 
     ret = 1;
     vm->run.exit_reason = -1;
@@ -143,12 +143,12 @@ int vm_run_arch(vm_t *vm) {
         int fault;
 
         if (vcpu->vcpu_online && !vcpu->vcpu_arch.guest_state->virt.interrupt_halt && !vcpu->vcpu_arch.guest_state->exit.in_exit) {
-            seL4_SetMR(0, vmm_guest_state_get_eip(vcpu->vcpu_arch.guest_state));
-            seL4_SetMR(1, vmm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state));
-            seL4_SetMR(2, vmm_guest_state_get_control_entry(vcpu->vcpu_arch.guest_state));
+            seL4_SetMR(0, vm_guest_state_get_eip(vcpu->vcpu_arch.guest_state));
+            seL4_SetMR(1, vm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state));
+            seL4_SetMR(2, vm_guest_state_get_control_entry(vcpu->vcpu_arch.guest_state));
             fault = seL4_VMEnter(&badge);
 
-            vmm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
+            vm_guest_state_invalidate_all(vcpu->vcpu_arch.guest_state);
             if (fault == SEL4_VMENTER_RESULT_FAULT) {
                 /* We in a fault */
                 vcpu->vcpu_arch.guest_state->exit.in_exit = 1;
@@ -181,7 +181,7 @@ int vm_run_arch(vm_t *vm) {
                     ret = VM_EXIT_HANDLE_ERROR;
                 } else if (i8259_has_interrupt(vm)) {
                     /* Check if this caused PIC to generate interrupt */
-                    vmm_check_external_interrupt(vm);
+                    vm_check_external_interrupt(vm);
                 }
              } else {
                 ZF_LOGE("Unable to handle VM notification. Exiting");
@@ -190,7 +190,7 @@ int vm_run_arch(vm_t *vm) {
         } else {
             /* Handle the vm exit */
             ret = handle_vm_exit(vcpu);
-            vmm_check_external_interrupt(vm);
+            vm_check_external_interrupt(vm);
         }
 
         if (ret == VM_EXIT_HANDLE_ERROR) {

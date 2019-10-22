@@ -34,7 +34,7 @@ static inline unsigned int apply_cr_bits(unsigned int cr, unsigned int mask, uns
     return cr;
 }
 
-static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
+static int vm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
     int err;
     if (value & CR0_RESERVED_BITS)
         return -1;
@@ -44,7 +44,7 @@ static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
         /* guest is taking over paging. So we can no longer care about some of our CR4 values, and
          * we don't need cr3 load/store exiting anymore */
         unsigned int new_mask = vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask & ~(X86_CR4_PSE | X86_CR4_PAE);
-        unsigned int cr4_value = vmm_guest_state_get_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        unsigned int cr4_value = vm_guest_state_get_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         /* for any bits that have changed in the mask, grab them from the shadow */
         cr4_value = apply_cr_bits(cr4_value, new_mask ^ vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow);
         /* update mask and cr4 value */
@@ -53,13 +53,13 @@ static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
         if (err) {
             return -1;
         }
-        vmm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, cr4_value);
+        vm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, cr4_value);
         /* now turn of cr3 load/store exiting */
-        unsigned int ppc = vmm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state);
+        unsigned int ppc = vm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state);
         ppc &= ~(VMX_CONTROL_PPC_CR3_LOAD_EXITING | VMX_CONTROL_PPC_CR3_STORE_EXITING);
-        vmm_guest_state_set_control_ppc(vcpu->vcpu_arch.guest_state, ppc);
+        vm_guest_state_set_control_ppc(vcpu->vcpu_arch.guest_state, ppc);
         /* load the cached cr3 value */
-        vmm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state->virt.cr.cr3_guest);
+        vm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state->virt.cr.cr3_guest);
     }
 
     /* check if paging is being disabled */
@@ -78,23 +78,23 @@ static int vmm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
     }
     value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state->virt.cr.cr0_mask, vcpu->vcpu_arch.guest_state->virt.cr.cr0_host_bits);
 
-    vmm_guest_state_set_cr0(vcpu->vcpu_arch.guest_state, value);
+    vm_guest_state_set_cr0(vcpu->vcpu_arch.guest_state, value);
 
     return 0;
 }
 
-static int vmm_cr_set_cr3(vm_vcpu_t *vcpu, unsigned int value) {
+static int vm_cr_set_cr3(vm_vcpu_t *vcpu, unsigned int value) {
     /* if the guest hasn't turned on paging then just cache this */
     vcpu->vcpu_arch.guest_state->virt.cr.cr3_guest = value;
     if (vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow & X86_CR0_PG) {
-        vmm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, value);
     }
     return 0;
 }
 
-static int vmm_cr_get_cr3(vm_vcpu_t *vcpu, unsigned int *value) {
+static int vm_cr_get_cr3(vm_vcpu_t *vcpu, unsigned int *value) {
     if (vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow & X86_CR0_PG) {
-        *value = vmm_guest_state_get_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        *value = vm_guest_state_get_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     } else {
         *value = vcpu->vcpu_arch.guest_state->virt.cr.cr3_guest;
     }
@@ -102,7 +102,7 @@ static int vmm_cr_get_cr3(vm_vcpu_t *vcpu, unsigned int *value) {
 
 }
 
-static int vmm_cr_set_cr4(vm_vcpu_t *vcpu, unsigned int value) {
+static int vm_cr_set_cr4(vm_vcpu_t *vcpu, unsigned int value) {
 
     if (value & CR4_RESERVED_BITS)
         return -1;
@@ -116,18 +116,18 @@ static int vmm_cr_set_cr4(vm_vcpu_t *vcpu, unsigned int value) {
 
     value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state->virt.cr.cr4_host_bits);
 
-    vmm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, value);
+    vm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, value);
 
     return 0;
 }
 
-static int vmm_cr_clts(vm_vcpu_t *vcpu) {
+static int vm_cr_clts(vm_vcpu_t *vcpu) {
     ZF_LOGI("Ignoring call of clts");
 
     return -1;
 }
 
-static int vmm_cr_lmsw(vm_vcpu_t *vcpu, unsigned int value) {
+static int vm_cr_lmsw(vm_vcpu_t *vcpu, unsigned int value) {
     ZF_LOGI("Ignoring call of lmsw");
 
     return -1;
@@ -146,12 +146,12 @@ static int crExitRegs[] = {
     VCPU_CONTEXT_EDI
 };
 
-int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
+int vm_cr_access_handler(vm_vcpu_t *vcpu) {
 
     unsigned int exit_qualification, val;
     int cr, reg, ret = -1;
 
-    exit_qualification = vmm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
+    exit_qualification = vm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
     cr = exit_qualification & 15;
     reg = (exit_qualification >> 8) & 15;
 
@@ -164,13 +164,13 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
 
             switch (cr) {
                 case 0:
-                    ret = vmm_cr_set_cr0(vcpu, val);
+                    ret = vm_cr_set_cr0(vcpu, val);
                     break;
                 case 3:
-                    ret = vmm_cr_set_cr3(vcpu, val);
+                    ret = vm_cr_set_cr3(vcpu, val);
                     break;
                 case 4:
-                    ret = vmm_cr_set_cr4(vcpu, val);
+                    ret = vm_cr_set_cr4(vcpu, val);
                     break;
                 case 8:
 
@@ -200,7 +200,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
             switch (cr) {
                 case 3:
 
-                    ret = vmm_cr_get_cr3(vcpu, &val);
+                    ret = vm_cr_get_cr3(vcpu, &val);
                     if (!ret)
                         ret = vm_set_thread_context_reg(vcpu, crExitRegs[reg], val);
 
@@ -221,12 +221,12 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
             }
             break;
         case 2: /* clts */
-            ret = vmm_cr_clts(vcpu);
+            ret = vm_cr_clts(vcpu);
             break;
 
         case 3: /* lmsw */
             val = (exit_qualification >> LMSW_SOURCE_DATA_SHIFT) & 0x0f;
-            ret = vmm_cr_lmsw(vcpu, val);
+            ret = vm_cr_lmsw(vcpu, val);
             break;
 
         default:
@@ -236,7 +236,7 @@ int vmm_cr_access_handler(vm_vcpu_t *vcpu) {
     }
 
     if (!ret) {
-        vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }
 

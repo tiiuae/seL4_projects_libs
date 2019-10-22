@@ -18,4 +18,4 @@
 
 int vm_vmcs_read(seL4_CPtr vcpu, seL4_Word field, unsigned int *value);
 int vm_vmcs_write(seL4_CPtr vcpu, seL4_Word field, seL4_Word value);
-void vmm_vmcs_init_guest(vm_vcpu_t *vcpu);
+void vm_vmcs_init_guest(vm_vcpu_t *vcpu);

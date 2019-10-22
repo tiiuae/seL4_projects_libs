@@ -14,14 +14,14 @@
 
 #include <sel4vm/guest_memory.h>
 
-enum vmm_lapic_state {
+enum vm_lapic_state {
     LAPIC_STATE_NEW,
     LAPIC_STATE_WAITSIPI,
     LAPIC_STATE_RUN
 };
 
 #if 0
-struct vmm_timer {
+struct vm_timer {
     struct hrtimer timer;
     int64_t period;                 /* unit: ns */
     uint32_t timer_mode_mask;
@@ -30,10 +30,10 @@ struct vmm_timer {
 };
 #endif
 
-typedef struct vmm_lapic {
+typedef struct vm_lapic {
     uint32_t apic_base; // BSP flag is ignored in this
 
-    //struct vmm_timer lapic_timer;
+    //struct vm_timer lapic_timer;
     uint32_t divide_count;
 
     bool irr_pending;
@@ -49,30 +49,30 @@ typedef struct vmm_lapic {
     void *regs;
     unsigned int sipi_vector;
 
-    enum vmm_lapic_state state;
+    enum vm_lapic_state state;
     int arb_prio;
-} vmm_lapic_t;
+} vm_lapic_t;
 
-int vmm_apic_enabled(vmm_lapic_t *apic);
+int vm_apic_enabled(vm_lapic_t *apic);
 
-int vmm_create_lapic(vm_vcpu_t *vcpu, int enabled);
-void vmm_free_lapic(vm_vcpu_t *vcpu);
+int vm_create_lapic(vm_vcpu_t *vcpu, int enabled);
+void vm_free_lapic(vm_vcpu_t *vcpu);
 
-int vmm_apic_has_interrupt(vm_vcpu_t *vcpu);
-int vmm_apic_get_interrupt(vm_vcpu_t *vcpu);
+int vm_apic_has_interrupt(vm_vcpu_t *vcpu);
+int vm_apic_get_interrupt(vm_vcpu_t *vcpu);
 
-void vmm_apic_consume_extints(vm_vcpu_t *vcpu, int (*get)(void));
+void vm_apic_consume_extints(vm_vcpu_t *vcpu, int (*get)(void));
 
 /* MSR functions */
-void vmm_lapic_set_base_msr(vm_vcpu_t *vcpu, uint32_t value);
-uint32_t vmm_lapic_get_base_msr(vm_vcpu_t *vcpu);
+void vm_lapic_set_base_msr(vm_vcpu_t *vcpu, uint32_t value);
+uint32_t vm_lapic_get_base_msr(vm_vcpu_t *vcpu);
 
-int vmm_apic_local_deliver(vm_vcpu_t *vcpu, int lvt_type);
-int vmm_apic_accept_pic_intr(vm_vcpu_t *vcpu);
+int vm_apic_local_deliver(vm_vcpu_t *vcpu, int lvt_type);
+int vm_apic_accept_pic_intr(vm_vcpu_t *vcpu);
 
 memory_fault_result_t apic_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
         size_t fault_length, void *cookie);
 
-uint64_t vmm_get_lapic_tscdeadline_msr(vm_vcpu_t *vcpu);
-void vmm_set_lapic_tscdeadline_msr(vm_vcpu_t *vcpu, uint64_t data);
+uint64_t vm_get_lapic_tscdeadline_msr(vm_vcpu_t *vcpu);
+void vm_set_lapic_tscdeadline_msr(vm_vcpu_t *vcpu, uint64_t data);
 

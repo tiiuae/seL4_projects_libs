@@ -22,7 +22,7 @@
 #include "vmcs.h"
 
 /*init the vmcs structure for a guest os thread*/
-void vmm_vmcs_init_guest(vm_vcpu_t *vcpu) {
+void vm_vmcs_init_guest(vm_vcpu_t *vcpu) {
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_ES_SELECTOR, 2 << 3);
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_CS_SELECTOR, BIT(3));
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_SS_SELECTOR, 2 << 3);
@@ -71,10 +71,10 @@ void vmm_vmcs_init_guest(vm_vcpu_t *vcpu) {
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS, vcpu->vcpu_arch.guest_state->machine.control_ppc);
     vm_vmcs_read(vcpu->vcpu.cptr, VMX_CONTROL_ENTRY_INTERRUPTION_INFO, &vcpu->vcpu_arch.guest_state->machine.control_entry);
 
-#ifdef CONFIG_LIB_VMM_VMX_TIMER_DEBUG
+#ifdef CONFIG_LIB_VM_VMX_TIMER_DEBUG
     /* Enable pre-emption timer */
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_PIN_EXECUTION_CONTROLS, BIT(6));
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_EXIT_CONTROLS, BIT(22));
-    vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_VMX_PREEMPTION_TIMER_VALUE, CONFIG_LIB_VMM_VMX_TIMER_TIMEOUT);
+    vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_VMX_PREEMPTION_TIMER_VALUE, CONFIG_LIB_VM_VMX_TIMER_TIMEOUT);
 #endif
 }

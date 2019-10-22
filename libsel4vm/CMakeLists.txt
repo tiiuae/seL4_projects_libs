@@ -107,8 +107,8 @@ elseif("${KernelArch}" STREQUAL "x86")
            4: Details inside a function" DEFAULT 3 UNQUOTE)
 
     config_option(
-        LibSel4VMMVMXTimerDebug
-        LIB_VMM_VMX_TIMER_DEBUG
+        LibSel4VMVMXTimerDebug
+        LIB_VM_VMX_TIMER_DEBUG
         "Use VMX Pre-Emption timer for debugging
         Will cause a regular vmexit to happen based on VMX pre-emption
         timer. At each exit the guest state will be printed out. This
@@ -119,8 +119,8 @@ elseif("${KernelArch}" STREQUAL "x86")
     )
 
     config_string(
-        LibSel4VMMVMXTimerTimeout
-        LIB_VMM_VMX_TIMER_TIMEOUT
+        LibSel4VMVMXTimerTimeout
+        LIB_VM_VMX_TIMER_TIMEOUT
         "Cycles between VMX timer pre-emptions
         Cycles between timer exits. Time spent loading the VMCS context
         count, so setting this too low may result in the guest making
@@ -128,7 +128,7 @@ elseif("${KernelArch}" STREQUAL "x86")
         DEFAULT
         4000
         DEPENDS
-        "LibSel4VMMVMXTimerDebug"
+        "LibSel4VMVMXTimerDebug"
     )
 
     config_option(LibSel4VMMIgnoreEPTViolation VMM_IGNORE_EPT_VIOLATION "Ignore EPT Violations
@@ -156,7 +156,8 @@ elseif("${KernelArch}" STREQUAL "x86")
     )
     list(APPEND sources ${x86_sources} src/arch/${KernelArch}/ioports.c src/arch/${KernelArch}/i8259/i8259.c
         src/arch/${KernelArch}/guest_x86_context.c src/arch/${KernelArch}/vmcs.c src/arch/${KernelArch}/debug.c
-        src/arch/${KernelArch}/interrupt.c src/arch/${KernelArch}/vmcall.c)
+        src/arch/${KernelArch}/interrupt.c src/arch/${KernelArch}/vmcall.c src/arch/${KernelArch}/ept.c
+        src/arch/${KernelArch}/halt.c src/arch/${KernelArch}/vmx_timer.c)
     add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
 
     target_include_directories(

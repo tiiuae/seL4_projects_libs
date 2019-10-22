@@ -26,7 +26,7 @@
 #include "processor/lapic.h"
 #include "interrupt.h"
 
-int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
+int vm_rdmsr_handler(vm_vcpu_t *vcpu) {
 
     int ret = 0;
     unsigned int msr_no;
@@ -72,13 +72,13 @@ int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
             break;
 
         case MSR_IA32_APICBASE:
-            data = vmm_lapic_get_base_msr(vcpu);
+            data = vm_lapic_get_base_msr(vcpu);
             break;
 
         default:
             ZF_LOGW("rdmsr WARNING unsupported msr_no 0x%x\n", msr_no);
             // generate a GP fault
-            vmm_inject_exception(vcpu, 13, 1, 0);
+            vm_inject_exception(vcpu, 13, 1, 0);
             return VM_EXIT_HANDLED;
 
    }
@@ -86,14 +86,14 @@ int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
     if (!ret) {
         vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, (uint32_t)(data & 0xffffffff));
         vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EDX, (uint32_t)(data >> 32));
-        vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }
 
     return VM_EXIT_HANDLE_ERROR;
 }
 
-int vmm_wrmsr_handler(vm_vcpu_t *vcpu) {
+int vm_wrmsr_handler(vm_vcpu_t *vcpu) {
 
     int ret = 0;
 
@@ -125,17 +125,17 @@ int vmm_wrmsr_handler(vm_vcpu_t *vcpu) {
             break;
 
         case MSR_IA32_APICBASE:
-            vmm_lapic_set_base_msr(vcpu, val_low);
+            vm_lapic_set_base_msr(vcpu, val_low);
             break;
 
         default:
             ZF_LOGW("wrmsr WARNING unsupported msr_no 0x%x\n", msr_no);
             // generate a GP fault
-            vmm_inject_exception(vcpu, 13, 1, 0);
+            vm_inject_exception(vcpu, 13, 1, 0);
             return VM_EXIT_HANDLED;
     }
 
-    vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     return VM_EXIT_HANDLED;
 
 }

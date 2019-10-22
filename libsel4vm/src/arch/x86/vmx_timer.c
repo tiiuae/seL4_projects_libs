@@ -26,11 +26,11 @@
 #include "vmcs.h"
 #include "debug.h"
 
-int vmm_vmx_timer_handler(vm_vcpu_t *vcpu) {
-#ifdef CONFIG_LIB_VMM_VMX_TIMER_DEBUG
-    vmm_print_guest_context(vcpu);
+int vm_vmx_timer_handler(vm_vcpu_t *vcpu) {
+#ifdef CONFIG_LIB_VM_VMX_TIMER_DEBUG
+    vm_print_guest_context(vcpu);
 //    vm_vmcs_write(vmm->guest_vcpu, VMX_CONTROL_PIN_EXECUTION_CONTROLS, vm_vmcs_read(vmm->guest_vcpu, VMX_CONTROL_PIN_EXECUTION_CONTROLS) | BIT(6));
-    int err = vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_VMX_PREEMPTION_TIMER_VALUE, CONFIG_LIB_VMM_VMX_TIMER_TIMEOUT);
+    int err = vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_VMX_PREEMPTION_TIMER_VALUE, CONFIG_LIB_VM_VMX_TIMER_TIMEOUT);
     if (err) {
         return VM_EXIT_HANDLE_ERROR;
     }

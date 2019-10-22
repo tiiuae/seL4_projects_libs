@@ -20,7 +20,7 @@
 #define IO_APIC_DEFAULT_PHYS_BASE   0xfec00000
 #define APIC_DEFAULT_PHYS_BASE      0xfee00000
 
-typedef struct vmm_lapic vmm_lapic_t;
+typedef struct vm_lapic vm_lapic_t;
 typedef struct i8259 i8259_t;
 typedef struct guest_state guest_state_t;
 
@@ -37,7 +37,7 @@ typedef struct vmcall_handler {
 
 struct vm_arch {
     /* Exit handler hooks */
-    vmexit_handler_ptr vmexit_handlers[VMM_EXIT_REASON_NUM];
+    vmexit_handler_ptr vmexit_handlers[VM_EXIT_REASON_NUM];
     /* VM Call handlers */
     vmcall_handler_t *vmcall_handlers;
     unsigned int vmcall_num_handlers;
@@ -55,5 +55,5 @@ struct vm_vcpu_arch {
     /* Records vcpu context */
     guest_state_t *guest_state;
     /* VM local apic */
-    vmm_lapic_t *lapic;
+    vm_lapic_t *lapic;
 };

@@ -52,13 +52,13 @@ inline static uint32_t guest_get_phys_word(vm_t *vm, uintptr_t addr) {
 }
 
 /* Fetch a guest's instruction */
-int vmm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
+int vm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
         int len, uint8_t *buf) {
     /* Walk page tables to get physical address of instruction */
     uintptr_t instr_phys = 0;
 
     /* ensure that PAE is not enabled */
-    if (vmm_guest_state_get_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr) & X86_CR4_PAE) {
+    if (vm_guest_state_get_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr) & X86_CR4_PAE) {
         ZF_LOGE("Do not support walking PAE paging structures");
         return -1;
     }
@@ -120,7 +120,7 @@ static void debug_print_instruction(uint8_t *instr, int instr_len) {
 
 /* Partial support to decode an instruction for a memory access
    This is very crude. It can break in many ways. */
-int vmm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *imm, int *op_len) {
+int vm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *imm, int *op_len) {
     /* First loop through and check prefixes */
     int oplen = 1; /* Operand length */
     int i;
@@ -180,16 +180,16 @@ int vmm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *im
     return 0;
 }
 
-void vmm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *size) {
+void vm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *size) {
     /* Decode instruction */
     uint8_t ibuf[15];
-    int instr_len = vmm_guest_exit_get_int_len(vcpu->vcpu_arch.guest_state);
-    vmm_fetch_instruction(vcpu,
-            vmm_guest_state_get_eip(vcpu->vcpu_arch.guest_state),
-            vmm_guest_state_get_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr),
+    int instr_len = vm_guest_exit_get_int_len(vcpu->vcpu_arch.guest_state);
+    vm_fetch_instruction(vcpu,
+            vm_guest_state_get_eip(vcpu->vcpu_arch.guest_state),
+            vm_guest_state_get_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr),
             instr_len, ibuf);
 
-    vmm_decode_instruction(ibuf, instr_len, reg, imm, size);
+    vm_decode_instruction(ibuf, instr_len, reg, imm, size);
 }
 
 /*
@@ -202,7 +202,7 @@ void vmm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *siz
 
 /* Interpret just enough virtual 8086 instructions to run trampoline code.
    Returns the final jump address */
-uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
+uintptr_t vm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
         uint16_t *segment, uintptr_t eip, uint32_t len, guest_state_t *gs)
 {
     /* We only track one segment, and assume that code and data are in the same
@@ -241,8 +241,8 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                             4, vm_guest_ram_read_callback, &base);
                     ZF_LOGD("lidtl %p\n", (void*)mem);
 
-                    vmm_guest_state_set_idt_base(gs, base);
-                    vmm_guest_state_set_idt_limit(gs, limit);
+                    vm_guest_state_set_idt_base(gs, base);
+                    vm_guest_state_set_idt_limit(gs, limit);
                 } else if (*instr == 0x16) {
                     // lgdtl
                     instr++;
@@ -258,8 +258,8 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                     ZF_LOGD("lgdtl %p; base = %x, limit = %x\n", (void*)mem,
                             base, limit);
 
-                    vmm_guest_state_set_gdt_base(gs, base);
-                    vmm_guest_state_set_gdt_limit(gs, limit);
+                    vm_guest_state_set_gdt_base(gs, base);
+                    vm_guest_state_set_gdt_limit(gs, limit);
                 } else {
                     //ignore
                     instr++;
@@ -293,7 +293,7 @@ uintptr_t vmm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
             instr += 2;
             ZF_LOGD("absolute jmpf $%p, cs now %04x\n", (void*)jmp_addr, *segment);
             if (((int64_t)jmp_addr - (int64_t)(len + eip)) >= 0) {
-                vmm_guest_state_set_cs_selector(gs, *segment);
+                vm_guest_state_set_cs_selector(gs, *segment);
                 return jmp_addr;
             } else {
                 instr = jmp_addr - eip + instr_buf;

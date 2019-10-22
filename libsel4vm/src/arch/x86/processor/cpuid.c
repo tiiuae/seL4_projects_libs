@@ -43,7 +43,7 @@ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
         : "memory");
 }
 
-static int vmm_cpuid_virt(unsigned int function, unsigned int index, struct cpuid_val *val, vm_vcpu_t *vcpu) {
+static int vm_cpuid_virt(unsigned int function, unsigned int index, struct cpuid_val *val, vm_vcpu_t *vcpu) {
     unsigned int eax, ebx, ecx, edx;
 
     eax = function;
@@ -358,7 +358,7 @@ static int vmm_cpuid_virt(unsigned int function, unsigned int index, struct cpui
 #endif
 
 /* VM exit handler: for the CPUID instruction. */
-int vmm_cpuid_handler(vm_vcpu_t *vcpu) {
+int vm_cpuid_handler(vm_vcpu_t *vcpu) {
 
     int ret;
     struct cpuid_val val;
@@ -371,7 +371,7 @@ int vmm_cpuid_handler(vm_vcpu_t *vcpu) {
     }
 
     /* Virtualise the CPUID instruction. */
-    ret = vmm_cpuid_virt(function, index, &val, vcpu);
+    ret = vm_cpuid_virt(function, index, &val, vcpu);
     if (ret)
         return VM_EXIT_HANDLE_ERROR;
 
@@ -381,7 +381,7 @@ int vmm_cpuid_handler(vm_vcpu_t *vcpu) {
     vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_ECX, val.ecx);
     vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EDX, val.edx);
 
-    vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 
     /* Return success. */
     return VM_EXIT_HANDLED;

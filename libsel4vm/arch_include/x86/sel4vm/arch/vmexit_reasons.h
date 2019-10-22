@@ -56,7 +56,7 @@
 #define EXIT_REASON_XSETBV              55
 #define EXIT_REASON_INVPCID             58
 
-#define VMM_EXIT_REASON_NUM             59
+#define VM_EXIT_REASON_NUM              59
 
 #define VMX_EXIT_REASONS \
     { EXIT_REASON_EXCEPTION_NMI,         "EXCEPTION_NMI" }, \

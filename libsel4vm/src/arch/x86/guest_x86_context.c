@@ -52,40 +52,40 @@ int vm_set_vmcs_field(vm_vcpu_t *vcpu, seL4_Word field, uint32_t value) {
     int err = 0;
     switch(field) {
     case VMX_GUEST_CR0:
-        vmm_guest_state_set_cr0(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_cr0(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_GUEST_CR3:
-        vmm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_GUEST_CR4:
-        vmm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_GUEST_RFLAGS:
-        vmm_guest_state_set_rflags(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_rflags(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_GUEST_IDTR_BASE:
-        vmm_guest_state_set_idt_base(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_idt_base(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_GUEST_IDTR_LIMIT:
-        vmm_guest_state_set_idt_limit(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_idt_limit(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_GUEST_GDTR_BASE:
-        vmm_guest_state_set_gdt_base(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_gdt_base(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_GUEST_GDTR_LIMIT:
-        vmm_guest_state_set_gdt_limit(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_gdt_limit(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_GUEST_CS_SELECTOR:
-        vmm_guest_state_set_cs_selector(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_cs_selector(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_GUEST_RIP:
-        vmm_guest_state_set_eip(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_eip(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS:
-        vmm_guest_state_set_control_ppc(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_control_ppc(vcpu->vcpu_arch.guest_state, value);
         break;
     case VMX_CONTROL_ENTRY_INTERRUPTION_INFO:
-        vmm_guest_state_set_control_entry(vcpu->vcpu_arch.guest_state, value);
+        vm_guest_state_set_control_entry(vcpu->vcpu_arch.guest_state, value);
         break;
     default:
         /* Write through to VMCS */
@@ -99,40 +99,40 @@ int vm_get_vmcs_field(vm_vcpu_t *vcpu, seL4_Word field, uint32_t *value) {
     uint32_t val;
     switch(field) {
     case VMX_GUEST_CR0:
-        val = vmm_guest_state_get_cr0(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        val = vm_guest_state_get_cr0(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         break;
     case VMX_GUEST_CR3:
-        val = vmm_guest_state_get_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        val = vm_guest_state_get_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         break;
     case VMX_GUEST_CR4:
-        val = vmm_guest_state_get_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        val = vm_guest_state_get_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         break;
     case VMX_GUEST_RFLAGS:
-        val = vmm_guest_state_get_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        val = vm_guest_state_get_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         break;
     case VMX_GUEST_IDTR_BASE:
-        val = vmm_guest_state_get_idt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        val = vm_guest_state_get_idt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         break;
     case VMX_GUEST_IDTR_LIMIT:
-        val = vmm_guest_state_get_idt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        val = vm_guest_state_get_idt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         break;
     case VMX_GUEST_GDTR_BASE:
-        val = vmm_guest_state_get_gdt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        val = vm_guest_state_get_gdt_base(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         break;
     case VMX_GUEST_GDTR_LIMIT:
-        val = vmm_guest_state_get_gdt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        val = vm_guest_state_get_gdt_limit(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         break;
     case VMX_GUEST_CS_SELECTOR:
-        val = vmm_guest_state_get_cs_selector(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        val = vm_guest_state_get_cs_selector(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         break;
     case VMX_GUEST_RIP:
-        val = vmm_guest_state_get_eip(vcpu->vcpu_arch.guest_state);
+        val = vm_guest_state_get_eip(vcpu->vcpu_arch.guest_state);
         break;
     case VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS:
-        val = vmm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state);
+        val = vm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state);
         break;
     case VMX_CONTROL_ENTRY_INTERRUPTION_INFO:
-        val = vmm_guest_state_get_control_entry(vcpu->vcpu_arch.guest_state);
+        val = vm_guest_state_get_control_entry(vcpu->vcpu_arch.guest_state);
         break;
     default:
         /* Write through to VMCS */

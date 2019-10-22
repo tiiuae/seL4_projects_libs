@@ -124,9 +124,9 @@ int vm_enable_passthrough_ioport(vm_vcpu_t *vcpu, uint16_t port_start, uint16_t 
 }
 
 /* IO instruction execution handler. */
-int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
+int vm_io_instruction_handler(vm_vcpu_t *vcpu) {
 
-    unsigned int exit_qualification = vmm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
+    unsigned int exit_qualification = vm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
     unsigned int string, rep;
     int ret;
     unsigned int port_no;
@@ -175,7 +175,7 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
         if (is_in) {
             set_io_in_unhandled(vcpu, size);
         }
-        vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+        vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }
 
@@ -193,7 +193,7 @@ int vmm_io_instruction_handler(vm_vcpu_t *vcpu) {
         return VM_EXIT_HANDLE_ERROR;
     }
 
-    vmm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
+    vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 
     return VM_EXIT_HANDLED;
 }

@@ -19,17 +19,17 @@ typedef struct vm_vcpu vm_vcpu_t;
 void wait_for_guest_ready(vm_vcpu_t *vcpu);
 
 /* inject an exception */
-void vmm_inject_exception(vm_vcpu_t *vcpu, int exception, int has_error, uint32_t error_code);
+void vm_inject_exception(vm_vcpu_t *vcpu, int exception, int has_error, uint32_t error_code);
 
 /* Start an AP vcpu after a sipi with the requested vector */
-void vmm_start_ap_vcpu(vm_vcpu_t *vcpu, unsigned int sipi_vector);
+void vm_start_ap_vcpu(vm_vcpu_t *vcpu, unsigned int sipi_vector);
 
 /* Got interrupt(s) from PIC, propagate to relevant vcpu lapic */
-void vmm_check_external_interrupt(vm_t *vm);
+void vm_check_external_interrupt(vm_t *vm);
 
 /* inject an interrupt from the lapic on the vcpu, whether or not it is in an exit */
-void vmm_vcpu_accept_interrupt(vm_vcpu_t *vcpu);
+void vm_vcpu_accept_interrupt(vm_vcpu_t *vcpu);
 
 /* This function is called when a new interrupt has occured. */
-void vmm_have_pending_interrupt(vm_vcpu_t *vcpu);
+void vm_have_pending_interrupt(vm_vcpu_t *vcpu);
 

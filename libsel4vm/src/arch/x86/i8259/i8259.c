@@ -95,7 +95,7 @@ static inline int select_pic(unsigned int irq) {
     }
 }
 
-static inline int __vmm_irq_line_state(unsigned long *irq_state,
+static inline int __vm_irq_line_state(unsigned long *irq_state,
                        int irq_source_id, int level)
 {
     /* Logical OR for level trig interrupt. */

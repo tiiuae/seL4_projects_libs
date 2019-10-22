@@ -38,13 +38,13 @@
 #include "processor/lapic.h"
 #include "processor/platfeature.h"
 
-#define VMM_VMCS_CR0_MASK           (X86_CR0_PG | X86_CR0_PE)
-#define VMM_VMCS_CR0_VALUE          VMM_VMCS_CR0_MASK
+#define VM_VMCS_CR0_MASK           (X86_CR0_PG | X86_CR0_PE)
+#define VM_VMCS_CR0_VALUE          VM_VMCS_CR0_MASK
 /* We need to own the PSE and PAE bits up until the guest has actually turned on paging,
  * then it can control them
  */
-#define VMM_VMCS_CR4_MASK           (X86_CR4_PSE | X86_CR4_PAE | X86_CR4_VMXE)
-#define VMM_VMCS_CR4_VALUE          (X86_CR4_PSE | X86_CR4_VMXE)
+#define VM_VMCS_CR4_MASK           (X86_CR4_PSE | X86_CR4_PAE | X86_CR4_VMXE)
+#define VM_VMCS_CR4_VALUE          (X86_CR4_PSE | X86_CR4_VMXE)
 
 #define GUEST_PAGE_DIR 0x10000000
 
@@ -156,24 +156,24 @@ vm_create_vcpu_arch(vm_t *vm, void* cookie, vm_vcpu_t *vcpu) {
     err = seL4_X86_VCPU_SetTCB(vcpu->vcpu.cptr, simple_get_tcb(vm->simple));
     assert(err == seL4_NoError);
     /* All LAPICs are created enabled, in virtual wire mode */
-    vmm_create_lapic(vcpu, 1);
+    vm_create_lapic(vcpu, 1);
     vcpu->vcpu_arch.guest_state = calloc(1, sizeof(guest_state_t));
     if (!vcpu->vcpu_arch.guest_state) {
         return -1;
     }
-    vmm_guest_state_initialise(vcpu->vcpu_arch.guest_state);
+    vm_guest_state_initialise(vcpu->vcpu_arch.guest_state);
     /* Set the initial CR state */
-    vcpu->vcpu_arch.guest_state->virt.cr.cr0_mask = VMM_VMCS_CR0_MASK;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr0_mask = VM_VMCS_CR0_MASK;
     vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow = 0;
-    vcpu->vcpu_arch.guest_state->virt.cr.cr0_host_bits = VMM_VMCS_CR0_VALUE;
-    vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask = VMM_VMCS_CR4_MASK;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr0_host_bits = VM_VMCS_CR0_VALUE;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask = VM_VMCS_CR4_MASK;
     vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow = 0;
-    vcpu->vcpu_arch.guest_state->virt.cr.cr4_host_bits = VMM_VMCS_CR4_VALUE;
+    vcpu->vcpu_arch.guest_state->virt.cr.cr4_host_bits = VM_VMCS_CR4_VALUE;
     /* Set the initial CR states */
-    vmm_guest_state_set_cr0(vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state->virt.cr.cr0_host_bits);
-    vmm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, vm->arch.guest_pd);
-    vmm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state->virt.cr.cr4_host_bits);
+    vm_guest_state_set_cr0(vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state->virt.cr.cr0_host_bits);
+    vm_guest_state_set_cr3(vcpu->vcpu_arch.guest_state, vm->arch.guest_pd);
+    vm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu_arch.guest_state->virt.cr.cr4_host_bits);
     /* Init guest OS vcpu state. */
-    vmm_vmcs_init_guest(vcpu);
+    vm_vmcs_init_guest(vcpu);
     return 0;
 }
