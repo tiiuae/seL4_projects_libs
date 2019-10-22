@@ -16,7 +16,7 @@
 #include <sel4/sel4.h>
 
 #include <sel4vm/guest_vm.h>
-#include "sel4vm/platform/vmcs.h"
+#include <sel4vm/vmcs_fields.h>
 
 #include "guest_state.h"
 #include "vmcs.h"
