@@ -27,12 +27,12 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_vcpu_fault.h>
-#include <sel4vm/interrupt.h>
 
 #include "processor/lapic.h"
 #include "processor/apicdef.h"
 #include "processor/msr.h"
 #include "i8259/i8259.h"
+#include "interrupt.h"
 
 #define APIC_BUS_CYCLE_NS 1
 

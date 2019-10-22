@@ -29,7 +29,7 @@
 #include "vm.h"
 #include "i8259/i8259.h"
 
-#include "sel4vm/interrupt.h"
+#include "interrupt.h"
 #include "guest_state.h"
 #include "debug.h"
 #include "vmexit.h"

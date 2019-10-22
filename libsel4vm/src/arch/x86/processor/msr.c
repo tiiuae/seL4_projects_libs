@@ -19,12 +19,12 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/arch/guest_x86_context.h>
-#include <sel4vm/interrupt.h>
 
 #include "vm.h"
 #include "guest_state.h"
 #include "processor/msr.h"
 #include "processor/lapic.h"
+#include "interrupt.h"
 
 int vmm_rdmsr_handler(vm_vcpu_t *vcpu) {
 
