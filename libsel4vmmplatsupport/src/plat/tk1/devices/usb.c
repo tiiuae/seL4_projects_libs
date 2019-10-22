@@ -19,7 +19,7 @@
 
 #include <sel4vmmplatsupport/plat/usb.h>
 #include <sel4vmmplatsupport/device.h>
-#include <sel4vmmplatsupport/guest_reboot.h>
+#include <sel4vmmplatsupport/arch/guest_reboot.h>
 #include <utils/io.h>
 
 #define USB2_CONTROLLER_USB2D_USBCMD_0_OFFSET 0x130

@@ -30,10 +30,10 @@
 #include <sel4vm/arch/vmcs_fields.h>
 #include <sel4vm/guest_memory.h>
 
-#include <sel4vmmplatsupport/guest_boot_init.h>
-#include <sel4vmmplatsupport/guest_boot_info.h>
-#include <sel4vmmplatsupport/e820.h>
-#include <sel4vmmplatsupport/acpi.h>
+#include <sel4vmmplatsupport/arch/guest_boot_init.h>
+#include <sel4vmmplatsupport/arch/guest_boot_info.h>
+#include <sel4vmmplatsupport/arch/e820.h>
+#include <sel4vmmplatsupport/arch/acpi.h>
 
 #include <sel4/arch/bootinfo_types.h>
 

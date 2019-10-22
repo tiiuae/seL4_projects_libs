@@ -14,7 +14,7 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vmmplatsupport/device.h>
-#include <sel4vmmplatsupport/ac_device.h>
+#include <sel4vmmplatsupport/arch/ac_device.h>
 #include <sel4vmmplatsupport/plat/device_map.h>
 #include <sel4vmmplatsupport/plat/vclock.h>
 

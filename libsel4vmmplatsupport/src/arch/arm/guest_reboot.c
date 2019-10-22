@@ -15,7 +15,7 @@
 #include <sel4utils/util.h>
 #include <sel4vm/guest_vm.h>
 
-#include <sel4vmmplatsupport/guest_reboot.h>
+#include <sel4vmmplatsupport/arch/guest_reboot.h>
 
 int vmm_register_reboot_callback(reboot_hooks_list_t *rb_hooks_list, reboot_hook_fn hook, void *token)
 {

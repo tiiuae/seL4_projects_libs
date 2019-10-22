@@ -27,7 +27,7 @@
 #include <sel4vmmplatsupport/ioports.h>
 
 #include <sel4vmmplatsupport/device.h>
-#include <sel4vmmplatsupport/vpci.h>
+#include <sel4vmmplatsupport/arch/vpci.h>
 
 struct pci_cfg_data {
     vmm_io_port_list_t *io_port;

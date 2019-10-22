@@ -17,7 +17,7 @@
 
 #ifdef CONFIG_LIB_USB
 #include <sel4vmmplatsupport/device.h>
-#include <sel4vmmplatsupport/vusb.h>
+#include <sel4vmmplatsupport/arch/vusb.h>
 
 #include <vka/capops.h>
 #include <vka/object.h>
