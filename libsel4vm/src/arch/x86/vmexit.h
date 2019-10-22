@@ -27,4 +27,4 @@ int vmm_hlt_handler(vm_vcpu_t *vcpu);
 int vmm_vmx_timer_handler(vm_vcpu_t *vcpu);
 int vmm_cr_access_handler(vm_vcpu_t *vcpu);
 int vmm_vmcall_handler(vm_vcpu_t *vcpu);
-
+int vmm_pending_interrupt_handler(vm_vcpu_t *vcpu);

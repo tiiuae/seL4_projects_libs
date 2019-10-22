@@ -25,7 +25,6 @@
 #include <sel4vm/guest_vm_util.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_vm_exits.h>
-#include <sel4vm/vmexit.h>
 
 #include "vm.h"
 #include "i8259/i8259.h"
@@ -33,6 +32,7 @@
 #include "sel4vm/interrupt.h"
 #include "guest_state.h"
 #include "debug.h"
+#include "vmexit.h"
 
 static vm_exit_handler_fn_t x86_exit_handlers[] = {
     [EXIT_REASON_PENDING_INTERRUPT] = vmm_pending_interrupt_handler,

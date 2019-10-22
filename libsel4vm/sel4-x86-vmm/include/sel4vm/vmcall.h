@@ -19,7 +19,6 @@
         calling a handler
 */
 int reg_new_handler(vm_t *vm, vmcall_handler func, int token);
-int vmm_vmcall_handler(vm_vcpu_t *vcpu);
 
 /* Handlers that can be registered */
 int vchan_handler(vm_vcpu_t *vcpu);

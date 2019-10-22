@@ -14,10 +14,6 @@
 
 typedef struct vm_vcpu vm_vcpu_t;
 
-/* Handler for a guest exit that is triggered when the guest is
- * ready to receive interrupts */
-int vmm_pending_interrupt_handler(vm_vcpu_t *vcpu);
-
 /* Request that the guest exist as soon as it is ready to receive
  * interrupts */
 void wait_for_guest_ready(vm_vcpu_t *vcpu);
