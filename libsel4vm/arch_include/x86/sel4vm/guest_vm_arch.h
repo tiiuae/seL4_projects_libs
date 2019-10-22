@@ -15,9 +15,12 @@
 #include <sel4/sel4.h>
 
 #include <sel4vm/platform/vmexit.h>
-#include <sel4vm/processor/lapic.h>
 #include <sel4vm/ioports.h>
 
+#define IO_APIC_DEFAULT_PHYS_BASE   0xfec00000
+#define APIC_DEFAULT_PHYS_BASE      0xfee00000
+
+typedef struct vmm_lapic vmm_lapic_t;
 typedef struct i8259 i8259_t;
 typedef struct guest_state guest_state_t;
 
