@@ -20,7 +20,6 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
 
-#include "sel4vm/vmm.h"
 #include "sel4vm/processor/decode.h"
 
 #include "vm.h"

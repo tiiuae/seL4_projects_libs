@@ -19,7 +19,6 @@
 
 #include <sel4vm/guest_memory.h>
 
-#include "sel4vm/vmm.h"
 #include "sel4vm/platform/vmcs.h"
 #include "sel4vm/processor/decode.h"
 

@@ -14,7 +14,6 @@
 
 #include <sel4vm/interrupt.h>
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/vmm.h>
 
 /*typedef int(*vmexit_handler_ptr)(vm_vcpu_t *vcpu);*/
 

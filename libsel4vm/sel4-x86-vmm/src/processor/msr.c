@@ -19,7 +19,6 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_x86_context.h>
-#include "sel4vm/vmm.h"
 #include "sel4vm/processor/msr.h"
 
 #include "vm.h"

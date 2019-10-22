@@ -23,8 +23,6 @@
 #include "sel4vm/processor/platfeature.h"
 #include "sel4vm/platform/vmcs.h"
 
-#include "sel4vm/vmm.h"
-
 #include "vm.h"
 #include "guest_state.h"
 #include "vmcs.h"

@@ -11,7 +11,6 @@
  */
 
 #include <sel4vm/guest_vm.h>
-#include "sel4vm/vmm.h"
 #include "sel4vm/vmm_manager.h"
 #include "sel4vm/vchan_component.h"
 #include "sel4vm/vchan_sharemem.h"

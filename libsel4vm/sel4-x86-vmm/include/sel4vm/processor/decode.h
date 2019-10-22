@@ -13,7 +13,6 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_x86_context.h>
-#include "sel4vm/vmm.h"
 
 int vmm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3, int len, uint8_t *buf);
 

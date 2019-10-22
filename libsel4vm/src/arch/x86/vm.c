@@ -25,11 +25,11 @@
 #include <sel4vm/guest_vm_util.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_vm_exits.h>
+#include <sel4vm/vmexit.h>
 
 #include "vm.h"
 #include "i8259/i8259.h"
 
-#include "sel4vm/vmm.h"
 #include "sel4vm/interrupt.h"
 #include "guest_state.h"
 #include "debug.h"

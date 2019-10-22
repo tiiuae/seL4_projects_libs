@@ -13,7 +13,6 @@
 #pragma once
 
 #include <sel4vm/guest_vm.h>
-#include "vmm.h"
 
 /*
     Simple functions for registering handlers,

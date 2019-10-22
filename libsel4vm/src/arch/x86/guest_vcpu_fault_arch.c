@@ -12,7 +12,6 @@
 
 #include <sel4vm/guest_vcpu_fault.h>
 
-#include <sel4vm/vmm.h>
 #include <sel4vm/platform/vmcs.h>
 #include <sel4vm/processor/decode.h>
 
