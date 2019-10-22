@@ -156,7 +156,7 @@ elseif("${KernelArch}" STREQUAL "x86")
     )
     list(APPEND sources ${x86_sources} src/arch/${KernelArch}/ioports.c src/arch/${KernelArch}/i8259/i8259.c
         src/arch/${KernelArch}/guest_x86_context.c src/arch/${KernelArch}/vmcs.c src/arch/${KernelArch}/debug.c
-        src/arch/${KernelArch}/interrupt.c)
+        src/arch/${KernelArch}/interrupt.c src/arch/${KernelArch}/vmcall.c)
     add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
 
     target_include_directories(
