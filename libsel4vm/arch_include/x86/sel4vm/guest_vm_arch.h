@@ -14,8 +14,8 @@
 
 #include <sel4/sel4.h>
 
-#include <sel4vm/vmexit_reasons.h>
-#include <sel4vm/ioports.h>
+#include <sel4vm/arch/vmexit_reasons.h>
+#include <sel4vm/arch/ioports.h>
 
 #define IO_APIC_DEFAULT_PHYS_BASE   0xfec00000
 #define APIC_DEFAULT_PHYS_BASE      0xfee00000

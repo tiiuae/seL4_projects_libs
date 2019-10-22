@@ -13,7 +13,7 @@
 #include <sel4/sel4.h>
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_vm_util.h>
-#include <sel4vm/guest_arm_context.h>
+#include <sel4vm/arch/guest_arm_context.h>
 
 int vm_set_thread_context(vm_vcpu_t *vcpu, seL4_UserContext context) {
     seL4_CPtr tcb = vm_get_vcpu_tcb(vcpu);

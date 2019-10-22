@@ -12,7 +12,7 @@
 
 #include <sel4vm/guest_vcpu_fault.h>
 
-#include <sel4vm/vmcs_fields.h>
+#include <sel4vm/arch/vmcs_fields.h>
 
 #include "guest_state.h"
 #include "processor/decode.h"

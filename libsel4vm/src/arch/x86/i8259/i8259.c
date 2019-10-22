@@ -28,7 +28,7 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_irq_controller.h>
-#include <sel4vm/ioports.h>
+#include <sel4vm/arch/ioports.h>
 #include "i8259.h"
 
 #define I8259_MASTER   0

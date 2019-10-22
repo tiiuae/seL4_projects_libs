@@ -12,7 +12,7 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
-#include <sel4vm/guest_arm_context.h>
+#include <sel4vm/arch/guest_arm_context.h>
 
 #include "guest_boot_sel4arch.h"
 

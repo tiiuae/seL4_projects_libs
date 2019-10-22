@@ -19,8 +19,8 @@
 #include <utils/util.h>
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/guest_x86_context.h>
-#include <sel4vm/vmcs_fields.h>
+#include <sel4vm/arch/guest_x86_context.h>
+#include <sel4vm/arch/vmcs_fields.h>
 
 #include "vm.h"
 #include "guest_state.h"

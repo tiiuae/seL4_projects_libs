@@ -11,7 +11,7 @@
  */
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/ioports.h>
+#include <sel4vm/arch/ioports.h>
 #include <sel4vmmplatsupport/drivers/pci_helper.h>
 
 #include <pci/virtual_pci.h>
