@@ -68,10 +68,17 @@
 #define DDIST(...) do{}while(0)
 #endif
 
+#ifdef CONFIG_PLAT_QEMU_ARM_VIRT
+#define GIC_DIST_PADDR       (GIC_PADDR)
+#define GIC_CPU_PADDR        (GIC_PADDR + 0x00010000)
+#define GIC_VCPU_CNTR_PADDR  (GIC_PADDR + 0x00030000)
+#define GIC_VCPU_PADDR       (GIC_PADDR + 0x00040000)
+#else
 #define GIC_DIST_PADDR       (GIC_PADDR + 0x1000)
 #define GIC_CPU_PADDR        (GIC_PADDR + 0x2000)
 #define GIC_VCPU_CNTR_PADDR  (GIC_PADDR + 0x4000)
 #define GIC_VCPU_PADDR       (GIC_PADDR + 0x6000)
+#endif
 
 #define IRQ_IDX(irq) ((irq) / 32)
 #define IRQ_BIT(irq) (1U << ((irq) % 32))
