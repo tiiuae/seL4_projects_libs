@@ -147,7 +147,7 @@ vm_init_arch(vm_t *vm) {
 }
 
 int
-vm_create_vcpu_arch(vm_t *vm, void* cookie, vm_vcpu_t *vcpu) {
+vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu) {
     int err;
     err = seL4_X86_VCPU_SetTCB(vcpu->vcpu.cptr, simple_get_tcb(vm->simple));
     assert(err == seL4_NoError);

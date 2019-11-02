@@ -83,7 +83,7 @@ vm_init_arch(vm_t *vm) {
 }
 
 int
-vm_create_vcpu_arch(vm_t *vm, void* cookie, vm_vcpu_t *vcpu) {
+vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu) {
     int err;
     seL4_Word null_cap_data = seL4_NilData;
     /* Create TCB */

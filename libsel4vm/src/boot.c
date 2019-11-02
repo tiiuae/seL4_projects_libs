@@ -68,7 +68,7 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
 }
 
 vm_vcpu_t*
-vm_create_vcpu(vm_t *vm, int priority, void *cookie) {
+vm_create_vcpu(vm_t *vm, int priority) {
     int err;
     if( vm->num_vcpus >= MAX_NUM_VCPUS) {
         ZF_LOGE("Failed to create vcpu, reached maximum number of support vcpus");
@@ -84,7 +84,7 @@ vm_create_vcpu(vm_t *vm, int priority, void *cookie) {
     vcpu_new->vm = vm;
     vcpu_new->vcpu_id = curr_vcpu_index++;
     vcpu_new->tcb.priority = priority;
-    err = vm_create_vcpu_arch(vm, cookie, vcpu_new);
+    err = vm_create_vcpu_arch(vm, vcpu_new);
     assert(!err);
     vm->vcpus[vm->num_vcpus] = vcpu_new;
     vm->num_vcpus++;
