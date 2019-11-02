@@ -18,6 +18,7 @@
 #ifdef CONFIG_LIB_USB
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/arch/vusb.h>
+#include <sel4vmmplatsupport/arch/service.h>
 
 #include <vka/capops.h>
 #include <vka/object.h>
@@ -451,7 +452,7 @@ vusb_device_t *vm_install_vusb(vm_t *vm, usb_host_t *hcd, uintptr_t pbase, int v
         return NULL;
     }
 
-    err = vm_install_service(vm, vmm_ncap, vm_ncap, badge);
+    err = vmm_install_service(vm, vmm_ncap, vm_ncap, badge);
     if (err) {
         assert(!err);
         return NULL;

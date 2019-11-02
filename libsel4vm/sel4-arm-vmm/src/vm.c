@@ -137,20 +137,6 @@ vm_copyout_atags(vm_t* vm, struct atag_list* atags, uint32_t addr)
     return 0;
 }
 
-int
-vm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t b)
-{
-    cspacepath_t src, dst;
-    seL4_Word badge = b;
-    int err;
-    vka_cspace_make_path(vm->vka, service, &src);
-    dst.root = vm->cspace.cspace_obj.cptr;
-    dst.capPtr = index;
-    dst.capDepth = VM_CSPACE_SIZE_BITS;
-    err =  vka_cnode_mint(&dst, &src, seL4_AllRights, badge);
-    return err;
-}
-
 uintptr_t vm_ipa_to_pa(vm_t *vm, uintptr_t ipa_base, size_t size)
 {
     seL4_ARM_Page_GetAddress_t ret;
