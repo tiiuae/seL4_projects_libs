@@ -12,7 +12,6 @@
 #pragma once
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/plat/device_map.h>
 #include <sel4vm/vm.h>
 
 #define GIC_PADDR   0x50040000
