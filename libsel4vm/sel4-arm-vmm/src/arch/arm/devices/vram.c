@@ -16,12 +16,6 @@
 #include "../../../vm.h"
 
 int
-vm_install_ram_default(vm_t *vm)
-{
-    return vm_ram_register_at(vm, RAM_BASE, RAM_SIZE, true);
-}
-
-int
 vm_install_ram_range(vm_t *vm, uintptr_t start, size_t size, bool untyped)
 {
     return vm_ram_register_at(vm, start, size, untyped);
