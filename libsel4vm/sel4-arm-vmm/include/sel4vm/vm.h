@@ -21,7 +21,6 @@
 #include <vspace/vspace.h>
 #include <vka/vka.h>
 
-#include <sel4vm/atags.h>
 #include <sel4vm/devices.h>
 #include <sel4vm/fault.h>
 
@@ -34,15 +33,6 @@ typedef struct vm vm_t;
 typedef int (*reboot_hook_fn)(vm_t* vm, void *token);
 
 typedef struct virq_handle *virq_handle_t;
-
-/**
- * Copy out an atag list to the VM.
- * @param[in] vm        A handle to the VM that the ELF should be loaded into
- * @param[in] atag_list A handle to a list of atags
- * @param[in] addr      The address that the atags should be copied to
- * @return              0 on success
- */
-int vm_copyout_atags(vm_t *vm, struct atag_list *atags, uint32_t addr);
 
 /**
  * Handle a VM event
