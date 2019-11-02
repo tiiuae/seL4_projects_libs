@@ -111,7 +111,6 @@ vm_init_arch(vm_t *vm, void *cookie) {
 
     /* Initialise x86 specific fields */
     struct vm_init_x86_config *vm_init_x86_params = cookie;
-    vm->arch.notification_cap = vm_init_x86_params->notification_cap;
 
     vm->arch.vmcall_handlers = NULL;
     vm->arch.vmcall_num_handlers = 0;
@@ -145,7 +144,7 @@ vm_init_arch(vm_t *vm, void *cookie) {
     }
 
     /* Bind our interrupt pending callback */
-    err = seL4_TCB_BindNotification(simple_get_init_cap(vm->simple, seL4_CapInitThreadTCB), vm->arch.notification_cap);
+    err = seL4_TCB_BindNotification(simple_get_init_cap(vm->simple, seL4_CapInitThreadTCB), vm->host_endpoint);
     assert(err == seL4_NoError);
     return err;
 }

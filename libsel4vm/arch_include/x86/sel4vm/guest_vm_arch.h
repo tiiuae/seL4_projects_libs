@@ -43,7 +43,6 @@ struct vm_arch {
     unsigned int vmcall_num_handlers;
     /* Guest physical address of where we built the vm's page directory */
     uintptr_t guest_pd;
-    seL4_CPtr notification_cap;
     unhandled_ioport_callback_fn unhandled_ioport_callback;
     void *unhandled_ioport_callback_cookie;
     vm_io_port_list_t ioport_list;

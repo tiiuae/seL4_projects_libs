@@ -167,7 +167,7 @@ int vm_run_arch(vm_t *vm) {
                 vm_update_guest_state_from_interrupt(vcpu, int_message);
             }
         } else {
-            seL4_Wait(vm->arch.notification_cap, &badge);
+            seL4_Wait(vm->host_endpoint, &badge);
             fault = SEL4_VMENTER_RESULT_NOTIF;
         }
 

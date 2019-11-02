@@ -34,8 +34,6 @@ struct vm_arch {
     void *entry_point;
     /* Guest vm dtb */
     void *dtb;
-    /* Endpoint */
-    seL4_CPtr fault_endpoint;
     /* ====== NOTE: Not permanent - will be refactored ====== */
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     /* Installed vchan connections */

@@ -50,7 +50,6 @@ vm_init_arch(vm_t *vm, void *cookie) {
 
     /* Initialise arm specific fields */
     vm->arch.entry_point = NULL;
-    vm->arch.fault_endpoint = vm_init_arm_params->vmm_endpoint;
 
     /* Create a cspace */
     vka = vm->vka;
@@ -73,7 +72,7 @@ vm_init_arch(vm_t *vm, void *cookie) {
     assert(!err);
 
     /* Badge the endpoint */
-    vka_cspace_make_path(vka, vm_init_arm_params->vmm_endpoint, &src);
+    vka_cspace_make_path(vka, vm->host_endpoint, &src);
     err = vka_cspace_alloc_path(vka, &dst);
     assert(!err);
     err = vka_cnode_mint(&dst, &src, seL4_AllRights, VM_BADGE);

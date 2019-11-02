@@ -160,7 +160,7 @@ int vm_run_arch(vm_t *vm) {
         seL4_Word label;
         int vm_exit_reason;
 
-        tag = seL4_Recv(vm->arch.fault_endpoint, &sender_badge);
+        tag = seL4_Recv(vm->host_endpoint, &sender_badge);
         label = seL4_MessageInfo_get_label(tag);
         if (sender_badge == VM_BADGE) {
             vm_exit_reason = vm_decode_exit(label);

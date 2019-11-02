@@ -27,7 +27,7 @@ static int curr_vcpu_index = 0;
 
 int
 vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace,
-        ps_io_ops_t* io_ops, const char* name, void *cookie) {
+        ps_io_ops_t* io_ops, seL4_CPtr host_endpoint, const char* name, void *cookie) {
     int err;
     bzero(vm, sizeof(vm_t));
     /* Initialise vm fields */
@@ -36,6 +36,7 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
     vm->allocman = allocman;
     vm->io_ops = io_ops;
     vm->mem.vmm_vspace = host_vspace;
+    vm->host_endpoint = host_endpoint;
     vm->vm_name = strndup(name, strlen(name));
     vm->run.exit_reason = VM_GUEST_UNKNOWN_EXIT;
     /* Initialise ram region */
