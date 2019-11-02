@@ -14,5 +14,5 @@
 
 #include <sel4vm/guest_vm.h>
 
-int vm_init_arch(vm_t *vm, void *cookie);
+int vm_init_arch(vm_t *vm);
 int vm_create_vcpu_arch(vm_t *vm, void *cookie, vm_vcpu_t *vcpu);

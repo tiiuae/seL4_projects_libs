@@ -31,22 +31,17 @@
 #include "guest_vspace.h"
 
 int
-vm_init_arch(vm_t *vm, void *cookie) {
+vm_init_arch(vm_t *vm) {
     seL4_Word cspace_root_data;
     cspacepath_t src, dst;
     vka_t *vka;
     int err;
 
     /* Check arm specific initialisation parameters */
-    if (!cookie) {
-        ZF_LOGE("Failed to initialise vm arch: Invalid cookie");
-        return -1;
-    }
     if (!vm) {
         ZF_LOGE("Failed to initialise vm arch: Invalid vm");
         return -1;
     }
-    struct vm_init_arm_config *vm_init_arm_params = cookie;
 
     /* Initialise arm specific fields */
     vm->arch.entry_point = NULL;

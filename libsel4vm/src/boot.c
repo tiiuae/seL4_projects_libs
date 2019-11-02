@@ -27,7 +27,7 @@ static int curr_vcpu_index = 0;
 
 int
 vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace,
-        ps_io_ops_t* io_ops, seL4_CPtr host_endpoint, const char* name, void *cookie) {
+        ps_io_ops_t* io_ops, seL4_CPtr host_endpoint, const char* name) {
     int err;
     bzero(vm, sizeof(vm_t));
     /* Initialise vm fields */
@@ -56,7 +56,7 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
     }
 
     /* Initialise vm architecture support */
-    err = vm_init_arch(vm, cookie);
+    err = vm_init_arch(vm);
     if (err) {
         ZF_LOGE("Failed to initialise VM architecture support");
         return err;

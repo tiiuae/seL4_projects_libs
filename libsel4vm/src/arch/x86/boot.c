@@ -101,16 +101,13 @@ static int make_guest_page_dir(vm_t *vm) {
 }
 
 int
-vm_init_arch(vm_t *vm, void *cookie) {
+vm_init_arch(vm_t *vm) {
     int err;
 
     if (!vm) {
         ZF_LOGE("Failed to initialise vm arch: Invalid vm");
         return -1;
     }
-
-    /* Initialise x86 specific fields */
-    struct vm_init_x86_config *vm_init_x86_params = cookie;
 
     vm->arch.vmcall_handlers = NULL;
     vm->arch.vmcall_num_handlers = 0;
