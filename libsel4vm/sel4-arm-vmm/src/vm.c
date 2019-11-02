@@ -31,8 +31,6 @@
 #include <sel4/sel4.h>
 #include <sel4/messages.h>
 
-#include "devices.h"
-
 #include <sel4vm/sel4_arch/vm.h>
 
 //#define DEBUG_VM

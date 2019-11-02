@@ -13,7 +13,7 @@
 #pragma once
 
 #include <sel4vm/guest_vm.h>
-
+#include <platsupport/gpio.h>
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/arch/ac_device.h>
 

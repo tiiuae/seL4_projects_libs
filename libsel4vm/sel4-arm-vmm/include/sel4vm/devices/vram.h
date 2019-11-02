@@ -12,7 +12,6 @@
 #pragma once
 
 #include <sel4vm/vm.h>
-#include <sel4vm/devices.h>
 
 int vm_install_ram_default(vm_t *vm);
 

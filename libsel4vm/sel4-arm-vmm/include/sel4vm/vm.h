@@ -21,7 +21,6 @@
 #include <vspace/vspace.h>
 #include <vka/vka.h>
 
-#include <sel4vm/devices.h>
 #include <sel4vm/fault.h>
 
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT

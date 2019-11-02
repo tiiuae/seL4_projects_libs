@@ -19,7 +19,6 @@
 #include "sel4vm/guest_memory.h"
 #include <sel4vm/sel4_arch/vm.h>
 #include <sel4vm/fault.h>
-#include <sel4vm/devices.h>
 
 #include "vm.h"
 #include "mem_abort.h"

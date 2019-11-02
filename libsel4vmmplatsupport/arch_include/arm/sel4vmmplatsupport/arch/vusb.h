@@ -19,7 +19,6 @@
 #include <usb/usb_host.h>
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/vm.h>
-#include <sel4vm/devices.h>
 #include <sel4/sel4.h>
 
 typedef struct vusb_device vusb_device_t;
