@@ -81,17 +81,6 @@ if("${KernelArch}" STREQUAL "arm")
         target_link_libraries(sel4vm usbdrivers)
     endif()
 elseif("${KernelArch}" STREQUAL "x86")
-    config_option(LibSel4VMMDebug LIB_VMM_DEBUG "Enable VMM debug output" DEFAULT ON)
-
-    config_string(LibSel4VMMDebugLevel LIB_VMM_DEBUG_LEVEL "VMM Debug Output
-        Debug verbosity level.
-        5 levels for debug messages:
-           0: Always printout
-           1: Main entry point in a module
-           2: 2nd level entry point in a module
-           3: Main entry point of a function
-           4: Details inside a function" DEFAULT 3 UNQUOTE)
-
     config_option(
         LibSel4VMVMXTimerDebug
         LIB_VM_VMX_TIMER_DEBUG
@@ -121,8 +110,6 @@ elseif("${KernelArch}" STREQUAL "x86")
         If set then EPT faults will be ignored and the guest will be resumed" DEFAULT OFF)
 
     mark_as_advanced(
-        LibSel4VMMDebug
-        LibSel4VMMDebugLevel
         LibSel4VMMVMXTimerDebug
         LibSel4VMMVMXTimerTimeout
         LibSel4VMMIgnoreEPTViolation
