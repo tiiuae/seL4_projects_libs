@@ -19,7 +19,6 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_memory.h>
-#include <sel4vm/guest_memory_util.h>
 
 #include "guest_memory_map.h"
 
