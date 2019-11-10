@@ -81,11 +81,6 @@ if("${KernelArch}" STREQUAL "arm")
         target_link_libraries(sel4vm usbdrivers)
     endif()
 elseif("${KernelArch}" STREQUAL "x86")
-    config_option(LibSel4VMMVESAFrameBuffer VMM_VESA_FRAMEBUFFER "Expose VESA Frame Buffer
-        Support for mapping the VESA frame buffer frames into the guest OS.
-        This option is useful for working around non-working video drivers otherwise,
-        due to missing features or such." DEFAULT ON)
-
     config_option(LibSel4VMMDebug LIB_VMM_DEBUG "Enable VMM debug output" DEFAULT ON)
 
     config_string(LibSel4VMMDebugLevel LIB_VMM_DEBUG_LEVEL "VMM Debug Output
@@ -126,7 +121,6 @@ elseif("${KernelArch}" STREQUAL "x86")
         If set then EPT faults will be ignored and the guest will be resumed" DEFAULT OFF)
 
     mark_as_advanced(
-        LibSel4VMMVESAFrameBuffer
         LibSel4VMMDebug
         LibSel4VMMDebugLevel
         LibSel4VMMVMXTimerDebug

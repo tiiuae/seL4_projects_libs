@@ -16,6 +16,21 @@ project(libsel4vmmplatsupport C)
 
 add_compile_options(-std=gnu99)
 
+config_option(LibSel4VMMPlatsupportVESAFrameBuffer VMM_PLATSUPPORT_VESA_FRAMEBUFFER "Expose VESA Frame Buffer
+        Support for mapping the VESA frame buffer frames into the guest OS.
+        This option is useful for working around non-working video drivers otherwise,
+        due to missing features or such."
+        DEFAULT
+        ON
+        DEPENDS
+        "KernelPlatPC99")
+
+mark_as_advanced(
+        LibSel4VMMPlatsupportVESAFrameBuffer
+)
+
+add_config_library(sel4vmmplatsupport "${configure_string}")
+
 set(sources src/device.c src/device_utils.c src/ioports.c src/drivers/virtio_con.c src/drivers/virtio_net.c
             src/drivers/pci.c src/drivers/pci_helper.c src/drivers/virtio_console_emul.c src/drivers/virtio_emul.c
             src/drivers/virtio_emul_helpers.c src/drivers/virtio_net_emul.c)

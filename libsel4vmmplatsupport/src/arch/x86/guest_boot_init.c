@@ -72,7 +72,7 @@ static void make_guest_screen_info(vm_t *vm, struct screen_info *info) {
     result = simple_get_extended_bootinfo(vm->simple, SEL4_BOOTINFO_HEADER_X86_VBE, &vbeinfo, sizeof(seL4_X86_BootInfo_VBE));
     uintptr_t base = 0;
     size_t fbuffer_size;
-    if (config_set(CONFIG_VMM_VESA_FRAMEBUFFER) && result != -1) {
+    if (config_set(CONFIG_VMM_PLATSUPPORT_VESA_FRAMEBUFFER) && result != -1) {
         /* map the protected mode interface at the same location we are told about it at.
          * this is just to guarantee that it ends up within the segment addressable range */
         uintptr_t pm_base = (vbeinfo.vbeInterfaceSeg << 4) + vbeinfo.vbeInterfaceOff;
