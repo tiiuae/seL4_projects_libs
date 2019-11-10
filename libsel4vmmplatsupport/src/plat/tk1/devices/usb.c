@@ -15,8 +15,8 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory.h>
-#include <sel4vm/guest_memory_util.h>
 
+#include <sel4vmmplatsupport/guest_memory_util.h>
 #include <sel4vmmplatsupport/plat/usb.h>
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/arch/guest_reboot.h>

@@ -13,12 +13,12 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_vcpu_fault.h>
 #include <sel4vm/vm.h>
-#include <sel4vm/guest_memory_util.h>
 
 #ifdef CONFIG_LIB_USB
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/arch/vusb.h>
 #include <sel4vmmplatsupport/arch/service.h>
+#include <sel4vmmplatsupport/guest_memory_util.h>
 
 #include <vka/capops.h>
 #include <vka/object.h>

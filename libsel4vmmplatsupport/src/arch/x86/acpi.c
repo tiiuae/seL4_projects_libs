@@ -23,9 +23,9 @@ Author: W.A. */
 #include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_memory.h>
 #include <sel4vm/guest_memory_helpers.h>
-#include <sel4vm/guest_memory_util.h>
 #include <platsupport/plat/acpi/acpi.h>
 
+#include <sel4vmmplatsupport/guest_memory_util.h>
 #include <sel4vmmplatsupport/arch/acpi.h>
 
 #define APIC_FLAGS_ENABLED (1)

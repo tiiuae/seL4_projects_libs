@@ -33,7 +33,7 @@ add_config_library(sel4vmmplatsupport "${configure_string}")
 
 set(sources src/device.c src/device_utils.c src/ioports.c src/drivers/virtio_con.c src/drivers/virtio_net.c
             src/drivers/pci.c src/drivers/pci_helper.c src/drivers/virtio_console_emul.c src/drivers/virtio_emul.c
-            src/drivers/virtio_emul_helpers.c src/drivers/virtio_net_emul.c)
+            src/drivers/virtio_emul_helpers.c src/drivers/virtio_net_emul.c src/guest_memory_util.c)
 
 if("${KernelArch}" STREQUAL "arm")
     file(GLOB arch_sources src/arch/arm/*.c src/arch/arm/devices/*.c)

@@ -21,7 +21,8 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory.h>
 #include <sel4vm/guest_memory_helpers.h>
-#include <sel4vm/guest_memory_util.h>
+
+#include <sel4vmmplatsupport/guest_memory_util.h>
 
 struct device_frame_cookie {
     vka_object_t frame;

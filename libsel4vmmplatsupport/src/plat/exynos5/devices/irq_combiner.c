@@ -12,9 +12,10 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory.h>
-#include <sel4vm/guest_memory_util.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_vcpu_fault.h>
+
+#include <sel4vmmplatsupport/guest_memory_util.h>
 #include <sel4vmmplatsupport/plat/device_map.h>
 #include <sel4vmmplatsupport/plat/irq_combiner.h>
 

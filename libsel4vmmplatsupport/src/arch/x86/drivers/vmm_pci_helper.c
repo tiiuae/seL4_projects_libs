@@ -11,11 +11,11 @@
  */
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/guest_memory_util.h>
 #include <sel4vm/guest_memory_helpers.h>
 #include <sel4vm/arch/ioports.h>
 #include <sel4vm/boot.h>
 
+#include <sel4vmmplatsupport/guest_memory_util.h>
 #include <sel4vmmplatsupport/arch/drivers/vmm_pci_helper.h>
 #include <sel4vmmplatsupport/drivers/pci.h>
 #include <sel4vmmplatsupport/drivers/pci_helper.h>
