@@ -21,8 +21,6 @@ typedef struct fault fault_t;
 #include <sel4vm/vchan_vm_component.h>
 #include <sel4vchan/vchan_component.h>
 #endif /*CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT */
-
-#define MAX_DEVICES_PER_VM 50
 /* ======================================================== */
 
 #define VM_CSPACE_SIZE_BITS    4
@@ -30,10 +28,6 @@ typedef struct fault fault_t;
 #define VM_CSPACE_SLOT         2
 
 struct vm_arch {
-    /* Guest vm entry point */
-    void *entry_point;
-    /* Guest vm dtb */
-    void *dtb;
     /* ====== NOTE: Not permanent - will be refactored ====== */
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
     /* Installed vchan connections */

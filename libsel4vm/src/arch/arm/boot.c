@@ -44,9 +44,6 @@ vm_init_arch(vm_t *vm) {
         return -1;
     }
 
-    /* Initialise arm specific fields */
-    vm->arch.entry_point = NULL;
-
     /* Create a cspace */
     vka = vm->vka;
     err = vka_alloc_cnode_object(vka, VM_CSPACE_SIZE_BITS, &vm->cspace.cspace_obj);

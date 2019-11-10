@@ -50,7 +50,6 @@ int
 handle_page_fault(vm_t* vm, vm_vcpu_t* vcpu, fault_t* fault)
 {
     int err;
-    struct device* d;
     uintptr_t addr = fault_get_address(fault);
     size_t fault_size = fault_get_width_size(fault);
 
