@@ -89,6 +89,8 @@
 #define GIC_VCPU_PADDR       (GIC_PADDR + 0x6000)
 #endif
 
+#define MAX_VIRQS   200
+
 #define IRQ_IDX(irq) ((irq) / 32)
 #define IRQ_BIT(irq) (1U << ((irq) % 32))
 

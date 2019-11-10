@@ -15,5 +15,4 @@
 #include <sel4vm/vm.h>
 
 #define GIC_PADDR   0x50040000
-#define MAX_VIRQS   200
 extern const struct device dev_vram;
