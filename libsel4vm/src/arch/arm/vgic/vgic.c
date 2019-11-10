@@ -55,7 +55,6 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_memory.h>
-#include <sel4vm/guest_memory_util.h>
 #include <sel4vm/guest_irq_controller.h>
 
 #include "vm.h"
@@ -753,6 +752,99 @@ handle_vgic_vcpu_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t f
     return FAULT_ERROR;
 }
 
+struct vgic_dist_frame_cookie {
+    vka_object_t frame;
+    cspacepath_t mapped_frame;
+    vm_t *vm;
+    vm_memory_reservation_t *reservation;
+};
+
+static vm_frame_t vgic_dist_frame_iterator(uintptr_t addr, void *cookie) {
+    cspacepath_t return_frame;
+    vm_t *vm;
+    int page_size;
+    vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
+
+    struct vgic_dist_frame_cookie *dist_cookie = (struct vgic_dist_frame_cookie *)cookie;
+    if (!dist_cookie) {
+        return frame_result;
+    }
+    vm = dist_cookie->vm;
+    page_size = vm->mem.page_size;
+
+    int ret = vka_cspace_alloc_path(vm->vka, &return_frame);
+    if (ret) {
+        ZF_LOGE("Failed to allocate cspace path from device frame");
+        return frame_result;
+    }
+    ret = vka_cnode_copy(&return_frame, &dist_cookie->mapped_frame, seL4_CanRead);
+    if (ret) {
+        ZF_LOGE("Failed to cnode_copy for device frame");
+        vka_cspace_free_path(vm->vka, return_frame);
+        return frame_result;
+    }
+    frame_result.cptr = return_frame.capPtr;
+    frame_result.rights = seL4_CanRead;
+    frame_result.vaddr = GIC_DIST_PADDR;
+    frame_result.size_bits = page_size;
+    return frame_result;
+}
+
+static void *create_vgic_distributor_frame(vm_t *vm) {
+    int err;
+    struct vgic_dist_frame_cookie *cookie;
+    int page_size = vm->mem.page_size;
+    vspace_t *vmm_vspace = &vm->mem.vmm_vspace;
+    ps_io_ops_t *ops = vm->io_ops;
+
+    err = ps_calloc(&ops->malloc_ops, 1, sizeof(struct vgic_dist_frame_cookie), (void **)&cookie);
+    if (err) {
+        ZF_LOGE("Failed to create allocated vm frame: Unable to allocate cookie");
+        return NULL;
+    }
+
+    /* Reserve emulated vgic frame */
+    cookie->reservation = vm_reserve_memory_at(vm, GIC_DIST_PADDR, PAGE_SIZE_4K,
+            handle_vgic_dist_fault, (void *)vgic_dist);
+    if (!cookie->reservation) {
+        ZF_LOGE("Failed to create emulate vgic dist frame");
+        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void **)&cookie);
+        return NULL;
+    }
+
+    err = vka_alloc_frame(vm->vka, page_size, &cookie->frame);
+    if (err) {
+        ZF_LOGE("Failed vka_alloc_frame for vgic dist frame");
+        vm_free_reserved_memory(vm, cookie->reservation);
+        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void **)&cookie);
+        return NULL;
+    }
+    vka_cspace_make_path(vm->vka, cookie->frame.cptr, &cookie->mapped_frame);
+    void *vgic_dist_addr = vspace_map_pages(vmm_vspace, &cookie->mapped_frame.capPtr,
+                                  NULL, seL4_AllRights, 1, page_size, 0);
+    if (!vgic_dist_addr) {
+        ZF_LOGE("Failed to map vgic dist frame into vmm vspace");
+        vka_free_object(vm->vka, &cookie->frame);
+        vm_free_reserved_memory(vm, cookie->reservation);
+        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void **)&cookie);
+        return NULL;
+    }
+
+    cookie->vm = vm;
+
+    /* Map the vgic dist frame */
+    err = vm_map_reservation(vm, cookie->reservation, vgic_dist_frame_iterator, (void *)cookie);
+    if (err) {
+        ZF_LOGE("Failed to map allocated frame into vm");
+        vka_free_object(vm->vka, &cookie->frame);
+        vm_free_reserved_memory(vm, cookie->reservation);
+        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void **)&cookie);
+        return NULL;
+    }
+
+    return vgic_dist_addr;
+}
+
 static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie) {
     int err;
     cspacepath_t frame;
@@ -808,8 +900,7 @@ int vm_install_vgic(vm_t *vm)
     }
     memcpy(vgic_dist, &dev_vgic_dist, sizeof(struct vgic_dist_device));
 
-    vgic->dist = create_allocated_reservation_frame(vm, GIC_DIST_PADDR, seL4_CanRead, handle_vgic_dist_fault,
-            (void *)vgic_dist);
+    vgic->dist = create_vgic_distributor_frame(vm);
 
     assert(vgic->dist);
     if (vgic->dist == NULL) {
