@@ -14,13 +14,6 @@
 #include <sel4vm/guest_memory.h>
 
 /**
- * Default fault callback that throws a fault error.
- * Useful to avoid having to re-define a fault callback on regions that should be mapped with all rights.
- */
-memory_fault_result_t default_error_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
-        size_t fault_length, void *cookie);
-
-/**
  * Create and map a reservation for a vka allocated frame. The allocated frame is mapped in both the vm and vmm vspace
  * @param[in] vm                    A handle to the VM
  * @param[in] addr                  Address of emulated frame

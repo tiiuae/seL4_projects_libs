@@ -26,7 +26,7 @@
 
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_memory.h>
-#include <sel4vm/guest_memory_util.h>
+#include <sel4vm/guest_memory_helpers.h>
 
 #include "vm_boot.h"
 #include "guest_vspace.h"

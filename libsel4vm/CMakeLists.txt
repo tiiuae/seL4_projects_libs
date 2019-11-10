@@ -21,7 +21,7 @@ add_compile_options(-std=gnu99)
 set(sources src/boot.c src/guest_vspace.c src/guest_ram.c src/arch/${KernelArch}/boot.c
     src/guest_memory.c src/guest_memory_utils.c src/vm.c src/arch/${KernelArch}/vm.c
     src/guest_vcpu_fault.c src/arch/${KernelArch}/guest_vcpu_fault_arch.c
-    src/arch/${KernelArch}/guest_irq_controller.c)
+    src/arch/${KernelArch}/guest_irq_controller.c src/guest_memory_helpers.c)
 
 if("${KernelArch}" STREQUAL "arm")
     config_option(

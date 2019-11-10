@@ -20,6 +20,7 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory.h>
+#include <sel4vm/guest_memory_helpers.h>
 #include <sel4vm/guest_memory_util.h>
 
 struct device_frame_cookie {
@@ -319,12 +320,6 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t
     }
 
     return dev_addr;
-}
-
-memory_fault_result_t default_error_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
-        size_t fault_length, void *cookie) {
-    ZF_LOGE("Failed to handle fault addr: 0x%x", fault_addr);
-    return FAULT_ERROR;
 }
 
 int map_ut_alloc_reservation(vm_t *vm, vm_memory_reservation_t *reservation) {
