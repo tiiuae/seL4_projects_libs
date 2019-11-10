@@ -12,7 +12,6 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_ram.h>
-#include <sel4vm/plat/devices.h>
 #include "../../../vm.h"
 
 int

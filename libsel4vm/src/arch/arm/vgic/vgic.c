@@ -58,8 +58,6 @@
 #include <sel4vm/guest_memory_util.h>
 #include <sel4vm/guest_irq_controller.h>
 
-#include <sel4vm/plat/devices.h>
-
 #include "vm.h"
 
 //#define DEBUG_IRQ

@@ -63,7 +63,6 @@ if("${KernelArch}" STREQUAL "arm")
             include
             arch_include/${KernelArch}
             sel4-arm-vmm/include
-            sel4-arm-vmm/plat_include/${KernelPlatform}
     )
 
     target_include_directories(sel4vm PUBLIC sel4-arm-vmm/sel4_arch_include/${KernelSel4Arch})
