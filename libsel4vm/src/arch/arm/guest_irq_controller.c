@@ -10,7 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
-#include <sel4vm/devices/vgic.h>
+#include "vgic/vgic.h"
 
 int vm_create_default_irq_controller(vm_t *vm) {
     if (!vm) {
