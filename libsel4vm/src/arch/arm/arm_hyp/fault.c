@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -10,9 +10,11 @@
  * @TAG(DATA61_BSD)
  */
 #include <stdio.h>
-#include <sel4vm/sel4_arch/fault.h>
 #include <sel4vm/sel4_arch/vm.h>
 #include <assert.h>
+#include <utils/util.h>
+
+#include "../fault.h"
 
 seL4_Word *decode_rt(int reg, seL4_UserContext *c)
 {
@@ -176,4 +178,9 @@ void fault_print_data(fault_t *fault)
     default:
         printf("<Invalid width> 0x%x", data);
     }
+}
+
+bool fault_is_thumb(fault_t *f)
+{
+    return CPSR_IS_THUMB(fault_get_ctx(f)->cpsr);
 }

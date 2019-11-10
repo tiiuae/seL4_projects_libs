@@ -13,7 +13,8 @@
 #pragma once
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/fault.h>
+
+typedef struct fault fault_t;
 
 /* ======= NOTE: Not permanent - will be refactored ======= */
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT

@@ -12,6 +12,8 @@
 
 #include <sel4vm/guest_vcpu_fault.h>
 
+#include "fault.h"
+
 seL4_Word get_vcpu_fault_address(vm_vcpu_t *vcpu) {
     fault_t *fault = vcpu->vcpu_arch.fault;
     return fault->addr;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -275,6 +275,7 @@ static inline seL4_Word fault_get_addr_word(fault_t *f)
 seL4_Word *decode_rt(int reg, seL4_UserContext *c);
 int decode_vcpu_reg(int rt, fault_t *f);
 void fault_print_data(fault_t *fault);
+bool fault_is_thumb(fault_t *f);
 
 /***************
  ***  Debug  ***

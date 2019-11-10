@@ -50,10 +50,9 @@ if("${KernelArch}" STREQUAL "arm")
             sel4-arm-vmm/src/images/*.c
             sel4-arm-vmm/src/devices/*.c
             sel4-arm-vmm/src/plat/${KernelPlatform}/*/*.c
-            sel4-arm-vmm/src/sel4_arch/${KernelSel4Arch}/*.c
     )
     set(arm_sources src/arch/arm/mem_abort.c src/arch/arm/syscalls.c src/arch/arm/vgic/vgic.c
-        src/arch/arm/guest_arm_context.c)
+        src/arch/arm/guest_arm_context.c src/arch/arm/fault.c src/arch/arm/${KernelSel4Arch}/fault.c)
     list(APPEND sources ${arm_sources})
     list(APPEND sources ${old_arm_sources})
     add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
@@ -65,6 +64,7 @@ if("${KernelArch}" STREQUAL "arm")
             sel4-arm-vmm/include
     )
 
+    target_include_directories(sel4vm PRIVATE src/arch/arm/${KernelSel4Arch})
     target_include_directories(sel4vm PUBLIC sel4-arm-vmm/sel4_arch_include/${KernelSel4Arch})
     target_link_libraries(
         sel4vm

@@ -18,10 +18,10 @@
 #include <sel4vm/boot.h>
 #include "sel4vm/guest_memory.h"
 #include <sel4vm/sel4_arch/vm.h>
-#include <sel4vm/fault.h>
 
 #include "vm.h"
 #include "mem_abort.h"
+#include "fault.h"
 
 static int unhandled_memory_fault(vm_t *vm, vm_vcpu_t* vcpu, fault_t* fault) {
     uintptr_t addr = fault_get_address(fault);

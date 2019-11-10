@@ -59,6 +59,7 @@
 #include <sel4vm/guest_irq_controller.h>
 
 #include "vm.h"
+#include "../fault.h"
 
 //#define DEBUG_IRQ
 //#define DEBUG_DIST

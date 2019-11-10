@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -11,14 +11,4 @@
  */
 #pragma once
 
-#include <stdbool.h>
-
-#include <utils/util.h>
-#include <sel4vm/fault.h>
-
 #define SRT_MASK    0x1f
-
-static inline bool sel4arch_fault_is_thumb(fault_t *f)
-{
-    return CPSR_IS_THUMB(fault_get_ctx(f)->spsr);
-}

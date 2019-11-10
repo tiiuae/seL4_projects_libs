@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -11,11 +11,11 @@
  */
 
 #include <sel4vm/guest_vm.h>
-
-#include <sel4vm/sel4_arch/fault.h>
 #include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_vm_util.h>
-#include "vm.h"
+
+#include "fault.h"
+#include "arch_fault.h"
 
 #include <sel4/sel4.h>
 #include <sel4/messages.h>
@@ -42,7 +42,7 @@
 
 #ifdef PLAT_EXYNOS5250
 /* Stores in thumb mode trigger this errata */
-#define HAS_ERRATA766422(f) ( fault_is_write(f) && sel4arch_fault_is_thumb(f))
+#define HAS_ERRATA766422(f) ( fault_is_write(f) && fault_is_thumb(f))
 #else
 #define HAS_ERRATA766422(f) 0
 #endif
@@ -85,7 +85,7 @@ static int maybe_fetch_fault_instruction(fault_t *f)
             return -1;
         }
         /* Fixup the instruction */
-        if (sel4arch_fault_is_thumb(f)) {
+        if (fault_is_thumb(f)) {
             if (thumb_is_32bit_instruction(inst)) {
                 f->fsr |= HSR_INST32;
             }
@@ -162,7 +162,7 @@ static int decode_instruction(fault_t *f)
     f->stage = 1;
     f->content |= CONTENT_STAGE;
     /* Decode */
-    if (sel4arch_fault_is_thumb(f)) {
+    if (fault_is_thumb(f)) {
         if (thumb_is_32bit_instruction(inst)) {
             f->fsr |= BIT(25); /* 32 bit instruction */
             /* 32 BIT THUMB insts */
@@ -579,7 +579,7 @@ int fault_is_wfi(fault_t *f)
 int fault_is_32bit_instruction(fault_t *f)
 {
     if (fault_is_wfi(f)) {
-        return !sel4arch_fault_is_thumb(f);
+        return !fault_is_thumb(f);
     }
     if (!HSR_IS_SYNDROME_VALID(f->fsr)) {
         /* (maybe) Trigger a decode to update the fsr. */

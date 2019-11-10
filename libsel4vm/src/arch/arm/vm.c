@@ -25,6 +25,7 @@
 #include "vm.h"
 #include "arm_vm.h"
 #include "arm_vm_exits.h"
+#include "fault.h"
 
 #include "vgic/vgic.h"
 #include "syscalls.h"

@@ -29,6 +29,7 @@
 #include "arm_vm.h"
 #include "vm_boot.h"
 #include "guest_vspace.h"
+#include "fault.h"
 
 int
 vm_init_arch(vm_t *vm) {
