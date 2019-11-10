@@ -25,14 +25,6 @@ set(sources src/boot.c src/guest_vspace.c src/guest_ram.c src/arch/${KernelArch}
 
 if("${KernelArch}" STREQUAL "arm")
     config_option(
-        LibSel4ArmVMMOnDemandDeviceInstall
-        ONDEMAND_DEVICE_INSTALL
-        "Allow the VMM to install arbitrary devices into the VM as they are accessed."
-        DEFAULT
-        ON
-    )
-
-    config_option(
         LibSel4ArmVMMVchanSupport
         LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
         "Support vchan connections"
