@@ -30,8 +30,6 @@
 #include <sel4/sel4.h>
 #include <sel4/messages.h>
 
-#include <sel4vm/sel4_arch/vm.h>
-
 //#define DEBUG_VM
 //#define DEBUG_RAM_FAULTS
 //#define DEBUG_DEV_FAULTS

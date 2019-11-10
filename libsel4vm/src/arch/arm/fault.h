@@ -14,7 +14,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <vka/cspacepath_t.h>
-#include <sel4vm/sel4_arch/vm.h>
+
+#include <sel4vm/sel4_arch/processor.h>
 
 typedef struct vm_vcpu vm_vcpu_t;
 typedef struct fault fault_t;

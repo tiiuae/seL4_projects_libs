@@ -11,8 +11,6 @@
  */
 #pragma once
 
-#include <sel4vm/sel4_arch/vm.h>
-
 #include <sel4utils/process.h>
 #include <platsupport/io.h>
 

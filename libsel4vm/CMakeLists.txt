@@ -65,7 +65,7 @@ if("${KernelArch}" STREQUAL "arm")
     )
 
     target_include_directories(sel4vm PRIVATE src/arch/arm/${KernelSel4Arch})
-    target_include_directories(sel4vm PUBLIC sel4-arm-vmm/sel4_arch_include/${KernelSel4Arch})
+    target_include_directories(sel4vm PUBLIC sel4_arch_include/${KernelSel4Arch})
     target_link_libraries(
         sel4vm
         muslc

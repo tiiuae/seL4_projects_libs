@@ -10,9 +10,10 @@
  * @TAG(DATA61_BSD)
  */
 #include <stdio.h>
-#include <sel4vm/sel4_arch/vm.h>
 #include <assert.h>
 #include <utils/util.h>
+
+#include <sel4vm/sel4_arch/processor.h>
 
 #include "../fault.h"
 
