@@ -14,6 +14,4 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/vm.h>
 
-#define GIC_PADDR   0x10480000
-
 extern const struct device dev_vram;

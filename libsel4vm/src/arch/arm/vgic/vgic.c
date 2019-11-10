@@ -51,7 +51,7 @@
 #include <vka/capops.h>
 
 #include <sel4vm/vm.h>
-
+#include <sel4vm/gen_config.h>
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_memory.h>
@@ -75,6 +75,20 @@
 #define DDIST(...) do{ printf("VDIST: "); printf(__VA_ARGS__); }while(0)
 #else
 #define DDIST(...) do{}while(0)
+#endif
+
+
+/* FIXME these should be defined in a way that is friendlier to extension. */
+#if defined(CONFIG_PLAT_EXYNOS5)
+#define GIC_PADDR   0x10480000
+#elif defined(CONFIG_PLAT_TK1) || defined(CONFIG_PLAT_TX1)
+#define GIC_PADDR   0x50040000
+#elif defined(CONFIG_PLAT_TX2)
+#define GIC_PADDR   0x03880000
+#elif defined(CONFIG_PLAT_QEMU_ARM_VIRT)
+#define GIC_PADDR   0x8000000
+#else
+#error "Unsupported platform for GIC"
 #endif
 
 #ifdef CONFIG_PLAT_QEMU_ARM_VIRT
