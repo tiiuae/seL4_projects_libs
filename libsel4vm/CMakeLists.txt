@@ -23,6 +23,14 @@ set(sources src/boot.c src/guest_vspace.c src/guest_ram.c src/arch/${KernelArch}
     src/guest_vcpu_fault.c src/arch/${KernelArch}/guest_vcpu_fault_arch.c
     src/arch/${KernelArch}/guest_irq_controller.c src/guest_memory_helpers.c)
 
+config_option(
+    LibSel4VMDeferMemoryMap
+    LIB_SEL4VM_DEFER_MEMORY_MAP
+    "Defer mappings of memory reservations until faulted on"
+    DEFAULT
+    OFF
+)
+
 if("${KernelArch}" STREQUAL "arm")
     config_option(
         LibSel4ArmVMMVchanSupport
