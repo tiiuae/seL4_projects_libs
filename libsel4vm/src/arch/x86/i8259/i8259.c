@@ -635,7 +635,7 @@ vm_ioport_entry_t pic_ioports[] = {
 int i8259_pre_init(vm_t *vm) {
     int err;
     /* First initialize the emulated pic state */
-    vm->arch.i8259_gs = malloc(sizeof(struct i8259));
+    vm->arch.i8259_gs = calloc(1, sizeof(struct i8259));
     if (!vm->arch.i8259_gs) {
         return -1;
     }
