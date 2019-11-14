@@ -106,7 +106,7 @@ static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
     fault = vcpu->vcpu_arch.fault;
     hsr = seL4_GetMR(seL4_UnknownSyscall_ARG0);
     /* check if the exception class (bits 26-31) of the HSR indicate WFI/WFE */
-    if ( (hsr >> HSR_CLASS_EXCEPTION_SHIFT) == HSR_WFx_EXCEPTION) {
+    if ( HSR_EXCEPTION_CLASS(hsr) == HSR_WFx_EXCEPTION) {
         /* generate a new WFI fault */
         new_wfi_fault(fault);
         return VM_EXIT_HANDLED;

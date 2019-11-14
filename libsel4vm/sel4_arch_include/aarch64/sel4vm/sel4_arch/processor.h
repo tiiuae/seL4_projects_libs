@@ -12,6 +12,7 @@
 #pragma once
 
 #include <sel4/sel4.h>
+#include <sel4vm/arch/processor.h>
 
 typedef enum processor_mode {
     PMODE_EL3h = 0b1101,
@@ -63,7 +64,6 @@ typedef enum processor_mode {
 #define HSW_VECTOR_32_EXCEPTION     (0x3a)
 #define HSR_SWBRK_64_EXCEPTION      (0x3c)
 /* Remaining values (0x3d - 0x3f) are reserved */
-#define HSR_MAX_EXCEPTION           (0x3f)
 
 #define HSR_REASON_ENTRY(HSR) [HSR] = #HSR
 

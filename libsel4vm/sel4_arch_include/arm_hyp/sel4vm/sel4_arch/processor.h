@@ -12,6 +12,7 @@
 #pragma once
 
 #include <sel4/sel4.h>
+#include <sel4vm/arch/processor.h>
 
 #define MODE_USER       0x10
 #define MODE_FIQ        0x11
@@ -56,7 +57,6 @@ typedef enum processor_mode {
 #define HSR_DABT_EXCEPTION          (0x24)
 #define HSR_DABT_HYP_EXCEPTION      (0x25)
 /* Remaining values (0x26 - 0x3f) are reserved */
-#define HSR_MAX_EXCEPTION           (0x3f)
 
 #define HSR_REASON_ENTRY(HSR) [HSR] = #HSR
 

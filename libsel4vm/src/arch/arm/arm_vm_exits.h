@@ -22,6 +22,3 @@ enum arm_vm_exit_reasons {
     VM_UNKNOWN_EXIT,
     VM_NUM_EXITS
 };
-
-/* HSR Constants */
-#define HSR_CLASS_EXCEPTION_SHIFT 26
