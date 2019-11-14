@@ -80,3 +80,9 @@ seL4_Word emulate_vcpu_fault(vm_vcpu_t *vcpu, seL4_Word data);
  * @param vcpu  Handle to vcpu
  */
 void advance_vcpu_fault(vm_vcpu_t *vcpu);
+
+/*
+ * Restart the current vcpu fault
+ * @param vcpu  Handle to vcpu
+ */
+void restart_vcpu_fault(vm_vcpu_t *vcpu);

@@ -83,3 +83,7 @@ int set_vcpu_fault_data(vm_vcpu_t *vcpu, seL4_Word data) {
 void advance_vcpu_fault(vm_vcpu_t *vcpu) {
     vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
 }
+
+void restart_vcpu_fault(vm_vcpu_t *vcpu) {
+    return;
+}

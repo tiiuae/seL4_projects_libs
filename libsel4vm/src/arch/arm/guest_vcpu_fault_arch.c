@@ -54,3 +54,8 @@ void advance_vcpu_fault(vm_vcpu_t *vcpu) {
     advance_fault(vcpu->vcpu_arch.fault);
     return;
 }
+
+void restart_vcpu_fault(vm_vcpu_t *vcpu) {
+    restart_fault(vcpu->vcpu_arch.fault);
+    return;
+}
