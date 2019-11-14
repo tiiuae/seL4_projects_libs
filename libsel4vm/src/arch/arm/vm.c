@@ -99,6 +99,15 @@ static int vm_user_exception_handler(vm_vcpu_t *vcpu) {
     return VM_EXIT_HANDLED;
 }
 
+static void print_unhandled_vcpu_hsr(vm_vcpu_t *vcpu, uint32_t hsr) {
+    printf("======= Unhandled VCPU fault from [%s] =======\n",vcpu->vm->vm_name);
+    printf("HSR Value: 0x%08x\n", hsr);
+    printf("HSR Exception Class: %s [0x%x]\n", hsr_reasons[HSR_EXCEPTION_CLASS(hsr)], HSR_EXCEPTION_CLASS(hsr));
+    printf("Instruction Length: %d\n",HSR_IL(hsr));
+    printf("ISS Value: 0x%x\n", hsr & HSR_ISS_MASK);
+    printf("==============================================\n");
+}
+
 static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
     uint32_t hsr;
     int err;
@@ -111,7 +120,7 @@ static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
         new_wfi_fault(fault);
         return VM_EXIT_HANDLED;
     } else {
-        ZF_LOGE("Unhandled VCPU fault from [%s]: HSR 0x%08x\n", vcpu->vm->vm_name, hsr);
+        print_unhandled_vcpu_hsr(vcpu, hsr);
         if ((hsr & 0xfc300000) == 0x60200000 || hsr == 0xf2000800) {
             seL4_UserContext *regs;
             new_wfi_fault(fault);
