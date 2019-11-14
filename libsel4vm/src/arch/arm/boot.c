@@ -97,5 +97,7 @@ vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu) {
     assert(!err);
     vcpu->vcpu_arch.fault = fault_init(vcpu);
     assert(vcpu->vcpu_arch.fault);
+    vcpu->vcpu_arch.unhandled_vcpu_callback = NULL;
+    vcpu->vcpu_arch.unhandled_vcpu_callback_cookie = NULL;
     return 0;
 }

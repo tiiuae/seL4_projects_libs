@@ -120,6 +120,18 @@ static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
         new_wfi_fault(fault);
         return VM_EXIT_HANDLED;
     } else {
+        if (vcpu->vcpu_arch.unhandled_vcpu_callback) {
+            /* Pass the vcpu fault to library user in case they can handle it */
+            err = new_fault(fault);
+            if (err) {
+                ZF_LOGE("Failed to create new fault");
+                return VM_EXIT_HANDLE_ERROR;
+            }
+            err = vcpu->vcpu_arch.unhandled_vcpu_callback(vcpu, hsr, vcpu->vcpu_arch.unhandled_vcpu_callback_cookie);
+            if (!err) {
+                return VM_EXIT_HANDLED;
+            }
+        }
         print_unhandled_vcpu_hsr(vcpu, hsr);
         if ((hsr & 0xfc300000) == 0x60200000 || hsr == 0xf2000800) {
             seL4_UserContext *regs;
@@ -152,6 +164,23 @@ static int
 vcpu_resume(vm_vcpu_t *vcpu) {
     vcpu->tcb.is_suspended = false;
     return seL4_TCB_Resume(vm_get_vcpu_tcb(vcpu));
+}
+
+int vm_register_unhandled_vcpu_fault_callback(vm_vcpu_t *vcpu, unhandled_vcpu_fault_callback_fn vcpu_fault_callback,
+                                      void *cookie) {
+    if (!vcpu) {
+        ZF_LOGE("Failed to register fault callback: Invalid VCPU handle");
+        return -1;
+    }
+
+    if (!vcpu_fault_callback) {
+        ZF_LOGE("Failed to register vcpu fault callback: Invalid callback");
+        return -1;
+    }
+    vcpu->vcpu_arch.unhandled_vcpu_callback = vcpu_fault_callback;
+    vcpu->vcpu_arch.unhandled_vcpu_callback_cookie = cookie;
+    return 0;
+
 }
 
 int vm_run_arch(vm_t *vm) {

@@ -15,6 +15,9 @@
 #include <sel4vm/guest_vm.h>
 
 typedef struct fault fault_t;
+typedef struct vm_vcpu vm_vcpu_t;
+
+typedef int (*unhandled_vcpu_fault_callback_fn)(vm_vcpu_t *vcpu, uint32_t hsr, void *cookie);
 
 /* ======= NOTE: Not permanent - will be refactored ======= */
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
@@ -42,4 +45,9 @@ struct vm_arch {
 
 struct vm_vcpu_arch {
     fault_t *fault;
+    unhandled_vcpu_fault_callback_fn unhandled_vcpu_callback;
+    void * unhandled_vcpu_callback_cookie;
 };
+
+int vm_register_unhandled_vcpu_fault_callback(vm_vcpu_t *vcpu, unhandled_vcpu_fault_callback_fn vcpu_fault_callback,
+                                      void *cookie);
