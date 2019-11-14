@@ -24,5 +24,4 @@ enum arm_vm_exit_reasons {
 };
 
 /* HSR Constants */
-#define HSR_WFI 0x1
 #define HSR_CLASS_EXCEPTION_SHIFT 26
