@@ -19,8 +19,34 @@
 
 #include "vcpu_fault_handlers.h"
 
+static int ignore_sysreg_exception(vm_vcpu_t *vcpu, sysreg_t *sysreg, bool is_read);
+
 sysreg_entry_t sysreg_table[] = {
+#ifdef CONFIG_ARM_CORTEX_A57
+    /* S3_1_c15_c2_0: Write EL1 CPU Auxiliary Control Register */
+    {
+        .sysreg = { .params.op0 = 3, .params.op1 = 1, .params.op2 = 0, .params.crn = 15, .params.crm = 2 },
+        .handler = ignore_sysreg_exception
+    },
+#endif
 };
+
+static int ignore_sysreg_exception(vm_vcpu_t *vcpu, sysreg_t *sysreg, bool is_read) {
+    int err;
+    /* TODO: Maybe perform read */
+    seL4_UserContext regs;
+    err =  vm_get_thread_context(vcpu, &regs);
+    if (err) {
+        return -1;
+    }
+    regs.pc += 4;
+    err = vm_set_thread_context(vcpu, regs);
+    if (err) {
+        return -1;
+    }
+    restart_vcpu_fault(vcpu);
+    return 0;
+}
 
 static bool is_sysreg_match(sysreg_t *sysreg_a, sysreg_t *sysreg_b) {
     return (
