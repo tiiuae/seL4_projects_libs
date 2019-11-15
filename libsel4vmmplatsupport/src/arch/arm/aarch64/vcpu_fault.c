@@ -26,6 +26,7 @@ sysreg_entry_t sysreg_table[] = {
     /* S3_1_c15_c2_0: Write EL1 CPU Auxiliary Control Register */
     {
         .sysreg = { .params.op0 = 3, .params.op1 = 1, .params.op2 = 0, .params.crn = 15, .params.crm = 2 },
+        .sysreg_match_mask = { .hsr_val  = SYSREG_MATCH_ALL_MASK },
         .handler = ignore_sysreg_exception
     },
 #endif
@@ -48,20 +49,24 @@ static int ignore_sysreg_exception(vm_vcpu_t *vcpu, sysreg_t *sysreg, bool is_re
     return 0;
 }
 
-static bool is_sysreg_match(sysreg_t *sysreg_a, sysreg_t *sysreg_b) {
+static bool is_sysreg_match(sysreg_t *sysreg, sysreg_entry_t *sysreg_entry) {
+    sysreg_t match_a = *sysreg;
+    match_a.hsr_val &= sysreg_entry->sysreg_match_mask.hsr_val;
+    sysreg_t match_b = sysreg_entry->sysreg;
     return (
-        (sysreg_a->params.op0 == sysreg_b->params.op0) &&
-        (sysreg_a->params.op1 == sysreg_b->params.op1) &&
-        (sysreg_a->params.op2 == sysreg_b->params.op2) &&
-        (sysreg_a->params.crn == sysreg_b->params.crn) &&
-        (sysreg_a->params.crm == sysreg_b->params.crm)
+        (match_a.params.op0 == match_b.params.op0) &&
+        (match_a.params.op1 == match_b.params.op1) &&
+        (match_a.params.op2 == match_b.params.op2) &&
+        (match_a.params.crn == match_b.params.crn) &&
+        (match_a.params.crm == match_b.params.crm)
     );
 }
 
 static sysreg_entry_t* find_sysreg_entry(vm_vcpu_t *vcpu, sysreg_t *sysreg_op) {
     for (int i = 0; i < ARRAY_SIZE(sysreg_table); i++) {
         sysreg_entry_t *sysreg_entry = &sysreg_table[i];
-        if (is_sysreg_match(sysreg_op, &sysreg_entry->sysreg)) {
+        sysreg_t match_sysreg_op = *sysreg_op;
+        if (is_sysreg_match(sysreg_op, sysreg_entry)) {
             return sysreg_entry;
         }
     }
