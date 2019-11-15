@@ -36,7 +36,7 @@ set(sources src/device.c src/device_utils.c src/ioports.c src/drivers/virtio_con
             src/drivers/virtio_emul_helpers.c src/drivers/virtio_net_emul.c src/guest_memory_util.c)
 
 if("${KernelArch}" STREQUAL "arm")
-    file(GLOB arch_sources src/arch/arm/*.c src/arch/arm/devices/*.c)
+    file(GLOB arch_sources src/arch/arm/*.c src/arch/arm/devices/*.c src/arch/arm/${KernelSel4Arch}/*.c)
     file(GLOB plat_sources src/plat/${KernelPlatform}/*.c src/plat/${KernelPlatform}/devices/*.c)
     list(APPEND sources ${arch_sources})
     list(APPEND sources ${plat_sources})
