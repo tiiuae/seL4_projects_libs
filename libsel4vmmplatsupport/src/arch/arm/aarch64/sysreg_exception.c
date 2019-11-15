@@ -32,6 +32,12 @@ sysreg_entry_t sysreg_table[] = {
         .handler = ignore_sysreg_exception
     },
 #endif
+    /* Debug and Trace Register Operations */
+    {
+        .sysreg = { .params.op0 = 2 },
+        .sysreg_match_mask = { .hsr_val = SYSREG_OP0_MASK },
+        .handler = ignore_sysreg_exception
+    },
 };
 
 static int ignore_sysreg_exception(vm_vcpu_t *vcpu, sysreg_t *sysreg, bool is_read) {

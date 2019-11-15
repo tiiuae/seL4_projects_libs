@@ -133,7 +133,7 @@ static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
             }
         }
         print_unhandled_vcpu_hsr(vcpu, hsr);
-        if ((hsr & 0xfc300000) == 0x60200000 || hsr == 0xf2000800) {
+        if (hsr == 0xf2000800) {
             seL4_UserContext *regs;
             new_wfi_fault(fault);
             regs = fault_get_ctx(fault);
