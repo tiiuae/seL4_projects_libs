@@ -133,16 +133,6 @@ static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
             }
         }
         print_unhandled_vcpu_hsr(vcpu, hsr);
-        if (hsr == 0xf2000800) {
-            seL4_UserContext *regs;
-            new_wfi_fault(fault);
-            regs = fault_get_ctx(fault);
-            regs->pc += 4;
-            seL4_TCB_WriteRegisters(vm_get_vcpu_tcb(vcpu), false, 0,
-                    sizeof(*regs) / sizeof(regs->pc), regs);
-            restart_fault(fault);
-            return VM_EXIT_HANDLED;
-            }
         return VM_EXIT_HANDLE_ERROR;
     }
 }
