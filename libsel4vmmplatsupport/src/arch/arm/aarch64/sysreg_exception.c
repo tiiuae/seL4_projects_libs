@@ -19,6 +19,8 @@
 
 #include "vcpu_fault_handlers.h"
 
+#include "sysreg_exception.h"
+
 static int ignore_sysreg_exception(vm_vcpu_t *vcpu, sysreg_t *sysreg, bool is_read);
 
 sysreg_entry_t sysreg_table[] = {
