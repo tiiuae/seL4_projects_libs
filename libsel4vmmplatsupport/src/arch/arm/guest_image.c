@@ -161,10 +161,13 @@ static int load_image(vm_t *vm, const char *image_name, uintptr_t load_addr,  si
         return -1;
     }
     char buf[PAGE_SIZE_4K] = {0};
-    size_t offset;
-    for (offset = 0; len != 0; offset += len) {
+    size_t offset = 0;
+    while(1) {
         /* Load the image */
         len = read(fd, buf, sizeof(buf));
+        if (!len) {
+            break;
+        }
         vm_ram_mark_allocated(vm, load_addr + offset, len);
         error = vm_ram_touch(vm, load_addr + offset, len, guest_write_address, (void *)buf);
         if (error) {
@@ -172,6 +175,7 @@ static int load_image(vm_t *vm, const char *image_name, uintptr_t load_addr,  si
             close(fd);
             return -1;
         }
+        offset += len;
     }
     *resulting_image_size = offset;
     close(fd);
