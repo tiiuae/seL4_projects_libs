@@ -154,6 +154,7 @@ int vm_run_arch(vm_t *vm) {
         return -1;
     }
 
+    ret = 1;
     /* Loop, handling events */
     while (ret > 0) {
         seL4_MessageInfo_t tag;
