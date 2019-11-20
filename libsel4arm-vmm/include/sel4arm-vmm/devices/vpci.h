@@ -12,21 +12,7 @@
 #pragma once
 
 #include <sel4arm-vmm/vm.h>
-
-/* PCI host bridge memory regions are defined in the pci dts node
- * supplied to the Linux guest. These values are also reflected here.
- * NOTE: These values were determined using the exynos5422 memory layout in
- * mind and may not hold correct for other platforms.
- * */
-
-/* PCI host bridge configration space */
-#define PCI_CFG_REGION_ADDR 0x3E000000
-/* PCI host bridge IO space */
-#define PCI_IO_REGION_ADDR 0x3D000000
-/* Size of PCI configuration space */
-#define PCI_CFG_REGION_SIZE 0x1000000
-/* Size of PCI IO space  */
-#define PCI_IO_REGION_SIZE 0x1000
+#include <sel4arm-vmm/plat/vpci.h>
 
 /* Mask to retrieve PCI bar size */
 #define PCI_CFG_BAR_MASK 0xFFFFFFFF
