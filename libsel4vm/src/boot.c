@@ -42,8 +42,6 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
     /* Initialise ram region */
     vm->mem.num_ram_regions = 0;
     vm->mem.ram_regions = malloc(0);
-    /* Currently set this to 4k pages by default */
-    vm->mem.page_size = seL4_PageBits;
     /* Initialise our vcpu set */
     vm->vcpus = malloc(sizeof(vm_vcpu_t *) * MAX_NUM_VCPUS);
     assert(vm->vcpus);

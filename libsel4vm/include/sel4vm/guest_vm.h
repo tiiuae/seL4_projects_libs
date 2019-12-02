@@ -55,8 +55,6 @@ struct vm_mem {
      * This is memory that we will specifically give the guest as actual RAM */
     int num_ram_regions;
     struct vm_ram_region *ram_regions;
-    /* Default page size to use */
-    int page_size;
     /* Memory reservations */
     vm_memory_reservation_cookie_t *reservation_cookie;
     unhandled_mem_fault_callback_fn unhandled_mem_fault_handler;

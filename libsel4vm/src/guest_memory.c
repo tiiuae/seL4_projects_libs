@@ -438,7 +438,7 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation) {
 
     remove_memory_reservation_node(vm, reservation->addr, reservation->size, reservation->res_type);
     if (reservation->is_mapped) {
-        int page_size = vm->mem.page_size;
+        int page_size = seL4_PageBits;
         int num_pages = ROUND_UP(reservation->size, BIT(page_size)) >> page_size;
         vspace_unmap_pages(&vm->mem.vm_vspace, (void *)reservation->addr, num_pages, page_size, vm->vka);
     }

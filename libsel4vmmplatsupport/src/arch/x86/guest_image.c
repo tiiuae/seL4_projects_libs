@@ -148,7 +148,7 @@ static int load_guest_segment(vm_t *vm, seL4_Word source_offset,
         seL4_Word dest_addr, unsigned int segment_size, unsigned int file_size, FILE *file) {
 
     int ret;
-    unsigned int page_size = vm->mem.page_size;
+    unsigned int page_size = seL4_PageBits;
     assert(file_size <= segment_size);
 
     /* Allocate a cslot for duplicating frame caps */

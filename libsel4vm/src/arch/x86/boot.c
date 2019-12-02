@@ -66,7 +66,7 @@ static vm_frame_t pd_alloc_iterator(uintptr_t addr, void *cookie) {
     if (!vm) {
         return frame_result;
     }
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
     uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
     ret = vka_alloc_frame_maybe_device(vm->vka, page_size, false, &object);
     if (ret) {

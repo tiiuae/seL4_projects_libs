@@ -770,7 +770,7 @@ static vm_frame_t vgic_dist_frame_iterator(uintptr_t addr, void *cookie) {
         return frame_result;
     }
     vm = dist_cookie->vm;
-    page_size = vm->mem.page_size;
+    page_size = seL4_PageBits;
 
     int ret = vka_cspace_alloc_path(vm->vka, &return_frame);
     if (ret) {
@@ -793,7 +793,7 @@ static vm_frame_t vgic_dist_frame_iterator(uintptr_t addr, void *cookie) {
 static void *create_vgic_distributor_frame(vm_t *vm) {
     int err;
     struct vgic_dist_frame_cookie *cookie;
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
     vspace_t *vmm_vspace = &vm->mem.vmm_vspace;
     ps_io_ops_t *ops = vm->io_ops;
 
@@ -868,7 +868,7 @@ static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie) {
     frame_result.cptr = frame.capPtr;
     frame_result.rights = seL4_AllRights;
     frame_result.vaddr = GIC_CPU_PADDR;
-    frame_result.size_bits = vm->mem.page_size;
+    frame_result.size_bits = seL4_PageBits;
     return frame_result;
 }
 

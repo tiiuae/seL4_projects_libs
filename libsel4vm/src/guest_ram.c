@@ -159,7 +159,7 @@ int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn to
         access_cookie.offset = current_addr - addr;
         access_cookie.current_addr = current_addr;
         int result = vspace_access_page_with_callback(&vm->mem.vm_vspace, &vm->mem.vmm_vspace, (void *)current_aligned,
-                vm->mem.page_size, seL4_AllRights, 1, touch_access_callback, &access_cookie);
+                seL4_PageBits, seL4_AllRights, 1, touch_access_callback, &access_cookie);
         if (result) {
             return result;
         }
@@ -240,7 +240,7 @@ static vm_frame_t ram_alloc_iterator(uintptr_t addr, void *cookie) {
     if (!vm) {
         return frame_result;
     }
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
     uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
     ret = vka_alloc_frame_maybe_device(vm->vka, page_size, true, &object);
     if (ret) {
@@ -263,7 +263,7 @@ static vm_frame_t ram_ut_alloc_iterator(uintptr_t addr, void *cookie) {
     if (!vm) {
         return frame_result;
     }
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
     uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
     cspacepath_t path;
     error = vka_cspace_alloc_path(vm->vka, &path);

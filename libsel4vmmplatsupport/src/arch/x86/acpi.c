@@ -76,7 +76,7 @@ static vm_frame_t bios_memory_iterator(uintptr_t addr, void *cookie) {
     struct bios_iterator_cookie *bios_cookie = (struct bios_iterator_cookie *)cookie;
     cspacepath_t *bios_frames = bios_cookie->bios_frames;
     vm_t *vm = bios_cookie->vm;
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
 
     uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
     if (frame_start < LOWER_BIOS_START || frame_start > LOWER_BIOS_START + LOWER_BIOS_SIZE) {
@@ -106,7 +106,7 @@ static vm_frame_t bios_memory_iterator(uintptr_t addr, void *cookie) {
 
 static void *alloc_bios_memory(vm_t *vm, cspacepath_t **bios_frames) {
     int err;
-    unsigned int num_pages = ROUND_UP(LOWER_BIOS_SIZE, BIT(vm->mem.page_size)) >> vm->mem.page_size;
+    unsigned int num_pages = ROUND_UP(LOWER_BIOS_SIZE, BIT(seL4_PageBits)) >> seL4_PageBits;
     seL4_CPtr caps[num_pages];
     cspacepath_t *bios_frames_paths = (cspacepath_t *)malloc(num_pages * sizeof(cspacepath_t));
     if (!bios_frames_paths) {
@@ -116,18 +116,18 @@ static void *alloc_bios_memory(vm_t *vm, cspacepath_t **bios_frames) {
     uintptr_t current_addr = LOWER_BIOS_START;
     for (unsigned int i = 0; i < num_pages; i++) {
         vka_object_t frame;
-        err = vka_alloc_frame(vm->vka, vm->mem.page_size, &frame);
+        err = vka_alloc_frame(vm->vka, seL4_PageBits, &frame);
         if (err) {
             ZF_LOGE("Failed to allocate frame for bios addr 0x%x", (unsigned int)current_addr);
             return NULL;
         }
         vka_cspace_make_path(vm->vka, frame.cptr, &bios_frames_paths[i]);
         caps[i] = bios_frames_paths[i].capPtr;
-        current_addr += BIT(vm->mem.page_size);
+        current_addr += BIT(seL4_PageBits);
     }
 
     void *bios_addr = vspace_map_pages(&vm->mem.vmm_vspace, caps, NULL, seL4_AllRights,
-            num_pages, vm->mem.page_size, 0);
+            num_pages, seL4_PageBits, 0);
     if (!bios_addr) {
         ZF_LOGE("Failed to map new pages for bios memory");
         return NULL;

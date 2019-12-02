@@ -51,7 +51,7 @@ static vm_frame_t device_frame_iterator(uintptr_t addr, void *cookie) {
         return frame_result;
     }
     vm = device_cookie->vm;
-    page_size = vm->mem.page_size;
+    page_size = seL4_PageBits;
 
     int ret = vka_cspace_alloc_path(vm->vka, &return_frame);
     if (ret) {
@@ -81,7 +81,7 @@ static vm_frame_t ut_alloc_iterator(uintptr_t addr, void *cookie) {
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
     struct ut_alloc_iterator_cookie *alloc_cookie = (struct ut_alloc_iterator_cookie *)cookie;
     vm_t *vm = alloc_cookie->vm;
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
     uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
 
     if (alloc_cookie->with_paddr) {
@@ -125,7 +125,7 @@ static vm_frame_t ut_allocman_iterator(uintptr_t addr, void *cookie) {
     if (!vm) {
         return frame_result;
     }
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
     uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
     cspacepath_t path;
     error = vka_cspace_alloc_path(vm->vka, &path);
@@ -155,7 +155,7 @@ static vm_frame_t maybe_device_alloc_iterator(uintptr_t addr, void *cookie) {
     if (!vm) {
         return frame_result;
     }
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
     uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
     ret = vka_alloc_frame_maybe_device(vm->vka, page_size, true, &object);
     if (ret) {
@@ -177,7 +177,7 @@ static vm_frame_t frame_alloc_iterator(uintptr_t addr, void *cookie) {
     if (!vm) {
         return frame_result;
     }
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
     uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
     ret = vka_alloc_frame(vm->vka, page_size, &object);
     if (ret) {
@@ -195,7 +195,7 @@ void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRight
         memory_fault_callback_fn alloc_fault_callback, void *alloc_fault_cookie) {
     int err;
     struct device_frame_cookie *cookie;
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
     void *alloc_addr;
     vspace_t *vmm_vspace = &vm->mem.vmm_vspace;
     ps_io_ops_t *ops = vm->io_ops;
@@ -254,7 +254,7 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t
         memory_fault_callback_fn fault_callback, void *fault_cookie) {
     int err;
     struct device_frame_cookie *cookie;
-    int page_size = vm->mem.page_size;
+    int page_size = seL4_PageBits;
     void *dev_addr;
     vspace_t *vmm_vspace = &vm->mem.vmm_vspace;
     ps_io_ops_t *ops = vm->io_ops;
