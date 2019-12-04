@@ -129,9 +129,9 @@ struct virq_handle {
 
 typedef struct virq_handle* virq_handle_t;
 
-static inline void virq_ack(vm_t *vm, struct virq_handle *irq)
+static inline void virq_ack(vm_vcpu_t *vcpu, struct virq_handle *irq)
 {
-    irq->ack(vm, irq->virq, irq->token);
+    irq->ack(vcpu, irq->virq, irq->token);
 }
 
 /* Memory map for GIC distributer */
@@ -300,7 +300,7 @@ static inline int is_active(struct gic_dist_map *gic_dist, int irq)
 static int list_size = 0;
 
 static int
-vgic_vcpu_inject_irq(struct vgic_dist_device* d, vm_t *vm, struct virq_handle *irq)
+vgic_vcpu_inject_irq(struct vgic_dist_device* d, vm_vcpu_t *inject_vcpu, struct virq_handle *irq)
 {
     vgic_t *vgic;
     int err;
@@ -309,7 +309,7 @@ vgic_vcpu_inject_irq(struct vgic_dist_device* d, vm_t *vm, struct virq_handle *i
     vgic = vgic_device_get_vgic(d);
 
     seL4_CPtr vcpu;
-    vcpu = vm->vcpus[BOOT_VCPU]->vcpu.cptr;
+    vcpu = inject_vcpu->vcpu.cptr;
     for (i = 0; i < 64; i++) {
         if (vgic->irq[i] == NULL) {
             break;
@@ -334,7 +334,7 @@ vgic_vcpu_inject_irq(struct vgic_dist_device* d, vm_t *vm, struct virq_handle *i
     }
 }
 
-int handle_vgic_maintenance(vm_t *vm, int idx)
+int handle_vgic_maintenance(vm_vcpu_t *vcpu, int idx)
 {
     /* STATE d) */
     struct gic_dist_map* gic_dist;
@@ -348,7 +348,7 @@ int handle_vgic_maintenance(vm_t *vm, int idx)
     /* Clear pending */
     DIRQ("Maintenance IRQ %d\n", lr[idx]->virq);
     set_pending(gic_dist, lr[idx]->virq, false);
-    virq_ack(vm, lr[idx]);
+    virq_ack(vcpu, lr[idx]);
 
     /* Check the overflow list for pending IRQs */
     lr[idx] = NULL;
@@ -357,7 +357,7 @@ int handle_vgic_maintenance(vm_t *vm, int idx)
      * not want to process any new overflow irqs */
     size_t tail = vgic->lr_overflow.tail;
     for (size_t i = vgic->lr_overflow.head; i != tail; i = LR_OF_NEXT(i)) {
-        if (vgic_vcpu_inject_irq(vgic_dist, vm, &vgic->lr_overflow.irqs[i]) == 0) {
+        if (vgic_vcpu_inject_irq(vgic_dist, vcpu, &vgic->lr_overflow.irqs[i]) == 0) {
             vgic->lr_overflow.head = LR_OF_NEXT(i);
             vgic->lr_overflow.full = (vgic->lr_overflow.head == LR_OF_NEXT(vgic->lr_overflow.tail));
         } else {
@@ -435,7 +435,7 @@ vgic_dist_disable(struct vgic_dist_device* d, vm_t* vm)
 }
 
 static int
-vgic_dist_enable_irq(struct vgic_dist_device* d, vm_t* vm, int irq)
+vgic_dist_enable_irq(struct vgic_dist_device* d, vm_vcpu_t* vcpu, int irq)
 {
     struct gic_dist_map *gic_dist;
     struct virq_handle *virq_data;
@@ -448,7 +448,7 @@ vgic_dist_enable_irq(struct vgic_dist_device* d, vm_t* vm, int irq)
     if (virq_data) {
         /* STATE b) */
         if (not_pending(gic_dist, virq_data->virq)) {
-            virq_ack(vm, virq_data);
+            virq_ack(vcpu, virq_data);
         }
     } else {
         DDIST("enabled irq %d has no handle", irq);
@@ -469,7 +469,7 @@ vgic_dist_disable_irq(struct vgic_dist_device* d, vm_t* vm, int irq)
 }
 
 static int
-vgic_dist_set_pending_irq(struct vgic_dist_device* d, vm_t* vm, int irq)
+vgic_dist_set_pending_irq(struct vgic_dist_device* d, vm_vcpu_t* vcpu, int irq)
 {
     /* STATE c) */
     struct gic_dist_map *gic_dist;
@@ -486,7 +486,7 @@ vgic_dist_set_pending_irq(struct vgic_dist_device* d, vm_t* vm, int irq)
         DDIST("Pending set: Inject IRQ from pending set (%d)\n", irq);
 
         set_pending(gic_dist, virq_data->virq, true);
-        err = vgic_vcpu_inject_irq(d, vm, virq_data);
+        err = vgic_vcpu_inject_irq(d, vcpu, virq_data);
         assert(!err);
 
         return err;
@@ -574,7 +574,7 @@ handle_vgic_dist_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t f
                 irq = CTZ(data);
                 data &= ~(1U << irq);
                 irq += (offset - 0x100) * 8;
-                vgic_dist_enable_irq(d, vm, irq);
+                vgic_dist_enable_irq(d, vcpu, irq);
             }
             err = ignore_fault(fault);
             break;
@@ -604,7 +604,7 @@ handle_vgic_dist_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t f
                 irq = CTZ(data);
                 data &= ~(1U << irq);
                 irq += (offset - 0x200) * 8;
-                vgic_dist_set_pending_irq(d, vm, irq);
+                vgic_dist_set_pending_irq(d, vcpu, irq);
             }
             err = ignore_fault(fault);
             break;
@@ -684,7 +684,7 @@ static void vgic_dist_reset(struct vgic_dist_device* d)
     }
 }
 
-int vm_register_irq(vm_t *vm, int irq, irq_ack_fn_t ack_fn, void *cookie)
+int vm_register_irq(vm_vcpu_t *vcpu, int irq, irq_ack_fn_t ack_fn, void *cookie)
 {
     struct virq_handle* virq_data;
     struct vgic* vgic;
@@ -708,21 +708,21 @@ int vm_register_irq(vm_t *vm, int irq, irq_ack_fn_t ack_fn, void *cookie)
     return 0;
 }
 
-int vm_inject_irq(vm_t *vm, int irq)
+int vm_inject_irq(vm_vcpu_t *vcpu, int irq)
 {
     // vm->lock();
 
-    DIRQ("VM received IRQ %d\n", virq->virq);
+    DIRQ("VM received IRQ %d\n", irq);
 
-    vgic_dist_set_pending_irq(vgic_dist, vm, irq);
+    int err = vgic_dist_set_pending_irq(vgic_dist, vcpu, irq);
 
-    if (!fault_handled(vm->vcpus[BOOT_VCPU]->vcpu_arch.fault) && fault_is_wfi(vm->vcpus[BOOT_VCPU]->vcpu_arch.fault)) {
-        ignore_fault(vm->vcpus[BOOT_VCPU]->vcpu_arch.fault);
+    if (!fault_handled(vcpu->vcpu_arch.fault) && fault_is_wfi(vcpu->vcpu_arch.fault)) {
+        ignore_fault(vcpu->vcpu_arch.fault);
     }
 
     // vm->unlock();
 
-    return 0;
+    return err;
 }
 
 static memory_fault_result_t
@@ -909,7 +909,7 @@ int vm_vgic_maintenance_handler(vm_vcpu_t *vcpu) {
     /* Currently not handling spurious IRQs */
     assert(idx >= 0);
 
-    err = handle_vgic_maintenance(vcpu->vm, idx);
+    err = handle_vgic_maintenance(vcpu, idx);
     if (!err) {
         seL4_MessageInfo_t reply;
         reply = seL4_MessageInfo_new(0, 0, 0, 0);

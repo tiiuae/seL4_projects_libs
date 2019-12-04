@@ -19,6 +19,7 @@
 #include <sel4vm/guest_memory_helpers.h>
 #include <sel4vm/guest_irq_controller.h>
 #include <sel4vm/guest_vcpu_fault.h>
+#include <sel4vm/boot.h>
 
 #include <sel4vmmplatsupport/device.h>
 #include <sel4vmmplatsupport/guest_memory_util.h>
@@ -218,7 +219,7 @@ static int reserve_dataport_memory(vm_t *vm, crossvm_dataport_handle_t *dataport
     return 0;
 }
 
-static void connection_consume_ack(vm_t *vm, int irq, void *cookie) {}
+static void connection_consume_ack(vm_vcpu_t *vcpu, int irq, void *cookie) {}
 
 void consume_connection_event(vm_t *vm, seL4_Word event_id, bool inject_irq)
 {
@@ -241,7 +242,7 @@ void consume_connection_event(vm_t *vm, seL4_Word event_id, bool inject_irq)
     event_registers[EVENT_BAR_CONSUME_EVENT_REGISTER_INDEX]++;
     if (inject_irq) {
         /* Inject our event interrupt */
-        int err = vm_inject_irq(vm, conn_info->connection_irq);
+        int err = vm_inject_irq(vm->vcpus[BOOT_VCPU], conn_info->connection_irq);
         if (err) {
             ZF_LOGE("Failed to inject connection irq");
         }
@@ -253,7 +254,7 @@ static int register_consume_event(vm_t *vm, crossvm_handle_t *connection, struct
 {
     if (connection->consume_id != -1 && conn_info->connection_irq > 0) {
         /* Register an irq for the crossvm connection */
-        int err = vm_register_irq(vm, conn_info->connection_irq, connection_consume_ack, NULL);
+        int err = vm_register_irq(vm->vcpus[BOOT_VCPU], conn_info->connection_irq, connection_consume_ack, NULL);
         if (err) {
             ZF_LOGE("Failed to register IRQ for event consume");
             return -1;

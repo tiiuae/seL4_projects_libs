@@ -182,7 +182,7 @@ static void pic_clear_isr(vm_t *vm, struct i8259_state *s, int irq)
 
     if (irq != 2) {
         if (irq_ack_fns[irq].callback) {
-            irq_ack_fns[irq].callback(vm, irq, irq_ack_fns[irq].cookie);
+            irq_ack_fns[irq].callback(vm->vcpus[BOOT_VCPU], irq, irq_ack_fns[irq].cookie);
         }
     }
 }
@@ -285,7 +285,7 @@ static void pic_reset(vm_t *vm, struct i8259_state *s)
 
     for (irq = 0; irq < PIC_NUM_PINS / 2; irq++) {
         if (edge_irr & (1 << irq)) {
-            pic_clear_isr(vm, s, irq);
+            pic_clear_isr(vm->vcpus[BOOT_VCPU], s, irq);
         }
     }
 }
@@ -308,7 +308,8 @@ static void pic_ioport_write(vm_vcpu_t *vcpu, struct i8259_state *s, unsigned in
                 printf("PIC: level sensitive irq not supported\n");
             }
             /* Reset the machine state and pending IRQS. */
-            pic_reset(vcpu->vm, s);
+            pic_reset(vcpu, s);
+
         } else if (val & 0x08) {
             /* OCW 3 */
             if (val & 0x04) {
@@ -440,7 +441,7 @@ static unsigned int pic_ioport_read(vm_vcpu_t *vcpu, struct i8259_state *s, unsi
 
     /* Poll for the highest priority IRQ. */
     if (s->poll) {
-        ret = pic_poll_read(vcpu->vm, s, addr);
+        ret = pic_poll_read(vcpu, s, addr);
         s->poll = 0;
 
     } else {
@@ -703,11 +704,11 @@ int i8259_pre_init(vm_t *vm)
  * IRQ source ID is used for mapping multiple IRQ source into a IRQ pin.
  * Sets irq request into the state machine for PIC.
  */
-int vm_set_irq_level(vm_t *vm, int irq, int irq_level)
+int vm_set_irq_level(vm_vcpu_t *vcpu, int irq, int irq_level)
 {
     int ret;
 
-    struct i8259 *s = vm->arch.i8259_gs;
+    struct i8259 *s = vcpu->vm->arch.i8259_gs;
 
     /* Set IRR. */
     ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
@@ -719,14 +720,14 @@ int vm_set_irq_level(vm_t *vm, int irq, int irq_level)
     return 0;
 }
 
-int vm_inject_irq(vm_t *vm, int irq)
+int vm_inject_irq(vm_vcpu_t *vcpu, int irq)
 {
-    vm_set_irq_level(vm, irq, 1);
-    vm_set_irq_level(vm, irq, 0);
+    vm_set_irq_level(vcpu, irq, 1);
+    vm_set_irq_level(vcpu, irq, 0);
     return 0;
 }
 
-int vm_register_irq(vm_t *vm, int irq, irq_ack_fn_t fn, void *cookie)
+int vm_register_irq(vm_vcpu_t *vcpu, int irq, irq_ack_fn_t fn, void *cookie)
 {
     if (irq < 0 || irq >= PIC_NUM_PINS) {
         ZF_LOGE("irq %d is invalid", irq);

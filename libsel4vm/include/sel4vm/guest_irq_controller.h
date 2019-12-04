@@ -15,34 +15,34 @@
 #include <sel4vm/guest_vm.h>
 
 /* Callback for irq acknowledgement */
-typedef void (*irq_ack_fn_t)(vm_t *vm, int irq, void *cookie);
+typedef void (*irq_ack_fn_t)(vm_vcpu_t *vcpu, int irq, void *cookie);
 
 /**
  * Inject an IRQ into a VM's interrupt controller
- * @param vm    Handle to the VM
+ * @param vcpu  Handle to the VCPU
  * @param irq   IRQ number to inject
  * @return      0 on success, otherwise -1 for error
  */
-int vm_inject_irq(vm_t *vm, int irq);
+int vm_inject_irq(vm_vcpu_t *vcpu, int irq);
 
 /**
  * Set level of IRQ number into a VM's interrupt controller
- * @param vm        Handle to the VM
+ * @param vcpu      Handle to the VCPU
  * @param irq       IRQ number to set level on
  * @param irq_level Value of IRQ level
  * @return          0 on success, otherwise -1 for error
  */
-int vm_set_irq_level(vm_t *vm, int irq, int irq_level);
+int vm_set_irq_level(vm_vcpu_t *vcpu, int irq, int irq_level);
 
 /**
  * Register irq with an acknowledgment function
- * @param vm        Handle to the VM
+ * @param vcpu      Handle to the VCPU
  * @param irq       IRQ number to register acknowledgement function on
  * @param ack_fn    IRQ acknowledgement function
  * @param cookie    Cookie to pass back with IRQ acknowledgement function
  * @return          0 on success, otherwise -1 for error
  */
-int vm_register_irq(vm_t *vm, int irq, irq_ack_fn_t ack_fn, void *cookie);
+int vm_register_irq(vm_vcpu_t *vcpu, int irq, irq_ack_fn_t ack_fn, void *cookie);
 
 /**
  * Install the default interrupt controller into the VM
