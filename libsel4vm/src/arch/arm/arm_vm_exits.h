@@ -19,6 +19,7 @@ enum arm_vm_exit_reasons {
     VM_USER_EXCEPTION_EXIT,
     VM_VGIC_MAINTENANCE_EXIT,
     VM_VCPU_EXIT,
+    VM_VPPI_EXIT,
     VM_UNKNOWN_EXIT,
     VM_NUM_EXITS
 };

@@ -21,6 +21,7 @@
 #include <sel4vm/guest_vm_util.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_vm_exits.h>
+#include <sel4vm/guest_irq_controller.h>
 #include <sel4vm/sel4_arch/processor.h>
 
 #include "vm.h"
@@ -35,6 +36,7 @@
 static int vm_user_exception_handler(vm_vcpu_t *vcpu);
 static int vm_vcpu_handler(vm_vcpu_t *vcpu);
 static int vm_unknown_exit_handler(vm_vcpu_t *vcpu);
+static int vm_vppi_event_handler(vm_vcpu_t *vcpu);
 
 static vm_exit_handler_fn_t arm_exit_handlers[] = {
     [VM_GUEST_ABORT_EXIT] = vm_guest_mem_abort_handler,
@@ -42,6 +44,7 @@ static vm_exit_handler_fn_t arm_exit_handlers[] = {
     [VM_USER_EXCEPTION_EXIT] = vm_user_exception_handler,
     [VM_VGIC_MAINTENANCE_EXIT] = vm_vgic_maintenance_handler,
     [VM_VCPU_EXIT] = vm_vcpu_handler,
+    [VM_VPPI_EXIT] = vm_vppi_event_handler,
     [VM_UNKNOWN_EXIT] = vm_unknown_exit_handler
 };
 
@@ -65,6 +68,9 @@ static int vm_decode_exit(seL4_Word label)
     case seL4_Fault_VCPUFault:
         exit_reason = VM_VCPU_EXIT;
         break;
+    case seL4_Fault_VPPIEvent:
+        exit_reason = VM_VPPI_EXIT;
+        break;
     default:
         exit_reason = VM_UNKNOWN_EXIT;
     }
@@ -82,6 +88,29 @@ static int handle_exception(vm_vcpu_t *vcpu, seL4_Word ip)
     assert(!err);
     print_ctx_regs(&regs);
     return VM_EXIT_HANDLED;
+}
+
+static int vm_vppi_event_handler(vm_vcpu_t *vcpu)
+{
+    int err;
+    seL4_Word ppi_irq;
+    ppi_irq = seL4_GetMR(0);
+    /* We directly inject the interrupt assuming it has been previously registered
+     * If not the interrupt will dropped by the VM */
+    err = vm_inject_irq(vcpu, ppi_irq);
+    if (err) {
+        ZF_LOGE("VPPI IRQ %d dropped on vcpu %d", ppi_irq, vcpu->vcpu_id);
+        /* Acknowledge to unmask it as our guest will not use the interrupt */
+        seL4_Error ack_err = seL4_ARM_VCPU_AckVPPI(vcpu->vcpu.cptr, ppi_irq);
+        if (ack_err) {
+            ZF_LOGE("Failed to ACK VPPI: VPPI Ack invocation failed");
+            return -1;
+        }
+    }
+    seL4_MessageInfo_t reply;
+    reply = seL4_MessageInfo_new(0, 0, 0, 0);
+    seL4_Reply(reply);
+    return 0;
 }
 
 static int vm_user_exception_handler(vm_vcpu_t *vcpu)
