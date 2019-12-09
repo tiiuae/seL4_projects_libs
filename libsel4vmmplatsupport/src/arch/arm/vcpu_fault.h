@@ -17,3 +17,7 @@
 static inline int unknown_vcpu_exception_handler(vm_vcpu_t *vcpu, uint32_t hsr) {
     return -1;
 }
+
+static inline int ignore_exception(vm_vcpu_t *vcpu, uint32_t hsr) {
+    return 0;
+}

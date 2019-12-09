@@ -114,27 +114,20 @@ static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
     fault_t* fault;
     fault = vcpu->vcpu_arch.fault;
     hsr = seL4_GetMR(seL4_UnknownSyscall_ARG0);
-    /* check if the exception class (bits 26-31) of the HSR indicate WFI/WFE */
-    if ( HSR_EXCEPTION_CLASS(hsr) == HSR_WFx_EXCEPTION) {
-        /* generate a new WFI fault */
-        new_vcpu_fault(fault);
-        return VM_EXIT_HANDLED;
-    } else {
-        if (vcpu->vcpu_arch.unhandled_vcpu_callback) {
-            /* Pass the vcpu fault to library user in case they can handle it */
-            err = new_vcpu_fault(fault, hsr);
-            if (err) {
-                ZF_LOGE("Failed to create new fault");
-                return VM_EXIT_HANDLE_ERROR;
-            }
-            err = vcpu->vcpu_arch.unhandled_vcpu_callback(vcpu, hsr, vcpu->vcpu_arch.unhandled_vcpu_callback_cookie);
-            if (!err) {
-                return VM_EXIT_HANDLED;
-            }
+    if (vcpu->vcpu_arch.unhandled_vcpu_callback) {
+        /* Pass the vcpu fault to library user in case they can handle it */
+        err = new_vcpu_fault(fault, hsr);
+        if (err) {
+            ZF_LOGE("Failed to create new fault");
+            return VM_EXIT_HANDLE_ERROR;
         }
-        print_unhandled_vcpu_hsr(vcpu, hsr);
-        return VM_EXIT_HANDLE_ERROR;
+        err = vcpu->vcpu_arch.unhandled_vcpu_callback(vcpu, hsr, vcpu->vcpu_arch.unhandled_vcpu_callback_cookie);
+        if (!err) {
+            return VM_EXIT_HANDLED;
+        }
     }
+    print_unhandled_vcpu_hsr(vcpu, hsr);
+    return VM_EXIT_HANDLE_ERROR;
 }
 
 static int vm_unknown_exit_handler(vm_vcpu_t *vcpu) {

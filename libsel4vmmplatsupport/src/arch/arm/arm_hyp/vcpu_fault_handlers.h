@@ -20,5 +20,6 @@
 #include "../vcpu_fault.h"
 
 static vcpu_exception_handler_fn vcpu_exception_handlers[] = {
-    [0 ... HSR_MAX_EXCEPTION] = unknown_vcpu_exception_handler
+    [0 ... HSR_MAX_EXCEPTION] = unknown_vcpu_exception_handler,
+    [HSR_WFx_EXCEPTION] = ignore_exception,
 };
