@@ -488,9 +488,11 @@ seL4_Word fault_get_data_mask(fault_t *f)
         assert(!(addr & 0x1));
         break;
     case WIDTH_WORD:
-    case WIDTH_DOUBLEWORD:
         mask = 0xffffffff;
         assert(!(addr & 0x3));
+        break;
+    case WIDTH_DOUBLEWORD:
+        mask = ~mask;
         break;
     default:
         /* Should never get here... Keep the compiler happy */
@@ -610,6 +612,9 @@ enum fault_width fault_get_width(fault_t *f)
                 break;
             case 2:
                 f->width = WIDTH_WORD;
+                break;
+            case 3:
+                f->width = WIDTH_DOUBLEWORD;
                 break;
             default:
                 print_fault(f);
