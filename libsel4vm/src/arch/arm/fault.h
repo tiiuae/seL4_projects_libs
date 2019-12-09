@@ -53,8 +53,6 @@ struct fault {
     seL4_Word fsr;
 /// 'true' if the fault was a prefetch fault rather than a data fault
     bool is_prefetch;
-/// 'true' if we should wait for an interrupt before finishing the fault
-    bool is_wfi;
 /// For multiple str/ldr and 32 bit access, the fault is handled in stages
     int stage;
 /// If the instruction requires fetching, cache it here
@@ -79,12 +77,12 @@ fault_t* fault_init(vm_vcpu_t* vcpu);
 
 /**
  * Populate an initialised fault structure with fault data obtained from
- * a pending VCPU fault message that is determined to be a WFI. The reply
- * cap to the faulting TCB will also be saved
+ * a pending VCPU fault message. The reply cap to the faulting TCB will
+ * also be saved
  * @param[in] fault A handle to a fault structure
  * @return 0 on success;
  */
-int new_wfi_fault(fault_t *fault);
+int new_vcpu_fault(fault_t *fault, uint32_t hsr);
 
 /**
  * Populate an initialised fault structure with fault data obtained from

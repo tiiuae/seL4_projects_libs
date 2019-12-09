@@ -117,12 +117,12 @@ static int vm_vcpu_handler(vm_vcpu_t *vcpu) {
     /* check if the exception class (bits 26-31) of the HSR indicate WFI/WFE */
     if ( HSR_EXCEPTION_CLASS(hsr) == HSR_WFx_EXCEPTION) {
         /* generate a new WFI fault */
-        new_wfi_fault(fault);
+        new_vcpu_fault(fault);
         return VM_EXIT_HANDLED;
     } else {
         if (vcpu->vcpu_arch.unhandled_vcpu_callback) {
             /* Pass the vcpu fault to library user in case they can handle it */
-            err = new_fault(fault);
+            err = new_vcpu_fault(fault, hsr);
             if (err) {
                 ZF_LOGE("Failed to create new fault");
                 return VM_EXIT_HANDLE_ERROR;
