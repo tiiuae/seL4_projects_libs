@@ -105,7 +105,7 @@ struct vm {
     struct vm_arch arch;
     /* vm vcpus */
     unsigned int num_vcpus;
-    struct vm_vcpu **vcpus;
+    struct vm_vcpu *vcpus[CONFIG_MAX_NUM_NODES];
     /* vm memory management */
     struct vm_mem mem;
     /* vm runtime management */

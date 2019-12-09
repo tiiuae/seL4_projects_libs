@@ -17,7 +17,6 @@
 #include <vspace/vspace.h>
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vm/arch/boot_arch.h>
 
 /* ID of the boot vcpu in a VM */
 #define BOOT_VCPU 0
