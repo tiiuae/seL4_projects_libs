@@ -274,8 +274,8 @@ fault_t*
 fault_init(vm_vcpu_t* vcpu)
 {
     fault_t *fault;
-    int err;
-    fault = (fault_t *)malloc(sizeof(*fault));
+    seL4_Error err;
+    fault = (fault_t *)calloc(1, sizeof(*fault));
     if (fault != NULL) {
         fault->vcpu = vcpu;
         /* Reserve a slot for saving reply caps */
