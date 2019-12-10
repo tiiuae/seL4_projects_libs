@@ -188,7 +188,7 @@ struct lr_of {
 
 typedef struct vgic {
 /// Mirrors the vcpu list registers
-    struct virq_handle *irq[63];
+    struct virq_handle *irq[CONFIG_MAX_NUM_NODES][MAX_LR_OVERFLOW-1];
 /// IRQs that would not fit in the vcpu list registers
     struct lr_of lr_overflow;
 /// Complete set of virtual irqs
@@ -223,7 +223,9 @@ static int virq_add(vgic_t *vgic, struct virq_handle *virq_data)
 
 static int virq_init(vgic_t *vgic)
 {
-    memset(vgic->irq, 0, sizeof(vgic->irq));
+    for(int i = 0; i < CONFIG_MAX_NUM_NODES; i++) {
+        memset(vgic->irq[i], 0, sizeof(vgic->irq[i]));
+    }
     memset(vgic->virqs, 0, sizeof(vgic->virqs));
     vgic->lr_overflow.head = 0;
     vgic->lr_overflow.tail = 0;
@@ -243,10 +245,10 @@ static inline struct gic_dist_map* vgic_priv_get_dist(struct vgic_dist_device* d
     return vgic_device_get_vgic(d)->dist;
 }
 
-static inline struct virq_handle** vgic_priv_get_lr(struct vgic_dist_device* d) {
+static inline struct virq_handle** vgic_priv_get_lr(struct vgic_dist_device* d, vm_vcpu_t *vcpu) {
     assert(d);
     assert(d->priv);
-    return vgic_device_get_vgic(d)->irq;
+    return vgic_device_get_vgic(d)->irq[vcpu->vcpu_id];
 }
 
 
@@ -311,7 +313,7 @@ vgic_vcpu_inject_irq(struct vgic_dist_device* d, vm_vcpu_t *inject_vcpu, struct 
     seL4_CPtr vcpu;
     vcpu = inject_vcpu->vcpu.cptr;
     for (i = 0; i < 64; i++) {
-        if (vgic->irq[i] == NULL) {
+        if (vgic->irq[inject_vcpu->vcpu_id][i] == NULL) {
             break;
         }
     }
@@ -319,7 +321,7 @@ vgic_vcpu_inject_irq(struct vgic_dist_device* d, vm_vcpu_t *inject_vcpu, struct 
     assert((i < 4) || err);
     if (!err) {
         /* Shadow */
-        vgic->irq[i] = irq;
+        vgic->irq[inject_vcpu->vcpu_id][i] = irq;
         return err;
     } else {
         /* Add to overflow list */
@@ -342,7 +344,7 @@ int handle_vgic_maintenance(vm_vcpu_t *vcpu, int idx)
 
     assert(vgic_dist);
     gic_dist = vgic_priv_get_dist(vgic_dist);
-    lr = vgic_priv_get_lr(vgic_dist);
+    lr = vgic_priv_get_lr(vgic_dist, vcpu);
     assert(lr[idx]);
 
     /* Clear pending */
