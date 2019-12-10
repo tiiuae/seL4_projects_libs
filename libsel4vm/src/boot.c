@@ -78,6 +78,7 @@ vm_vcpu_t *vm_create_vcpu(vm_t *vm, int priority)
     vcpu_new->vm = vm;
     vcpu_new->vcpu_id = curr_vcpu_index++;
     vcpu_new->tcb.priority = priority;
+    vcpu_new->vcpu_online = false;
     err = vm_create_vcpu_arch(vm, vcpu_new);
     assert(!err);
     vm->vcpus[vm->num_vcpus] = vcpu_new;
