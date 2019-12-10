@@ -221,7 +221,7 @@ static int virq_add(vgic_t *vgic, struct virq_handle *virq_data)
     return -1;
 }
 
-static int virq_init(vgic_t *vgic)
+static int vgic_virq_init(vgic_t *vgic)
 {
     for(int i = 0; i < CONFIG_MAX_NUM_NODES; i++) {
         memset(vgic->irq[i], 0, sizeof(vgic->irq[i]));
@@ -232,6 +232,15 @@ static int virq_init(vgic_t *vgic)
     vgic->lr_overflow.full = false;
     return 0;
 }
+
+
+static inline void virq_init(virq_handle_t virq, int irq, irq_ack_fn_t ack_fn, void *token)
+{
+    virq->virq = irq;
+    virq->token = token;
+    virq->ack = ack_fn;
+}
+
 
 static inline struct vgic* vgic_device_get_vgic(struct vgic_dist_device* d) {
     assert(d);
@@ -699,9 +708,7 @@ int vm_register_irq(vm_vcpu_t *vcpu, int irq, irq_ack_fn_t ack_fn, void *cookie)
     if (!virq_data) {
         return -1;
     }
-    virq_data->virq = irq;
-    virq_data->token = cookie;
-    virq_data->ack = ack_fn;
+    virq_init(virq_data, irq, ack_fn, cookie);
     err = virq_add(vgic, virq_data);
     if (err) {
         free(virq_data);
@@ -870,7 +877,7 @@ int vm_install_vgic(vm_t *vm)
         assert(!"Unable to calloc memory for VGIC");
         return -1;
     }
-    err = virq_init(vgic);
+    err = vgic_virq_init(vgic);
     if (err) {
         free(vgic);
         return -1;
