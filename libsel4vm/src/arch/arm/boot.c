@@ -99,8 +99,8 @@ vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu)
                              vm->cspace.cspace_obj.cptr, vm->cspace.cspace_root_data,
                              vm->mem.vm_vspace_root.cptr, null_cap_data, 0, seL4_CapNull);
     assert(!err);
-    err = seL4_TCB_SetSchedParams(vcpu->tcb.tcb.cptr, simple_get_tcb(vm->simple), vcpu->tcb.priority - 1,
-                                  vcpu->tcb.priority - 1);
+    err = seL4_TCB_SetSchedParams(vcpu->tcb.tcb.cptr, simple_get_tcb(vm->simple), vcpu->tcb.priority,
+                                  vcpu->tcb.priority);
     assert(!err);
     err = seL4_ARM_VCPU_SetTCB(vcpu->vcpu.cptr, vcpu->tcb.tcb.cptr);
     assert(!err);
