@@ -64,31 +64,38 @@ int vm_init_arch(vm_t *vm)
     err = vm_init_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vmm_vspace, &vm->mem.vm_vspace, vm->vka,
                                vm->mem.vm_vspace_root.cptr);
     assert(!err);
-
-    /* Badge the endpoint */
-    vka_cspace_make_path(vka, vm->host_endpoint, &src);
-    err = vka_cspace_alloc_path(vka, &dst);
-    assert(!err);
-    err = vka_cnode_mint(&dst, &src, seL4_AllRights, VM_BADGE);
-    assert(!err);
-    /* Copy it to the cspace of the VM for fault IPC */
-    src = dst;
-    dst.root = vm->cspace.cspace_obj.cptr;
-    dst.capPtr = VM_FAULT_EP_SLOT;
-    dst.capDepth = VM_CSPACE_SIZE_BITS;
-    err = vka_cnode_copy(&dst, &src, seL4_AllRights);
-    assert(!err);
     return err;
 }
 
-int vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu)
+int
+vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu)
 {
     int err;
     seL4_Word null_cap_data = seL4_NilData;
+    cspacepath_t src = {0};
+    cspacepath_t dst = {0};
+
+    seL4_Word badge = VCPU_BADGE_CREATE((seL4_Word)vcpu->vcpu_id);
+
+    /* Badge the endpoint */
+    vka_cspace_make_path(vm->vka, vm->host_endpoint, &src);
+    err = vka_cspace_alloc_path(vm->vka, &dst);
+    assert(!err);
+    err = vka_cnode_mint(&dst, &src, seL4_AllRights, badge);
+    assert(!err);
+
+    /* Copy it to the cspace of the VM for fault IPC */
+    src = dst;
+    dst.root = vm->cspace.cspace_obj.cptr;
+    dst.capPtr = VM_FAULT_EP_SLOT + vcpu->vcpu_id;
+    dst.capDepth = VM_CSPACE_SIZE_BITS;
+    err = vka_cnode_copy(&dst, &src, seL4_AllRights);
+    assert(!err);
+
     /* Create TCB */
     err = vka_alloc_tcb(vm->vka, &vcpu->tcb.tcb);
     assert(!err);
-    err = seL4_TCB_Configure(vcpu->tcb.tcb.cptr, VM_FAULT_EP_SLOT,
+    err = seL4_TCB_Configure(vcpu->tcb.tcb.cptr, dst.capPtr,
                              vm->cspace.cspace_obj.cptr, vm->cspace.cspace_root_data,
                              vm->mem.vm_vspace_root.cptr, null_cap_data, 0, seL4_CapNull);
     assert(!err);
