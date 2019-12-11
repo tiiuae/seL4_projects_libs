@@ -171,13 +171,13 @@ static int vm_unknown_exit_handler(vm_vcpu_t *vcpu)
 
 static int vcpu_stop(vm_vcpu_t *vcpu)
 {
-    vcpu->tcb.is_suspended = true;
+    vcpu->vcpu_online = false;
     return seL4_TCB_Suspend(vm_get_vcpu_tcb(vcpu));
 }
 
 static int vcpu_resume(vm_vcpu_t *vcpu)
 {
-    vcpu->tcb.is_suspended = false;
+    vcpu->vcpu_online = true;
     return seL4_TCB_Resume(vm_get_vcpu_tcb(vcpu));
 }
 

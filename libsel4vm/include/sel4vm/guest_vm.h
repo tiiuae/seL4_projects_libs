@@ -68,8 +68,6 @@ struct vm_tcb {
     vka_object_t sched_ctrl;
     /* Guest vm scheduling priority */
     int priority;
-    /* TCB State */
-    bool is_suspended;
 };
 
 struct vm_vcpu {
