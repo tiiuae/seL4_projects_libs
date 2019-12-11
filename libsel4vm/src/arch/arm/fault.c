@@ -559,6 +559,12 @@ seL4_UserContext *fault_get_ctx(fault_t *f)
     return &f->regs;
 }
 
+void fault_set_ctx(fault_t *f, seL4_UserContext *ctx)
+{
+    f->regs = *ctx;
+    f->content |= CONTENT_REGS;
+}
+
 int fault_handled(fault_t *f)
 {
     return f->stage == 0;

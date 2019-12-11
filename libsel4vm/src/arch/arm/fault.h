@@ -219,6 +219,13 @@ size_t fault_get_width_size(fault_t* f);
 seL4_UserContext *fault_get_ctx(fault_t *fault);
 
 /**
+ * Set the context of a fault
+ * @param[in] fault  A handle to the fault
+ * @param[in] ctx    A handle to the fault context
+ */
+void fault_set_ctx(fault_t *f, seL4_UserContext *ctx);
+
+/**
  * Get the fault status register of a fault
  * @param[in] fault  A handle to the fault
  * @return           the ARM HSR register associated with this fault. The EC
