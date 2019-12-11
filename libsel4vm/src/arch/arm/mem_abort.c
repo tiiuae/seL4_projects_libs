@@ -88,7 +88,7 @@ int vm_guest_mem_abort_handler(vm_vcpu_t *vcpu) {
     int err;
     fault_t* fault;
     fault = vcpu->vcpu_arch.fault;
-    err = new_fault(fault);
+    err = new_memory_fault(fault);
     if (err) {
         ZF_LOGE("Failed to initialise new fault");
         return -1;

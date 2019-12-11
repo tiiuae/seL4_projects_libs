@@ -292,7 +292,7 @@ int new_vcpu_fault(fault_t *fault, uint32_t hsr)
 {
     int err;
     assert(fault_handled(fault));
-    fault->is_prefetch = 0;
+    fault->type = VCPU;
     fault->fsr = hsr;
     fault->instruction = 0;
     fault->data = 0;
@@ -306,7 +306,7 @@ int new_vcpu_fault(fault_t *fault, uint32_t hsr)
     return err;
 }
 
-int new_fault(fault_t *fault)
+int new_memory_fault(fault_t *fault)
 {
     seL4_Word ip, addr, fsr;
     seL4_Word is_prefetch;
@@ -325,7 +325,7 @@ int new_fault(fault_t *fault)
     ip = seL4_GetMR(seL4_VMFault_IP);
     DFAULT("%s: New fault @ 0x%x from PC 0x%x\n", vm->vm_name, addr, ip);
     /* Create the fault object */
-    fault->is_prefetch = is_prefetch;
+    fault->type = is_prefetch ? PREFETCH : DATA;
     fault->ip = ip;
     fault->base_addr = fault->addr = addr;
     fault->fsr = fsr;
@@ -566,7 +566,7 @@ int fault_handled(fault_t *f)
 
 int fault_is_prefetch(fault_t *f)
 {
-    return f->is_prefetch;
+    return f->type == PREFETCH;
 }
 
 int fault_is_wfi(fault_t *f)
@@ -574,9 +574,14 @@ int fault_is_wfi(fault_t *f)
     return HSR_EXCEPTION_CLASS(f->fsr) == HSR_WFx_EXCEPTION;
 }
 
+int fault_is_vcpu(fault_t *f)
+{
+    return f->type == VCPU;
+}
+
 int fault_is_32bit_instruction(fault_t *f)
 {
-    if (fault_is_wfi(f)) {
+    if (fault_is_vcpu(f)) {
         return !fault_is_thumb(f);
     }
     if (!HSR_IS_SYNDROME_VALID(f->fsr)) {

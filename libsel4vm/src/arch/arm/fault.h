@@ -27,6 +27,12 @@ enum fault_width {
     WIDTH_BYTE
 };
 
+typedef enum {
+    DATA,
+    PREFETCH,
+    VCPU
+} fault_type_t;
+
 #define CPSR_THUMB                 BIT(5)
 #define CPSR_IS_THUMB(x)           ((x) & CPSR_THUMB)
 
@@ -51,8 +57,8 @@ struct fault {
     seL4_Word data;
 /// Fault status register (IL and ISS fields of HSR cp15 register)
     seL4_Word fsr;
-/// 'true' if the fault was a prefetch fault rather than a data fault
-    bool is_prefetch;
+/// type of fault
+    fault_type_t type;
 /// For multiple str/ldr and 32 bit access, the fault is handled in stages
     int stage;
 /// If the instruction requires fetching, cache it here
@@ -86,12 +92,12 @@ int new_vcpu_fault(fault_t *fault, uint32_t hsr);
 
 /**
  * Populate an initialised fault structure with fault data obtained from
- * a pending fault IPC message. The reply cap to the faulting TCB will
- * also be saved.
+ * a pending virtual memory fault IPC message. The reply cap to the faulting
+ * TCB will also be saved.
  * @param[in] fault  A handle to a fault structure
  * @return           0 on success;
  */
-int new_fault(fault_t *fault);
+int new_memory_fault(fault_t *fault);
 
 /**
  * Abandon the fault.
@@ -221,10 +227,9 @@ seL4_UserContext *fault_get_ctx(fault_t *fault);
 seL4_Word fault_get_fsr(fault_t *fault);
 
 /**
- * Determine if a fault is a data or prefetch fault
+ * Determine if a fault is a prefetch fault
  * @param[in] fault  A handle to the fault
- * @return           0 if the fault is a data fault, otherwise, it is a prefetch
- *                   fault
+ * @return           1 if the fault is a prefetch fault, otherwise 0
  */
 int fault_is_prefetch(fault_t *fault);
 
@@ -234,6 +239,13 @@ int fault_is_prefetch(fault_t *fault);
  * @param[in] fault A handle to the fault
  */
 int fault_is_wfi(fault_t *fault);
+
+/**
+ * Determine if a fault is a vcpu fault
+ * @param[in] fault  A handle to the fault
+ * @return           1 if the fault is a vcpu fault, otherwise 0
+ */
+int fault_is_vcpu(fault_t *f);
 
 /**
  * Determine if a fault was caused by a 32 bit instruction
@@ -253,7 +265,7 @@ static inline int fault_is_16bit_instruction(fault_t *f)
 
 static inline int fault_is_data(fault_t *f)
 {
-    return !fault_is_prefetch(f);
+    return f->type == DATA;
 }
 
 static inline int fault_is_write(fault_t *f)
