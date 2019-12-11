@@ -41,19 +41,7 @@ sysreg_entry_t sysreg_table[] = {
 };
 
 static int ignore_sysreg_exception(vm_vcpu_t *vcpu, sysreg_t *sysreg, bool is_read) {
-    int err;
-    /* TODO: Maybe perform read */
-    seL4_UserContext regs;
-    err =  vm_get_thread_context(vcpu, &regs);
-    if (err) {
-        return -1;
-    }
-    regs.pc += 4;
-    err = vm_set_thread_context(vcpu, regs);
-    if (err) {
-        return -1;
-    }
-    restart_vcpu_fault(vcpu);
+    advance_vcpu_fault(vcpu);
     return 0;
 }
 
