@@ -27,6 +27,15 @@ static inline seL4_CPtr vm_get_vcpu(vm_t *vm, int vcpu_id)
     return vm->vcpus[vcpu_id]->vcpu.cptr;
 }
 
+static inline vm_vcpu_t *vm_vcpu_for_target_cpu(vm_t *vm, int target_cpu)
+{
+    for (int i = 0; i < vm->num_vcpus; i++) {
+        if (vm->vcpus[i]->target_cpu == target_cpu) {
+            return vm->vcpus[i];
+        }
+    }
+    return NULL;
+}
 
 static inline vspace_t *vm_get_vspace(vm_t *vm)
 {
