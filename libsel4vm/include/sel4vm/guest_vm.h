@@ -79,6 +79,8 @@ struct vm_vcpu {
     struct vm_tcb tcb;
     /* Id of vcpu */
     unsigned int vcpu_id;
+    /* The identifier used by the guest to enable this vcpu */
+    int target_cpu;
     /* is the vcpu online */
     bool vcpu_online;
     /* Architecture specfic vcpu */
