@@ -15,6 +15,7 @@
 #include "../../../devices.h"
 #include "../../../vm.h"
 #include <platsupport/gpio.h>
+#include <platsupport/plat/gpio.h>
 
 //#define GPIO_DEBUG
 
