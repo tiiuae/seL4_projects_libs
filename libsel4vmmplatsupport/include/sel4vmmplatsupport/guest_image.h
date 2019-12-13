@@ -13,7 +13,7 @@
 #pragma once
 
 #include <sel4vm/guest_vm.h>
-#include <sel4vmmplatsupport/guest_image_arch.h>
+#include <sel4vmmplatsupport/arch/guest_image_arch.h>
 
 typedef struct guest_kernel_image_arch guest_kernel_image_arch_t;
 

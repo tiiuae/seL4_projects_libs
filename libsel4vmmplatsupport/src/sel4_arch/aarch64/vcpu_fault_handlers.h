@@ -17,7 +17,7 @@
 #include <sel4vm/sel4_arch/processor.h>
 #include <sel4vmmplatsupport/arch/guest_vcpu_fault.h>
 
-#include "../vcpu_fault.h"
+#include "vcpu_fault.h"
 #include "sysreg_exception.h"
 
 int software_breakpoint_exception(vm_vcpu_t *vcpu, uint32_t hsr);
