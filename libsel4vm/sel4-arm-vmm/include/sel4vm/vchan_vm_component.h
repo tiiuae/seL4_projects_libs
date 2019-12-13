@@ -13,7 +13,6 @@
 
 #ifdef CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
-#include <sel4vm/vm.h>
 #include <sel4vchan/vchan_component.h>
 
 int reg_new_vchan_con(vm_t *vmm, camkes_vchan_con_t *con);

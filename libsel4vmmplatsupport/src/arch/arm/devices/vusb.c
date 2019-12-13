@@ -12,7 +12,6 @@
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_vcpu_fault.h>
-#include <sel4vm/vm.h>
 
 #ifdef CONFIG_LIB_USB
 #include <sel4vmmplatsupport/device.h>

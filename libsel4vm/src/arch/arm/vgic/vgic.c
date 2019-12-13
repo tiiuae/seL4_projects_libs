@@ -50,7 +50,6 @@
 #include <vka/vka.h>
 #include <vka/capops.h>
 
-#include <sel4vm/vm.h>
 #include <sel4vm/gen_config.h>
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
