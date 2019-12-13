@@ -155,7 +155,7 @@ int vm_guest_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr iospace) 
 
     guest_iospace_t *guest_iospace = guest_vspace->iospaces[guest_vspace->num_iospaces];
     guest_iospace->iospace = iospace;
-    int error = sel4utils_get_vspace(loader, &guest_iospace->iospace_vspace, &guest_iospace->iospace_vspace_data,
+    int error = sel4utils_get_empty_vspace(loader, &guest_iospace->iospace_vspace, &guest_iospace->iospace_vspace_data,
                                      guest_vspace->vspace_data.vka, seL4_CapNull, NULL, NULL);
     if (error) {
         ZF_LOGE("Failed to allocate vspace for new iospace");
@@ -177,7 +177,7 @@ int vm_init_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, 
     vspace->num_iospaces = 0;
     vspace->iospaces = malloc(0);
     assert(vspace->iospaces);
-    error = sel4utils_get_vspace_with_map(loader, new_vspace, &vspace->vspace_data, vka, page_directory, NULL, NULL, guest_vspace_map);
+    error = sel4utils_get_empty_vspace_with_map(loader, new_vspace, &vspace->vspace_data, vka, page_directory, NULL, NULL, guest_vspace_map);
     if (error) {
         ZF_LOGE("Failed to create guest vspace");
         return error;
