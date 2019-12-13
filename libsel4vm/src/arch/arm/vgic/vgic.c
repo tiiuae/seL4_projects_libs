@@ -808,7 +808,7 @@ static void *create_vgic_distributor_frame(vm_t *vm) {
             handle_vgic_dist_fault, (void *)vgic_dist);
     if (!cookie->reservation) {
         ZF_LOGE("Failed to create emulate vgic dist frame");
-        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void **)&cookie);
+        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void *)cookie);
         return NULL;
     }
 
@@ -816,7 +816,7 @@ static void *create_vgic_distributor_frame(vm_t *vm) {
     if (err) {
         ZF_LOGE("Failed vka_alloc_frame for vgic dist frame");
         vm_free_reserved_memory(vm, cookie->reservation);
-        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void **)&cookie);
+        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void *)cookie);
         return NULL;
     }
     vka_cspace_make_path(vm->vka, cookie->frame.cptr, &cookie->mapped_frame);
@@ -826,7 +826,7 @@ static void *create_vgic_distributor_frame(vm_t *vm) {
         ZF_LOGE("Failed to map vgic dist frame into vmm vspace");
         vka_free_object(vm->vka, &cookie->frame);
         vm_free_reserved_memory(vm, cookie->reservation);
-        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void **)&cookie);
+        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void *)cookie);
         return NULL;
     }
 
@@ -838,7 +838,7 @@ static void *create_vgic_distributor_frame(vm_t *vm) {
         ZF_LOGE("Failed to map allocated frame into vm");
         vka_free_object(vm->vka, &cookie->frame);
         vm_free_reserved_memory(vm, cookie->reservation);
-        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void **)&cookie);
+        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void *)cookie);
         return NULL;
     }
 

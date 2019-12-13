@@ -212,7 +212,7 @@ static void free_vm_reservation(vm_t *vm, vm_memory_reservation_t *reservation) 
         return;
     }
     ps_io_ops_t *ops = vm->io_ops;
-    ps_free(&ops->malloc_ops, sizeof(vm_memory_reservation_t), &reservation);
+    ps_free(&ops->malloc_ops, sizeof(vm_memory_reservation_t), reservation);
 }
 
 static vm_memory_reservation_t *allocate_vm_reservation(vm_t *vm, uintptr_t addr, size_t size,
@@ -369,7 +369,7 @@ int vm_memory_make_anon(vm_t *vm, uintptr_t addr, size_t size) {
     if (err) {
         ZF_LOGE("Failed to reserve vm memory: Unable to add vm memory reservation to list");
         vspace_free_reservation(&vm->mem.vm_vspace, vspace_reservation);
-        ps_free(&ops->malloc_ops, sizeof(anon_region_t), &region_data);
+        ps_free(&ops->malloc_ops, sizeof(anon_region_t), region_data);
         return -1;
     }
     return 0;
