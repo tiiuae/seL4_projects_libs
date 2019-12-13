@@ -1,9 +1,0 @@
-* Update src/plat driver implementation 
-    - Update usage of memory mechanisms
-    - Update to use different device (struct device) abstraction
-* Update src/device_utils.c
-    - Update usage of memory mechanisms
-    - Update to use different device (struct device) abstraction
-* Update src/arch driver implementation
-    - Update usage of memory mechanisms
-    - Update to use different device (struct device) abstraction
