@@ -32,36 +32,18 @@ config_option(
 )
 
 if("${KernelArch}" STREQUAL "arm")
-    config_option(
-        LibSel4ArmVMMVchanSupport
-        LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
-        "Support vchan connections"
-        DEFAULT
-        OFF
-    )
 
     add_config_library(sel4vm "${configure_string}")
 
-    file(
-        GLOB
-            old_arm_sources
-            sel4-arm-vmm/src/*.c
-            sel4-arm-vmm/src/arch/arm/*/*.c
-            sel4-arm-vmm/src/images/*.c
-            sel4-arm-vmm/src/devices/*.c
-            sel4-arm-vmm/src/plat/${KernelPlatform}/*/*.c
-    )
     set(arm_sources src/arch/arm/mem_abort.c src/arch/arm/syscalls.c src/arch/arm/vgic/vgic.c
         src/arch/arm/guest_arm_context.c src/arch/arm/fault.c src/arch/arm/${KernelSel4Arch}/fault.c)
     list(APPEND sources ${arm_sources})
-    list(APPEND sources ${old_arm_sources})
     add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
     target_include_directories(
         sel4vm
         PUBLIC
             include
             arch_include/${KernelArch}
-            sel4-arm-vmm/include
     )
 
     target_include_directories(sel4vm PRIVATE src/arch/arm/${KernelSel4Arch})
@@ -82,9 +64,6 @@ if("${KernelArch}" STREQUAL "arm")
         sel4vm_Config
         usbdrivers_Config
     )
-    if(LibSel4ArmVMMVchanSupport)
-        target_link_libraries(sel4vm sel4vchan)
-    endif()
     if(LibUSB)
         target_link_libraries(sel4vm usbdrivers)
     endif()
@@ -128,10 +107,6 @@ elseif("${KernelArch}" STREQUAL "x86")
     file(
         GLOB
             x86_sources
-            sel4-x86-vmm/src/vmm/*.c
-            sel4-x86-vmm/src/platform/*.c
-            sel4-x86-vmm/src/driver/*.c
-            sel4-x86-vmm/src/manager/*.c
             src/arch/${KernelArch}/processor/*.c
     )
     list(APPEND sources ${x86_sources} src/arch/${KernelArch}/ioports.c src/arch/${KernelArch}/i8259/i8259.c
@@ -142,7 +117,7 @@ elseif("${KernelArch}" STREQUAL "x86")
 
     target_include_directories(
         sel4vm
-        PUBLIC include arch_include/${KernelArch} sel4-x86-vmm/include
+        PUBLIC include arch_include/${KernelArch}
     )
     target_link_libraries(
         sel4vm
