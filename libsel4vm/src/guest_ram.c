@@ -299,6 +299,7 @@ static int map_ram_reservation(vm_t *vm, vm_memory_reservation_t *ram_reservatio
         ZF_LOGE("Failed to map new ram reservation");
         return -1;
     }
+    return 0;
 }
 
 uintptr_t vm_ram_register(vm_t *vm, size_t bytes) {

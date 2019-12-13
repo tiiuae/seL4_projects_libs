@@ -141,6 +141,7 @@ int guest_elf_relocate(vm_t *vm, const char *relocs_filename, guest_kernel_image
     }
 
     fclose(file);
+    return 0;
 }
 
 /* TODO: Refactor and stop rewriting fucking elf loading code */
