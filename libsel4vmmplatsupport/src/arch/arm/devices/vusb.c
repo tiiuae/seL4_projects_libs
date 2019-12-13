@@ -152,7 +152,7 @@ static int desc_to_xact(vm_t *vm, struct sel4urbt *desc, struct xact *xact)
         return -1;
     }
     xact->len = SURBT_PARAM_GET_SIZE(desc->param);
-    xact->paddr = vm_ipa_to_pa(vm, desc->paddr, xact->len);
+    xact->paddr = vm_arm_ipa_to_pa(vm, desc->paddr, xact->len);
     xact->vaddr = (void *)0xdeadbeef;
     return xact->paddr == 0;
 }

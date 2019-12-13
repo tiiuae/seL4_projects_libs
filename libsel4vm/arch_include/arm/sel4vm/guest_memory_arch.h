@@ -11,3 +11,7 @@
  */
 
 #pragma once
+
+typedef struct vm vm_t;
+
+uintptr_t vm_arm_ipa_to_pa(vm_t *vm, uintptr_t ipa_base, size_t size);

@@ -25,5 +25,3 @@
 #endif //CONFIG_LIB_SEL4_ARM_VMM_VCHAN_SUPPORT
 
 typedef struct vm vm_t;
-
-uintptr_t vm_ipa_to_pa(vm_t *vm, uintptr_t ipa, size_t size);
