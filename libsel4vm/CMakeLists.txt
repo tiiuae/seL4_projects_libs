@@ -18,11 +18,6 @@ set(configure_string "")
 
 add_compile_options(-std=gnu99)
 
-set(sources src/boot.c src/guest_vspace.c src/guest_ram.c src/arch/${KernelArch}/boot.c
-    src/guest_memory.c src/vm.c src/arch/${KernelArch}/vm.c
-    src/guest_vcpu_fault.c src/arch/${KernelArch}/guest_vcpu_fault_arch.c
-    src/arch/${KernelArch}/guest_irq_controller.c src/guest_memory_helpers.c)
-
 config_option(
     LibSel4VMDeferMemoryMap
     LIB_SEL4VM_DEFER_MEMORY_MAP
@@ -30,107 +25,61 @@ config_option(
     DEFAULT
     OFF
 )
+config_option(LibSel4VMVMXTimerDebug LIB_VM_VMX_TIMER_DEBUG "Use VMX Pre-Emption timer for debugging
+    Will cause a regular vmexit to happen based on VMX pre-emption
+    timer. At each exit the guest state will be printed out. This
+    can be used to aid debugging when running a guest causes nothing
+    to appear to happen" DEFAULT OFF DEPENDS "KernelArchX86")
 
-if("${KernelArch}" STREQUAL "arm")
+config_string(
+    LibSel4VMVMXTimerTimeout
+    LIB_VM_VMX_TIMER_TIMEOUT
+    "Cycles between VMX timer pre-emptions
+    Cycles between timer exits. Time spent loading the VMCS context
+    count, so setting this too low may result in the guest making
+    no progress"
+    DEFAULT
+    4000
+    DEPENDS
+    "LibSel4VMVMXTimerDebug"
+)
 
-    add_config_library(sel4vm "${configure_string}")
+mark_as_advanced(LibSel4VMDeferMemoryMap LibSel4VMVMXTimerDebug LibSel4VMVMXTimerTimeout)
 
-    set(arm_sources src/arch/arm/mem_abort.c src/arch/arm/syscalls.c src/arch/arm/vgic/vgic.c
-        src/arch/arm/guest_arm_context.c src/arch/arm/fault.c src/arch/arm/${KernelSel4Arch}/fault.c)
-    list(APPEND sources ${arm_sources})
-    add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
-    target_include_directories(
-        sel4vm
-        PUBLIC
-            include
-            arch_include/${KernelArch}
-    )
+add_config_library(sel4vm "${configure_string}")
 
-    target_include_directories(sel4vm PRIVATE src/arch/arm/${KernelSel4Arch})
-    target_include_directories(sel4vm PUBLIC sel4_arch_include/${KernelSel4Arch})
-    target_link_libraries(
-        sel4vm
-        muslc
-        sel4
-        sel4simple
-        utils
-        sel4utils
-        sel4vka
-        sel4vspace
-        sel4allocman
-        sel4dma
-        platsupport
-        sel4_autoconf
-        sel4vm_Config
-        usbdrivers_Config
-    )
-    if(LibUSB)
-        target_link_libraries(sel4vm usbdrivers)
-    endif()
-elseif("${KernelArch}" STREQUAL "x86")
-    config_option(
-        LibSel4VMVMXTimerDebug
-        LIB_VM_VMX_TIMER_DEBUG
-        "Use VMX Pre-Emption timer for debugging
-        Will cause a regular vmexit to happen based on VMX pre-emption
-        timer. At each exit the guest state will be printed out. This
-        can be used to aid debugging when running a guest causes nothing
-        to appear to happen"
-        DEFAULT
-        OFF
-    )
+file(
+    GLOB
+        sources
+        src/*.c
+        src/arch/${KernelArch}/*.c
+        src/arch/${KernelArch}/vgic/*.c
+        src/arch/${KernelArch}/i8259/*.c
+        src/arch/${KernelArch}/processor/*.c
+        src/sel4_arch/${KernelSel4Arch}/*.c
+)
 
-    config_string(
-        LibSel4VMVMXTimerTimeout
-        LIB_VM_VMX_TIMER_TIMEOUT
-        "Cycles between VMX timer pre-emptions
-        Cycles between timer exits. Time spent loading the VMCS context
-        count, so setting this too low may result in the guest making
-        no progress"
-        DEFAULT
-        4000
-        DEPENDS
-        "LibSel4VMVMXTimerDebug"
-    )
-
-    config_option(LibSel4VMMIgnoreEPTViolation VMM_IGNORE_EPT_VIOLATION "Ignore EPT Violations
-        If set then EPT faults will be ignored and the guest will be resumed" DEFAULT OFF)
-
-    mark_as_advanced(
-        LibSel4VMMVMXTimerDebug
-        LibSel4VMMVMXTimerTimeout
-        LibSel4VMMIgnoreEPTViolation
-    )
-
-    add_config_library(sel4vm "${configure_string}")
-
-    file(
-        GLOB
-            x86_sources
-            src/arch/${KernelArch}/processor/*.c
-    )
-    list(APPEND sources ${x86_sources} src/arch/${KernelArch}/ioports.c src/arch/${KernelArch}/i8259/i8259.c
-        src/arch/${KernelArch}/guest_x86_context.c src/arch/${KernelArch}/vmcs.c src/arch/${KernelArch}/debug.c
-        src/arch/${KernelArch}/interrupt.c src/arch/${KernelArch}/vmcall.c src/arch/${KernelArch}/ept.c
-        src/arch/${KernelArch}/halt.c src/arch/${KernelArch}/vmx_timer.c)
-    add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
-
-    target_include_directories(
-        sel4vm
-        PUBLIC include arch_include/${KernelArch}
-    )
-    target_link_libraries(
-        sel4vm
-        PUBLIC
-            muslc
-            sel4
-            sel4utils
-            pci
-            sel4allocman
-            ethdrivers
-            platsupport
-            sel4vm_Config
-    )
-endif()
-
-target_include_directories(sel4vm PRIVATE src src/arch/${KernelArch})
+add_library(sel4vm STATIC EXCLUDE_FROM_ALL ${sources})
+target_include_directories(
+    sel4vm
+    PUBLIC include arch_include/${KernelArch} sel4_arch_include/${KernelSel4Arch}
+)
+target_include_directories(
+    sel4vm
+    PRIVATE src src/arch/${KernelArch} src/sel4_arch/${KernelSel4Arch}
+)
+target_link_libraries(
+    sel4vm
+    muslc
+    sel4
+    sel4simple
+    utils
+    sel4utils
+    sel4vka
+    sel4vspace
+    sel4allocman
+    sel4dma
+    platsupport
+    sel4_autoconf
+    sel4vm_Config
+)

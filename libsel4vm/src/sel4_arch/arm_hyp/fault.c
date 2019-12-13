@@ -15,7 +15,7 @@
 
 #include <sel4vm/sel4_arch/processor.h>
 
-#include "../fault.h"
+#include "fault.h"
 
 seL4_Word *decode_rt(int reg, seL4_UserContext *c)
 {

@@ -13,7 +13,7 @@
 #include <assert.h>
 #include <utils/util.h>
 
-#include "../fault.h"
+#include "fault.h"
 
 static seL4_Word wzr = 0;
 seL4_Word *decode_rt(int reg, seL4_UserContext *c)

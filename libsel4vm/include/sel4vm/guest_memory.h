@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <sel4/sel4.h>
 
-#include <sel4vm/guest_memory_arch.h>
+#include <sel4vm/arch/guest_memory_arch.h>
 
 typedef struct vm vm_t;
 typedef struct vm_vcpu vm_vcpu_t;

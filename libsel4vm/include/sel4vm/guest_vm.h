@@ -19,7 +19,7 @@
 #include <vspace/vspace.h>
 #include <allocman/allocman.h>
 
-#include <sel4vm/guest_vm_arch.h>
+#include <sel4vm/arch/guest_vm_arch.h>
 #include <sel4vm/guest_memory.h>
 
 typedef struct vm vm_t;
