@@ -111,17 +111,16 @@ int vm_install_vpower(vm_t *vm, vm_power_cb shutdown_cb, void *shutdown_token,
     int err;
     int i;
 
-    d = malloc(sizeof(struct device));
+    d = calloc(1, sizeof(struct device));
     memcpy(d, &dev_alive, sizeof(struct device));
 
     /* Initialise the virtual device */
-    power_data = malloc(sizeof(struct power_priv));
+    power_data = calloc(1, sizeof(struct power_priv));
     if (power_data == NULL) {
         assert(power_data);
         free(d);
         return -1;
     }
-    memset(power_data, 0, sizeof(*power_data));
     power_data->vm = vm;
     power_data->shutdown_cb = shutdown_cb;
     power_data->shutdown_token = shutdown_token;

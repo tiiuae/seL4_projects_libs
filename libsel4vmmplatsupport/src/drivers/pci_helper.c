@@ -250,7 +250,7 @@ static int pci_bar_passthrough_emul_write(void *cookie, int offset, int size, ui
 
 vmm_pci_entry_t vmm_pci_create_bar_emulation(vmm_pci_entry_t existing, int num_bars, vmm_pci_bar_t *bars)
 {
-    pci_bar_emulation_t *bar_emul = malloc(sizeof(*bar_emul));
+    pci_bar_emulation_t *bar_emul = calloc(1, sizeof(*bar_emul));
     assert(bar_emul);
     memcpy(bar_emul->bars, bars, sizeof(vmm_pci_bar_t) * num_bars);
     bar_emul->passthrough = existing;
@@ -263,7 +263,7 @@ vmm_pci_entry_t vmm_pci_create_bar_emulation(vmm_pci_entry_t existing, int num_b
 
 vmm_pci_entry_t vmm_pci_create_passthrough_bar_emulation(vmm_pci_entry_t existing, int num_bars, vmm_pci_bar_t *bars)
 {
-    pci_bar_emulation_t *bar_emul = malloc(sizeof(*bar_emul));
+    pci_bar_emulation_t *bar_emul = calloc(1, sizeof(*bar_emul));
     assert(bar_emul);
     memcpy(bar_emul->bars, bars, sizeof(vmm_pci_bar_t) * num_bars);
     bar_emul->passthrough = existing;
@@ -276,7 +276,7 @@ vmm_pci_entry_t vmm_pci_create_passthrough_bar_emulation(vmm_pci_entry_t existin
 
 vmm_pci_entry_t vmm_pci_create_irq_emulation(vmm_pci_entry_t existing, int irq)
 {
-    pci_irq_emulation_t *irq_emul = malloc(sizeof(*irq_emul));
+    pci_irq_emulation_t *irq_emul = calloc(1, sizeof(*irq_emul));
     assert(irq_emul);
     irq_emul->passthrough = existing;
     irq_emul->irq = irq;
@@ -287,7 +287,7 @@ vmm_pci_entry_t vmm_pci_create_irq_emulation(vmm_pci_entry_t existing, int irq)
 
 vmm_pci_entry_t vmm_pci_create_passthrough(vmm_pci_address_t addr, vmm_pci_config_t config)
 {
-    pci_passthrough_device_t *dev = malloc(sizeof(*dev));
+    pci_passthrough_device_t *dev = calloc(1, sizeof(*dev));
     assert(dev);
     dev->addr = addr;
     dev->config = config;
@@ -375,17 +375,17 @@ static int pci_cap_emul_write(void *cookie, int offset, int size, uint32_t value
 vmm_pci_entry_t vmm_pci_create_cap_emulation(vmm_pci_entry_t existing, int num_caps, uint8_t *caps, int num_ranges,
                                              uint8_t *range_starts, uint8_t *range_ends)
 {
-    pci_cap_emulation_t *emul = malloc(sizeof(*emul));
+    pci_cap_emulation_t *emul = calloc(1, sizeof(*emul));
     emul->passthrough = existing;
     assert(emul);
     emul->num_caps = num_caps;
-    emul->caps = malloc(sizeof(uint8_t) * num_caps);
+    emul->caps = calloc(1, sizeof(uint8_t) * num_caps);
     assert(emul->caps);
     memcpy(emul->caps, caps, sizeof(uint8_t) * num_caps);
     emul->num_ignore = num_ranges;
-    emul->ignore_start = malloc(sizeof(uint8_t) * num_ranges);
+    emul->ignore_start = calloc(1, sizeof(uint8_t) * num_ranges);
     assert(emul->ignore_start);
-    emul->ignore_end = malloc(sizeof(uint8_t) * num_ranges);
+    emul->ignore_end = calloc(1, sizeof(uint8_t) * num_ranges);
     assert(emul->ignore_end);
     memcpy(emul->ignore_start, range_starts, sizeof(uint8_t) * num_ranges);
     memcpy(emul->ignore_end, range_ends, sizeof(uint8_t) * num_ranges);

@@ -117,13 +117,13 @@ vm_install_listening_device(vm_t* vm, const struct device* dev_listening)
     void** map;
     int err;
     pages = dev_listening->size >> 12;
-    d = (struct device *)malloc(sizeof(struct device));
+    d = (struct device *)calloc(1, sizeof(struct device));
     if (!d) {
         return -1;
     }
     memcpy(d, dev_listening, sizeof(struct device));
     /* Build device memory map */
-    map = (void**)malloc(sizeof(void*) * pages);
+    map = (void**)calloc(1, sizeof(void*) * pages);
     if (map == NULL) {
         return -1;
     }
@@ -182,7 +182,7 @@ vm_install_listening_ram(vm_t* vm, uintptr_t addr, size_t size)
     struct device *d;
     int err;
 
-    d = (struct device *)malloc(sizeof(struct device));
+    d = (struct device *)calloc(1, sizeof(struct device));
     if (!d) {
         return -1;
     }
@@ -190,10 +190,10 @@ vm_install_listening_ram(vm_t* vm, uintptr_t addr, size_t size)
 
     d->pstart = addr;
     d->size = size;
-    d->priv = malloc(0x1000);
+    d->priv = calloc(1, 0x1000);
     assert(d->priv);
     if (!d->priv) {
-        ZF_LOGE("malloc failed\n");
+        ZF_LOGE("calloc failed\n");
         return -1;
     }
 

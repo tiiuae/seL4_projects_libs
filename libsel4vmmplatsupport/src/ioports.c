@@ -131,9 +131,9 @@ int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t io_range
 
 int vmm_io_port_init(vmm_io_port_list_t **io_list)
 {
-    vmm_io_port_list_t *init_iolist = (vmm_io_port_list_t *)malloc(sizeof(vmm_io_port_list_t));
+    vmm_io_port_list_t *init_iolist = (vmm_io_port_list_t *)calloc(1, sizeof(vmm_io_port_list_t));
     if (init_iolist == NULL) {
-        ZF_LOGE("Failed to malloc memory for io port list");
+        ZF_LOGE("Failed to calloc memory for io port list");
         return -1;
     }
 

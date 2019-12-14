@@ -116,12 +116,11 @@ virtio_emul_t *virtio_emul_init(ps_io_ops_t io_ops, int queue_size, vm_t *vm, vo
                                 void *config, virtio_pci_devices_t device)
 {
     virtio_emul_t *emul = NULL;
-    emul = malloc(sizeof(*emul));
+    emul = calloc(1, sizeof(*emul));
     if (!emul) {
         free(emul);
         return NULL;
     }
-    memset(emul, 0, sizeof(*emul));
     /* module specific initialisation function */
     switch (device) {
     case VIRTIO_CONSOLE:

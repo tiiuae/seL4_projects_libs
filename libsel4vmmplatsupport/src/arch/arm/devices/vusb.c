@@ -408,13 +408,13 @@ vusb_device_t *vm_install_vusb(vm_t *vm, usb_host_t *hcd, uintptr_t pbase, int v
     struct endpoint ep;
     int err;
 
-    d = (struct device *)malloc(sizeof(struct device));
+    d = (struct device *)calloc(1, sizeof(struct device));
     if (!d) {
         return NULL;
     }
 
     /* Setup book keeping */
-    vusb = malloc(sizeof(*vusb));
+    vusb = calloc(1, sizeof(*vusb));
     if (vusb == NULL) {
         return NULL;
     }

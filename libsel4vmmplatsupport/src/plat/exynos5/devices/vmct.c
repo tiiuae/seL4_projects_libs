@@ -139,18 +139,17 @@ int vm_install_vmct(vm_t *vm)
     struct device *d;
     int err;
 
-    d = (struct device *)malloc(sizeof(struct device));
+    d = (struct device *)calloc(1, sizeof(struct device));
     if (!d) {
         return -1;
     }
     memcpy(d, &dev_vmct_timer, sizeof(struct device));
     /* Initialise the virtual device */
-    vmct_data = malloc(sizeof(struct vmct_priv));
+    vmct_data = calloc(1, sizeof(struct vmct_priv));
     if (vmct_data == NULL) {
         assert(vmct_data);
         return -1;
     }
-    memset(vmct_data, 0, sizeof(*vmct_data));
     d->priv = vmct_data;
     vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d->pstart, d->size,
             handle_vmct_fault, (void *)d);

@@ -693,7 +693,7 @@ int vm_register_irq(vm_t *vm, int irq, irq_ack_fn_t ack_fn, void *cookie)
     vgic = vgic_device_get_vgic(vgic_dist);
     assert(vgic);
 
-    virq_data = malloc(sizeof(*virq_data));
+    virq_data = calloc(1, sizeof(*virq_data));
     if (!virq_data) {
         return -1;
     }
@@ -863,9 +863,9 @@ int vm_install_vgic(vm_t *vm)
     void* addr;
     int err;
 
-    vgic = malloc(sizeof(*vgic));
+    vgic = calloc(1, sizeof(*vgic));
     if (!vgic) {
-        assert(!"Unable to malloc memory for VGIC");
+        assert(!"Unable to calloc memory for VGIC");
         return -1;
     }
     err = virq_init(vgic);
@@ -875,7 +875,7 @@ int vm_install_vgic(vm_t *vm)
     }
 
     /* Distributor */
-    vgic_dist = (struct vgic_dist_device *)malloc(sizeof(struct vgic_dist_device));
+    vgic_dist = (struct vgic_dist_device *)calloc(1, sizeof(struct vgic_dist_device));
     if (!vgic_dist) {
         return -1;
     }

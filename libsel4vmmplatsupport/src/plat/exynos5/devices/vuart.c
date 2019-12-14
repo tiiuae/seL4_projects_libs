@@ -179,22 +179,21 @@ int vm_install_vconsole(vm_t *vm)
     struct device *d;
     int err;
 
-    d = (struct device *)malloc(sizeof(struct device));
+    d = (struct device *)calloc(1, sizeof(struct device));
     if (!d) {
         return -1;
     }
 
     *d = dev_vconsole;
     /* Initialise the virtual device */
-    vuart_data = malloc(sizeof(struct vuart_priv));
+    vuart_data = calloc(1, sizeof(struct vuart_priv));
     if (vuart_data == NULL) {
         assert(vuart_data);
         return -1;
     }
-    memset(vuart_data, 0, sizeof(*vuart_data));
     vuart_data->vm = vm;
 
-    vuart_data->regs = malloc(UART_SIZE);
+    vuart_data->regs = calloc(1, UART_SIZE);
     if (vuart_data->regs == NULL) {
         assert(vuart_data->regs);
         return -1;
@@ -215,7 +214,7 @@ int vm_install_ac_uart(vm_t *vm, const struct device *d)
 {
     int err;
     int mask_size = UART_SIZE;
-    uint32_t *mask = (uint32_t *)malloc(mask_size);
+    uint32_t *mask = (uint32_t *)calloc(1, mask_size);
     err = vm_install_generic_ac_device(vm, d, mask, mask_size, VACDEV_MASK_ONLY);
     if (err) {
         free(mask);

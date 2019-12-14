@@ -187,7 +187,7 @@ static void emul_notify_tx(virtio_emul_t *emul)
             desc_idx = desc.next;
         } while (desc.flags & VRING_DESC_F_NEXT);
         /* ship it */
-        emul_tx_cookie_t *cookie = malloc(sizeof(*cookie));
+        emul_tx_cookie_t *cookie = calloc(1, sizeof(*cookie));
         assert(cookie);
         cookie->desc_head = desc_head;
         cookie->vaddr = vaddr;
@@ -267,11 +267,10 @@ bool net_device_emul_io_out(struct virtio_emul *emul, unsigned int offset, unsig
 void *net_virtio_emul_init(virtio_emul_t *emul, ps_io_ops_t io_ops, ethif_driver_init driver, void *config)
 {
     ethif_internal_t *internal = NULL;
-    internal = malloc(sizeof(*internal));
+    internal = calloc(1, sizeof(*internal));
     if (!internal) {
         goto error;
     }
-    memset(internal, 0, sizeof(*internal));
     emul->notify = emul_notify_tx;
     emul->device_io_in = net_device_emul_io_in;
     emul->device_io_out = net_device_emul_io_out;

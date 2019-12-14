@@ -191,7 +191,7 @@ vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac, enum vacdev_action 
     uint8_t ac = (default_ac == VACDEV_DEFAULT_ALLOW) ? 0xff : 0x00;
     int i;
 
-    gpio_device = (struct gpio_device *)malloc(sizeof(*gpio_device));
+    gpio_device = (struct gpio_device *)calloc(1, sizeof(*gpio_device));
     if (gpio_device == NULL) {
         return NULL;
     }

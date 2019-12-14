@@ -120,7 +120,7 @@ static int vm_install_nodma_sdhc(vm_t *vm, int idx)
     struct sdhc_priv *sdhc_data;
     struct device *d;
     int err;
-    d = malloc(sizeof(struct device));
+    d = calloc(1, sizeof(struct device));
     if (!d) {
         return -1;
     }
@@ -137,12 +137,11 @@ static int vm_install_nodma_sdhc(vm_t *vm, int idx)
     }
 
     /* Initialise the virtual device */
-    sdhc_data = malloc(sizeof(struct sdhc_priv));
+    sdhc_data = calloc(1, sizeof(struct sdhc_priv));
     if (sdhc_data == NULL) {
         assert(sdhc_data);
         return -1;
     }
-    memset(sdhc_data, 0, sizeof(*sdhc_data));
     sdhc_data->vm = vm;
     sdhc_data->regs = create_device_reservation_frame(vm, d->pstart, seL4_CanRead,
                                                        handle_sdhc_fault, (void *)d);

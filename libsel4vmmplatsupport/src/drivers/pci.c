@@ -30,9 +30,9 @@
 
 int vmm_pci_init(vmm_pci_space_t **space)
 {
-    vmm_pci_space_t *pci_space = (vmm_pci_space_t *)malloc(sizeof(vmm_pci_space_t));
+    vmm_pci_space_t *pci_space = (vmm_pci_space_t *)calloc(1, sizeof(vmm_pci_space_t));
     if (!pci_space) {
-        ZF_LOGE("Failed to malloc memory for pci space");
+        ZF_LOGE("Failed to calloc memory for pci space");
         return -1;
     }
 
@@ -43,9 +43,9 @@ int vmm_pci_init(vmm_pci_space_t **space)
     }
     pci_space->conf_port_addr = 0;
     /* Define the initial PCI bridge */
-    vmm_pci_device_def_t *bridge = malloc(sizeof(*bridge));
+    vmm_pci_device_def_t *bridge = calloc(1, sizeof(*bridge));
     if (!bridge) {
-        ZF_LOGE("Failed to malloc memory for pci bridge");
+        ZF_LOGE("Failed to calloc memory for pci bridge");
         return -1;
     }
     define_pci_host_bridge(bridge);
@@ -61,7 +61,8 @@ int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_add
     for (int i = 0; i < 32; i++) {
         if (!space->bus0[i][0]) {
             /* Allocate an entry */
-            space->bus0[i][0] = malloc(sizeof(entry));
+            space->bus0[i][0] = calloc(1, sizeof(entry));
+
             *space->bus0[i][0] = entry;
             /* Report addr if reqeusted */
             if (addr) {

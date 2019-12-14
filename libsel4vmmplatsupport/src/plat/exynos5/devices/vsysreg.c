@@ -64,17 +64,16 @@ int vm_install_vsysreg(vm_t *vm)
     struct device *d;
     int err;
 
-    d = (struct device *)malloc(sizeof(struct device));
+    d = (struct device *)calloc(1, sizeof(struct device));
     memcpy(d, &dev_sysreg, sizeof(struct device));
 
     /* Initialise the virtual device */
-    sysreg_data = malloc(sizeof(struct sysreg_priv));
+    sysreg_data = calloc(1, sizeof(struct sysreg_priv));
     if (sysreg_data == NULL) {
         assert(sysreg_data);
         free(d);
         return -1;
     }
-    memset(sysreg_data, 0, sizeof(*sysreg_data));
     sysreg_data->vm = vm;
 
     sysreg_data->regs = ps_io_map(&vm->io_ops->io_mapper, d->pstart, PAGE_SIZE_4K, 0, PS_MEM_NORMAL);

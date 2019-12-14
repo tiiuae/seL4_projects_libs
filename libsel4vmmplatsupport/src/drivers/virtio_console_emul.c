@@ -163,11 +163,10 @@ void *console_virtio_emul_init(virtio_emul_t *emul, ps_io_ops_t io_ops, console_
 {
     console_internal_t *internal = NULL;
     int err;
-    internal = malloc(sizeof(*internal));
+    internal = calloc(1, sizeof(*internal));
     if (!internal) {
         goto error;
     }
-    memset(internal, 0, sizeof(*internal));
     err = driver(&internal->driver, io_ops, config);
     emul->device_io_in = console_device_emul_io_in;
     emul->device_io_out = console_device_emul_io_out;

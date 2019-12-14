@@ -168,7 +168,7 @@ int vm_guest_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr iospace) 
 
 int vm_init_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, vka_t *vka, seL4_CPtr page_directory) {
     int error;
-    guest_vspace_t *vspace = malloc(sizeof(*vspace));
+    guest_vspace_t *vspace = calloc(1, sizeof(*vspace));
     if (!vspace) {
         ZF_LOGE("Malloc failed");
         return -1;

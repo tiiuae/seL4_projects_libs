@@ -300,7 +300,7 @@ vm_install_ac_clock(vm_t *vm, enum vacdev_default default_ac, enum vacdev_action
     int i;
     uint8_t ac = (default_ac == VACDEV_DEFAULT_ALLOW) ? 0xff : 0x00;
     /* Initialise private data */
-    clkd = (struct clock_device *)malloc(sizeof(*clkd));
+    clkd = (struct clock_device *)calloc(1, sizeof(*clkd));
     if (clkd == NULL) {
         return NULL;
     }
@@ -311,7 +311,7 @@ vm_install_ac_clock(vm_t *vm, enum vacdev_default default_ac, enum vacdev_action
         }
 
         /* map device masks */
-        clkd->mask[i] = malloc(BIT(12));
+        clkd->mask[i] = calloc(1, BIT(12));
         if (clkd->mask[i] == NULL) {
             return NULL;
         }

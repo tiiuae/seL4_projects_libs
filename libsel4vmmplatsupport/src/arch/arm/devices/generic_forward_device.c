@@ -62,16 +62,16 @@ int vm_install_generic_forward_device(vm_t *vm, const struct device *d,
     struct device *dev;
     int err;
 
-    dev = (struct device *)malloc(sizeof(struct device));
+    dev = (struct device *)calloc(1, sizeof(struct device));
     if (!dev) {
         return -1;
     }
     memcpy(dev, d, sizeof(struct device));
 
     /* initialise private data */
-    gf_device_priv = (struct gf_device_priv *)malloc(sizeof(*gf_device_priv));
+    gf_device_priv = (struct gf_device_priv *)calloc(1, sizeof(*gf_device_priv));
     if (gf_device_priv == NULL) {
-        ZF_LOGE("error malloc returned null");
+        ZF_LOGE("error calloc returned null");
         free(dev);
         return -1;
     }

@@ -968,15 +968,15 @@ int vm_create_lapic(vm_vcpu_t *vcpu, int enabled)
     assert(vcpu != NULL);
     apic_debug(2, "apic_init %d\n", vcpu->vcpu_id);
 
-    apic = malloc(sizeof(*apic));
+    apic = calloc(1, sizeof(*apic));
     if (!apic)
         goto nomem;
 
     vcpu->vcpu_arch.lapic = apic;
 
-    apic->regs = malloc(sizeof(struct local_apic_regs)); // TODO this is a page; allocate a page
+    apic->regs = calloc(1, sizeof(struct local_apic_regs)); // TODO this is a page; allocate a page
     if (!apic->regs) {
-        printf("malloc apic regs error for vcpu %x\n",
+        printf("calloc apic regs error for vcpu %x\n",
                vcpu->vcpu_id);
         goto nomem_free_apic;
     }

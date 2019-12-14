@@ -86,14 +86,14 @@ int vm_install_generic_ac_device(vm_t *vm, const struct device *d, void *mask,
     vmm_vspace = &vm->mem.vmm_vspace;
     int err;
 
-    dev = (struct device *)malloc(sizeof(struct device));
+    dev = (struct device *)calloc(1, sizeof(struct device));
     if (!dev) {
         return -1;
     }
     memcpy(dev, d, sizeof(struct device));
 
     /* initialise private data */
-    gac_device_priv = (struct gac_device_priv *)malloc(sizeof(*gac_device_priv));
+    gac_device_priv = (struct gac_device_priv *)calloc(1, sizeof(*gac_device_priv));
     if (gac_device_priv == NULL) {
         free(dev);
         return -1;

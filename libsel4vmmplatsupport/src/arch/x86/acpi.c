@@ -108,7 +108,7 @@ static void *alloc_bios_memory(vm_t *vm, cspacepath_t **bios_frames) {
     int err;
     unsigned int num_pages = ROUND_UP(LOWER_BIOS_SIZE, BIT(seL4_PageBits)) >> seL4_PageBits;
     seL4_CPtr caps[num_pages];
-    cspacepath_t *bios_frames_paths = (cspacepath_t *)malloc(num_pages * sizeof(cspacepath_t));
+    cspacepath_t *bios_frames_paths = (cspacepath_t *)calloc(1, num_pages * sizeof(cspacepath_t));
     if (!bios_frames_paths) {
         ZF_LOGE("Failed to allocate caps for bios memory");
         return NULL;
@@ -154,7 +154,7 @@ int make_guest_acpi_tables(vm_t *vm) {
     int madt_size = sizeof(acpi_madt_t)
         /* + sizeof(acpi_madt_ioapic_t)*/
         + sizeof(acpi_madt_local_apic_t) * cpus;
-    acpi_madt_t *madt = malloc(madt_size);
+    acpi_madt_t *madt = calloc(1, madt_size);
     acpi_fill_table_head(&madt->header, "APIC", 3);
     madt->local_int_crt_address = APIC_DEFAULT_PHYS_BASE;
     madt->flags = 1;
@@ -215,7 +215,7 @@ int make_guest_acpi_tables(vm_t *vm) {
 
     uintptr_t xsdt_addr = lower_bios_addr + (XSDT_START - LOWER_BIOS_START);
 
-    acpi_xsdt_t *xsdt = malloc(xsdt_size);
+    acpi_xsdt_t *xsdt = calloc(1, xsdt_size);
     acpi_fill_table_head(&xsdt->header, "XSDT", 1);
 
     // Add previous tables to XSDT pointer list
@@ -264,7 +264,7 @@ int make_guest_acpi_tables(vm_t *vm) {
 
     memcpy((void *)rsdp_addr, (char *)&rsdp, sizeof(rsdp));
 
-    struct bios_iterator_cookie *bios_cookie = malloc(sizeof(struct bios_iterator_cookie));
+    struct bios_iterator_cookie *bios_cookie = calloc(1, sizeof(struct bios_iterator_cookie));
     if (!bios_cookie) {
         ZF_LOGE("Failed to allocate bios iterator cookie");
         return -1;

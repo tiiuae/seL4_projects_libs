@@ -79,7 +79,7 @@ void vm_combiner_irq_handler(vm_t *vm, int irq)
     irq_combiner_enable_irq(&combiner->pcombiner, COMBINER_IRQ(g, i));
 
     /* Allocate a combiner IRQ structure */
-    cirq = (struct combiner_irq *)malloc(sizeof(*cirq));
+    cirq = (struct combiner_irq *)calloc(1, sizeof(*cirq));
     assert(cirq);
     if (!cirq) {
         printf("No memory to allocate combiner IRQ\n");
@@ -118,13 +118,12 @@ int vmm_register_combiner_irq(int group, int idx, combiner_irq_handler_fn cb, vo
     if (combiner->data[group] == NULL) {
         void *addr;
 
-        addr = malloc(sizeof(struct irq_group_data) * 8);
+        addr = calloc(1, sizeof(struct irq_group_data) * 8);
         assert(addr);
         if (addr == NULL) {
             return -1;
         }
 
-        memset(addr, 0, sizeof(struct irq_group_data) * 8);
         combiner->data[group] = (struct irq_group_data *)addr;
 
         ZF_LOGD("Registered combiner IRQ (%d, %d)\n", group, idx);
@@ -237,13 +236,13 @@ int vm_install_vcombiner(vm_t *vm)
     }
 
     /* Distributor */
-    combiner = (struct device *)malloc(sizeof(struct device));
+    combiner = (struct device *)calloc(1, sizeof(struct device));
     if (!combiner) {
         return -1;
     }
     memcpy(combiner, &dev_irq_combiner, sizeof(struct device));
 
-    vcombiner = malloc(sizeof(*vcombiner));
+    vcombiner = calloc(1, sizeof(*vcombiner));
     if (!vcombiner) {
         assert(!"Unable to malloc memory for VGIC");
         return -1;

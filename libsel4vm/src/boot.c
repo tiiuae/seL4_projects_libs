@@ -43,9 +43,8 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
     vm->mem.num_ram_regions = 0;
     vm->mem.ram_regions = malloc(0);
     /* Initialise our vcpu set */
-    vm->vcpus = malloc(sizeof(vm_vcpu_t *) * MAX_NUM_VCPUS);
+    vm->vcpus = calloc(1, sizeof(vm_vcpu_t *) * MAX_NUM_VCPUS);
     assert(vm->vcpus);
-    memset(vm->vcpus, 0, sizeof(vm_vcpu_t *) * MAX_NUM_VCPUS);
     /* Initialise vm memory management interface */
     err = vm_memory_init(vm);
     if (err) {
@@ -72,9 +71,8 @@ vm_create_vcpu(vm_t *vm, int priority) {
         ZF_LOGE("Failed to create vcpu, reached maximum number of support vcpus");
         return NULL;
     }
-    vm_vcpu_t *vcpu_new = malloc(sizeof(vm_vcpu_t));
+    vm_vcpu_t *vcpu_new = calloc(1, sizeof(vm_vcpu_t));
     assert(vcpu_new);
-    bzero(vcpu_new, sizeof(vm_vcpu_t));
     /* Create VCPU */
     err = vka_alloc_vcpu(vm->vka, &vcpu_new->vcpu);
     assert(!err);
