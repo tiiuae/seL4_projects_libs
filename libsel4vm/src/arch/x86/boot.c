@@ -134,11 +134,6 @@ vm_init_arch(vm_t *vm) {
     if (err) {
         return err;
     }
-    /* Create our 4K page 1-1 pd */
-    err = make_guest_page_dir(vm);
-    if (err) {
-        return -1;
-    }
 
     /* Bind our interrupt pending callback */
     err = seL4_TCB_BindNotification(simple_get_init_cap(vm->simple, seL4_CapInitThreadTCB), vm->host_endpoint);
@@ -157,6 +152,13 @@ vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu) {
     if (!vcpu->vcpu_arch.guest_state) {
         return -1;
     }
+
+    /* Create our 4K page 1-1 pd */
+    err = make_guest_page_dir(vm);
+    if (err) {
+        return -1;
+    }
+
     vm_guest_state_initialise(vcpu->vcpu_arch.guest_state);
     /* Set the initial CR state */
     vcpu->vcpu_arch.guest_state->virt.cr.cr0_mask = VM_VMCS_CR0_MASK;
