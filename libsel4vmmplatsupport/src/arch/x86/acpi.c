@@ -30,7 +30,7 @@ Author: W.A. */
 
 #define APIC_FLAGS_ENABLED (1)
 
-uint8_t acpi_calc_checksum(const char* table, int length)
+uint8_t acpi_calc_checksum(const char *table, int length)
 {
     uint32_t sum = 0;
 
@@ -41,7 +41,8 @@ uint8_t acpi_calc_checksum(const char* table, int length)
     return 0x100 - (sum & 0xFF);
 }
 
-static void acpi_fill_table_head(acpi_header_t *head, const char *signature, uint8_t rev) {
+static void acpi_fill_table_head(acpi_header_t *head, const char *signature, uint8_t rev)
+{
     const char *oem = "NICTA ";
     const char *padd = "    ";
     memcpy(head->signature, signature, sizeof(head->signature));
@@ -58,7 +59,8 @@ static void acpi_fill_table_head(acpi_header_t *head, const char *signature, uin
 }
 
 static int make_guest_acpi_tables_continued(vm_t *vm, uintptr_t paddr, void *vaddr,
-        size_t size, size_t offset, void *cookie) {
+                                            size_t size, size_t offset, void *cookie)
+{
     (void)offset;
     memcpy((char *)vaddr, (char *)cookie, size);
     return 0;
@@ -69,7 +71,8 @@ struct bios_iterator_cookie {
     vm_t *vm;
 };
 
-static vm_frame_t bios_memory_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t bios_memory_iterator(uintptr_t addr, void *cookie)
+{
     int error;
     cspacepath_t return_frame;
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
@@ -84,7 +87,7 @@ static vm_frame_t bios_memory_iterator(uintptr_t addr, void *cookie) {
         return frame_result;
     }
 
-    int page_idx = (frame_start - LOWER_BIOS_START)/BIT(page_size);
+    int page_idx = (frame_start - LOWER_BIOS_START) / BIT(page_size);
     error = vka_cspace_alloc_path(vm->vka, &return_frame);
     if (error) {
         ZF_LOGE("Failed to allocate cspace path for bios frame");
@@ -104,7 +107,8 @@ static vm_frame_t bios_memory_iterator(uintptr_t addr, void *cookie) {
     return frame_result;
 }
 
-static void *alloc_bios_memory(vm_t *vm, cspacepath_t **bios_frames) {
+static void *alloc_bios_memory(vm_t *vm, cspacepath_t **bios_frames)
+{
     int err;
     unsigned int num_pages = ROUND_UP(LOWER_BIOS_SIZE, BIT(seL4_PageBits)) >> seL4_PageBits;
     seL4_CPtr caps[num_pages];
@@ -127,7 +131,7 @@ static void *alloc_bios_memory(vm_t *vm, cspacepath_t **bios_frames) {
     }
 
     void *bios_addr = vspace_map_pages(&vm->mem.vmm_vspace, caps, NULL, seL4_AllRights,
-            num_pages, seL4_PageBits, 0);
+                                       num_pages, seL4_PageBits, 0);
     if (!bios_addr) {
         ZF_LOGE("Failed to map new pages for bios memory");
         return NULL;
@@ -138,7 +142,8 @@ static void *alloc_bios_memory(vm_t *vm, cspacepath_t **bios_frames) {
 }
 
 // Give some ACPI tables to the guest
-int make_guest_acpi_tables(vm_t *vm) {
+int make_guest_acpi_tables(vm_t *vm)
+{
     ZF_LOGD("Making ACPI tables\n");
 
     int cpus = vm->num_vcpus;
@@ -152,8 +157,8 @@ int make_guest_acpi_tables(vm_t *vm) {
 
     // MADT
     int madt_size = sizeof(acpi_madt_t)
-        /* + sizeof(acpi_madt_ioapic_t)*/
-        + sizeof(acpi_madt_local_apic_t) * cpus;
+                    /* + sizeof(acpi_madt_ioapic_t)*/
+                    + sizeof(acpi_madt_local_apic_t) * cpus;
     acpi_madt_t *madt = calloc(1, madt_size);
     acpi_fill_table_head(&madt->header, "APIC", 3);
     madt->local_int_crt_address = APIC_DEFAULT_PHYS_BASE;
@@ -236,7 +241,7 @@ int make_guest_acpi_tables(vm_t *vm) {
     table_paddr = xsdt_addr;
     for (int i = 0; i < num_tables; i++) {
         ZF_LOGD("ACPI table \"%.4s\", addr = %p, size = %zu bytes\n",
-                (char *)tables[i], (void*)table_paddr, table_sizes[i]);
+                (char *)tables[i], (void *)table_paddr, table_sizes[i]);
         memcpy((void *)table_paddr, (char *)tables[i], table_sizes[i]);
         table_paddr += table_sizes[i];
     }
@@ -260,7 +265,7 @@ int make_guest_acpi_tables(vm_t *vm) {
     rsdp.checksum = acpi_calc_checksum((char *)&rsdp, 20);
     rsdp.extended_checksum = acpi_calc_checksum((char *)&rsdp, sizeof(rsdp));
 
-    ZF_LOGD("ACPI RSDP addr = %p\n", (void*)rsdp_addr);
+    ZF_LOGD("ACPI RSDP addr = %p\n", (void *)rsdp_addr);
 
     memcpy((void *)rsdp_addr, (char *)&rsdp, sizeof(rsdp));
 
@@ -272,8 +277,8 @@ int make_guest_acpi_tables(vm_t *vm) {
     bios_cookie->vm = vm;
     bios_cookie->bios_frames = bios_frames;
     vm_memory_reservation_t *bios_reservation = vm_reserve_memory_at(vm, LOWER_BIOS_START, LOWER_BIOS_SIZE,
-            default_error_fault_callback, NULL);
-    if(!bios_reservation) {
+                                                                     default_error_fault_callback, NULL);
+    if (!bios_reservation) {
         ZF_LOGE("Failed to reserve LOWER BIOS memory");
         return -1;
     }

@@ -31,9 +31,12 @@ struct guest_mem_touch_params {
     ram_touch_callback_fn touch_fn;
 };
 
-static int push_guest_ram_region(vm_mem_t *guest_memory, uintptr_t start, size_t size, int allocated) {
+static int push_guest_ram_region(vm_mem_t *guest_memory, uintptr_t start, size_t size, int allocated)
+{
     int last_region = guest_memory->num_ram_regions;
-    if (size == 0) return -1;
+    if (size == 0) {
+        return -1;
+    }
     vm_ram_region_t *extended_regions = realloc(guest_memory->ram_regions, sizeof(vm_ram_region_t) * (last_region + 1));
     if (extended_regions == NULL) {
         return -1;
@@ -47,27 +50,32 @@ static int push_guest_ram_region(vm_mem_t *guest_memory, uintptr_t start, size_t
     return 0;
 }
 
-static int ram_region_cmp(const void *a, const void *b) {
+static int ram_region_cmp(const void *a, const void *b)
+{
     const vm_ram_region_t *aa = a;
     const vm_ram_region_t *bb = b;
     return aa->start - bb->start;
 }
 
-static void sort_guest_ram_regions(vm_mem_t *guest_memory) {
+static void sort_guest_ram_regions(vm_mem_t *guest_memory)
+{
     qsort(guest_memory->ram_regions, guest_memory->num_ram_regions, sizeof(vm_ram_region_t), ram_region_cmp);
 }
 
-static void guest_ram_remove_region(vm_mem_t *guest_memory, int region) {
+static void guest_ram_remove_region(vm_mem_t *guest_memory, int region)
+{
     if (region >= guest_memory->num_ram_regions) {
         return;
     }
     guest_memory->num_ram_regions--;
-    memmove(&guest_memory->ram_regions[region], &guest_memory->ram_regions[region + 1], sizeof(vm_ram_region_t) * (guest_memory->num_ram_regions - region));
+    memmove(&guest_memory->ram_regions[region], &guest_memory->ram_regions[region + 1],
+            sizeof(vm_ram_region_t) * (guest_memory->num_ram_regions - region));
     /* realloc it smaller */
     guest_memory->ram_regions = realloc(guest_memory->ram_regions, sizeof(vm_ram_region_t) * guest_memory->num_ram_regions);
 }
 
-static void collapse_guest_ram_regions(vm_mem_t *guest_memory) {
+static void collapse_guest_ram_regions(vm_mem_t *guest_memory)
+{
     int i;
     for (i = 1; i < guest_memory->num_ram_regions;) {
         /* Only collapse regions with the same allocation flag that are contiguous */
@@ -84,7 +92,8 @@ static void collapse_guest_ram_regions(vm_mem_t *guest_memory) {
     }
 }
 
-static int expand_guest_ram_region(vm_t *vm, uintptr_t start, size_t bytes) {
+static int expand_guest_ram_region(vm_t *vm, uintptr_t start, size_t bytes)
+{
     int err;
     vm_mem_t *guest_memory = &vm->mem;
     /* blindly put a new region at the end */
@@ -100,7 +109,8 @@ static int expand_guest_ram_region(vm_t *vm, uintptr_t start, size_t bytes) {
     return 0;
 }
 
-static bool is_ram_region(vm_t *vm, uintptr_t addr, size_t size) {
+static bool is_ram_region(vm_t *vm, uintptr_t addr, size_t size)
+{
     vm_mem_t *guest_memory = &vm->mem;
     for (int i = 0; i < guest_memory->num_ram_regions; i++) {
         if (guest_memory->ram_regions[i].start <= addr &&
@@ -113,33 +123,38 @@ static bool is_ram_region(vm_t *vm, uintptr_t addr, size_t size) {
 }
 
 static memory_fault_result_t default_ram_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
-        size_t fault_length, void *cookie) {
+                                                        size_t fault_length, void *cookie)
+{
     /* We don't handle RAM faults by default unless the callback is specifically overrided, hence we fail here */
     ZF_LOGE("ERROR: UNHANDLED RAM FAULT");
     return FAULT_ERROR;
 }
 
 /* Helpers for use with touch below */
-int vm_guest_ram_read_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf) {
+int vm_guest_ram_read_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf)
+{
     memcpy(buf, vaddr, size);
     return 0;
 }
 
-int vm_guest_ram_write_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf) {
+int vm_guest_ram_write_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf)
+{
     memcpy(vaddr, buf, size);
     return 0;
 }
 
-static int touch_access_callback(void *access_addr, void *vaddr, void *cookie) {
+static int touch_access_callback(void *access_addr, void *vaddr, void *cookie)
+{
     struct guest_mem_touch_params *guest_touch = (struct guest_mem_touch_params *)cookie;
     uintptr_t vmm_addr = (uintptr_t)vaddr;
     uintptr_t vm_addr = (uintptr_t)access_addr;
     return guest_touch->touch_fn(guest_touch->vm, vm_addr,
-            (void *)(vmm_addr + (guest_touch->current_addr - vm_addr)),
-            guest_touch->size, guest_touch->offset, guest_touch->data);
+                                 (void *)(vmm_addr + (guest_touch->current_addr - vm_addr)),
+                                 guest_touch->size, guest_touch->offset, guest_touch->data);
 }
 
-int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn touch_callback, void *cookie) {
+int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn touch_callback, void *cookie)
+{
     struct guest_mem_touch_params access_cookie;
     uintptr_t current_addr;
     uintptr_t next_addr;
@@ -159,7 +174,7 @@ int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn to
         access_cookie.offset = current_addr - addr;
         access_cookie.current_addr = current_addr;
         int result = vspace_access_page_with_callback(&vm->mem.vm_vspace, &vm->mem.vmm_vspace, (void *)current_aligned,
-                seL4_PageBits, seL4_AllRights, 1, touch_access_callback, &access_cookie);
+                                                      seL4_PageBits, seL4_AllRights, 1, touch_access_callback, &access_cookie);
         if (result) {
             return result;
         }
@@ -167,7 +182,8 @@ int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn to
     return 0;
 }
 
-int vm_ram_find_largest_free_region(vm_t *vm, uintptr_t *addr, size_t *size) {
+int vm_ram_find_largest_free_region(vm_t *vm, uintptr_t *addr, size_t *size)
+{
     vm_mem_t *guest_memory = &vm->mem;
     int largest = -1;
     int i;
@@ -192,7 +208,8 @@ int vm_ram_find_largest_free_region(vm_t *vm, uintptr_t *addr, size_t *size) {
     return 0;
 }
 
-void vm_ram_mark_allocated(vm_t *vm, uintptr_t start, size_t bytes) {
+void vm_ram_mark_allocated(vm_t *vm, uintptr_t start, size_t bytes)
+{
     vm_mem_t *guest_memory = &vm->mem;
     /* Find the region */
     int i;
@@ -219,7 +236,8 @@ void vm_ram_mark_allocated(vm_t *vm, uintptr_t start, size_t bytes) {
     collapse_guest_ram_regions(guest_memory);
 }
 
-uintptr_t vm_ram_allocate(vm_t *vm, size_t bytes) {
+uintptr_t vm_ram_allocate(vm_t *vm, size_t bytes)
+{
     vm_mem_t *guest_memory = &vm->mem;
     for (int i = 0; i < guest_memory->num_ram_regions; i++) {
         if (!guest_memory->ram_regions[i].allocated && guest_memory->ram_regions[i].size >= bytes) {
@@ -232,7 +250,8 @@ uintptr_t vm_ram_allocate(vm_t *vm, size_t bytes) {
     return 0;
 }
 
-static vm_frame_t ram_alloc_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t ram_alloc_iterator(uintptr_t addr, void *cookie)
+{
     int ret;
     vka_object_t object;
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
@@ -254,7 +273,8 @@ static vm_frame_t ram_alloc_iterator(uintptr_t addr, void *cookie) {
     return frame_result;
 }
 
-static vm_frame_t ram_ut_alloc_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t ram_ut_alloc_iterator(uintptr_t addr, void *cookie)
+{
     int ret;
     int error;
     vka_object_t object;
@@ -272,7 +292,8 @@ static vm_frame_t ram_ut_alloc_iterator(uintptr_t addr, void *cookie) {
         return frame_result;
     }
     seL4_Word vka_cookie;
-    error = vka_utspace_alloc_at(vm->vka, &path, kobject_get_type(KOBJECT_FRAME, page_size), page_size, frame_start, &vka_cookie);
+    error = vka_utspace_alloc_at(vm->vka, &path, kobject_get_type(KOBJECT_FRAME, page_size), page_size, frame_start,
+                                 &vka_cookie);
     if (error) {
         ZF_LOGE("Failed to allocate page");
         vka_cspace_free_path(vm->vka, path);
@@ -285,7 +306,8 @@ static vm_frame_t ram_ut_alloc_iterator(uintptr_t addr, void *cookie) {
     return frame_result;
 }
 
-static int map_ram_reservation(vm_t *vm, vm_memory_reservation_t *ram_reservation, bool untyped) {
+static int map_ram_reservation(vm_t *vm, vm_memory_reservation_t *ram_reservation, bool untyped)
+{
     int err;
     /* We map the reservation immediately, by-passing the deferred mapping functionality
      * This allows us the allocate, touch and manipulate VM RAM prior to the region needing to be
@@ -302,7 +324,8 @@ static int map_ram_reservation(vm_t *vm, vm_memory_reservation_t *ram_reservatio
     return 0;
 }
 
-uintptr_t vm_ram_register(vm_t *vm, size_t bytes) {
+uintptr_t vm_ram_register(vm_t *vm, size_t bytes)
+{
     vm_memory_reservation_t *ram_reservation;
     int err;
     uintptr_t base_addr;
@@ -327,12 +350,13 @@ uintptr_t vm_ram_register(vm_t *vm, size_t bytes) {
     return base_addr;
 }
 
-int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped) {
+int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped)
+{
     vm_memory_reservation_t *ram_reservation;
     int err;
 
     ram_reservation = vm_reserve_memory_at(vm, start, bytes, default_ram_fault_callback,
-            NULL);
+                                           NULL);
     if (!ram_reservation) {
         ZF_LOGE("Unable to reserve ram region at addr 0x%x of size 0x%x", start, bytes);
         return 0;
@@ -351,6 +375,7 @@ int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped) {
     return 0;
 }
 
-void vm_ram_free(vm_t *vm, uintptr_t start, size_t bytes) {
+void vm_ram_free(vm_t *vm, uintptr_t start, size_t bytes)
+{
     return;
 }

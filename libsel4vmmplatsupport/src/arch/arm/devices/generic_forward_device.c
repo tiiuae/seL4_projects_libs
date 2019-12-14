@@ -22,11 +22,11 @@ struct gf_device_priv {
     struct generic_forward_cfg cfg;
 };
 
-static memory_fault_result_t
-handle_gf_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
+static memory_fault_result_t handle_gf_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                             void *cookie)
 {
     struct device *dev = (struct device *)cookie;
-    struct gf_device_priv* gf_device_priv = (struct gf_device_priv*)dev->priv;
+    struct gf_device_priv *gf_device_priv = (struct gf_device_priv *)dev->priv;
 
     /* Gather fault information */
     uint32_t offset = fault_addr - dev->pstart;
@@ -58,7 +58,7 @@ handle_gf_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_le
 int vm_install_generic_forward_device(vm_t *vm, const struct device *d,
                                       struct generic_forward_cfg cfg)
 {
-    struct gf_device_priv* gf_device_priv;
+    struct gf_device_priv *gf_device_priv;
     struct device *dev;
     int err;
 
@@ -81,7 +81,7 @@ int vm_install_generic_forward_device(vm_t *vm, const struct device *d,
     dev->priv = gf_device_priv;
 
     vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, dev->pstart, dev->size,
-            handle_gf_fault, (void *)dev);
+                                                                handle_gf_fault, (void *)dev);
     if (!reservation) {
         free(dev);
         free(gf_device_priv);

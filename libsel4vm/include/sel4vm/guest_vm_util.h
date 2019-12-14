@@ -14,12 +14,12 @@
 
 #include <sel4vm/guest_vm.h>
 
-static inline seL4_CPtr vm_get_vcpu_tcb(vm_vcpu_t* vcpu)
+static inline seL4_CPtr vm_get_vcpu_tcb(vm_vcpu_t *vcpu)
 {
     return vcpu->tcb.tcb.cptr;
 }
 
-static inline seL4_CPtr vm_get_vcpu(vm_t* vm, int vcpu_id)
+static inline seL4_CPtr vm_get_vcpu(vm_t *vm, int vcpu_id)
 {
     if (vcpu_id >= vm->num_vcpus) {
         return seL4_CapNull;
@@ -28,12 +28,12 @@ static inline seL4_CPtr vm_get_vcpu(vm_t* vm, int vcpu_id)
 }
 
 
-static inline vspace_t* vm_get_vspace(vm_t* vm)
+static inline vspace_t *vm_get_vspace(vm_t *vm)
 {
     return &vm->mem.vm_vspace;
 }
 
-static inline vspace_t* vm_get_vmm_vspace(vm_t* vm)
+static inline vspace_t *vm_get_vmm_vspace(vm_t *vm)
 {
     return &vm->mem.vmm_vspace;
 }

@@ -17,7 +17,8 @@
 #include "processor/apicdef.h"
 #include "processor/lapic.h"
 
-int vm_create_default_irq_controller(vm_t *vm) {
+int vm_create_default_irq_controller(vm_t *vm)
+{
     int err;
 
     if (!vm) {
@@ -31,8 +32,8 @@ int vm_create_default_irq_controller(vm_t *vm) {
     }
 
     /* Add local apic memory handler */
-    vm_memory_reservation_t * apic_reservation = vm_reserve_memory_at(vm, APIC_DEFAULT_PHYS_BASE,
-            sizeof(struct local_apic_regs), apic_fault_callback, NULL);
+    vm_memory_reservation_t *apic_reservation = vm_reserve_memory_at(vm, APIC_DEFAULT_PHYS_BASE,
+                                                                     sizeof(struct local_apic_regs), apic_fault_callback, NULL);
     if (!apic_reservation) {
         ZF_LOGE("Failed to reserve apic memory");
         return -1;

@@ -32,18 +32,20 @@
 #include "guest_state.h"
 
 static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
-                unsigned int *ecx, unsigned int *edx) {
+                                unsigned int *ecx, unsigned int *edx)
+{
     /* ecx is often an input as well as an output. */
     asm volatile("cpuid"
-        : "=a" (*eax),
-          "=b" (*ebx),
-          "=c" (*ecx),
-          "=d" (*edx)
-        : "0" (*eax), "2" (*ecx)
-        : "memory");
+                 : "=a"(*eax),
+                 "=b"(*ebx),
+                 "=c"(*ecx),
+                 "=d"(*edx)
+                 : "0"(*eax), "2"(*ecx)
+                 : "memory");
 }
 
-static int vm_cpuid_virt(unsigned int function, unsigned int index, struct cpuid_val *val, vm_vcpu_t *vcpu) {
+static int vm_cpuid_virt(unsigned int function, unsigned int index, struct cpuid_val *val, vm_vcpu_t *vcpu)
+{
     unsigned int eax, ebx, ecx, edx;
 
     eax = function;
@@ -91,7 +93,7 @@ static int vm_cpuid_virt(unsigned int function, unsigned int index, struct cpuid
     /* cpuid 7.0.ebx */
     const unsigned int kvm_supported_word9_x86_features =
         F(FSGSBASE) | F(BMI1) | F(HLE) | F(AVX2) | F(SMEP) |
-        F(BMI2) | F(ERMS) | 0 /*F(INVPCID)*/| F(RTM);
+        F(BMI2) | F(ERMS) | 0 /*F(INVPCID)*/ | F(RTM);
 
     /* Virtualize the return value according to the function. */
 
@@ -100,72 +102,73 @@ static int vm_cpuid_virt(unsigned int function, unsigned int index, struct cpuid
     /* ref: http://www.sandpile.org/x86/cpuid.htm */
 
     switch (function) {
-        case 0: /* Get highest function supported plus vendor ID */
-	    if (eax > 0xb)
-	        eax = 0xb;
-	    break;
+    case 0: /* Get highest function supported plus vendor ID */
+        if (eax > 0xb) {
+            eax = 0xb;
+        }
+        break;
 
-        case 1: /* Processor, info and feature. family, model, stepping */
-            edx &= kvm_supported_word0_x86_features;
-            ecx &= kvm_supported_word4_x86_features;
-            break;
+    case 1: /* Processor, info and feature. family, model, stepping */
+        edx &= kvm_supported_word0_x86_features;
+        ecx &= kvm_supported_word4_x86_features;
+        break;
 
-        case 2:
-        case 4: /* Cache and TLB descriptor information */
-            /* Simply pass through information from native CPUID. */
-            break;
+    case 2:
+    case 4: /* Cache and TLB descriptor information */
+        /* Simply pass through information from native CPUID. */
+        break;
 
-        case 7: /* Extended flags */
-            ebx &= kvm_supported_word9_x86_features;
-            break;
+    case 7: /* Extended flags */
+        ebx &= kvm_supported_word9_x86_features;
+        break;
 
-        case 0xa: /* disable performance monitoring */
-            eax = ebx = ecx = edx = 0;
-            break;
+    case 0xa: /* disable performance monitoring */
+        eax = ebx = ecx = edx = 0;
+        break;
 
-        case 0xb: /* Disable topology information */
-            eax = ebx = ecx = edx = 0;
-            break;
+    case 0xb: /* Disable topology information */
+        eax = ebx = ecx = edx = 0;
+        break;
 
-        case VMM_CPUID_KVM_SIGNATURE: /* Unsupported KVM features. We are not KVM. */
-        case VMM_CPUID_KVM_FEATURES:
-            eax = ebx = ecx = edx = 0;
-            break;
+    case VMM_CPUID_KVM_SIGNATURE: /* Unsupported KVM features. We are not KVM. */
+    case VMM_CPUID_KVM_FEATURES:
+        eax = ebx = ecx = edx = 0;
+        break;
 
-        case 0x80000000: /* Get highest extended function supported */
-            break;
+    case 0x80000000: /* Get highest extended function supported */
+        break;
 
-        case 0x80000001: /* extended processor info and feature bits */
-            ecx &= kvm_supported_word6_x86_features;
-            edx &= kvm_supported_word1_x86_features;
-            break;
+    case 0x80000001: /* extended processor info and feature bits */
+        ecx &= kvm_supported_word6_x86_features;
+        edx &= kvm_supported_word1_x86_features;
+        break;
 
-        case 0x80000002: /* Get processor name string. */
-        case 0x80000003:
-        case 0x80000004:
-        case 0x80000005:
-        case 0x80000006: /* Cache information. */
-            /* Pass through brand name from native CPUID. */
-            break;
+    case 0x80000002: /* Get processor name string. */
+    case 0x80000003:
+    case 0x80000004:
+    case 0x80000005:
+    case 0x80000006: /* Cache information. */
+        /* Pass through brand name from native CPUID. */
+        break;
 
-        case 0x80000008: /* Virtual and Physics address sizes */
-            break;
+    case 0x80000008: /* Virtual and Physics address sizes */
+        break;
 
-        case 3: /* Processor serial number. */
-            break;
-        case 5: /* MONITOR / MWAIT */
-        case 6: /* Thermal management */
-        case 0x80000007: /* Advanced power management - unsupported. */
-        case 0xC0000002:
-        case 0xC0000003:
-        case 0xC0000004:
-            eax = ebx = ecx = edx = 0;
-            break;
+    case 3: /* Processor serial number. */
+        break;
+    case 5: /* MONITOR / MWAIT */
+    case 6: /* Thermal management */
+    case 0x80000007: /* Advanced power management - unsupported. */
+    case 0xC0000002:
+    case 0xC0000003:
+    case 0xC0000004:
+        eax = ebx = ecx = edx = 0;
+        break;
 
-        default:
-            /* TODO: Adding more CPUID functions whenever necessary */
-            ZF_LOGE("CPUID unimplemented function 0x%x\n", function);
-            return -1;
+    default:
+        /* TODO: Adding more CPUID functions whenever necessary */
+        ZF_LOGE("CPUID unimplemented function 0x%x\n", function);
+        return -1;
 
     }
 
@@ -181,184 +184,203 @@ static int vm_cpuid_virt(unsigned int function, unsigned int index, struct cpuid
 }
 
 #if 0
-            /* function 2 entries are STATEFUL. That is, repeated cpuid commands
-             * may return different values. This forces us to get_cpu() before
-             * issuing the first command, and also to emulate this annoying behavior
-             * in kvm_emulate_cpuid() using KVM_CPUID_FLAG_STATE_READ_NEXT */
-        case 2: {
-                    int t, times = entry->eax & 0xff;
+/* function 2 entries are STATEFUL. That is, repeated cpuid commands
+ * may return different values. This forces us to get_cpu() before
+ * issuing the first command, and also to emulate this annoying behavior
+ * in kvm_emulate_cpuid() using KVM_CPUID_FLAG_STATE_READ_NEXT */
+case 2:
+{
+    int t, times = entry->eax & 0xff;
 
-                    entry->flags |= KVM_CPUID_FLAG_STATEFUL_FUNC;
-                    entry->flags |= KVM_CPUID_FLAG_STATE_READ_NEXT;
-                    for (t = 1; t < times; ++t) {
-                        if (*nent >= maxnent)
-                            goto out;
+    entry->flags |= KVM_CPUID_FLAG_STATEFUL_FUNC;
+    entry->flags |= KVM_CPUID_FLAG_STATE_READ_NEXT;
+    for (t = 1; t < times; ++t) {
+        if (*nent >= maxnent) {
+            goto out;
+        }
 
-                        do_cpuid_1_ent(&entry[t], function, 0);
-                        entry[t].flags |= KVM_CPUID_FLAG_STATEFUL_FUNC;
-                        ++*nent;
-                    }
-                    break;
-                }
-                /* function 4 has additional index. */
-        case 4: {
-                    int i, cache_type;
-
-                    entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
-                    /* read more entries until cache_type is zero */
-                    for (i = 1; ; ++i) {
-                        if (*nent >= maxnent)
-                            goto out;
-
-                        cache_type = entry[i - 1].eax & 0x1f;
-                        if (!cache_type)
-                            break;
-                        do_cpuid_1_ent(&entry[i], function, i);
-                        entry[i].flags |=
-                            KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
-                        ++*nent;
-                    }
-                    break;
-                }
-        case 7: {
-                    entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
-                    /* Mask ebx against host capability word 9 */
-                    if (index == 0) {
-                        entry->ebx &= kvm_supported_word9_x86_features;
-                        cpuid_mask(&entry->ebx, 9);
-                        // TSC_ADJUST is emulated
-                        entry->ebx |= F(TSC_ADJUST);
-                    } else
-                        entry->ebx = 0;
-                    entry->eax = 0;
-                    entry->ecx = 0;
-                    entry->edx = 0;
-                    break;
-                }
-        case 9:
-                break;
-        case 0xa: { /* Architectural Performance Monitoring */
-                      struct x86_pmu_capability cap;
-                      union cpuid10_eax eax;
-                      union cpuid10_edx edx;
-
-                      perf_get_x86_pmu_capability(&cap);
-
-                      /*
-                       * Only support guest architectural pmu on a host
-                       * with architectural pmu.
-                       */
-                      if (!cap.version)
-                          memset(&cap, 0, sizeof(cap));
-
-                      eax.split.version_id = min(cap.version, 2);
-                      eax.split.num_counters = cap.num_counters_gp;
-                      eax.split.bit_width = cap.bit_width_gp;
-                      eax.split.mask_length = cap.events_mask_len;
-
-                      edx.split.num_counters_fixed = cap.num_counters_fixed;
-                      edx.split.bit_width_fixed = cap.bit_width_fixed;
-                      edx.split.reserved = 0;
-
-                      entry->eax = eax.full;
-                      entry->ebx = cap.events_mask;
-                      entry->ecx = 0;
-                      entry->edx = edx.full;
-                      break;
-                  }
-                  /* function 0xb has additional index. */
-        case 0xb: {
-                      int i, level_type;
-
-                      entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
-                      /* read more entries until level_type is zero */
-                      for (i = 1; ; ++i) {
-                          if (*nent >= maxnent)
-                              goto out;
-
-                          level_type = entry[i - 1].ecx & 0xff00;
-                          if (!level_type)
-                              break;
-                          do_cpuid_1_ent(&entry[i], function, i);
-                          entry[i].flags |=
-                              KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
-                          ++*nent;
-                      }
-                      break;
-                  }
-        case 0xd: {
-                      int idx, i;
-
-                      entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
-                      for (idx = 1, i = 1; idx < 64; ++idx) {
-                          if (*nent >= maxnent)
-                              goto out;
-
-                          do_cpuid_1_ent(&entry[i], function, idx);
-                          if (entry[i].eax == 0 || !supported_xcr0_bit(idx))
-                              continue;
-                          entry[i].flags |=
-                              KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
-                          ++*nent;
-                          ++i;
-                      }
-                      break;
-                  }
-        case KVM_CPUID_SIGNATURE: {
-                                      static const char signature[12] = "KVMKVMKVM\0\0";
-                                      const unsigned int *sigptr = (const unsigned int *)signature;
-                                      entry->eax = KVM_CPUID_FEATURES;
-                                      entry->ebx = sigptr[0];
-                                      entry->ecx = sigptr[1];
-                                      entry->edx = sigptr[2];
-                                      break;
-                                  }
-        case KVM_CPUID_FEATURES:
-                                  entry->eax = (BIT(KVM_FEATURE_CLOCKSOURCE)) |
-                                      (BIT(KVM_FEATURE_NOP_IO_DELAY)) |
-                                      (BIT(KVM_FEATURE_CLOCKSOURCE2)) |
-                                      (BIT(KVM_FEATURE_ASYNC_PF)) |
-                                      (BIT(KVM_FEATURE_PV_EOI)) |
-                                      (BIT(KVM_FEATURE_CLOCKSOURCE_STABLE_BIT));
-
-                                  if (sched_info_on())
-                                      entry->eax |= (BIT(KVM_FEATURE_STEAL_TIME));
-
-                                  entry->ebx = 0;
-                                  entry->ecx = 0;
-                                  entry->edx = 0;
-                                  break;
-       case 0x80000019:
-                         entry->ecx = entry->edx = 0;
-                         break;
-        case 0x8000001a:
-                         break;
-        case 0x8000001d:
-                         break;
-                         /*Add support for Centaur's CPUID instruction*/
-        case 0xC0000000:
-                         /*Just support up to 0xC0000004 now*/
-                         entry->eax = min(entry->eax, 0xC0000004);
-                         break;
-        case 0xC0000001:
-                         entry->edx &= kvm_supported_word5_x86_features;
-                         cpuid_mask(&entry->edx, 5);
-                         break;
-        case 3: /* Processor serial number */
-        case 5: /* MONITOR/MWAIT */
-        case 6: /* Thermal management */
-        case 0x80000007: /* Advanced power management */
-        case 0xC0000002:
-        case 0xC0000003:
-        case 0xC0000004:
-        default:
-                         entry->eax = entry->ebx = entry->ecx = entry->edx = 0;
-                         break;
+        do_cpuid_1_ent(&entry[t], function, 0);
+        entry[t].flags |= KVM_CPUID_FLAG_STATEFUL_FUNC;
+        ++*nent;
     }
+    break;
+}
+/* function 4 has additional index. */
+case 4:
+{
+    int i, cache_type;
+
+    entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+    /* read more entries until cache_type is zero */
+    for (i = 1; ; ++i) {
+        if (*nent >= maxnent) {
+            goto out;
+        }
+
+        cache_type = entry[i - 1].eax & 0x1f;
+        if (!cache_type) {
+            break;
+        }
+        do_cpuid_1_ent(&entry[i], function, i);
+        entry[i].flags |=
+            KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+        ++*nent;
+    }
+    break;
+}
+case 7:
+{
+    entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+    /* Mask ebx against host capability word 9 */
+    if (index == 0) {
+        entry->ebx &= kvm_supported_word9_x86_features;
+        cpuid_mask(&entry->ebx, 9);
+        // TSC_ADJUST is emulated
+        entry->ebx |= F(TSC_ADJUST);
+    } else {
+        entry->ebx = 0;
+    }
+    entry->eax = 0;
+    entry->ecx = 0;
+    entry->edx = 0;
+    break;
+}
+case 9:
+break;
+case 0xa:   /* Architectural Performance Monitoring */
+{
+    struct x86_pmu_capability cap;
+    union cpuid10_eax eax;
+    union cpuid10_edx edx;
+
+    perf_get_x86_pmu_capability(&cap);
+
+    /*
+     * Only support guest architectural pmu on a host
+     * with architectural pmu.
+     */
+    if (!cap.version) {
+        memset(&cap, 0, sizeof(cap));
+    }
+
+    eax.split.version_id = min(cap.version, 2);
+    eax.split.num_counters = cap.num_counters_gp;
+    eax.split.bit_width = cap.bit_width_gp;
+    eax.split.mask_length = cap.events_mask_len;
+
+    edx.split.num_counters_fixed = cap.num_counters_fixed;
+    edx.split.bit_width_fixed = cap.bit_width_fixed;
+    edx.split.reserved = 0;
+
+    entry->eax = eax.full;
+    entry->ebx = cap.events_mask;
+    entry->ecx = 0;
+    entry->edx = edx.full;
+    break;
+}
+/* function 0xb has additional index. */
+case 0xb:
+{
+    int i, level_type;
+
+    entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+    /* read more entries until level_type is zero */
+    for (i = 1; ; ++i) {
+        if (*nent >= maxnent) {
+            goto out;
+        }
+
+        level_type = entry[i - 1].ecx & 0xff00;
+        if (!level_type) {
+            break;
+        }
+        do_cpuid_1_ent(&entry[i], function, i);
+        entry[i].flags |=
+            KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+        ++*nent;
+    }
+    break;
+}
+case 0xd:
+{
+    int idx, i;
+
+    entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+    for (idx = 1, i = 1; idx < 64; ++idx) {
+        if (*nent >= maxnent) {
+            goto out;
+        }
+
+        do_cpuid_1_ent(&entry[i], function, idx);
+        if (entry[i].eax == 0 || !supported_xcr0_bit(idx)) {
+            continue;
+        }
+        entry[i].flags |=
+            KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
+        ++*nent;
+        ++i;
+    }
+    break;
+}
+case KVM_CPUID_SIGNATURE:
+{
+    static const char signature[12] = "KVMKVMKVM\0\0";
+    const unsigned int *sigptr = (const unsigned int *)signature;
+    entry->eax = KVM_CPUID_FEATURES;
+    entry->ebx = sigptr[0];
+    entry->ecx = sigptr[1];
+    entry->edx = sigptr[2];
+    break;
+}
+case KVM_CPUID_FEATURES:
+entry->eax = (BIT(KVM_FEATURE_CLOCKSOURCE)) |
+             (BIT(KVM_FEATURE_NOP_IO_DELAY)) |
+             (BIT(KVM_FEATURE_CLOCKSOURCE2)) |
+             (BIT(KVM_FEATURE_ASYNC_PF)) |
+             (BIT(KVM_FEATURE_PV_EOI)) |
+             (BIT(KVM_FEATURE_CLOCKSOURCE_STABLE_BIT));
+
+if (sched_info_on())
+{
+    entry->eax |= (BIT(KVM_FEATURE_STEAL_TIME));
+}
+
+entry->ebx = 0;
+entry->ecx = 0;
+entry->edx = 0;
+break;
+case 0x80000019:
+entry->ecx = entry->edx = 0;
+break;
+case 0x8000001a:
+break;
+case 0x8000001d:
+break;
+/*Add support for Centaur's CPUID instruction*/
+case 0xC0000000:
+/*Just support up to 0xC0000004 now*/
+entry->eax = min(entry->eax, 0xC0000004);
+break;
+case 0xC0000001:
+entry->edx &= kvm_supported_word5_x86_features;
+cpuid_mask(&entry->edx, 5);
+break;
+case 3: /* Processor serial number */
+case 5: /* MONITOR/MWAIT */
+case 6: /* Thermal management */
+case 0x80000007: /* Advanced power management */
+case 0xC0000002:
+case 0xC0000003:
+case 0xC0000004:
+default:
+entry->eax = entry->ebx = entry->ecx = entry->edx = 0;
+break;
+}
 #endif
 
 /* VM exit handler: for the CPUID instruction. */
-int vm_cpuid_handler(vm_vcpu_t *vcpu) {
+int vm_cpuid_handler(vm_vcpu_t *vcpu)
+{
 
     int ret;
     struct cpuid_val val;
@@ -366,14 +388,15 @@ int vm_cpuid_handler(vm_vcpu_t *vcpu) {
     /* Read parameter information. */
     unsigned int function, index;
     if (vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, &function)
-            || vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_ECX, &index)) {
+        || vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_ECX, &index)) {
         return VM_EXIT_HANDLE_ERROR;
     }
 
     /* Virtualise the CPUID instruction. */
     ret = vm_cpuid_virt(function, index, &val, vcpu);
-    if (ret)
+    if (ret) {
         return VM_EXIT_HANDLE_ERROR;
+    }
 
     /* Set the return values in guest context. */
     vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, val.eax);

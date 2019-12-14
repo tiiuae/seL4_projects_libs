@@ -30,7 +30,7 @@ struct gpio_device;
  * @return               A handle to the GPIO Access control device, NULL on
  *                       failure
  */
-struct gpio_device* vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac,
+struct gpio_device *vm_install_ac_gpio(vm_t *vm, enum vacdev_default default_ac,
                                        enum vacdev_action action);
 
 /*
@@ -39,7 +39,7 @@ struct gpio_device* vm_install_ac_gpio(vm_t* vm, enum vacdev_default default_ac,
  * @param[in] gpio_id      The ID of the GPIO to provide access to
  * @return                 0 on success
  */
-int vm_gpio_provide(struct gpio_device* gpio_device, gpio_id_t gpio_id);
+int vm_gpio_provide(struct gpio_device *gpio_device, gpio_id_t gpio_id);
 
 /*
  * Restrict GPIO pin access to the VM
@@ -47,4 +47,4 @@ int vm_gpio_provide(struct gpio_device* gpio_device, gpio_id_t gpio_id);
  * @param[in] gpio_id      The ID of the GPIO to deny access to
  * @return                 0 on success
  */
-int vm_gpio_restrict(struct gpio_device* gpio_device, gpio_id_t gpio_id);
+int vm_gpio_restrict(struct gpio_device *gpio_device, gpio_id_t gpio_id);

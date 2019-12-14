@@ -34,7 +34,7 @@
 #define X86_FEATURE_PGE     (0*32+13) /* Page Global Enable */
 #define X86_FEATURE_MCA     (0*32+14) /* Machine Check Architecture */
 #define X86_FEATURE_CMOV    (0*32+15) /* CMOV instructions */
-                      /* (plus FCMOVcc, FCOMI with FPU) */
+/* (plus FCMOVcc, FCOMI with FPU) */
 #define X86_FEATURE_PAT     (0*32+16) /* Page Attribute Table */
 #define X86_FEATURE_PSE36   (0*32+17) /* 36-bit PSEs */
 #define X86_FEATURE_PN      (0*32+18) /* Processor serial number */
@@ -93,7 +93,7 @@
 #define X86_FEATURE_LFENCE_RDTSC (3*32+18) /* "" Lfence synchronizes RDTSC */
 #define X86_FEATURE_11AP    (3*32+19) /* "" Bad local APIC aka 11AP */
 #define X86_FEATURE_NOPL    (3*32+20) /* The NOPL (0F 1F) instructions */
-                      /* 21 available, was AMD_C1E */
+/* 21 available, was AMD_C1E */
 #define X86_FEATURE_XTOPOLOGY   (3*32+22) /* cpu topology enum extensions */
 #define X86_FEATURE_TSC_RELIABLE (3*32+23) /* TSC is known to be reliable */
 #define X86_FEATURE_NONSTOP_TSC (3*32+24) /* TSC does not stop in C states */

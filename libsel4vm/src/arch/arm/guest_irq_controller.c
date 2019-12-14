@@ -12,7 +12,8 @@
 
 #include "vgic/vgic.h"
 
-int vm_create_default_irq_controller(vm_t *vm) {
+int vm_create_default_irq_controller(vm_t *vm)
+{
     if (!vm) {
         ZF_LOGE("Failed to initialise default irq controller: Invalid vm");
         return -1;

@@ -181,27 +181,27 @@ struct edd_device_params {
             uint16_t base_address;
             uint16_t reserved1;
             uint32_t reserved2;
-        } __attribute__ ((packed)) isa;
+        } __attribute__((packed)) isa;
         struct {
             uint8_t bus;
             uint8_t slot;
             uint8_t function;
             uint8_t channel;
             uint32_t reserved;
-        } __attribute__ ((packed)) pci;
+        } __attribute__((packed)) pci;
         /* pcix is same as pci */
         struct {
             uint64_t reserved;
-        } __attribute__ ((packed)) ibnd;
+        } __attribute__((packed)) ibnd;
         struct {
             uint64_t reserved;
-        } __attribute__ ((packed)) xprs;
+        } __attribute__((packed)) xprs;
         struct {
             uint64_t reserved;
-        } __attribute__ ((packed)) htpt;
+        } __attribute__((packed)) htpt;
         struct {
             uint64_t reserved;
-        } __attribute__ ((packed)) unknown;
+        } __attribute__((packed)) unknown;
     } interface_path;
     union {
         struct {
@@ -210,7 +210,7 @@ struct edd_device_params {
             uint16_t reserved2;
             uint32_t reserved3;
             uint64_t reserved4;
-        } __attribute__ ((packed)) ata;
+        } __attribute__((packed)) ata;
         struct {
             uint8_t device;
             uint8_t lun;
@@ -218,49 +218,49 @@ struct edd_device_params {
             uint8_t reserved2;
             uint32_t reserved3;
             uint64_t reserved4;
-        } __attribute__ ((packed)) atapi;
+        } __attribute__((packed)) atapi;
         struct {
             uint16_t id;
             uint64_t lun;
             uint16_t reserved1;
             uint32_t reserved2;
-        } __attribute__ ((packed)) scsi;
+        } __attribute__((packed)) scsi;
         struct {
             uint64_t serial_number;
             uint64_t reserved;
-        } __attribute__ ((packed)) usb;
+        } __attribute__((packed)) usb;
         struct {
             uint64_t eui;
             uint64_t reserved;
-        } __attribute__ ((packed)) i1394;
+        } __attribute__((packed)) i1394;
         struct {
             uint64_t wwid;
             uint64_t lun;
-        } __attribute__ ((packed)) fibre;
+        } __attribute__((packed)) fibre;
         struct {
             uint64_t identity_tag;
             uint64_t reserved;
-        } __attribute__ ((packed)) i2o;
+        } __attribute__((packed)) i2o;
         struct {
             uint32_t array_number;
             uint32_t reserved1;
             uint64_t reserved2;
-        } __attribute__ ((packed)) raid;
+        } __attribute__((packed)) raid;
         struct {
             uint8_t device;
             uint8_t reserved1;
             uint16_t reserved2;
             uint32_t reserved3;
             uint64_t reserved4;
-        } __attribute__ ((packed)) sata;
+        } __attribute__((packed)) sata;
         struct {
             uint64_t reserved1;
             uint64_t reserved2;
-        } __attribute__ ((packed)) unknown;
+        } __attribute__((packed)) unknown;
     } device_path;
     uint8_t reserved4;
     uint8_t checksum;
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 struct edd_info {
     uint8_t device;
@@ -270,7 +270,7 @@ struct edd_info {
     uint8_t legacy_max_head;
     uint8_t legacy_sectors_per_track;
     struct edd_device_params params;
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 struct boot_params {
     struct screen_info screen_info;         /* 0x000 */
@@ -289,10 +289,10 @@ struct boot_params {
     uint32_t scratch;      /* Scratch field! */    /* 0x1e4 */
     uint8_t  e820_entries;             /* 0x1e8 */
     uint8_t  eddbuf_entries;               /* 0x1e9 */
-   uint8_t  edd_mbr_sig_buf_entries;          /* 0x1ea */
+    uint8_t  edd_mbr_sig_buf_entries;          /* 0x1ea */
     uint8_t  _pad6[6];                 /* 0x1eb */
     struct setup_header hdr;    /* setup header */  /* 0x1f1 */
-    uint8_t  _pad7[0x290-0x1f1-sizeof(struct setup_header)];
+    uint8_t  _pad7[0x290 - 0x1f1 - sizeof(struct setup_header)];
     uint32_t edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];  /* 0x290 */
     struct e820entry e820_map[E820MAX];     /* 0x2d0 */
     uint8_t  _pad8[48];                /* 0xcd0 */

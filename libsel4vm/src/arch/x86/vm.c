@@ -48,7 +48,8 @@ static vm_exit_handler_fn_t x86_exit_handlers[] = {
 };
 
 /* Reply to the VM exit exception to resume guest. */
-static void vm_resume(vm_vcpu_t *vcpu) {
+static void vm_resume(vm_vcpu_t *vcpu)
+{
     vm_sync_guest_vmcs_state(vcpu);
     if (vcpu->vcpu_arch.guest_state->exit.in_exit && !vcpu->vcpu_arch.guest_state->virt.interrupt_halt) {
         /* Guest is blocked, but we are no longer halted. Reply to it */
@@ -62,7 +63,8 @@ static void vm_resume(vm_vcpu_t *vcpu) {
 }
 
 /* Handle VM exit in VM module. */
-static int handle_vm_exit(vm_vcpu_t *vcpu) {
+static int handle_vm_exit(vm_vcpu_t *vcpu)
+{
     int ret;
     int reason = vm_guest_exit_get_reason(vcpu->vcpu_arch.guest_state);
     if (reason == -1) {
@@ -88,13 +90,15 @@ static int handle_vm_exit(vm_vcpu_t *vcpu) {
     return ret;
 }
 
-static void vm_update_guest_state_from_interrupt(vm_vcpu_t *vcpu, seL4_Word *msg) {
+static void vm_update_guest_state_from_interrupt(vm_vcpu_t *vcpu, seL4_Word *msg)
+{
     vcpu->vcpu_arch.guest_state->machine.eip = msg[SEL4_VMENTER_CALL_EIP_MR];
     vcpu->vcpu_arch.guest_state->machine.control_ppc = msg[SEL4_VMENTER_CALL_CONTROL_PPC_MR];
     vcpu->vcpu_arch.guest_state->machine.control_entry = msg[SEL4_VMENTER_CALL_CONTROL_ENTRY_MR];
 }
 
-static void vm_update_guest_state_from_fault(vm_vcpu_t *vcpu, seL4_Word *msg) {
+static void vm_update_guest_state_from_fault(vm_vcpu_t *vcpu, seL4_Word *msg)
+{
     assert(vcpu->vcpu_arch.guest_state->exit.in_exit);
 
     /* The interrupt state is a subset of the fault state */
@@ -120,7 +124,8 @@ static void vm_update_guest_state_from_fault(vm_vcpu_t *vcpu, seL4_Word *msg) {
     MACHINE_STATE_READ(vcpu->vcpu_arch.guest_state->machine.context, context);
 }
 
-int vm_run_arch(vm_t *vm) {
+int vm_run_arch(vm_t *vm)
+{
     int err;
     int ret;
     vm_vcpu_t *vcpu = vm->vcpus[BOOT_VCPU];
@@ -142,7 +147,8 @@ int vm_run_arch(vm_t *vm) {
         seL4_Word badge;
         int fault;
 
-        if (vcpu->vcpu_online && !vcpu->vcpu_arch.guest_state->virt.interrupt_halt && !vcpu->vcpu_arch.guest_state->exit.in_exit) {
+        if (vcpu->vcpu_online && !vcpu->vcpu_arch.guest_state->virt.interrupt_halt
+            && !vcpu->vcpu_arch.guest_state->exit.in_exit) {
             seL4_SetMR(0, vm_guest_state_get_eip(vcpu->vcpu_arch.guest_state));
             seL4_SetMR(1, vm_guest_state_get_control_ppc(vcpu->vcpu_arch.guest_state));
             seL4_SetMR(2, vm_guest_state_get_control_entry(vcpu->vcpu_arch.guest_state));
@@ -183,10 +189,10 @@ int vm_run_arch(vm_t *vm) {
                     /* Check if this caused PIC to generate interrupt */
                     vm_check_external_interrupt(vm);
                 }
-             } else {
+            } else {
                 ZF_LOGE("Unable to handle VM notification. Exiting");
                 ret = VM_EXIT_HANDLE_ERROR;
-             }
+            }
         } else {
             /* Handle the vm exit */
             ret = handle_vm_exit(vcpu);

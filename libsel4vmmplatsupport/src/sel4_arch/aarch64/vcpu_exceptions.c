@@ -19,7 +19,8 @@
 
 #include "vcpu_fault_handlers.h"
 
-int software_breakpoint_exception(vm_vcpu_t *vcpu, uint32_t hsr) {
+int software_breakpoint_exception(vm_vcpu_t *vcpu, uint32_t hsr)
+{
     /* Ignore software breakpoints and just resume execution at the next
      * instruction */
     advance_vcpu_fault(vcpu);

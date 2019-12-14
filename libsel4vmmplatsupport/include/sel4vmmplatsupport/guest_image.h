@@ -42,7 +42,8 @@ typedef struct guest_kernel_image {
  * @param guest_kernel_image   Handle to information regarding the resulted loading of the guest kernel image
  * @return              0 on success, otherwise -1 on error
  */
-int vm_load_guest_kernel(vm_t *vm, const char *kernel_name, uintptr_t load_address, size_t alignment, guest_kernel_image_t *guest_kernel_image);
+int vm_load_guest_kernel(vm_t *vm, const char *kernel_name, uintptr_t load_address, size_t alignment,
+                         guest_kernel_image_t *guest_kernel_image);
 
 /* Load guest kernel module e.g. initrd
  * @param vm            Handle to the VM
@@ -52,4 +53,5 @@ int vm_load_guest_kernel(vm_t *vm, const char *kernel_name, uintptr_t load_addre
  * @param guest_image   Handle to information regarding the resulted loading of the guest module image
  * @return              0 on success, otherwise -1 on error
  */
-int vm_load_guest_module(vm_t *vm, const char *module_name, uintptr_t load_address, size_t alignment, guest_image_t *guest_image);
+int vm_load_guest_module(vm_t *vm, const char *module_name, uintptr_t load_address, size_t alignment,
+                         guest_image_t *guest_image);

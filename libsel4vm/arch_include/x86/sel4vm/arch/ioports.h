@@ -27,11 +27,13 @@ typedef enum ioport_fault_result {
 } ioport_fault_result_t;
 
 typedef ioport_fault_result_t (*vm_ioport_in_fn)(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size,
-        unsigned int *result);
-typedef ioport_fault_result_t (*vm_ioport_out_fn)(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size,
-        unsigned int value);
-typedef ioport_fault_result_t (*unhandled_ioport_callback_fn)(vm_vcpu_t *vcpu, unsigned int port_no, bool is_in, unsigned int *value,
-        size_t size, void *cookie);
+                                                 unsigned int *result);
+typedef ioport_fault_result_t (*vm_ioport_out_fn)(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no,
+                                                  unsigned int size,
+                                                  unsigned int value);
+typedef ioport_fault_result_t (*unhandled_ioport_callback_fn)(vm_vcpu_t *vcpu, unsigned int port_no, bool is_in,
+                                                              unsigned int *value,
+                                                              size_t size, void *cookie);
 
 typedef struct vm_ioport_range {
     uint16_t start;
@@ -60,10 +62,10 @@ typedef struct vm_io_list {
 
 /* Add an io port range for emulation */
 int vm_io_port_add_handler(vm_t *vm, vm_ioport_range_t ioport_range,
-                            vm_ioport_interface_t ioport_interface);
+                           vm_ioport_interface_t ioport_interface);
 
 /* IOPort fault callback registration functions */
 int vm_register_unhandled_ioport_callback(vm_t *vm, unhandled_ioport_callback_fn ioport_callback,
-                                      void *cookie);
+                                          void *cookie);
 
 int vm_enable_passthrough_ioport(vm_vcpu_t *vcpu, uint16_t port_start, uint16_t port_end);

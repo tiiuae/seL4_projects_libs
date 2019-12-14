@@ -27,17 +27,20 @@
 #include "vmcs.h"
 #include "processor/platfeature.h"
 
-static inline unsigned int apply_cr_bits(unsigned int cr, unsigned int mask, unsigned int host_bits) {
+static inline unsigned int apply_cr_bits(unsigned int cr, unsigned int mask, unsigned int host_bits)
+{
     /* force any bit in the mask to be the value from the shadow (both enabled and disabled) */
     cr |= (mask & host_bits);
     cr &= ~(mask & (~host_bits));
     return cr;
 }
 
-static int vm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
+static int vm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value)
+{
     int err;
-    if (value & CR0_RESERVED_BITS)
+    if (value & CR0_RESERVED_BITS) {
         return -1;
+    }
 
     /* check if paging is being enabled */
     if ((value & X86_CR0_PG) && !(vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow & X86_CR0_PG)) {
@@ -46,7 +49,8 @@ static int vm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
         unsigned int new_mask = vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask & ~(X86_CR4_PSE | X86_CR4_PAE);
         unsigned int cr4_value = vm_guest_state_get_cr4(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         /* for any bits that have changed in the mask, grab them from the shadow */
-        cr4_value = apply_cr_bits(cr4_value, new_mask ^ vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow);
+        cr4_value = apply_cr_bits(cr4_value, new_mask ^ vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask,
+                                  vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow);
         /* update mask and cr4 value */
         vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask = new_mask;
         err = vm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_CR4_MASK, new_mask);
@@ -76,14 +80,16 @@ static int vm_cr_set_cr0(vm_vcpu_t *vcpu, unsigned int value) {
     if (err) {
         return -1;
     }
-    value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state->virt.cr.cr0_mask, vcpu->vcpu_arch.guest_state->virt.cr.cr0_host_bits);
+    value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state->virt.cr.cr0_mask,
+                          vcpu->vcpu_arch.guest_state->virt.cr.cr0_host_bits);
 
     vm_guest_state_set_cr0(vcpu->vcpu_arch.guest_state, value);
 
     return 0;
 }
 
-static int vm_cr_set_cr3(vm_vcpu_t *vcpu, unsigned int value) {
+static int vm_cr_set_cr3(vm_vcpu_t *vcpu, unsigned int value)
+{
     /* if the guest hasn't turned on paging then just cache this */
     vcpu->vcpu_arch.guest_state->virt.cr.cr3_guest = value;
     if (vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow & X86_CR0_PG) {
@@ -92,7 +98,8 @@ static int vm_cr_set_cr3(vm_vcpu_t *vcpu, unsigned int value) {
     return 0;
 }
 
-static int vm_cr_get_cr3(vm_vcpu_t *vcpu, unsigned int *value) {
+static int vm_cr_get_cr3(vm_vcpu_t *vcpu, unsigned int *value)
+{
     if (vcpu->vcpu_arch.guest_state->virt.cr.cr0_shadow & X86_CR0_PG) {
         *value = vm_guest_state_get_cr3(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
     } else {
@@ -102,10 +109,12 @@ static int vm_cr_get_cr3(vm_vcpu_t *vcpu, unsigned int *value) {
 
 }
 
-static int vm_cr_set_cr4(vm_vcpu_t *vcpu, unsigned int value) {
+static int vm_cr_set_cr4(vm_vcpu_t *vcpu, unsigned int value)
+{
 
-    if (value & CR4_RESERVED_BITS)
+    if (value & CR4_RESERVED_BITS) {
         return -1;
+    }
 
     /* update the guest shadow */
     vcpu->vcpu_arch.guest_state->virt.cr.cr4_shadow = value;
@@ -114,20 +123,23 @@ static int vm_cr_set_cr4(vm_vcpu_t *vcpu, unsigned int value) {
         return -1;
     }
 
-    value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask, vcpu->vcpu_arch.guest_state->virt.cr.cr4_host_bits);
+    value = apply_cr_bits(value, vcpu->vcpu_arch.guest_state->virt.cr.cr4_mask,
+                          vcpu->vcpu_arch.guest_state->virt.cr.cr4_host_bits);
 
     vm_guest_state_set_cr4(vcpu->vcpu_arch.guest_state, value);
 
     return 0;
 }
 
-static int vm_cr_clts(vm_vcpu_t *vcpu) {
+static int vm_cr_clts(vm_vcpu_t *vcpu)
+{
     ZF_LOGI("Ignoring call of clts");
 
     return -1;
 }
 
-static int vm_cr_lmsw(vm_vcpu_t *vcpu, unsigned int value) {
+static int vm_cr_lmsw(vm_vcpu_t *vcpu, unsigned int value)
+{
     ZF_LOGI("Ignoring call of lmsw");
 
     return -1;
@@ -140,13 +152,14 @@ static int crExitRegs[] = {
     VCPU_CONTEXT_ECX,
     VCPU_CONTEXT_EDX,
     VCPU_CONTEXT_EBX,
-    /*VCPU_CONTEXT_ESP*/-1,
+    /*VCPU_CONTEXT_ESP*/ -1,
     VCPU_CONTEXT_EBP,
     VCPU_CONTEXT_ESI,
     VCPU_CONTEXT_EDI
 };
 
-int vm_cr_access_handler(vm_vcpu_t *vcpu) {
+int vm_cr_access_handler(vm_vcpu_t *vcpu)
+{
 
     unsigned int exit_qualification, val;
     int cr, reg, ret = -1;
@@ -156,83 +169,86 @@ int vm_cr_access_handler(vm_vcpu_t *vcpu) {
     reg = (exit_qualification >> 8) & 15;
 
     switch ((exit_qualification >> 4) & 3) {
-        case 0: /* mov to cr */
-            if (crExitRegs[reg] < 0) {
-                return -1;
-            }
-            vm_get_thread_context_reg(vcpu, crExitRegs[reg], &val);
+    case 0: /* mov to cr */
+        if (crExitRegs[reg] < 0) {
+            return -1;
+        }
+        vm_get_thread_context_reg(vcpu, crExitRegs[reg], &val);
 
-            switch (cr) {
-                case 0:
-                    ret = vm_cr_set_cr0(vcpu, val);
-                    break;
-                case 3:
-                    ret = vm_cr_set_cr3(vcpu, val);
-                    break;
-                case 4:
-                    ret = vm_cr_set_cr4(vcpu, val);
-                    break;
-                case 8:
+        switch (cr) {
+        case 0:
+            ret = vm_cr_set_cr0(vcpu, val);
+            break;
+        case 3:
+            ret = vm_cr_set_cr3(vcpu, val);
+            break;
+        case 4:
+            ret = vm_cr_set_cr4(vcpu, val);
+            break;
+        case 8:
 
 #if 0
 
-                    u8 cr8_prev = kvm_get_cr8(vcpu);
-                    u8 cr8 = kvm_register_read(vcpu, reg);
-                    err = kvm_set_cr8(vcpu, cr8);
-                    kvm_complete_insn_gp(vcpu, err);
-                    if (irqchip_in_kernel(vcpu->kvm))
-                        return 1;
-                    if (cr8_prev <= cr8)
-                        return 1;
-                    vcpu->run->exit_reason = KVM_EXIT_SET_TPR;
-                    return 0;
-#endif
-
-                default:
-                    ZF_LOGD("unhandled control register: op %d cr %d\n",
-                            (int)(exit_qualification >> 4) & 3, cr);
-                    break;
-
+            u8 cr8_prev = kvm_get_cr8(vcpu);
+            u8 cr8 = kvm_register_read(vcpu, reg);
+            err = kvm_set_cr8(vcpu, cr8);
+            kvm_complete_insn_gp(vcpu, err);
+            if (irqchip_in_kernel(vcpu->kvm)) {
+                return 1;
             }
-            break;
-
-        case 1: /*mov from cr*/
-            switch (cr) {
-                case 3:
-
-                    ret = vm_cr_get_cr3(vcpu, &val);
-                    if (!ret)
-                        ret = vm_set_thread_context_reg(vcpu, crExitRegs[reg], val);
-
-                    break;
-                case 8:
-#if 0
-                    val = kvm_get_cr8(vcpu);
-                    kvm_register_write(vcpu, reg, val);
-                    trace_kvm_cr_read(cr, val);
-                    skip_emulated_instruction(vcpu);
-                    return 1;
-#endif
-                default:
-                    ZF_LOGD("unhandled control register: op %d cr %d\n",
-                            (int)(exit_qualification >> 4) & 3, cr);
-                    break;
-
+            if (cr8_prev <= cr8) {
+                return 1;
             }
-            break;
-        case 2: /* clts */
-            ret = vm_cr_clts(vcpu);
-            break;
-
-        case 3: /* lmsw */
-            val = (exit_qualification >> LMSW_SOURCE_DATA_SHIFT) & 0x0f;
-            ret = vm_cr_lmsw(vcpu, val);
-            break;
+            vcpu->run->exit_reason = KVM_EXIT_SET_TPR;
+            return 0;
+#endif
 
         default:
             ZF_LOGD("unhandled control register: op %d cr %d\n",
                     (int)(exit_qualification >> 4) & 3, cr);
             break;
+
+        }
+        break;
+
+    case 1: /*mov from cr*/
+        switch (cr) {
+        case 3:
+
+            ret = vm_cr_get_cr3(vcpu, &val);
+            if (!ret) {
+                ret = vm_set_thread_context_reg(vcpu, crExitRegs[reg], val);
+            }
+
+            break;
+        case 8:
+#if 0
+            val = kvm_get_cr8(vcpu);
+            kvm_register_write(vcpu, reg, val);
+            trace_kvm_cr_read(cr, val);
+            skip_emulated_instruction(vcpu);
+            return 1;
+#endif
+        default:
+            ZF_LOGD("unhandled control register: op %d cr %d\n",
+                    (int)(exit_qualification >> 4) & 3, cr);
+            break;
+
+        }
+        break;
+    case 2: /* clts */
+        ret = vm_cr_clts(vcpu);
+        break;
+
+    case 3: /* lmsw */
+        val = (exit_qualification >> LMSW_SOURCE_DATA_SHIFT) & 0x0f;
+        ret = vm_cr_lmsw(vcpu, val);
+        break;
+
+    default:
+        ZF_LOGD("unhandled control register: op %d cr %d\n",
+                (int)(exit_qualification >> 4) & 3, cr);
+        break;
     }
 
     if (!ret) {

@@ -30,7 +30,7 @@ struct clock_device;
  * @return               A handle to the GPIO Access control device, NULL on
  *                       failure
  */
-struct clock_device* vm_install_ac_clock(vm_t* vm, enum vacdev_default default_ac,
+struct clock_device *vm_install_ac_clock(vm_t *vm, enum vacdev_default default_ac,
                                          enum vacdev_action action);
 
 /**
@@ -39,7 +39,7 @@ struct clock_device* vm_install_ac_clock(vm_t* vm, enum vacdev_default default_a
  * @param[in] clk_id        The ID of the clock to provide access to
  * @return                  0 on success
  */
-int vm_clock_provide(struct clock_device* clock_device, enum clk_id clk_id);
+int vm_clock_provide(struct clock_device *clock_device, enum clk_id clk_id);
 
 /**
  * Deny clock access to the VM
@@ -47,4 +47,4 @@ int vm_clock_provide(struct clock_device* clock_device, enum clk_id clk_id);
  * @param[in] clk_id        The ID of the clock to deny access to
  * @return                  0 on success
  */
-int vm_clock_restrict(struct clock_device* clock_device, enum clk_id clk_id);
+int vm_clock_restrict(struct clock_device *clock_device, enum clk_id clk_id);

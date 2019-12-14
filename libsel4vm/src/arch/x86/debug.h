@@ -27,5 +27,5 @@
 #define COLOUR_RESET "\033[0m"
 #endif
 
-void vm_print_guest_context(vm_vcpu_t*);
+void vm_print_guest_context(vm_vcpu_t *);
 

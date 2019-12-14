@@ -24,7 +24,8 @@
 #include "processor/lapic.h"
 
 /* Handling halt instruction VMExit Events. */
-int vm_hlt_handler(vm_vcpu_t *vcpu) {
+int vm_hlt_handler(vm_vcpu_t *vcpu)
+{
     if (!(vm_guest_state_get_rflags(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr) & BIT(9))) {
         printf("vcpu %d is halted forever :(\n", vcpu->vcpu_id);
     }

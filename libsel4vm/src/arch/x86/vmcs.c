@@ -22,7 +22,8 @@
 #include "vmcs.h"
 
 /*init the vmcs structure for a guest os thread*/
-void vm_vmcs_init_guest(vm_vcpu_t *vcpu) {
+void vm_vmcs_init_guest(vm_vcpu_t *vcpu)
+{
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_ES_SELECTOR, 2 << 3);
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_CS_SELECTOR, BIT(3));
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_SS_SELECTOR, 2 << 3);
@@ -67,8 +68,10 @@ void vm_vmcs_init_guest(vm_vcpu_t *vcpu) {
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_RFLAGS, BIT(1));
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_SYSENTER_ESP, 0);
     vm_vmcs_write(vcpu->vcpu.cptr, VMX_GUEST_SYSENTER_EIP, 0);
-    vcpu->vcpu_arch.guest_state->machine.control_ppc = VMX_CONTROL_PPC_HLT_EXITING | VMX_CONTROL_PPC_CR3_LOAD_EXITING | VMX_CONTROL_PPC_CR3_STORE_EXITING;
-    vm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS, vcpu->vcpu_arch.guest_state->machine.control_ppc);
+    vcpu->vcpu_arch.guest_state->machine.control_ppc = VMX_CONTROL_PPC_HLT_EXITING | VMX_CONTROL_PPC_CR3_LOAD_EXITING |
+                                                       VMX_CONTROL_PPC_CR3_STORE_EXITING;
+    vm_vmcs_write(vcpu->vcpu.cptr, VMX_CONTROL_PRIMARY_PROCESSOR_CONTROLS,
+                  vcpu->vcpu_arch.guest_state->machine.control_ppc);
     vm_vmcs_read(vcpu->vcpu.cptr, VMX_CONTROL_ENTRY_INTERRUPTION_INFO, &vcpu->vcpu_arch.guest_state->machine.control_entry);
 
 #ifdef CONFIG_LIB_VM_VMX_TIMER_DEBUG

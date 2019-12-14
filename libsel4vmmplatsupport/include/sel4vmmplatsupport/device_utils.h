@@ -21,7 +21,7 @@
  * @param[in] device A description of the device
  * @return           0 on success
  */
-int vm_install_passthrough_device(vm_t* vm, const struct device* device);
+int vm_install_passthrough_device(vm_t *vm, const struct device *device);
 
 /**
  * Install a device backed by ram into a VM
@@ -29,7 +29,7 @@ int vm_install_passthrough_device(vm_t* vm, const struct device* device);
  * @param[in] device A description of the device
  * @return           0 on success
  */
-int vm_install_ram_only_device(vm_t *vm, const struct device* device);
+int vm_install_ram_only_device(vm_t *vm, const struct device *device);
 
 /**
  * Install a passthrough device into a VM, but trap and print all access
@@ -37,4 +37,4 @@ int vm_install_ram_only_device(vm_t *vm, const struct device* device);
  * @param[in] device A description of the device
  * @return           0 on success
  */
-int vm_install_listening_device(vm_t* vm, const struct device* device);
+int vm_install_listening_device(vm_t *vm, const struct device *device);

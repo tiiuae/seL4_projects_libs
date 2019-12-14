@@ -28,8 +28,8 @@ struct vm_arch {};
 struct vm_vcpu_arch {
     fault_t *fault;
     unhandled_vcpu_fault_callback_fn unhandled_vcpu_callback;
-    void * unhandled_vcpu_callback_cookie;
+    void *unhandled_vcpu_callback_cookie;
 };
 
 int vm_register_unhandled_vcpu_fault_callback(vm_vcpu_t *vcpu, unhandled_vcpu_fault_callback_fn vcpu_fault_callback,
-                                      void *cookie);
+                                              void *cookie);

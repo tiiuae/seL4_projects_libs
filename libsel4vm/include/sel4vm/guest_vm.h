@@ -30,9 +30,9 @@ typedef struct vm_run vm_run_t;
 typedef struct vm_arch vm_arch_t;
 
 typedef memory_fault_result_t (*unhandled_mem_fault_callback_fn)(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t paddr,
-        size_t len, void *cookie);
+                                                                 size_t len, void *cookie);
 typedef int (*notification_callback_fn)(vm_t *vm, seL4_Word badge, seL4_MessageInfo_t tag,
-        void *cookie);
+                                        void *cookie);
 
 struct vm_ram_region {
     /* Guest physical start address */
@@ -116,11 +116,11 @@ struct vm {
     seL4_CPtr host_endpoint;
     /* Support & Resource Managements */
     vka_t *vka;
-    ps_io_ops_t* io_ops;
+    ps_io_ops_t *io_ops;
     simple_t *simple;
     allocman_t *allocman;
     /* Debugging & Identification */
-    char* vm_name;
+    char *vm_name;
     unsigned int vm_id;
     bool vm_initialised;
 };

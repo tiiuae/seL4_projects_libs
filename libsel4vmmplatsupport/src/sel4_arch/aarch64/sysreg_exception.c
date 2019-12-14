@@ -40,25 +40,28 @@ sysreg_entry_t sysreg_table[] = {
     },
 };
 
-static int ignore_sysreg_exception(vm_vcpu_t *vcpu, sysreg_t *sysreg, bool is_read) {
+static int ignore_sysreg_exception(vm_vcpu_t *vcpu, sysreg_t *sysreg, bool is_read)
+{
     advance_vcpu_fault(vcpu);
     return 0;
 }
 
-static bool is_sysreg_match(sysreg_t *sysreg, sysreg_entry_t *sysreg_entry) {
+static bool is_sysreg_match(sysreg_t *sysreg, sysreg_entry_t *sysreg_entry)
+{
     sysreg_t match_a = *sysreg;
     match_a.hsr_val &= sysreg_entry->sysreg_match_mask.hsr_val;
     sysreg_t match_b = sysreg_entry->sysreg;
     return (
-        (match_a.params.op0 == match_b.params.op0) &&
-        (match_a.params.op1 == match_b.params.op1) &&
-        (match_a.params.op2 == match_b.params.op2) &&
-        (match_a.params.crn == match_b.params.crn) &&
-        (match_a.params.crm == match_b.params.crm)
-    );
+               (match_a.params.op0 == match_b.params.op0) &&
+               (match_a.params.op1 == match_b.params.op1) &&
+               (match_a.params.op2 == match_b.params.op2) &&
+               (match_a.params.crn == match_b.params.crn) &&
+               (match_a.params.crm == match_b.params.crm)
+           );
 }
 
-static sysreg_entry_t* find_sysreg_entry(vm_vcpu_t *vcpu, sysreg_t *sysreg_op) {
+static sysreg_entry_t *find_sysreg_entry(vm_vcpu_t *vcpu, sysreg_t *sysreg_op)
+{
     for (int i = 0; i < ARRAY_SIZE(sysreg_table); i++) {
         sysreg_entry_t *sysreg_entry = &sysreg_table[i];
         sysreg_t match_sysreg_op = *sysreg_op;
@@ -69,7 +72,8 @@ static sysreg_entry_t* find_sysreg_entry(vm_vcpu_t *vcpu, sysreg_t *sysreg_op) {
     return NULL;
 }
 
-int sysreg_exception_handler(vm_vcpu_t *vcpu, uint32_t hsr) {
+int sysreg_exception_handler(vm_vcpu_t *vcpu, uint32_t hsr)
+{
     sysreg_t sysreg_op;
     sysreg_op.hsr_val = hsr;
     sysreg_entry_t *entry = find_sysreg_entry(vcpu, &sysreg_op);

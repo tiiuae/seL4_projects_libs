@@ -17,7 +17,7 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vmmplatsupport/arch/service.h>
 
-int vmm_install_service(vm_t* vm, seL4_CPtr service, int index, uint32_t b)
+int vmm_install_service(vm_t *vm, seL4_CPtr service, int index, uint32_t b)
 {
     cspacepath_t src, dst;
     seL4_Word badge = b;

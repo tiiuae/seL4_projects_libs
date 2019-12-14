@@ -14,7 +14,8 @@
 
 #include <sel4vm/guest_vm.h>
 
-typedef int (*ram_touch_callback_fn)(vm_t *vm, uintptr_t guest_addr, void *vmm_vaddr, size_t size, size_t offset, void *cookie);
+typedef int (*ram_touch_callback_fn)(vm_t *vm, uintptr_t guest_addr, void *vmm_vaddr, size_t size, size_t offset,
+                                     void *cookie);
 int vm_guest_ram_read_callback(vm_t *vm, uintptr_t guest_addr, void *vaddr, size_t size, size_t offset, void *buf);
 int vm_guest_ram_write_callback(vm_t *vm, uintptr_t guest_addr, void *vaddr, size_t size, size_t offset, void *buf);
 

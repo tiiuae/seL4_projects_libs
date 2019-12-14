@@ -19,5 +19,5 @@
  * The caller is responsible for acknowledging the IRQ once this function
  * returns
  */
-int vm_install_vcombiner(vm_t* vm);
-void vm_combiner_irq_handler(vm_t* vm, int irq);
+int vm_install_vcombiner(vm_t *vm);
+void vm_combiner_irq_handler(vm_t *vm, int irq);

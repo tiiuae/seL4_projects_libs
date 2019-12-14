@@ -16,19 +16,21 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vmmplatsupport/device.h>
 
-int device_list_init(device_list_t *list) {
+int device_list_init(device_list_t *list)
+{
     list->num_devices = 0;
     list->devices = NULL;
     return 0;
 }
 
-static int dev_cmp(const void *a, const void *b) {
+static int dev_cmp(const void *a, const void *b)
+{
     return ((const struct device *)a)->pstart - ((const struct device *)b)->pstart;
 }
 
-int add_device(device_list_t *list, const struct device* d)
+int add_device(device_list_t *list, const struct device *d)
 {
-    if (!list || !d ) {
+    if (!list || !d) {
         return -1;
     }
 
@@ -42,8 +44,9 @@ int add_device(device_list_t *list, const struct device* d)
     return 0;
 }
 
-struct device*
-find_device_by_pa(device_list_t* dev_list, uintptr_t addr) {
+struct device *
+find_device_by_pa(device_list_t *dev_list, uintptr_t addr)
+{
     struct device *dev = NULL;
     for (int i = 0; i < dev_list->num_devices; i++) {
         struct device *curr_dev = &dev_list->devices[i];

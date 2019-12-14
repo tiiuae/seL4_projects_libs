@@ -33,31 +33,35 @@ typedef struct boot_guest_cookie {
 /* Reads the elf header and elf program headers from a file when given a sufficiently
  * large memory buffer
  */
-static int read_elf_headers(void *buf, vm_t *vm, FILE *file, size_t buf_size, elf_t *elf) {
-	size_t result;
-    if(buf_size < sizeof(Elf32_Ehdr)) {
-		return -1;
+static int read_elf_headers(void *buf, vm_t *vm, FILE *file, size_t buf_size, elf_t *elf)
+{
+    size_t result;
+    if (buf_size < sizeof(Elf32_Ehdr)) {
+        return -1;
     }
     fseek(file, 0, SEEK_SET);
     result = fread(buf, buf_size, 1, file);
-	if(result != 1) {
-		return -1;
+    if (result != 1) {
+        return -1;
     }
 
     return elf_newFile_maybe_unsafe(buf, buf_size, true, false, elf);
 }
 
-static int guest_elf_write_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset, void *cookie) {
+static int guest_elf_write_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset, void *cookie)
+{
     memcpy(vaddr, cookie + offset, size);
     return 0;
 }
 
-static int guest_elf_read_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset, void *cookie) {
+static int guest_elf_read_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset, void *cookie)
+{
     memcpy(cookie + offset, vaddr, size);
     return 0;
 }
 
-int guest_elf_relocate(vm_t *vm, const char *relocs_filename, guest_kernel_image_t *image) {
+int guest_elf_relocate(vm_t *vm, const char *relocs_filename, guest_kernel_image_t *image)
+{
     int delta = image->kernel_image_arch.relocation_offset;
     if (delta == 0) {
         /* No relocation needed. */
@@ -73,11 +77,11 @@ int guest_elf_relocate(vm_t *vm, const char *relocs_filename, guest_kernel_image
 
     size_t relocs_size = 0;
     FILE *file = fopen(relocs_filename, "r");
-    if(!file) {
+    if (!file) {
         ZF_LOGE("ERROR: Guest OS kernel relocation is required, but corresponding"
-          "%s was not found. This is most likely due to a Makefile"
-          "error, or configuration error.\n", relocs_filename);
-           return -1;
+                "%s was not found. This is most likely due to a Makefile"
+                "error, or configuration error.\n", relocs_filename);
+        return -1;
     }
     fseek(file, 0, SEEK_END);
     relocs_size = ftell(file);
@@ -102,7 +106,7 @@ int guest_elf_relocate(vm_t *vm, const char *relocs_filename, guest_kernel_image
     for (int i = 0; ; i++) {
         uint32_t vaddr;
         /* Get the next relocation from the relocs file. */
-        uint32_t offset = relocs_size - (sizeof(uint32_t) * (i+1));
+        uint32_t offset = relocs_size - (sizeof(uint32_t) * (i + 1));
         fseek(file, offset, SEEK_SET);
         size_t result = fread(&vaddr, sizeof(uint32_t), 1, file);
         ZF_LOGF_IF(result != 1, "Read failed unexpectedly");
@@ -116,16 +120,16 @@ int guest_elf_relocate(vm_t *vm, const char *relocs_filename, guest_kernel_image
            allocated and mapped the ELF contents into. */
         assert(vaddr >= (uint32_t)image->kernel_image_arch.link_vaddr);
         uintptr_t guest_paddr = (uintptr_t)vaddr - (uintptr_t)image->kernel_image_arch.link_vaddr +
-            (uintptr_t)(load_addr + delta);
+                                (uintptr_t)(load_addr + delta);
 
         /* Perform the relocation. */
         ZF_LOGI("   reloc vaddr 0x%x guest_addr 0x%x", (unsigned int)vaddr, (unsigned int)guest_paddr);
         uint32_t addr;
         vm_ram_touch(vm, guest_paddr, sizeof(int),
-                guest_elf_read_address, &addr);
+                     guest_elf_read_address, &addr);
         addr += delta;
         vm_ram_touch(vm, guest_paddr, sizeof(int),
-                guest_elf_write_address, &addr);
+                     guest_elf_write_address, &addr);
 
         if (i && i % 50000 == 0) {
             ZF_LOGE("    %u relocs done.", i);
@@ -146,7 +150,8 @@ int guest_elf_relocate(vm_t *vm, const char *relocs_filename, guest_kernel_image
 
 /* TODO: Refactor and stop rewriting fucking elf loading code */
 static int load_guest_segment(vm_t *vm, seL4_Word source_offset,
-        seL4_Word dest_addr, unsigned int segment_size, unsigned int file_size, FILE *file) {
+                              seL4_Word dest_addr, unsigned int segment_size, unsigned int file_size, FILE *file)
+{
 
     int ret;
     unsigned int page_size = seL4_PageBits;
@@ -165,9 +170,9 @@ static int load_guest_segment(vm_t *vm, seL4_Word source_offset,
     while (current < segment_size) {
         /* Retrieve the mapping */
         seL4_CPtr cap;
-        cap = vspace_get_cap(&vm->mem.vm_vspace, (void*)dest_addr);
+        cap = vspace_get_cap(&vm->mem.vm_vspace, (void *)dest_addr);
         if (!cap) {
-            ZF_LOGE("Failed to find frame cap while loading elf segment at %p", (void*)dest_addr);
+            ZF_LOGE("Failed to find frame cap while loading elf segment at %p", (void *)dest_addr);
             return -1;
         }
         cspacepath_t cap_path;
@@ -194,7 +199,7 @@ static int load_guest_segment(vm_t *vm, seL4_Word source_offset,
             }
 
             ZF_LOGI("load page src %zu dest %p remain %zu offset %zu copy vaddr %p "
-                    "copy len %zu\n", source_offset, (void*)dest_addr, remain, offset, copy_vaddr, copy_len);
+                    "copy len %zu\n", source_offset, (void *)dest_addr, remain, offset, copy_vaddr, copy_len);
 
             fseek(file, source_offset, SEEK_SET);
             size_t result = fread(copy_vaddr, copy_len, 1, file);
@@ -217,7 +222,9 @@ static int load_guest_segment(vm_t *vm, seL4_Word source_offset,
     return 0;
 }
 
-static int load_guest_elf(vm_t *vm, const char *image_name, uintptr_t load_address, size_t alignment, guest_kernel_image_t *guest_image) {
+static int load_guest_elf(vm_t *vm, const char *image_name, uintptr_t load_address, size_t alignment,
+                          guest_kernel_image_t *guest_image)
+{
     elf_t kernel_elf;
     char elf_file[256];
     int ret;
@@ -228,7 +235,7 @@ static int load_guest_elf(vm_t *vm, const char *image_name, uintptr_t load_addre
     }
 
     ret = read_elf_headers(elf_file, vm, file, sizeof(elf_file), &kernel_elf);
-    if(ret < 0) {
+    if (ret < 0) {
         ZF_LOGE("Guest elf \"%s\" invalid.", image_name);
         return -1;
     }
@@ -314,7 +321,8 @@ static int load_guest_elf(vm_t *vm, const char *image_name, uintptr_t load_addre
 }
 
 int vm_load_guest_kernel(vm_t *vm, const char *kernel_name, uintptr_t load_address, size_t alignment,
-        guest_kernel_image_t *guest_kernel_image) {
+                         guest_kernel_image_t *guest_kernel_image)
+{
     int err;
     err = load_guest_elf(vm, kernel_name, load_address, alignment, guest_kernel_image);
     if (err) {
@@ -330,8 +338,9 @@ int vm_load_guest_kernel(vm_t *vm, const char *kernel_name, uintptr_t load_addre
     return err;
 }
 
-static int load_module_continued(vm_t *vm, uintptr_t paddr, void *addr, size_t size, size_t offset, void *cookie) {
-    boot_guest_cookie_t *pass = ( boot_guest_cookie_t *) cookie;
+static int load_module_continued(vm_t *vm, uintptr_t paddr, void *addr, size_t size, size_t offset, void *cookie)
+{
+    boot_guest_cookie_t *pass = (boot_guest_cookie_t *) cookie;
     fseek(pass->file, offset, SEEK_SET);
     size_t result = fread(addr, size, 1, pass->file);
     ZF_LOGF_IF(result != 1, "Read failed unexpectedly");
@@ -340,7 +349,8 @@ static int load_module_continued(vm_t *vm, uintptr_t paddr, void *addr, size_t s
 }
 
 int vm_load_guest_module(vm_t *vm, const char *module_name, uintptr_t load_address, size_t alignment,
-        guest_image_t *guest_image) {
+                         guest_image_t *guest_image)
+{
     ZF_LOGI("Loading module \"%s\" at 0x%x\n", module_name, (unsigned int)load_address);
 
     size_t module_size = 0;

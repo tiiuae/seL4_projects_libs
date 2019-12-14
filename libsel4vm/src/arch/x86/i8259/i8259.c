@@ -50,7 +50,7 @@
 
 typedef struct i8259_irq_ack {
     irq_ack_fn_t callback;
-    void * cookie;
+    void *cookie;
 } i8259_irq_ack_t;
 
 static i8259_irq_ack_t irq_ack_fns[PIC_NUM_PINS];
@@ -86,7 +86,8 @@ struct i8259 {
     int emitagain;
 };
 
-static inline int select_pic(unsigned int irq) {
+static inline int select_pic(unsigned int irq)
+{
     assert(irq < 16);
     if (irq < 8) {
         return I8259_MASTER;
@@ -96,7 +97,7 @@ static inline int select_pic(unsigned int irq) {
 }
 
 static inline int __vm_irq_line_state(unsigned long *irq_state,
-                       int irq_source_id, int level)
+                                      int irq_source_id, int level)
 {
     /* Logical OR for level trig interrupt. */
     if (level) {
@@ -109,29 +110,33 @@ static inline int __vm_irq_line_state(unsigned long *irq_state,
 }
 
 /* Return the highest priority found in mask (highest = smallest number). Return 8 if no irq */
-static inline int get_priority(struct i8259_state *s, int mask) {
+static inline int get_priority(struct i8259_state *s, int mask)
+{
     int priority = 0;
 
-    if (!mask)
+    if (!mask) {
         return 8;
+    }
 
-    while (!(mask & (1 << ((priority + s->priority_add) & 7))))
+    while (!(mask & (1 << ((priority + s->priority_add) & 7)))) {
         priority++;
+    }
     return priority;
 }
 
 /* Check if given IO address is valid. */
-static int i8259_in_range(unsigned int addr) {
+static int i8259_in_range(unsigned int addr)
+{
     switch (addr) {
-        case 0x20:
-        case 0x21:
-        case 0xa0:
-        case 0xa1:
-        case 0x4d0:
-        case 0x4d1:
-            return 1;
-        default:
-            return 0;
+    case 0x20:
+    case 0x21:
+    case 0xa0:
+    case 0xa1:
+    case 0x4d0:
+    case 0x4d1:
+        return 1;
+    default:
+        return 0;
     }
 }
 
@@ -140,35 +145,40 @@ static int i8259_in_range(unsigned int addr) {
  *    Returns -1 if no interrupts,
  *    Otherwise returns the PIC interrupt generated.
  */
-static int pic_get_irq(struct i8259_state *s) {
+static int pic_get_irq(struct i8259_state *s)
+{
     int mask, cur_priority, priority;
 
     mask = s->irr & ~s->imr;
     priority = get_priority(s, mask);
-    if (priority == 8)
+    if (priority == 8) {
         return -1;
+    }
     /* Compute current priority. If special fully nested mode on the
      * master, the IRQ coming from the slave is not taken into account
      * for the priority computation.
      */
     mask = s->isr;
-    if (s->special_fully_nested_mode && s == &s->pics_state->pics[0])
+    if (s->special_fully_nested_mode && s == &s->pics_state->pics[0]) {
         mask &= ~(1 << 2);
+    }
     cur_priority = get_priority(s, mask);
     if (priority < cur_priority) {
         /* Higher priority found: an irq should be generated. */
         return (priority + s->priority_add) & 7;
-    }
-    else
+    } else {
         return -1;
+    }
 }
 
 /* Clear the IRQ from ISR, the IRQ has been served. */
-static void pic_clear_isr(vm_t *vm, struct i8259_state *s, int irq) {
+static void pic_clear_isr(vm_t *vm, struct i8259_state *s, int irq)
+{
     /* Clear the ISR, notify the ack handler. */
     s->isr &= ~(1 << irq);
-    if (s != &s->pics_state->pics[0])
+    if (s != &s->pics_state->pics[0]) {
         irq += 8;
+    }
 
     if (irq != 2) {
         if (irq_ack_fns[irq].callback) {
@@ -178,7 +188,8 @@ static void pic_clear_isr(vm_t *vm, struct i8259_state *s, int irq) {
 }
 
 /* Set irq level. If an edge is detected, then the IRR is set to 1. */
-static inline int pic_set_irq1(struct i8259_state *s, int irq, int level) {
+static inline int pic_set_irq1(struct i8259_state *s, int irq, int level)
+{
     int mask, ret = 1;
     mask = 1 << irq;
 
@@ -211,7 +222,8 @@ static inline int pic_set_irq1(struct i8259_state *s, int irq, int level) {
 
 /* Raise IRQ on CPU if necessary. Must be called every time the active IRQ may change.
    Update the master pic and trigger interrupt injection according to the IRR and ISR. */
-static void pic_update_irq(struct i8259 *s) {
+static void pic_update_irq(struct i8259 *s)
+{
     int irq2, irq;
 
     irq2 = pic_get_irq(&s->pics[1]);
@@ -223,13 +235,15 @@ static void pic_update_irq(struct i8259 *s) {
     irq = pic_get_irq(&s->pics[0]);
 
     /* PIC status changed injection flag. */
-    if (!s->output)
+    if (!s->output) {
         s->wakeup_needed = true;
+    }
 
-    if (irq >= 0)
+    if (irq >= 0) {
         s->output = 1;
-    else
+    } else {
         s->output = 0;
+    }
 
     if (s->emitagain && s->output) {
 //        haveint_emit();
@@ -238,7 +252,8 @@ static void pic_update_irq(struct i8259 *s) {
 }
 
 /* Reset the PIC state for a guest OS. */
-static void pic_reset(vm_t *vm, struct i8259_state *s) {
+static void pic_reset(vm_t *vm, struct i8259_state *s)
+{
     int irq;
     unsigned char edge_irr = s->irr & ~s->elcr;
 
@@ -257,17 +272,18 @@ static void pic_reset(vm_t *vm, struct i8259_state *s) {
 #if 0
     /* FIXME: CONNECT pic with APIC */
     kvm_for_each_vcpu(i, vcpu, s->piics_state->kvm)
-        if (kvm_apic_accept_pic_intr(vcpu)) {
-            found = true;
-            break;
-        }
+    if (kvm_apic_accept_pic_intr(vcpu)) {
+        found = true;
+        break;
+    }
 
 
-    if (!found)
+    if (!found) {
         return;
+    }
 #endif
 
-    for (irq = 0; irq < PIC_NUM_PINS/2; irq++) {
+    for (irq = 0; irq < PIC_NUM_PINS / 2; irq++) {
         if (edge_irr & (1 << irq)) {
             pic_clear_isr(vm, s, irq);
         }
@@ -275,7 +291,8 @@ static void pic_reset(vm_t *vm, struct i8259_state *s) {
 }
 
 /* Write into the state owned by the guest OS. */
-static void pic_ioport_write(vm_vcpu_t *vcpu, struct i8259_state *s, unsigned int addr, unsigned int val) {
+static void pic_ioport_write(vm_vcpu_t *vcpu, struct i8259_state *s, unsigned int addr, unsigned int val)
+{
     int priority, cmd, irq;
 
     addr &= 1;
@@ -284,107 +301,115 @@ static void pic_ioport_write(vm_vcpu_t *vcpu, struct i8259_state *s, unsigned in
         if (val & 0x10) {
             /* ICW1 */
             s->init4 = val & 1;
-            if (val & 0x02)
-                printf( "PIC: single mode not supported\n");
-            if (val & 0x08)
+            if (val & 0x02) {
+                printf("PIC: single mode not supported\n");
+            }
+            if (val & 0x08) {
                 printf("PIC: level sensitive irq not supported\n");
+            }
             /* Reset the machine state and pending IRQS. */
             pic_reset(vcpu->vm, s);
         } else if (val & 0x08) {
             /* OCW 3 */
-            if (val & 0x04)
+            if (val & 0x04) {
                 s->poll = 1;
-            if (val & 0x02)
+            }
+            if (val & 0x02) {
                 s->read_reg_select = val & 1;
-            if (val & 0x40)
+            }
+            if (val & 0x40) {
                 s->special_mask = (val >> 5) & 1;
+            }
         } else {
             /* OCW 2 */
             cmd = val >> 5;
             switch (cmd) {
-                case 0:
-                case 4:
-                    s->rotate_on_auto_eoi = cmd >> 2;
-                    break;
-                case 1:
-                    /* End of interrupt. */
-                case 5:
-                    /* Clear ISR and update IRQ*/
-                    priority = get_priority(s, s->isr);
-                    if (priority != 8) {
-                        irq = (priority + s->priority_add) & 7;
-                        if (cmd == 5)
-                            s->priority_add = (irq + 1) & 7;
-                        pic_clear_isr(vcpu->vm, s, irq);
-                        pic_update_irq(s->pics_state);
+            case 0:
+            case 4:
+                s->rotate_on_auto_eoi = cmd >> 2;
+                break;
+            case 1:
+            /* End of interrupt. */
+            case 5:
+                /* Clear ISR and update IRQ*/
+                priority = get_priority(s, s->isr);
+                if (priority != 8) {
+                    irq = (priority + s->priority_add) & 7;
+                    if (cmd == 5) {
+                        s->priority_add = (irq + 1) & 7;
                     }
-                    break;
-                case 3:
-                    /* Specific EOI command. */
-                    irq = val & 7;
                     pic_clear_isr(vcpu->vm, s, irq);
                     pic_update_irq(s->pics_state);
-                    break;
-                case 6:
-                    /* Set priority command. */
-                    s->priority_add = (val + 1) & 7;
-                    pic_update_irq(s->pics_state);
-                    break;
-                case 7:
-                    /* Rotate on specific eoi command. */
-                    irq = val & 7;
-                    s->priority_add = (irq + 1) & 7;
-                    pic_clear_isr(vcpu->vm, s, irq);
-                    pic_update_irq(s->pics_state);
-                    break;
-                default:
-                    /* No operation. */
-                    break;
+                }
+                break;
+            case 3:
+                /* Specific EOI command. */
+                irq = val & 7;
+                pic_clear_isr(vcpu->vm, s, irq);
+                pic_update_irq(s->pics_state);
+                break;
+            case 6:
+                /* Set priority command. */
+                s->priority_add = (val + 1) & 7;
+                pic_update_irq(s->pics_state);
+                break;
+            case 7:
+                /* Rotate on specific eoi command. */
+                irq = val & 7;
+                s->priority_add = (irq + 1) & 7;
+                pic_clear_isr(vcpu->vm, s, irq);
+                pic_update_irq(s->pics_state);
+                break;
+            default:
+                /* No operation. */
+                break;
             }
         }
     } else
         switch (s->init_state) {
-            case 0: { /* Normal mode OCW 1. */
-                        unsigned char imr_diff = s->imr ^ val;
-                        (void) imr_diff;
-                        //off = (s == &s->pics_state->pics[0]) ? 0 : 8;
-                        s->imr = val;
+        case 0: { /* Normal mode OCW 1. */
+            unsigned char imr_diff = s->imr ^ val;
+            (void) imr_diff;
+            //off = (s == &s->pics_state->pics[0]) ? 0 : 8;
+            s->imr = val;
 #if 0
-                        for (irq = 0; irq < PIC_NUM_PINS/2; irq++)
-                            if (imr_diff & (1 << irq))
-                                /*FIXME: notify the status changes for IMR*/
-                                kvm_fire_mask_notifiers(
-                                        s->pics_state->kvm,
-                                        select_pic(irq + off),
-                                        irq + off,
-                                        !!(s->imr & (1 << irq)));
+            for (irq = 0; irq < PIC_NUM_PINS / 2; irq++)
+                if (imr_diff & (1 << irq))
+                    /*FIXME: notify the status changes for IMR*/
+                    kvm_fire_mask_notifiers(
+                        s->pics_state->kvm,
+                        select_pic(irq + off),
+                        irq + off,
+                        !!(s->imr & (1 << irq)));
 #endif
-                        pic_update_irq(s->pics_state);
-                        break;
-                    }
-            case 1:
-                    /* ICW 2 */
-                    s->irq_base = val & 0xf8;
-                    s->init_state = 2;
-                    break;
-            case 2:
-                    if (s->init4)
-                        s->init_state = 3;
-                    else
-                        s->init_state = 0;
-                    break;
-            case 3:
-                    /* ICW 4 */
-                    s->special_fully_nested_mode = (val >> 4) & 1;
-                    s->auto_eoi = (val >> 1) & 1;
-                    s->init_state = 0;
-                    break;
+            pic_update_irq(s->pics_state);
+            break;
+        }
+        case 1:
+            /* ICW 2 */
+            s->irq_base = val & 0xf8;
+            s->init_state = 2;
+            break;
+        case 2:
+            if (s->init4) {
+                s->init_state = 3;
+            } else {
+                s->init_state = 0;
+            }
+            break;
+        case 3:
+            /* ICW 4 */
+            s->special_fully_nested_mode = (val >> 4) & 1;
+            s->auto_eoi = (val >> 1) & 1;
+            s->init_state = 0;
+            break;
         }
 }
 
 /* Poll the pending IRQS for the highest priority IRQ, ack the IRQ: clear the ISR and IRR, and
  * update PIC state. Returns -1 if no pending IRQ. */
-static unsigned int pic_poll_read(vm_t *vm, struct i8259_state *s, unsigned int addr1) {
+static unsigned int pic_poll_read(vm_t *vm, struct i8259_state *s, unsigned int addr1)
+{
     unsigned int ret;
 
     ret = pic_get_irq(s);
@@ -396,8 +421,9 @@ static unsigned int pic_poll_read(vm_t *vm, struct i8259_state *s, unsigned int 
         }
         s->irr &= ~(1 << ret);
         pic_clear_isr(vm, s, ret);
-        if (addr1 >> 7 || ret != 2)
+        if (addr1 >> 7 || ret != 2) {
             pic_update_irq(s->pics_state);
+        }
     } else {
         ret = 0x07;
         pic_update_irq(s->pics_state);
@@ -408,7 +434,8 @@ static unsigned int pic_poll_read(vm_t *vm, struct i8259_state *s, unsigned int 
 
 
 /* Read and write functions for PIC (master and slave). */
-static unsigned int pic_ioport_read(vm_vcpu_t *vcpu, struct i8259_state *s, unsigned int addr) {
+static unsigned int pic_ioport_read(vm_vcpu_t *vcpu, struct i8259_state *s, unsigned int addr)
+{
     unsigned int ret;
 
     /* Poll for the highest priority IRQ. */
@@ -418,13 +445,14 @@ static unsigned int pic_ioport_read(vm_vcpu_t *vcpu, struct i8259_state *s, unsi
 
     } else {
         if (!(addr & 1)) {
-            if (s->read_reg_select)
+            if (s->read_reg_select) {
                 ret = s->isr;
-            else
+            } else {
                 ret = s->irr;
-        }
-        else
+            }
+        } else {
             ret = s->imr;
+        }
 
     }
     return ret;
@@ -434,16 +462,20 @@ static unsigned int pic_ioport_read(vm_vcpu_t *vcpu, struct i8259_state *s, unsi
 IO: 0x4d0 0x4d1 each bit corresponsing to an IRQ from 8259
 bit set: level triggered mode
 bit clear: edge triggered mode*/
-static void elcr_ioport_write(struct i8259_state *s, unsigned int addr, unsigned int val) {
+static void elcr_ioport_write(struct i8259_state *s, unsigned int addr, unsigned int val)
+{
     s->elcr = val & s->elcr_mask;
 }
 
-static unsigned int elcr_ioport_read(struct i8259_state *s, unsigned int addr) {
+static unsigned int elcr_ioport_read(struct i8259_state *s, unsigned int addr)
+{
     return s->elcr;
 }
 
 
-ioport_fault_result_t i8259_port_out(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size, unsigned int value) {
+ioport_fault_result_t i8259_port_out(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size,
+                                     unsigned int value)
+{
     /* Sender thread is the VMM main thread, calculate guest ID according to the badge. */
     struct i8259 *s = vcpu->vm->arch.i8259_gs;
 
@@ -456,23 +488,25 @@ ioport_fault_result_t i8259_port_out(vm_vcpu_t *vcpu, void *cookie, unsigned int
 
     /* 0x20, 0x21, master pic, 0xa0, 0xa1 slave PIC. */
     switch (port_no) {
-        case 0x20:
-        case 0x21:
-        case 0xa0:
-        case 0xa1:
-            pic_ioport_write(vcpu, &s->pics[port_no >> 7], port_no, value);
-            break;
-        case 0x4d0:
-        case 0x4d1:
-            elcr_ioport_write(&s->pics[port_no & 1], port_no, value);
-            break;
+    case 0x20:
+    case 0x21:
+    case 0xa0:
+    case 0xa1:
+        pic_ioport_write(vcpu, &s->pics[port_no >> 7], port_no, value);
+        break;
+    case 0x4d0:
+    case 0x4d1:
+        elcr_ioport_write(&s->pics[port_no & 1], port_no, value);
+        break;
     }
 
     return IO_FAULT_HANDLED;
 
 }
 
-ioport_fault_result_t i8259_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size, unsigned int *result) {
+ioport_fault_result_t i8259_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size,
+                                    unsigned int *result)
+{
     /* Sender thread is the VMM main thread, calculate guest ID according to the badge. */
     struct i8259 *s = vcpu->vm->arch.i8259_gs;
 
@@ -485,22 +519,23 @@ ioport_fault_result_t i8259_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned int 
 
     /* 0x20, 0x21, master pic, 0xa0, 0xa1 slave PIC. */
     switch (port_no) {
-        case 0x20:
-        case 0x21:
-        case 0xa0:
-        case 0xa1:
-            *result = pic_ioport_read(vcpu, &s->pics[port_no >> 7], port_no);
-            break;
-        case 0x4d0:
-        case 0x4d1:
-            *result = elcr_ioport_read(&s->pics[port_no & 1], port_no);
-            break;
+    case 0x20:
+    case 0x21:
+    case 0xa0:
+    case 0xa1:
+        *result = pic_ioport_read(vcpu, &s->pics[port_no >> 7], port_no);
+        break;
+    case 0x4d0:
+    case 0x4d1:
+        *result = elcr_ioport_read(&s->pics[port_no & 1], port_no);
+        break;
     }
     return IO_FAULT_HANDLED;
 }
 
 /* Init internal status for PIC driver. */
-static void i8259_init_state(struct i8259 *s) {
+static void i8259_init_state(struct i8259 *s)
+{
     /* Init pic machine state for guest OS. */
 //        s->pics[0].elcr = seL4_IA32_IOPort_In8(LIB_VMM_IO_PCI_CAP, 0x4d0).result;
 //        s->pics[1].elcr = seL4_IA32_IOPort_In8(LIB_VMM_IO_PCI_CAP, 0x4d1).result;
@@ -520,19 +555,22 @@ static inline void pic_intack(vm_t *vm, struct i8259_state *s, int irq)
     s->isr |= 1 << irq;
 
     /* We don't clear a level sensitive interrupt here. */
-    if (!(s->elcr & (1 << irq)))
+    if (!(s->elcr & (1 << irq))) {
         s->irr &= ~(1 << irq);
+    }
 
     /* Clear the ISR for auto EOI mode. */
     if (s->auto_eoi) {
-        if (s->rotate_on_auto_eoi)
+        if (s->rotate_on_auto_eoi) {
             s->priority_add = (irq + 1) & 7;
+        }
         pic_clear_isr(vm, s, irq);
     }
 }
 
 /* Use output as a flag for pending IRQ. */
-static int i8259_has_irq(vm_t *vm) {
+static int i8259_has_irq(vm_t *vm)
+{
     struct i8259 *s = vm->arch.i8259_gs;
     return s->output;
 }
@@ -588,11 +626,13 @@ static int i8259_read_irq(vm_t *vm)
         /* Ack the slave 8259 controller. */
         if (irq == 2) {
             irq2 = pic_get_irq(&s->pics[1]);
-            if (irq2 >= 0)
+            if (irq2 >= 0) {
                 pic_intack(vm, &s->pics[1], irq2);
-            else
+            } else
                 /* Spurious IRQ on slave controller. */
+            {
                 irq2 = 7;
+            }
             intno = s->pics[1].irq_base + irq2;
             irq = irq2 + 8;
         } else {
@@ -608,7 +648,8 @@ static int i8259_read_irq(vm_t *vm)
     return intno;
 }
 
-int i8259_get_interrupt(vm_t *vm) {
+int i8259_get_interrupt(vm_t *vm)
+{
     int ret;
     if (i8259_has_irq(vm)) {
         ret = i8259_read_irq(vm);
@@ -621,18 +662,20 @@ int i8259_get_interrupt(vm_t *vm) {
     return ret;
 }
 
-int i8259_has_interrupt(vm_t *vm) {
+int i8259_has_interrupt(vm_t *vm)
+{
     int ret = i8259_has_irq(vm);
     return ret;
 }
 
 vm_ioport_entry_t pic_ioports[] = {
-    {{X86_IO_PIC_1_START, X86_IO_PIC_1_END} , {NULL, i8259_port_in, i8259_port_out, "8259 Programmable Interrupt Controller (1st, Master)"}},
-    {{X86_IO_PIC_2_START, X86_IO_PIC_2_END} , {NULL, i8259_port_in, i8259_port_out, "8259 Programmable Interrupt Controller (2nd, Slave)"}},
-    {{X86_IO_ELCR_START, X86_IO_ELCR_END}   , {NULL, i8259_port_in, i8259_port_out, "ELCR (edge/level control register) for IRQ line"}}
+    {{X86_IO_PIC_1_START, X86_IO_PIC_1_END}, {NULL, i8259_port_in, i8259_port_out, "8259 Programmable Interrupt Controller (1st, Master)"}},
+    {{X86_IO_PIC_2_START, X86_IO_PIC_2_END}, {NULL, i8259_port_in, i8259_port_out, "8259 Programmable Interrupt Controller (2nd, Slave)"}},
+    {{X86_IO_ELCR_START, X86_IO_ELCR_END}, {NULL, i8259_port_in, i8259_port_out, "ELCR (edge/level control register) for IRQ line"}}
 };
 
-int i8259_pre_init(vm_t *vm) {
+int i8259_pre_init(vm_t *vm)
+{
     int err;
     /* First initialize the emulated pic state */
     vm->arch.i8259_gs = calloc(1, sizeof(struct i8259));
@@ -660,7 +703,8 @@ int i8259_pre_init(vm_t *vm) {
  * IRQ source ID is used for mapping multiple IRQ source into a IRQ pin.
  * Sets irq request into the state machine for PIC.
  */
-int vm_set_irq_level(vm_t *vm, int irq, int irq_level) {
+int vm_set_irq_level(vm_t *vm, int irq, int irq_level)
+{
     int ret;
 
     struct i8259 *s = vm->arch.i8259_gs;
@@ -675,13 +719,15 @@ int vm_set_irq_level(vm_t *vm, int irq, int irq_level) {
     return 0;
 }
 
-int vm_inject_irq(vm_t *vm, int irq) {
+int vm_inject_irq(vm_t *vm, int irq)
+{
     vm_set_irq_level(vm, irq, 1);
     vm_set_irq_level(vm, irq, 0);
     return 0;
 }
 
-int vm_register_irq(vm_t *vm, int irq, irq_ack_fn_t fn, void *cookie) {
+int vm_register_irq(vm_t *vm, int irq, irq_ack_fn_t fn, void *cookie)
+{
     if (irq < 0 || irq >= PIC_NUM_PINS) {
         ZF_LOGE("irq %d is invalid", irq);
         return -1;

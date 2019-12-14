@@ -45,5 +45,5 @@ enum vacdev_action {
  * @param[in] action Action to take when access is violated.
  * @return           0 on success
  */
-int vm_install_generic_ac_device(vm_t* vm, const struct device* d, void* mask,
+int vm_install_generic_ac_device(vm_t *vm, const struct device *d, void *mask,
                                  size_t size, enum vacdev_action action);

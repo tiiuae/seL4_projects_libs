@@ -16,4 +16,4 @@
 #include <sel4vm/guest_memory.h>
 
 int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
-        memory_map_iterator_fn map_iterator, void *map_cookie);
+                              memory_map_iterator_fn map_iterator, void *map_cookie);

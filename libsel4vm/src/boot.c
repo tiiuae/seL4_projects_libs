@@ -25,9 +25,9 @@
 
 static int curr_vcpu_index = 0;
 
-int
-vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace,
-        ps_io_ops_t* io_ops, seL4_CPtr host_endpoint, const char* name) {
+int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace,
+            ps_io_ops_t *io_ops, seL4_CPtr host_endpoint, const char *name)
+{
     int err;
     bzero(vm, sizeof(vm_t));
     /* Initialise vm fields */
@@ -64,10 +64,10 @@ vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspac
     return 0;
 }
 
-vm_vcpu_t*
-vm_create_vcpu(vm_t *vm, int priority) {
+vm_vcpu_t *vm_create_vcpu(vm_t *vm, int priority)
+{
     int err;
-    if( vm->num_vcpus >= MAX_NUM_VCPUS) {
+    if (vm->num_vcpus >= MAX_NUM_VCPUS) {
         ZF_LOGE("Failed to create vcpu, reached maximum number of support vcpus");
         return NULL;
     }

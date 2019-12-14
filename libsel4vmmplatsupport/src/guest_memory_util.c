@@ -40,7 +40,8 @@ struct ut_alloc_iterator_cookie {
     bool with_paddr;
 };
 
-static vm_frame_t device_frame_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t device_frame_iterator(uintptr_t addr, void *cookie)
+{
     cspacepath_t return_frame;
     vm_t *vm;
     int page_size;
@@ -72,7 +73,8 @@ static vm_frame_t device_frame_iterator(uintptr_t addr, void *cookie) {
     return frame_result;
 }
 
-static vm_frame_t ut_alloc_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t ut_alloc_iterator(uintptr_t addr, void *cookie)
+{
     int ret;
     int error;
     vka_object_t object;
@@ -97,11 +99,12 @@ static vm_frame_t ut_alloc_iterator(uintptr_t addr, void *cookie) {
         ZF_LOGE("Failed to allocate path");
         return frame_result;
     }
-    error = simple_get_frame_cap(vm->simple, (void*)alloc_addr, page_size, &path);
+    error = simple_get_frame_cap(vm->simple, (void *)alloc_addr, page_size, &path);
     if (error) {
         /* attempt to allocate */
         uintptr_t vka_cookie;
-        error = vka_utspace_alloc_at(vm->vka, &path, kobject_get_type(KOBJECT_FRAME, page_size), page_size, alloc_addr, &vka_cookie);
+        error = vka_utspace_alloc_at(vm->vka, &path, kobject_get_type(KOBJECT_FRAME, page_size), page_size, alloc_addr,
+                                     &vka_cookie);
     }
     if (error) {
         ZF_LOGE("Failed to allocate page");
@@ -116,7 +119,8 @@ static vm_frame_t ut_alloc_iterator(uintptr_t addr, void *cookie) {
     return frame_result;
 }
 
-static vm_frame_t ut_allocman_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t ut_allocman_iterator(uintptr_t addr, void *cookie)
+{
     int ret;
     int error;
     vka_object_t object;
@@ -134,7 +138,7 @@ static vm_frame_t ut_allocman_iterator(uintptr_t addr, void *cookie) {
         return frame_result;
     }
     seL4_Word alloc_cookie = allocman_utspace_alloc(vm->allocman, page_size,
-            kobject_get_type(KOBJECT_FRAME, page_size), &path, true, &ret);
+                                                    kobject_get_type(KOBJECT_FRAME, page_size), &path, true, &ret);
     if (error) {
         ZF_LOGE("Failed to allocate page");
         vka_cspace_free_path(vm->vka, path);
@@ -147,7 +151,8 @@ static vm_frame_t ut_allocman_iterator(uintptr_t addr, void *cookie) {
     return frame_result;
 }
 
-static vm_frame_t maybe_device_alloc_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t maybe_device_alloc_iterator(uintptr_t addr, void *cookie)
+{
     int ret;
     vka_object_t object;
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
@@ -169,7 +174,8 @@ static vm_frame_t maybe_device_alloc_iterator(uintptr_t addr, void *cookie) {
     return frame_result;
 }
 
-static vm_frame_t frame_alloc_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t frame_alloc_iterator(uintptr_t addr, void *cookie)
+{
     int ret;
     vka_object_t object;
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
@@ -192,7 +198,8 @@ static vm_frame_t frame_alloc_iterator(uintptr_t addr, void *cookie) {
 }
 
 void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t rights,
-        memory_fault_callback_fn alloc_fault_callback, void *alloc_fault_cookie) {
+                                         memory_fault_callback_fn alloc_fault_callback, void *alloc_fault_cookie)
+{
     int err;
     struct device_frame_cookie *cookie;
     int page_size = seL4_PageBits;
@@ -208,7 +215,7 @@ void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRight
 
     /* Reserve emulated vm frame */
     cookie->reservation = vm_reserve_memory_at(vm, addr, PAGE_SIZE_4K,
-            alloc_fault_callback, (void *)alloc_fault_cookie);
+                                               alloc_fault_callback, (void *)alloc_fault_cookie);
     if (!cookie->reservation) {
         ZF_LOGE("Failed to create allocated vm frame: Unable to reservate emulated frame");
         ps_free(&ops->malloc_ops, sizeof(struct device_frame_cookie), (void **)&cookie);
@@ -251,7 +258,8 @@ void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRight
 }
 
 void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t rights,
-        memory_fault_callback_fn fault_callback, void *fault_cookie) {
+                                      memory_fault_callback_fn fault_callback, void *fault_cookie)
+{
     int err;
     struct device_frame_cookie *cookie;
     int page_size = seL4_PageBits;
@@ -267,7 +275,7 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t
 
     /* Reserve emulated vm frame */
     cookie->reservation = vm_reserve_memory_at(vm, addr, PAGE_SIZE_4K,
-            fault_callback, (void *)fault_cookie);
+                                               fault_callback, (void *)fault_cookie);
     if (!cookie->reservation) {
         ZF_LOGE("Failed to create device vm frame: Unable to reservate emulated frame");
         ps_free(&ops->malloc_ops, sizeof(struct device_frame_cookie), (void **)&cookie);
@@ -282,11 +290,12 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t
         return NULL;
     }
 
-    err = simple_get_frame_cap(vm->simple, (void*)addr, page_size, &cookie->mapped_frame);
+    err = simple_get_frame_cap(vm->simple, (void *)addr, page_size, &cookie->mapped_frame);
     if (err) {
         /* attempt to allocate */
         uintptr_t vka_cookie;
-        err = vka_utspace_alloc_at(vm->vka, &cookie->mapped_frame, kobject_get_type(KOBJECT_FRAME, page_size), page_size, addr, &vka_cookie);
+        err = vka_utspace_alloc_at(vm->vka, &cookie->mapped_frame, kobject_get_type(KOBJECT_FRAME, page_size), page_size, addr,
+                                   &vka_cookie);
     }
     if (err) {
         ZF_LOGE("Failed to allocate page");
@@ -296,7 +305,7 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t
         return NULL;
     }
     dev_addr = vspace_map_pages(vmm_vspace, &cookie->mapped_frame.capPtr,
-                                  NULL, seL4_AllRights, 1, page_size, 0);
+                                NULL, seL4_AllRights, 1, page_size, 0);
     if (!dev_addr) {
         ZF_LOGE("Failed to map device frame into vmm vspace");
         vka_cspace_free_path(vm->vka, cookie->mapped_frame);
@@ -323,7 +332,8 @@ void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t
     return dev_addr;
 }
 
-int map_ut_alloc_reservation(vm_t *vm, vm_memory_reservation_t *reservation) {
+int map_ut_alloc_reservation(vm_t *vm, vm_memory_reservation_t *reservation)
+{
     struct ut_alloc_iterator_cookie *cookie;
     ps_io_ops_t *ops = vm->io_ops;
     int err = ps_calloc(&ops->malloc_ops, 1, sizeof(struct ut_alloc_iterator_cookie), (void **)&cookie);
@@ -337,7 +347,8 @@ int map_ut_alloc_reservation(vm_t *vm, vm_memory_reservation_t *reservation) {
     return vm_map_reservation(vm, reservation, ut_alloc_iterator, (void *)cookie);
 }
 
-int map_ut_alloc_reservation_with_base_paddr(vm_t *vm, uintptr_t paddr, vm_memory_reservation_t *reservation) {
+int map_ut_alloc_reservation_with_base_paddr(vm_t *vm, uintptr_t paddr, vm_memory_reservation_t *reservation)
+{
     struct ut_alloc_iterator_cookie *cookie;
     ps_io_ops_t *ops = vm->io_ops;
     int err = ps_calloc(&ops->malloc_ops, 1, sizeof(struct ut_alloc_iterator_cookie), (void **)&cookie);
@@ -352,14 +363,17 @@ int map_ut_alloc_reservation_with_base_paddr(vm_t *vm, uintptr_t paddr, vm_memor
     return vm_map_reservation(vm, reservation, ut_alloc_iterator, (void *)cookie);
 }
 
-int map_ut_allocman_reservation(vm_t *vm, vm_memory_reservation_t *reservation) {
+int map_ut_allocman_reservation(vm_t *vm, vm_memory_reservation_t *reservation)
+{
     return vm_map_reservation(vm, reservation, ut_allocman_iterator, (void *)vm);
 }
 
-int map_frame_alloc_reservation(vm_t *vm, vm_memory_reservation_t *reservation) {
+int map_frame_alloc_reservation(vm_t *vm, vm_memory_reservation_t *reservation)
+{
     return vm_map_reservation(vm, reservation, frame_alloc_iterator, (void *)vm);
 }
 
-int map_maybe_device_reservation(vm_t *vm, vm_memory_reservation_t *reservation) {
+int map_maybe_device_reservation(vm_t *vm, vm_memory_reservation_t *reservation)
+{
     return vm_map_reservation(vm, reservation, maybe_device_alloc_iterator, (void *)vm);
 }

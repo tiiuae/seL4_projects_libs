@@ -42,7 +42,8 @@ int vmm_register_reboot_callback(reboot_hooks_list_t *rb_hooks_list, reboot_hook
     return 0;
 }
 
-int vmm_process_reboot_callbacks(vm_t *vm, reboot_hooks_list_t *rb_hooks_list) {
+int vmm_process_reboot_callbacks(vm_t *vm, reboot_hooks_list_t *rb_hooks_list)
+{
     for (int i = 0; i < rb_hooks_list->nhooks; i++) {
         reboot_hook_t rb = rb_hooks_list->rb_hooks[i];
         if (rb.fn == NULL) {
@@ -58,7 +59,8 @@ int vmm_process_reboot_callbacks(vm_t *vm, reboot_hooks_list_t *rb_hooks_list) {
     return 0;
 }
 
-int vmm_init_reboot_hooks_list(reboot_hooks_list_t *rb_hooks_list) {
+int vmm_init_reboot_hooks_list(reboot_hooks_list_t *rb_hooks_list)
+{
     rb_hooks_list->nhooks = 0;
     rb_hooks_list->rb_hooks = NULL;
     return 0;

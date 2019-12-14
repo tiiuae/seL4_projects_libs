@@ -16,7 +16,8 @@
 
 #include "guest_boot_sel4arch.h"
 
-int vm_set_bootargs(vm_t *vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags) {
+int vm_set_bootargs(vm_t *vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags)
+{
     seL4_UserContext regs;
     if (!vm) {
         ZF_LOGE("Failed to set bootargs: NULL VM handle");

@@ -37,16 +37,16 @@
 typedef union sysreg {
     uint32_t hsr_val;
     struct sysreg_params {
-        uint32_t direction:1;
-        uint32_t crm:4;
-        uint32_t rt:5;
-        uint32_t crn:4;
-        uint32_t op1:3;
-        uint32_t op2:3;
-        uint32_t op0:2;
-        uint32_t res0:3;
-        uint32_t instr_len:1;
-        uint32_t ec:6;
+        uint32_t direction: 1;
+        uint32_t crm: 4;
+        uint32_t rt: 5;
+        uint32_t crn: 4;
+        uint32_t op1: 3;
+        uint32_t op2: 3;
+        uint32_t op0: 2;
+        uint32_t res0: 3;
+        uint32_t instr_len: 1;
+        uint32_t ec: 6;
     } params;
 } sysreg_t;
 

@@ -60,7 +60,7 @@ typedef enum processor_mode {
 
 #define HSR_REASON_ENTRY(HSR) [HSR] = #HSR
 
-static const char* hsr_reasons[HSR_MAX_EXCEPTION] = {
+static const char *hsr_reasons[HSR_MAX_EXCEPTION] = {
     [0 ... HSR_MAX_EXCEPTION - 1] = "Unknown Exception Class",
     HSR_REASON_ENTRY(HSR_UNKNOWN_EXCEPTION),
     HSR_REASON_ENTRY(HSR_WFx_EXCEPTION),

@@ -25,19 +25,19 @@ struct sysreg_priv {
     void *regs;
 };
 
-static memory_fault_result_t
-handle_vsysreg_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
+static memory_fault_result_t handle_vsysreg_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                                  void *cookie)
 {
     struct device *dev = (struct device *)cookie;
-    struct sysreg_priv* sysreg_data = (struct sysreg_priv*)dev->priv;
+    struct sysreg_priv *sysreg_data = (struct sysreg_priv *)dev->priv;
     volatile uint32_t *reg;
     int offset;
 
     /* Gather fault information */
     offset = fault_addr - dev->pstart;
-    reg = (uint32_t*)(sysreg_data->regs + offset);
+    reg = (uint32_t *)(sysreg_data->regs + offset);
     /* Handle the fault */
-    reg = (volatile uint32_t*)(sysreg_data->regs + offset);
+    reg = (volatile uint32_t *)(sysreg_data->regs + offset);
     if (is_vcpu_read_fault(vcpu)) {
         set_vcpu_fault_data(vcpu, *reg);
         ZF_LOGD("[%s] pc0x%x| r0x%x:0x%x\n", dev->name, get_vcpu_fault_ip(vcpu),
@@ -86,7 +86,7 @@ int vm_install_vsysreg(vm_t *vm)
     d->priv = sysreg_data;
 
     vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d->pstart, d->size,
-            handle_vsysreg_fault, (void *)d);
+                                                                handle_vsysreg_fault, (void *)d);
     if (!reservation) {
         free(d);
         free(sysreg_data);

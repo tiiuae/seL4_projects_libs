@@ -48,7 +48,8 @@
 
 #define GUEST_PAGE_DIR 0x10000000
 
-static int make_guest_page_dir_continued(void *access_addr, void *vaddr, void *cookie) {
+static int make_guest_page_dir_continued(void *access_addr, void *vaddr, void *cookie)
+{
     /* Write into this frame as the init page directory: 4M pages, 1 to 1 mapping. */
     uint32_t *pd = vaddr;
     for (int i = 0; i < 1024; i++) {
@@ -58,7 +59,8 @@ static int make_guest_page_dir_continued(void *access_addr, void *vaddr, void *c
     return 0;
 }
 
-static vm_frame_t pd_alloc_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t pd_alloc_iterator(uintptr_t addr, void *cookie)
+{
     int ret;
     vka_object_t object;
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
@@ -81,11 +83,12 @@ static vm_frame_t pd_alloc_iterator(uintptr_t addr, void *cookie) {
 }
 
 
-static int make_guest_page_dir(vm_t *vm) {
+static int make_guest_page_dir(vm_t *vm)
+{
     /* Create a 4K Page to be our 1-1 pd */
     /* This is constructed with magical new memory that we will not tell Linux about */
     vm_memory_reservation_t *pd_reservation = vm_reserve_memory_at(vm, GUEST_PAGE_DIR, BIT(seL4_PageBits),
-            default_error_fault_callback, NULL);
+                                                                   default_error_fault_callback, NULL);
     if (!pd_reservation) {
         ZF_LOGE("Failed to reserve page for initial guest pd");
         return -1;
@@ -97,11 +100,11 @@ static int make_guest_page_dir(vm_t *vm) {
     printf("Guest page dir allocated at 0x%x. Creating 1-1 entries\n", (unsigned int)GUEST_PAGE_DIR);
     vm->arch.guest_pd = GUEST_PAGE_DIR;
     return vspace_access_page_with_callback(&vm->mem.vm_vspace, &vm->mem.vmm_vspace, (void *)GUEST_PAGE_DIR,
-                seL4_PageBits, seL4_AllRights, 1, make_guest_page_dir_continued, NULL);
+                                            seL4_PageBits, seL4_AllRights, 1, make_guest_page_dir_continued, NULL);
 }
 
-int
-vm_init_arch(vm_t *vm) {
+int vm_init_arch(vm_t *vm)
+{
     int err;
 
     if (!vm) {
@@ -130,7 +133,7 @@ vm_init_arch(vm_t *vm) {
     assert(err == seL4_NoError);
     /* Initialize a vspace for the guest */
     err = vm_init_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vmm_vspace,
-            &vm->mem.vm_vspace, vm->vka, vm->mem.vm_vspace_root.cptr);
+                               &vm->mem.vm_vspace, vm->vka, vm->mem.vm_vspace_root.cptr);
     if (err) {
         return err;
     }
@@ -141,8 +144,8 @@ vm_init_arch(vm_t *vm) {
     return err;
 }
 
-int
-vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu) {
+int vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu)
+{
     int err;
     err = seL4_X86_VCPU_SetTCB(vcpu->vcpu.cptr, simple_get_tcb(vm->simple));
     assert(err == seL4_NoError);

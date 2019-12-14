@@ -34,7 +34,7 @@ struct pci_cfg_data {
     vmm_pci_space_t *pci;
 };
 
-static void pci_cfg_read_fault(struct device* d, vm_t *vm, vm_vcpu_t* vcpu, vmm_pci_address_t pci_addr,
+static void pci_cfg_read_fault(struct device *d, vm_t *vm, vm_vcpu_t *vcpu, vmm_pci_address_t pci_addr,
                                uint8_t offset, vmm_pci_entry_t *dev)
 {
     seL4_Word data = 0;
@@ -49,7 +49,7 @@ static void pci_cfg_read_fault(struct device* d, vm_t *vm, vm_vcpu_t* vcpu, vmm_
     set_vcpu_fault_data(vcpu, data << s);
 }
 
-static void pci_cfg_write_fault(struct device* d, vm_t *vm, vm_vcpu_t* vcpu, vmm_pci_address_t pci_addr,
+static void pci_cfg_write_fault(struct device *d, vm_t *vm, vm_vcpu_t *vcpu, vmm_pci_address_t pci_addr,
                                 uint8_t offset, vmm_pci_entry_t *dev)
 {
     uint32_t mask;
@@ -75,8 +75,8 @@ static void pci_cfg_write_fault(struct device* d, vm_t *vm, vm_vcpu_t* vcpu, vmm
     }
 }
 
-static memory_fault_result_t
-pci_cfg_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
+static memory_fault_result_t pci_cfg_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                                   void *cookie)
 {
     uint8_t offset;
     vmm_pci_address_t pci_addr;
@@ -107,8 +107,8 @@ pci_cfg_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fa
     return FAULT_HANDLED;
 }
 
-static memory_fault_result_t
-pci_cfg_io_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
+static memory_fault_result_t pci_cfg_io_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
+                                                      size_t fault_length, void *cookie)
 {
     struct device *dev = (struct device *)cookie;
     /* Get CFG Port address */
@@ -168,7 +168,7 @@ int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
     /* Install base VPCI CFG region */
     dev_vpci_cfg.priv = (void *)cfg_data;
     vm_memory_reservation_t *cfg_reservation = vm_reserve_memory_at(vm, dev_vpci_cfg.pstart, dev_vpci_cfg.size,
-            pci_cfg_fault_handler, (void *)&dev_vpci_cfg);
+                                                                    pci_cfg_fault_handler, (void *)&dev_vpci_cfg);
     if (!cfg_reservation) {
         return -1;
     }
@@ -176,7 +176,7 @@ int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
     /* Install base VPCI CFG IOPort region */
     dev_vpci_cfg_io.priv = (void *)cfg_data;
     vm_memory_reservation_t *cfg_io_reservation = vm_reserve_memory_at(vm, dev_vpci_cfg_io.pstart, dev_vpci_cfg_io.size,
-            pci_cfg_io_fault_handler, (void *)&dev_vpci_cfg_io);
+                                                                       pci_cfg_io_fault_handler, (void *)&dev_vpci_cfg_io);
     if (!cfg_io_reservation) {
         return -1;
     }

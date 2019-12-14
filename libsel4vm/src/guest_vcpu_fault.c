@@ -12,7 +12,8 @@
 
 #include <sel4vm/guest_vcpu_fault.h>
 
-seL4_Word emulate_vcpu_fault(vm_vcpu_t *vcpu, seL4_Word data) {
+seL4_Word emulate_vcpu_fault(vm_vcpu_t *vcpu, seL4_Word data)
+{
     seL4_Word fault_data, mask, byte_shift;
     byte_shift = (get_vcpu_fault_address(vcpu) & 0x3) * 8;
     mask = get_vcpu_fault_data_mask(vcpu);

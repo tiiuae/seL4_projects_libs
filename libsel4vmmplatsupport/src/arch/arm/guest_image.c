@@ -116,7 +116,8 @@ uintptr_t zImage_get_load_address(void *file, uintptr_t ram_base)
     return 0;
 }
 
-static int get_guest_image_type(const char *image_name, enum img_type *image_type, Elf64_Ehdr *header) {
+static int get_guest_image_type(const char *image_name, enum img_type *image_type, Elf64_Ehdr *header)
+{
     int fd;
     uintptr_t load_addr;
     fd = open(image_name, 0);
@@ -136,7 +137,8 @@ static int get_guest_image_type(const char *image_name, enum img_type *image_typ
     return 0;
 }
 
-static int guest_write_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset, void *cookie) {
+static int guest_write_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t size, size_t offset, void *cookie)
+{
     memcpy(vaddr, cookie + offset, size);
     if (config_set(CONFIG_PLAT_TX1) || config_set(CONFIG_PLAT_TX2)) {
         seL4_CPtr cap = vspace_get_cap(&vm->mem.vmm_vspace, vaddr);
@@ -151,7 +153,8 @@ static int guest_write_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t si
     return 0;
 }
 
-static int load_image(vm_t *vm, const char *image_name, uintptr_t load_addr,  size_t *resulting_image_size) {
+static int load_image(vm_t *vm, const char *image_name, uintptr_t load_addr,  size_t *resulting_image_size)
+{
     int fd;
     size_t len;
     int error;
@@ -162,7 +165,7 @@ static int load_image(vm_t *vm, const char *image_name, uintptr_t load_addr,  si
     }
     char buf[PAGE_SIZE_4K] = {0};
     size_t offset = 0;
-    while(1) {
+    while (1) {
         /* Load the image */
         len = read(fd, buf, sizeof(buf));
         if (!len) {
@@ -182,7 +185,9 @@ static int load_image(vm_t *vm, const char *image_name, uintptr_t load_addr,  si
     return 0;
 }
 
-static void *load_guest_kernel_image(vm_t *vm, const char *kernel_image_name, uintptr_t load_base_addr, size_t *image_size) {
+static void *load_guest_kernel_image(vm_t *vm, const char *kernel_image_name, uintptr_t load_base_addr,
+                                     size_t *image_size)
+{
     int err;
     uintptr_t load_addr;
     enum img_type ret_file_type;
@@ -215,7 +220,8 @@ static void *load_guest_kernel_image(vm_t *vm, const char *kernel_image_name, ui
     return (void *)load_addr;
 }
 
-static void *load_guest_module_image(vm_t *vm, const char *image_name, uintptr_t load_base_addr, size_t *image_size) {
+static void *load_guest_module_image(vm_t *vm, const char *image_name, uintptr_t load_base_addr, size_t *image_size)
+{
     int err;
     uintptr_t load_addr;
     enum img_type ret_file_type;
@@ -241,7 +247,9 @@ static void *load_guest_module_image(vm_t *vm, const char *image_name, uintptr_t
     return (void *)load_addr;
 }
 
-int vm_load_guest_kernel(vm_t *vm, const char *kernel_name, uintptr_t load_address, size_t alignment, guest_kernel_image_t *guest_kernel_image) {
+int vm_load_guest_kernel(vm_t *vm, const char *kernel_name, uintptr_t load_address, size_t alignment,
+                         guest_kernel_image_t *guest_kernel_image)
+{
     void *load_addr;
     size_t kernel_len;
     if (!guest_kernel_image) {
@@ -257,7 +265,9 @@ int vm_load_guest_kernel(vm_t *vm, const char *kernel_name, uintptr_t load_addre
     return 0;
 }
 
-int vm_load_guest_module(vm_t *vm, const char *module_name, uintptr_t load_address, size_t alignment, guest_image_t *guest_image) {
+int vm_load_guest_module(vm_t *vm, const char *module_name, uintptr_t load_address, size_t alignment,
+                         guest_image_t *guest_image)
+{
     void *load_addr;
     size_t module_len;
 

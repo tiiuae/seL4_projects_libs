@@ -12,7 +12,7 @@
 
 #pragma once
 
-typedef int (*reboot_hook_fn)(vm_t* vm, void *token);
+typedef int (*reboot_hook_fn)(vm_t *vm, void *token);
 
 typedef struct reboot_hook {
     reboot_hook_fn fn;

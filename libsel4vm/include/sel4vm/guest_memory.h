@@ -35,8 +35,9 @@ typedef enum memory_fault_result {
     FAULT_ERROR
 } memory_fault_result_t;
 
-typedef memory_fault_result_t (*memory_fault_callback_fn)(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
-        void *cookie);
+typedef memory_fault_result_t (*memory_fault_callback_fn)(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
+                                                          size_t fault_length,
+                                                          void *cookie);
 typedef vm_frame_t (*memory_map_iterator_fn)(uintptr_t addr, void *cookie);
 
 typedef struct vm_memory_reservation vm_memory_reservation_t;
@@ -62,7 +63,7 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
  * @return                          NULL on failure otherwise a pointer to a reservation object representing the reserved region
  */
 vm_memory_reservation_t *vm_reserve_memory_at(vm_t *vm, uintptr_t addr, size_t size,
-        memory_fault_callback_fn fault_callback, void *cookie);
+                                              memory_fault_callback_fn fault_callback, void *cookie);
 
 /**
  * Reserve an anonymous region of the VM's memory. This uses memory previously made anonymous
@@ -75,7 +76,7 @@ vm_memory_reservation_t *vm_reserve_memory_at(vm_t *vm, uintptr_t addr, size_t s
  * @return                          NULL on failure otherwise a pointer to a reservation object representing the reserved region
  */
 vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size,
-        memory_fault_callback_fn fault_callback, void *cookie, uintptr_t *addr);
+                                                memory_fault_callback_fn fault_callback, void *cookie, uintptr_t *addr);
 
 /**
  * Create an anoymous region of the VM's memory. This claims a region of VM memory that can be used for the creation
@@ -102,7 +103,8 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation);
  * @param[in] map_iterator          Iterator function that returns a cap to the memory region being mapped
  * @param[in] cookie                Cookie to pass onto map_iterator function
  */
-int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation, memory_map_iterator_fn map_iterator, void *cookie);
+int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation, memory_map_iterator_fn map_iterator,
+                       void *cookie);
 
 /**
  * Get the memory region information (address & size) from a given reservation

@@ -52,10 +52,11 @@ static int io_port_compare_by_start(const void *a, const void *b)
 static vm_ioport_entry_t *search_port(vm_io_port_list_t *ioports, unsigned int port_no)
 {
     return (vm_ioport_entry_t *)bsearch((void *)(uintptr_t)port_no, ioports->ioports, ioports->num_ioports,
-                                     sizeof(vm_ioport_entry_t), io_port_compare_by_range);
+                                        sizeof(vm_ioport_entry_t), io_port_compare_by_range);
 }
 
-static void set_io_in_unhandled(vm_vcpu_t *vcpu, unsigned int size) {
+static void set_io_in_unhandled(vm_vcpu_t *vcpu, unsigned int size)
+{
     uint32_t eax;
     if (size < 4) {
         vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, &eax);
@@ -66,7 +67,8 @@ static void set_io_in_unhandled(vm_vcpu_t *vcpu, unsigned int size) {
     vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, eax);
 }
 
-static void set_io_in_value(vm_vcpu_t *vcpu, unsigned int value, unsigned int size) {
+static void set_io_in_value(vm_vcpu_t *vcpu, unsigned int value, unsigned int size)
+{
     uint32_t eax;
     if (size < 4) {
         vm_get_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, &eax);
@@ -101,7 +103,8 @@ static int add_io_port_range(vm_io_port_list_t *ioport_list, vm_ioport_entry_t p
     return 0;
 }
 
-int vm_enable_passthrough_ioport(vm_vcpu_t *vcpu, uint16_t port_start, uint16_t port_end) {
+int vm_enable_passthrough_ioport(vm_vcpu_t *vcpu, uint16_t port_start, uint16_t port_end)
+{
     cspacepath_t path;
     int error;
     ZF_LOGD("Enabling IO port 0x%x - 0x%x for passthrough", port_start, port_end);
@@ -124,7 +127,8 @@ int vm_enable_passthrough_ioport(vm_vcpu_t *vcpu, uint16_t port_start, uint16_t 
 }
 
 /* IO instruction execution handler. */
-int vm_io_instruction_handler(vm_vcpu_t *vcpu) {
+int vm_io_instruction_handler(vm_vcpu_t *vcpu)
+{
 
     unsigned int exit_qualification = vm_guest_exit_get_qualification(vcpu->vcpu_arch.guest_state);
     unsigned int string, rep;
@@ -166,7 +170,8 @@ int vm_io_instruction_handler(vm_vcpu_t *vcpu) {
             res = port->interface.port_out(vcpu, port->interface.cookie, port_no, size, value);
         }
     } else if (vcpu->vm->arch.unhandled_ioport_callback) {
-        res = vcpu->vm->arch.unhandled_ioport_callback(vcpu, port_no, is_in, &value, size, vcpu->vm->arch.unhandled_ioport_callback_cookie);
+        res = vcpu->vm->arch.unhandled_ioport_callback(vcpu, port_no, is_in, &value, size,
+                                                       vcpu->vm->arch.unhandled_ioport_callback_cookie);
     } else {
         /* No means of handling ioport instruction */
         if (port_no != -1) {
@@ -199,7 +204,8 @@ int vm_io_instruction_handler(vm_vcpu_t *vcpu) {
 }
 
 int vm_register_unhandled_ioport_callback(vm_t *vm, unhandled_ioport_callback_fn ioport_callback,
-                                      void *cookie) {
+                                          void *cookie)
+{
     if (!vm) {
         ZF_LOGE("Failed to register ioport callback: Invalid VM handle");
         return -1;
@@ -216,5 +222,7 @@ int vm_register_unhandled_ioport_callback(vm_t *vm, unhandled_ioport_callback_fn
 
 int vm_io_port_add_handler(vm_t *vm, vm_ioport_range_t io_range, vm_ioport_interface_t io_interface)
 {
-    return add_io_port_range(&vm->arch.ioport_list, (vm_ioport_entry_t) {io_range, io_interface});
+    return add_io_port_range(&vm->arch.ioport_list, (vm_ioport_entry_t) {
+        io_range, io_interface
+    });
 }

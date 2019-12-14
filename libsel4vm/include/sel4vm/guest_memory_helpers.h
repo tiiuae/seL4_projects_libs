@@ -20,4 +20,4 @@
  * Useful to avoid having to re-define a fault callback on regions that should be mapped with all rights.
  */
 memory_fault_result_t default_error_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
-        size_t fault_length, void *cookie);
+                                                   size_t fault_length, void *cookie);

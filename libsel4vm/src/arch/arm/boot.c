@@ -31,8 +31,8 @@
 #include "guest_vspace.h"
 #include "fault.h"
 
-int
-vm_init_arch(vm_t *vm) {
+int vm_init_arch(vm_t *vm)
+{
     seL4_Word cspace_root_data;
     cspacepath_t src, dst;
     vka_t *vka;
@@ -61,7 +61,8 @@ vm_init_arch(vm_t *vm) {
     assert(!err);
     err = simple_ASIDPool_assign(vm->simple, vm->mem.vm_vspace_root.cptr);
     assert(err == seL4_NoError);
-    err = vm_init_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vmm_vspace, &vm->mem.vm_vspace, vm->vka, vm->mem.vm_vspace_root.cptr);
+    err = vm_init_guest_vspace(&vm->mem.vmm_vspace, &vm->mem.vmm_vspace, &vm->mem.vm_vspace, vm->vka,
+                               vm->mem.vm_vspace_root.cptr);
     assert(!err);
 
     /* Badge the endpoint */
@@ -80,8 +81,8 @@ vm_init_arch(vm_t *vm) {
     return err;
 }
 
-int
-vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu) {
+int vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu)
+{
     int err;
     seL4_Word null_cap_data = seL4_NilData;
     /* Create TCB */
@@ -91,7 +92,8 @@ vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu) {
                              vm->cspace.cspace_obj.cptr, vm->cspace.cspace_root_data,
                              vm->mem.vm_vspace_root.cptr, null_cap_data, 0, seL4_CapNull);
     assert(!err);
-    err = seL4_TCB_SetSchedParams(vcpu->tcb.tcb.cptr, simple_get_tcb(vm->simple), vcpu->tcb.priority - 1, vcpu->tcb.priority - 1);
+    err = seL4_TCB_SetSchedParams(vcpu->tcb.tcb.cptr, simple_get_tcb(vm->simple), vcpu->tcb.priority - 1,
+                                  vcpu->tcb.priority - 1);
     assert(!err);
     err = seL4_ARM_VCPU_SetTCB(vcpu->vcpu.cptr, vcpu->tcb.tcb.cptr);
     assert(!err);

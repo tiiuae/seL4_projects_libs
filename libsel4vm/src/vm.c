@@ -19,13 +19,15 @@
 
 #include "vm.h"
 
-int vm_run(vm_t *vm) {
+int vm_run(vm_t *vm)
+{
     vm->vcpus[BOOT_VCPU]->vcpu_online = true;
     return vm_run_arch(vm);
 }
 
 int vm_register_unhandled_mem_fault_callback(vm_t *vm, unhandled_mem_fault_callback_fn fault_handler,
-                                             void *cookie) {
+                                             void *cookie)
+{
     if (!vm) {
         ZF_LOGE("Failed to register mem fault callback: Invalid VM handle");
         return -1;
@@ -41,7 +43,8 @@ int vm_register_unhandled_mem_fault_callback(vm_t *vm, unhandled_mem_fault_callb
 }
 
 int vm_register_notification_callback(vm_t *vm, notification_callback_fn notification_callback,
-                                      void *cookie) {
+                                      void *cookie)
+{
     if (!vm) {
         ZF_LOGE("Failed to register notification callback: Invalid VM handle");
         return -1;

@@ -23,7 +23,7 @@ void vm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *size
 /* Interpret just enough virtual 8086 instructions to run trampoline code.
    Returns the final jump address */
 uintptr_t vm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
-        uint16_t *segment, uintptr_t eip, uint32_t len, guest_state_t *gs);
+                              uint16_t *segment, uintptr_t eip, uint32_t len, guest_state_t *gs);
 
 // TODO don't have these in a header, make them inline functions
 const static int vm_decoder_reg_mapw[] = {
@@ -31,7 +31,7 @@ const static int vm_decoder_reg_mapw[] = {
     VCPU_CONTEXT_ECX,
     VCPU_CONTEXT_EDX,
     VCPU_CONTEXT_EBX,
-    /*VCPU_CONTEXT_ESP*/-1,
+    /*VCPU_CONTEXT_ESP*/ -1,
     VCPU_CONTEXT_EBP,
     VCPU_CONTEXT_ESI,
     VCPU_CONTEXT_EDI

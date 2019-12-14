@@ -18,15 +18,15 @@
 /* Device Management Object */
 struct device {
     /* A string representation of the device. Useful for debugging */
-    const char* name;
+    const char *name;
     /* The physical address of the device */
     seL4_Word pstart;
     /* Device mapping size */
     seL4_Word size;
     /* Fault handler */
-    int (*handle_device_fault)(vm_t* vm, vm_vcpu_t *vcpu, struct device *dev, uintptr_t addr, size_t len);
+    int (*handle_device_fault)(vm_t *vm, vm_vcpu_t *vcpu, struct device *dev, uintptr_t addr, size_t len);
     /* Device emulation private data */
-    void* priv;
+    void *priv;
 };
 
 /*
@@ -50,7 +50,7 @@ int device_list_init(device_list_t *list);
  * @param device    A description of the device
  * @return          0 on success, otherwise -1 for error
  */
-int add_device(device_list_t *dev_list, const struct device* d);
+int add_device(device_list_t *dev_list, const struct device *d);
 
 /*
  * Find a device by a given addr within a device list
@@ -58,4 +58,4 @@ int add_device(device_list_t *dev_list, const struct device* d);
  * @param addr      Add to search with
  * @return          Pointer to device if found, otherwise NULL if not found
  */
-struct device* find_device_by_pa(device_list_t *dev_list, uintptr_t addr);
+struct device *find_device_by_pa(device_list_t *dev_list, uintptr_t addr);

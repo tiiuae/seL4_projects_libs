@@ -20,10 +20,11 @@
 
 static vmcall_handler_t *get_handle(vm_t *vm, int token);
 
-static vmcall_handler_t *get_handle(vm_t *vm, int token) {
+static vmcall_handler_t *get_handle(vm_t *vm, int token)
+{
     int i;
-    for(i = 0; i < vm->arch.vmcall_num_handlers; i++) {
-        if(vm->arch.vmcall_handlers[i].token == token) {
+    for (i = 0; i < vm->arch.vmcall_num_handlers; i++) {
+        if (vm->arch.vmcall_handlers[i].token == token) {
             return &vm->arch.vmcall_handlers[i];
         }
     }
@@ -31,14 +32,15 @@ static vmcall_handler_t *get_handle(vm_t *vm, int token) {
     return NULL;
 }
 
-int reg_new_handler(vm_t *vm, vmcall_handler func, int token) {
+int reg_new_handler(vm_t *vm, vmcall_handler func, int token)
+{
     unsigned int *hnum = &(vm->arch.vmcall_num_handlers);
-    if(get_handle(vm, token) != NULL) {
+    if (get_handle(vm, token) != NULL) {
         return -1;
     }
 
     vm->arch.vmcall_handlers = realloc(vm->arch.vmcall_handlers, sizeof(vmcall_handler_t) * (*hnum + 1));
-    if(vm->arch.vmcall_handlers == NULL) {
+    if (vm->arch.vmcall_handlers == NULL) {
         return -1;
     }
 
@@ -50,7 +52,8 @@ int reg_new_handler(vm_t *vm, vmcall_handler func, int token) {
     return 0;
 }
 
-int vm_vmcall_handler(vm_vcpu_t *vcpu) {
+int vm_vmcall_handler(vm_vcpu_t *vcpu)
+{
     int res;
     vmcall_handler_t *h;
     int token;
@@ -58,14 +61,14 @@ int vm_vmcall_handler(vm_vcpu_t *vcpu) {
         return VM_EXIT_HANDLE_ERROR;
     }
     h = get_handle(vcpu->vm, token);
-    if(h == NULL) {
+    if (h == NULL) {
         ZF_LOGE("Failed to find handler for token:%x\n", token);
         vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }
 
     res = h->func(vcpu);
-    if(res == 0) {
+    if (res == 0) {
         vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
     }

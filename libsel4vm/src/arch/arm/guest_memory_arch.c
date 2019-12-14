@@ -14,7 +14,8 @@
 #include <sel4vm/guest_vm_util.h>
 #include <sel4vm/guest_memory.h>
 
-uintptr_t vm_arm_ipa_to_pa(vm_t *vm, uintptr_t ipa_base, size_t size) {
+uintptr_t vm_arm_ipa_to_pa(vm_t *vm, uintptr_t ipa_base, size_t size)
+{
     seL4_ARM_Page_GetAddress_t ret;
     uintptr_t pa_base = 0;
     uintptr_t ipa;

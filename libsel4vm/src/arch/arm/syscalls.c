@@ -24,8 +24,7 @@
 #include "vm.h"
 #include "syscalls.h"
 
-static void
-sys_pa_to_ipa(vm_t* vm, seL4_UserContext* regs)
+static void sys_pa_to_ipa(vm_t *vm, seL4_UserContext *regs)
 {
     uint32_t pa;
 #ifdef CONFIG_ARCH_AARCH64
@@ -44,8 +43,7 @@ sys_pa_to_ipa(vm_t* vm, seL4_UserContext* regs)
 /* sys_ipa_to_pa currently not supported
  * TODO: Re-enable or re-evaluate support for syscall
  */
-static void
-sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
+static void sys_ipa_to_pa(vm_t *vm, seL4_UserContext *regs)
 {
     seL4_ARM_Page_GetAddress_t ret;
     long ipa;
@@ -55,14 +53,14 @@ sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
 #else
     ipa = regs->r0;
 #endif
-    cap = vspace_get_cap(vm_get_vspace(vm), (void*)ipa);
+    cap = vspace_get_cap(vm_get_vspace(vm), (void *)ipa);
     if (cap == seL4_CapNull) {
         err = vm_alloc_guest_ram_at(vm, ipa, 0x1000);
         if (err) {
             printf("Could not map address for IPA translation\n");
             return;
         }
-        cap = vspace_get_cap(vm_get_vspace(vm), (void*)ipa);
+        cap = vspace_get_cap(vm_get_vspace(vm), (void *)ipa);
         assert(cap != seL4_CapNull);
     }
 
@@ -77,14 +75,12 @@ sys_ipa_to_pa(vm_t* vm, seL4_UserContext* regs)
 }
 #endif
 
-static void
-sys_nop(vm_t* vm, seL4_UserContext* regs)
+static void sys_nop(vm_t *vm, seL4_UserContext *regs)
 {
     ZF_LOGD("NOP syscall from [%s]\n", vm->vm_name);
 }
 
-static int
-handle_syscall(vm_vcpu_t *vcpu)
+static int handle_syscall(vm_vcpu_t *vcpu)
 {
     seL4_Word syscall, ip;
     seL4_UserContext regs;
@@ -119,7 +115,7 @@ handle_syscall(vm_vcpu_t *vcpu)
         break;
     default:
         ZF_LOGE("%sBad syscall from [%s]: scno %zd at PC: %p%s\n",
-               ANSI_COLOR(RED, BOLD), vm->vm_name, syscall, (void *) ip, ANSI_COLOR(RESET));
+                ANSI_COLOR(RED, BOLD), vm->vm_name, syscall, (void *) ip, ANSI_COLOR(RESET));
         return -1;
     }
     err = seL4_TCB_WriteRegisters(tcb, false, 0, sizeof(regs) / sizeof(regs.pc), &regs);
@@ -127,7 +123,8 @@ handle_syscall(vm_vcpu_t *vcpu)
     return VM_EXIT_HANDLED;
 }
 
-int vm_syscall_handler(vm_vcpu_t *vcpu) {
+int vm_syscall_handler(vm_vcpu_t *vcpu)
+{
     int err;
     err = handle_syscall(vcpu);
     if (!err) {

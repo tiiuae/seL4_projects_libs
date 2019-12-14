@@ -44,14 +44,17 @@ static inline uint32_t vmm_plat_vesa_fbuffer_size(seL4_VBEModeInfoBlock_t *block
     return ALIGN_UP(block->vbe_common.bytesPerScanLine * block->vbe12_part1.yRes, 65536);
 }
 
-static int make_guest_cmd_line_continued(vm_t *vm, uintptr_t phys, void *vaddr, size_t size, size_t offset, void *cookie) {
+static int make_guest_cmd_line_continued(vm_t *vm, uintptr_t phys, void *vaddr, size_t size, size_t offset,
+                                         void *cookie)
+{
     /* Copy the string to this area. */
     const char *cmdline = (const char *)cookie;
     memcpy(vaddr, cmdline + offset, size);
     return 0;
 }
 
-static int make_guest_cmd_line(vm_t *vm, const char *cmdline, uintptr_t *guest_cmd_addr, size_t *guest_cmd_len) {
+static int make_guest_cmd_line(vm_t *vm, const char *cmdline, uintptr_t *guest_cmd_addr, size_t *guest_cmd_len)
+{
     /* Allocate command line from guest ram */
     int len = strlen(cmdline);
     uintptr_t cmd_addr = vm_ram_allocate(vm, len + 1);
@@ -62,15 +65,17 @@ static int make_guest_cmd_line(vm_t *vm, const char *cmdline, uintptr_t *guest_c
     printf("Constructing guest cmdline at 0x%x of size %d\n", (unsigned int)cmd_addr, len);
     *guest_cmd_addr = cmd_addr;
     *guest_cmd_len = len;
-    return vm_ram_touch(vm, cmd_addr, len + 1, make_guest_cmd_line_continued, (void*)cmdline);
+    return vm_ram_touch(vm, cmd_addr, len + 1, make_guest_cmd_line_continued, (void *)cmdline);
 }
 
-static void make_guest_screen_info(vm_t *vm, struct screen_info *info) {
+static void make_guest_screen_info(vm_t *vm, struct screen_info *info)
+{
     /* VESA information */
     seL4_X86_BootInfo_VBE vbeinfo;
     ssize_t result;
     int error;
-    result = simple_get_extended_bootinfo(vm->simple, SEL4_BOOTINFO_HEADER_X86_VBE, &vbeinfo, sizeof(seL4_X86_BootInfo_VBE));
+    result = simple_get_extended_bootinfo(vm->simple, SEL4_BOOTINFO_HEADER_X86_VBE, &vbeinfo,
+                                          sizeof(seL4_X86_BootInfo_VBE));
     uintptr_t base = 0;
     size_t fbuffer_size;
     if (config_set(CONFIG_VMM_PLATSUPPORT_VESA_FRAMEBUFFER) && result != -1) {
@@ -84,7 +89,7 @@ static void make_guest_screen_info(vm_t *vm, struct screen_info *info) {
             int size = vbeinfo.vbeInterfaceLen + (pm_base - aligned_pm);
             size = ROUND_UP(size, PAGE_SIZE_4K);
             vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, aligned_pm, size,
-                    default_error_fault_callback, NULL);
+                                                                        default_error_fault_callback, NULL);
             if (reservation) {
                 error = map_ut_alloc_reservation(vm, reservation);
             } else {
@@ -96,7 +101,7 @@ static void make_guest_screen_info(vm_t *vm, struct screen_info *info) {
         } else {
             fbuffer_size = vmm_plat_vesa_fbuffer_size(&vbeinfo.vbeModeInfoBlock);
             vm_memory_reservation_t *reservation = vm_reserve_anon_memory(vm, fbuffer_size,
-                    default_error_fault_callback, NULL, &base);
+                                                                          default_error_fault_callback, NULL, &base);
             if (!reservation) {
                 ZF_LOGE("Failed to reserve base pointer for VESA frame buffer. Disabling");
             } else {
@@ -134,7 +139,8 @@ static void make_guest_screen_info(vm_t *vm, struct screen_info *info) {
     }
 }
 
-static int make_guest_e820_map(struct e820entry *e820, vm_mem_t *guest_memory) {
+static int make_guest_e820_map(struct e820entry *e820, vm_mem_t *guest_memory)
+{
     int i;
     int entry = 0;
     /* Create an initial entry at 0 that is reserved */
@@ -181,15 +187,16 @@ static int make_guest_e820_map(struct e820entry *e820, vm_mem_t *guest_memory) {
 }
 
 static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest_cmd_len,
-        guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image,
-        uintptr_t *guest_boot_info_addr) {
+                                guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image,
+                                uintptr_t *guest_boot_info_addr)
+{
     /* TODO: Bootinfo struct needs to be allocated in location accessable by real mode? */
     uintptr_t addr = vm_ram_allocate(vm, sizeof(struct boot_params));
     if (addr == 0) {
         ZF_LOGE("Failed to allocate %zu bytes for guest boot info struct", sizeof(struct boot_params));
         return -1;
     }
-    printf("Guest boot info allocated at %p. Populating...\n", (void*)addr);
+    printf("Guest boot info allocated at %p. Populating...\n", (void *)addr);
     /* Map in BIOS boot info structure. */
     struct boot_params boot_info;
     memset(&boot_info, 0, sizeof(struct boot_params));
@@ -238,8 +245,9 @@ static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest
 
 /* Init the guest page directory, cmd line args and boot info structures. */
 int vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
-        guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image,
-        uintptr_t *guest_boot_info_addr) {
+                                       guest_kernel_image_t guest_kernel_image, guest_image_t guest_ramdisk_image,
+                                       uintptr_t *guest_boot_info_addr)
+{
     int UNUSED err;
     uintptr_t guest_cmd_addr;
     size_t guest_cmd_size;
@@ -250,7 +258,7 @@ int vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
     }
 
     err = make_guest_boot_info(vm, guest_cmd_addr, guest_cmd_size,
-            guest_kernel_image, guest_ramdisk_image, guest_boot_info_addr);
+                               guest_kernel_image, guest_ramdisk_image, guest_boot_info_addr);
     if (err) {
         return -1;
     }
@@ -260,7 +268,8 @@ int vmm_plat_init_guest_boot_structure(vm_t *vm, const char *cmdline,
 }
 
 int vmm_plat_init_guest_thread_state(vm_vcpu_t *vcpu, uintptr_t guest_entry_addr,
-        uintptr_t guest_boot_info_addr) {
+                                     uintptr_t guest_boot_info_addr)
+{
     int err;
     seL4_VCPUContext context;
     err = vm_get_thread_context(vcpu, &context);

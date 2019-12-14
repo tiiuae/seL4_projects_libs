@@ -17,7 +17,8 @@
 
 #include "fault.h"
 
-int vm_set_thread_context(vm_vcpu_t *vcpu, seL4_UserContext context) {
+int vm_set_thread_context(vm_vcpu_t *vcpu, seL4_UserContext context)
+{
     if (!fault_handled(vcpu->vcpu_arch.fault)) {
         /* If we are in a fault set its context directly as this will be
          * later synced */
@@ -34,7 +35,8 @@ int vm_set_thread_context(vm_vcpu_t *vcpu, seL4_UserContext context) {
     return 0;
 }
 
-int vm_set_thread_context_reg(vm_vcpu_t *vcpu, unsigned int reg, uintptr_t value) {
+int vm_set_thread_context_reg(vm_vcpu_t *vcpu, unsigned int reg, uintptr_t value)
+{
     seL4_CPtr tcb = vm_get_vcpu_tcb(vcpu);
     if (!fault_handled(vcpu->vcpu_arch.fault)) {
         /* If we are in a fault use and modify its cached context */
@@ -59,7 +61,8 @@ int vm_set_thread_context_reg(vm_vcpu_t *vcpu, unsigned int reg, uintptr_t value
     return 0;
 }
 
-int vm_get_thread_context(vm_vcpu_t *vcpu, seL4_UserContext *context) {
+int vm_get_thread_context(vm_vcpu_t *vcpu, seL4_UserContext *context)
+{
     if (!fault_handled(vcpu->vcpu_arch.fault)) {
         /* If we are in a fault use its cached context */
         seL4_UserContext *regs;
@@ -79,12 +82,13 @@ int vm_get_thread_context(vm_vcpu_t *vcpu, seL4_UserContext *context) {
     return 0;
 }
 
-int vm_get_thread_context_reg(vm_vcpu_t *vcpu, unsigned int reg, uintptr_t *value) {
+int vm_get_thread_context_reg(vm_vcpu_t *vcpu, unsigned int reg, uintptr_t *value)
+{
     if (!fault_handled(vcpu->vcpu_arch.fault)) {
         /* If we are in a fault use its cached context */
         seL4_UserContext *regs;
         regs = fault_get_ctx(vcpu->vcpu_arch.fault);
-        *value =  (&regs->pc)[reg];
+        *value = (&regs->pc)[reg];
     } else {
         /* Otherwise read it from the TCB directly */
         seL4_UserContext regs;
@@ -94,12 +98,13 @@ int vm_get_thread_context_reg(vm_vcpu_t *vcpu, unsigned int reg, uintptr_t *valu
             ZF_LOGE("Failed to get thread context register: Unable to read TCB registers");
             return -1;
         }
-        *value =  (&regs.pc)[reg];
+        *value = (&regs.pc)[reg];
     }
     return 0;
 }
 
-int vm_set_arm_vcpu_reg(vm_vcpu_t *vcpu, seL4_Word reg, uintptr_t value) {
+int vm_set_arm_vcpu_reg(vm_vcpu_t *vcpu, seL4_Word reg, uintptr_t value)
+{
     int err = seL4_ARM_VCPU_WriteRegs(vcpu->vcpu.cptr, reg, value);
     if (err) {
         ZF_LOGE("Failed to set VCPU register: Write registers failed");
@@ -108,7 +113,8 @@ int vm_set_arm_vcpu_reg(vm_vcpu_t *vcpu, seL4_Word reg, uintptr_t value) {
     return 0;
 }
 
-int vm_get_arm_vcpu_reg(vm_vcpu_t *vcpu, seL4_Word reg, uintptr_t *value) {
+int vm_get_arm_vcpu_reg(vm_vcpu_t *vcpu, seL4_Word reg, uintptr_t *value)
+{
     seL4_ARM_VCPU_ReadRegs_t res = seL4_ARM_VCPU_ReadRegs(vcpu->vcpu.cptr, reg);
     if (res.error) {
         ZF_LOGF("Read registers failed");

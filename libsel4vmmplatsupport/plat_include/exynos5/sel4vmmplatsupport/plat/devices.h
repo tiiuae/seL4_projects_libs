@@ -19,9 +19,9 @@
 
 #include <sel4vmmplatsupport/plat/device_map.h>
 
-int vm_install_vcmu_top(vm_t* vm);
-int vm_install_vgpio_left(vm_t* vm);
-int vm_install_vgpio_right(vm_t* vm);
+int vm_install_vcmu_top(vm_t *vm);
+int vm_install_vgpio_left(vm_t *vm);
+int vm_install_vgpio_right(vm_t *vm);
 
 extern const struct device dev_acp;
 extern const struct device dev_i2c1;

@@ -51,7 +51,7 @@ int map_ut_allocman_reservation(vm_t *vm, vm_memory_reservation_t *reservation);
  * @return                          -1 on failure otherwise 0 for success
  */
 int map_ut_alloc_reservation_with_base_paddr(vm_t *vm, uintptr_t paddr,
-        vm_memory_reservation_t *reservation);
+                                             vm_memory_reservation_t *reservation);
 
 /**
  * Map a guest reservation backed with untyped frames
