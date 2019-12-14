@@ -387,7 +387,7 @@ vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size,
         return NULL;
     }
 
-    allocable_region = find_allocable_anon_region(vm, size);
+    allocable_region = find_allocable_anon_region(vm, ROUND_UP(size, BIT(seL4_PageBits)));
     if (!allocable_region) {
         ZF_LOGE("Failed to reserve anon memory: No anonymous memory available to cater reservation size");
         return NULL;
@@ -415,7 +415,7 @@ vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size,
     allocable_region->reservations = extended_reservations;
 
     allocable_region->reservations[allocable_region->num_reservations] = new_reservation;
-    allocable_region->alloc_addr += size;
+    allocable_region->alloc_addr += ROUND_UP(size, BIT(seL4_PageBits));
     allocable_region->num_reservations += 1;
 
     *addr = reservation_addr;
