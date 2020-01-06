@@ -26,6 +26,7 @@ Author: W.A.
 #include "sel4vm/guest_memory.h"
 
 #include "processor/platfeature.h"
+#include "processor/decode.h"
 #include "guest_state.h"
 
 /* TODO are these defined elsewhere? */
@@ -40,6 +41,96 @@ Author: W.A.
 #define IA32_MODRM_REG(m) ((m & 0b00111000) >> 3)
 
 #define SEG_MULT (0x10)
+
+enum decode_instr {
+   DECODE_INSTR_MOV,
+   DECODE_INSTR_INVALID
+};
+
+enum decode_prefix {
+    ES_SEG_OVERRIDE = 0x26,
+    CS_SEG_OVERRIDE = 0x2e,
+    SS_SEG_OVERRIDE = 0x36,
+    DS_SEG_OVERRIDE = 0x3e,
+    FS_SEG_OVERRIDE = 0x64,
+    GS_SEG_OVERRIDE = 0x65,
+    OP_SIZE_OVERRIDE = 0x66,
+    ADDR_SIZE_OVERRIDE = 0x67
+};
+
+struct x86_op {
+    int reg;
+    uint32_t val;
+    size_t len;
+};
+
+struct decode_op {
+    int curr_byte;
+    uint8_t *instr;
+    size_t instr_len;
+    struct x86_op op;
+};
+
+struct decode_table {
+    uint8_t opcode;
+    enum decode_instr instr;
+    void (*decode_fn)(struct decode_op *);
+};
+
+static struct decode_table decode_table_1op[MAX_INSTR_OPCODES];
+
+static void debug_print_instruction(uint8_t *instr, int instr_len);
+
+static void decode_modrm_reg_op(struct decode_op *decode_op) {
+    /* Mov with register */
+    uint8_t modrm = decode_op->instr[decode_op->curr_byte];
+    decode_op->curr_byte++;
+    decode_op->op.reg = IA32_MODRM_REG(modrm);
+    return;
+}
+
+static void decode_imm_op(struct decode_op *decode_op) {
+    /* Mov with immediate */
+    decode_op->op.reg = -1;
+    uint32_t immediate = 0;
+    for (int j = 0; j < decode_op->op.len; j++) {
+        immediate <<= 8;
+        immediate |= decode_op->instr[decode_op->instr_len - j - 1];
+    }
+    decode_op->op.val = immediate;
+    return;
+}
+
+static void decode_invalid_op(struct decode_op *decode_op) {
+    ZF_LOGE("can't emulate instruction!\n");
+    debug_print_instruction(decode_op->instr, decode_op->instr_len);
+    assert(0);
+}
+
+static const struct decode_table single_op_inst[] = {
+    {0x88, DECODE_INSTR_MOV, decode_modrm_reg_op},
+    {0x89, DECODE_INSTR_MOV, decode_modrm_reg_op},
+    {0x8a, DECODE_INSTR_MOV, decode_modrm_reg_op},
+    {0x8b, DECODE_INSTR_MOV, decode_modrm_reg_op},
+    {0x8a, DECODE_INSTR_MOV, decode_modrm_reg_op},
+    {0x8b, DECODE_INSTR_MOV, decode_modrm_reg_op},
+    {0x8c, DECODE_INSTR_MOV, decode_modrm_reg_op},
+    {0xc6, DECODE_INSTR_MOV, decode_imm_op},
+    {0xc7, DECODE_INSTR_MOV, decode_imm_op}
+};
+
+static const struct decode_table invalid_instr = {0x0, DECODE_INSTR_INVALID, decode_invalid_op};
+
+int init_decode_tables(void) {
+    for (int i = 0; i < MAX_INSTR_OPCODES; i++) {
+        decode_table_1op[i] = invalid_instr;
+    }
+
+    for (int i = 0; i < ARRAY_SIZE(single_op_inst); i++) {
+        decode_table_1op[single_op_inst[i].opcode] = single_op_inst[i];
+    }
+
+}
 
 /* Get a word from a guest physical address */
 inline static uint32_t guest_get_phys_word(vm_t *vm, uintptr_t addr)
@@ -99,14 +190,14 @@ int vm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
 static int is_prefix(uint8_t byte)
 {
     switch (byte) {
-    case 0x26:
-    case 0x2e:
-    case 0x36:
-    case 0x3e:
-    case 0x64:
-    case 0x65:
-    case 0x67:
-    case 0x66:
+    case ES_SEG_OVERRIDE:
+    case CS_SEG_OVERRIDE:
+    case SS_SEG_OVERRIDE:
+    case DS_SEG_OVERRIDE:
+    case FS_SEG_OVERRIDE:
+    case GS_SEG_OVERRIDE:
+    case ADDR_SIZE_OVERRIDE:
+    case OP_SIZE_OVERRIDE:
         return 1;
     }
 
@@ -126,62 +217,44 @@ static void debug_print_instruction(uint8_t *instr, int instr_len)
    This is very crude. It can break in many ways. */
 int vm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *imm, int *op_len)
 {
+    struct decode_op dec_op;
+    dec_op.instr = instr;
+    dec_op.instr_len = instr_len;
+    dec_op.op.len = 1;
     /* First loop through and check prefixes */
-    int oplen = 1; /* Operand length */
     int i;
     for (i = 0; i < instr_len; i++) {
         if (is_prefix(instr[i])) {
-            if (instr[i] == 0x66) {
+            if (instr[i] == OP_SIZE_OVERRIDE) {
                 /* 16 bit modifier */
-                oplen = 2;
+                dec_op.op.len = 2;
             }
         } else {
             /* We've hit the opcode */
             break;
         }
     }
-    assert(i < instr_len); /* We still need an opcode */
 
-    uint8_t opcode = instr[i];
-    //uint8_t opcode_ex = 0;
-    if (opcode == 0x0f) {
+    dec_op.curr_byte = i;
+    assert(dec_op.curr_byte < instr_len); /* We still need an opcode */
+
+    uint8_t opcode = instr[dec_op.curr_byte];
+    dec_op.curr_byte++;
+    if (opcode == OP_ESCAPE) {
         printf("can't emulate instruction with multi-byte opcode!\n");
         debug_print_instruction(instr, instr_len);
         assert(0); /* We don't handle >1 byte opcodes */
-    }
-    if (oplen != 2 && IA32_OPCODE_S(opcode)) {
-        oplen = 4;
-    }
-
-    uint8_t modrm = instr[++i];
-    switch (opcode) {
-    case 0x88:
-    case 0x89:
-    case 0x8a:
-    case 0x8b:
-    case 0x8c:
-        // Mov with register
-        *reg = IA32_MODRM_REG(modrm);
-        *op_len = oplen;
-        break;
-    case 0xc6:
-    case 0xc7:
-        // Mov with immediate
-        *reg = -1;
-        *op_len = oplen;
-        uint32_t immediate = 0;
-        for (int j = 0; j < oplen; j++) {
-            immediate <<= 8;
-            immediate |= instr[instr_len - j - 1];
-        }
-        *imm = immediate;
-        break;
-    default:
-        printf("can't emulate this instruction!\n");
-        debug_print_instruction(instr, instr_len);
-        assert(0);
+    } else {
+        decode_table_1op[opcode].decode_fn(&dec_op);
     }
 
+    if (dec_op.op.len != 2 && IA32_OPCODE_S(opcode)) {
+        dec_op.op.len = 4;
+    }
+
+    *reg = dec_op.op.reg;
+    *imm = dec_op.op.val;
+    *op_len = dec_op.op.len;
     return 0;
 }
 

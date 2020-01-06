@@ -14,11 +14,16 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/arch/guest_x86_context.h>
 
+#define MAX_INSTR_OPCODES 255
+#define OP_ESCAPE 0xf
+
 int vm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3, int len, uint8_t *buf);
 
 int vm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *imm, int *op_len);
 
 void vm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *size);
+
+int init_decode_tables(void);
 
 /* Interpret just enough virtual 8086 instructions to run trampoline code.
    Returns the final jump address */
