@@ -88,6 +88,7 @@ int vm_ept_violation_handler(vm_vcpu_t *vcpu)
         print_ept_violation(vcpu);
         return -1;
     case FAULT_HANDLED:
+        return VM_EXIT_HANDLED;
     case FAULT_IGNORE:
         vm_guest_exit_next_instruction(vcpu->vcpu_arch.guest_state, vcpu->vcpu.cptr);
         return VM_EXIT_HANDLED;
