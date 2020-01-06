@@ -44,6 +44,7 @@ Author: W.A.
 
 enum decode_instr {
    DECODE_INSTR_MOV,
+   DECODE_INSTR_MOVQ,
    DECODE_INSTR_INVALID
 };
 
@@ -78,6 +79,7 @@ struct decode_table {
 };
 
 static struct decode_table decode_table_1op[MAX_INSTR_OPCODES];
+static struct decode_table decode_table_2op[MAX_INSTR_OPCODES];
 
 static void debug_print_instruction(uint8_t *instr, int instr_len);
 
@@ -119,17 +121,25 @@ static const struct decode_table single_op_inst[] = {
     {0xc7, DECODE_INSTR_MOV, decode_imm_op}
 };
 
+static const struct decode_table double_op_inst[] = {
+    {0x6f, DECODE_INSTR_MOVQ, decode_modrm_reg_op}
+};
+
 static const struct decode_table invalid_instr = {0x0, DECODE_INSTR_INVALID, decode_invalid_op};
 
 int init_decode_tables(void) {
     for (int i = 0; i < MAX_INSTR_OPCODES; i++) {
         decode_table_1op[i] = invalid_instr;
+        decode_table_2op[i] = invalid_instr;
     }
 
     for (int i = 0; i < ARRAY_SIZE(single_op_inst); i++) {
         decode_table_1op[single_op_inst[i].opcode] = single_op_inst[i];
     }
 
+    for (int i = 0; i < ARRAY_SIZE(double_op_inst); i++) {
+        decode_table_2op[double_op_inst[i].opcode] = double_op_inst[i];
+    }
 }
 
 /* Get a word from a guest physical address */
@@ -241,9 +251,9 @@ int vm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *imm
     uint8_t opcode = instr[dec_op.curr_byte];
     dec_op.curr_byte++;
     if (opcode == OP_ESCAPE) {
-        printf("can't emulate instruction with multi-byte opcode!\n");
-        debug_print_instruction(instr, instr_len);
-        assert(0); /* We don't handle >1 byte opcodes */
+        opcode = instr[dec_op.curr_byte];
+        dec_op.curr_byte++;
+        decode_table_2op[opcode].decode_fn(&dec_op);
     } else {
         decode_table_1op[opcode].decode_fn(&dec_op);
     }

@@ -82,10 +82,6 @@ int vm_ept_violation_handler(vm_vcpu_t *vcpu)
     uint32_t imm;
     int size;
     vm_decode_ept_violation(vcpu, &reg, &imm, &size);
-    if (size != 4) {
-        ZF_LOGE("Currently don't support non-32 bit accesses");
-        return VM_EXIT_HANDLE_ERROR;
-    }
     if (reg < 0) {
         ZF_LOGE("Invalid reg while decoding ept violation");
         return VM_EXIT_HANDLE_ERROR;
