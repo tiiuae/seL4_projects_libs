@@ -82,11 +82,6 @@ int vm_ept_violation_handler(vm_vcpu_t *vcpu)
     uint32_t imm;
     int size;
     vm_decode_ept_violation(vcpu, &reg, &imm, &size);
-    if (reg < 0) {
-        ZF_LOGE("Invalid reg while decoding ept violation");
-        return VM_EXIT_HANDLE_ERROR;
-    }
-
     memory_fault_result_t fault_result = vm_memory_handle_fault(vcpu->vm, vcpu, guest_phys, size);
     switch (fault_result) {
     case FAULT_ERROR:
