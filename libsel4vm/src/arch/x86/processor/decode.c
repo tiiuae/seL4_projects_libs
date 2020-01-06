@@ -43,9 +43,9 @@ Author: W.A.
 #define SEG_MULT (0x10)
 
 enum decode_instr {
-   DECODE_INSTR_MOV,
-   DECODE_INSTR_MOVQ,
-   DECODE_INSTR_INVALID
+    DECODE_INSTR_MOV,
+    DECODE_INSTR_MOVQ,
+    DECODE_INSTR_INVALID
 };
 
 enum decode_prefix {
@@ -83,7 +83,8 @@ static struct decode_table decode_table_2op[MAX_INSTR_OPCODES];
 
 static void debug_print_instruction(uint8_t *instr, int instr_len);
 
-static void decode_modrm_reg_op(struct decode_op *decode_op) {
+static void decode_modrm_reg_op(struct decode_op *decode_op)
+{
     /* Mov with register */
     uint8_t modrm = decode_op->instr[decode_op->curr_byte];
     decode_op->curr_byte++;
@@ -91,7 +92,8 @@ static void decode_modrm_reg_op(struct decode_op *decode_op) {
     return;
 }
 
-static void decode_imm_op(struct decode_op *decode_op) {
+static void decode_imm_op(struct decode_op *decode_op)
+{
     /* Mov with immediate */
     decode_op->op.reg = -1;
     uint32_t immediate = 0;
@@ -103,7 +105,8 @@ static void decode_imm_op(struct decode_op *decode_op) {
     return;
 }
 
-static void decode_invalid_op(struct decode_op *decode_op) {
+static void decode_invalid_op(struct decode_op *decode_op)
+{
     ZF_LOGE("can't emulate instruction!\n");
     debug_print_instruction(decode_op->instr, decode_op->instr_len);
     assert(0);
@@ -127,7 +130,8 @@ static const struct decode_table double_op_inst[] = {
 
 static const struct decode_table invalid_instr = {0x0, DECODE_INSTR_INVALID, decode_invalid_op};
 
-int init_decode_tables(void) {
+int init_decode_tables(void)
+{
     for (int i = 0; i < MAX_INSTR_OPCODES; i++) {
         decode_table_1op[i] = invalid_instr;
         decode_table_2op[i] = invalid_instr;
