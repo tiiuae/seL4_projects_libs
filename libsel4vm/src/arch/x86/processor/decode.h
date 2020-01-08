@@ -23,8 +23,6 @@ int vm_decode_instruction(uint8_t *instr, int instr_len, int *reg, uint32_t *imm
 
 void vm_decode_ept_violation(vm_vcpu_t *vcpu, int *reg, uint32_t *imm, int *size);
 
-int init_decode_tables(void);
-
 /* Interpret just enough virtual 8086 instructions to run trampoline code.
    Returns the final jump address */
 uintptr_t vm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,

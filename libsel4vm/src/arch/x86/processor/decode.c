@@ -73,13 +73,9 @@ struct decode_op {
 };
 
 struct decode_table {
-    uint8_t opcode;
     enum decode_instr instr;
     void (*decode_fn)(struct decode_op *);
 };
-
-static struct decode_table decode_table_1op[MAX_INSTR_OPCODES];
-static struct decode_table decode_table_2op[MAX_INSTR_OPCODES];
 
 static void debug_print_instruction(uint8_t *instr, int instr_len);
 
@@ -112,39 +108,23 @@ static void decode_invalid_op(struct decode_op *decode_op)
     assert(0);
 }
 
-static const struct decode_table single_op_inst[] = {
-    {0x88, DECODE_INSTR_MOV, decode_modrm_reg_op},
-    {0x89, DECODE_INSTR_MOV, decode_modrm_reg_op},
-    {0x8a, DECODE_INSTR_MOV, decode_modrm_reg_op},
-    {0x8b, DECODE_INSTR_MOV, decode_modrm_reg_op},
-    {0x8a, DECODE_INSTR_MOV, decode_modrm_reg_op},
-    {0x8b, DECODE_INSTR_MOV, decode_modrm_reg_op},
-    {0x8c, DECODE_INSTR_MOV, decode_modrm_reg_op},
-    {0xc6, DECODE_INSTR_MOV, decode_imm_op},
-    {0xc7, DECODE_INSTR_MOV, decode_imm_op}
+static const struct decode_table decode_table_1op[] = {
+    [0 ... MAX_INSTR_OPCODES] = {DECODE_INSTR_INVALID, decode_invalid_op},
+    [0x88] = {DECODE_INSTR_MOV, decode_modrm_reg_op},
+    [0x89] = {DECODE_INSTR_MOV, decode_modrm_reg_op},
+    [0x8a] = {DECODE_INSTR_MOV, decode_modrm_reg_op},
+    [0x8b] = {DECODE_INSTR_MOV, decode_modrm_reg_op},
+    [0x8a] = {DECODE_INSTR_MOV, decode_modrm_reg_op},
+    [0x8b] = {DECODE_INSTR_MOV, decode_modrm_reg_op},
+    [0x8c] = {DECODE_INSTR_MOV, decode_modrm_reg_op},
+    [0xc6] = {DECODE_INSTR_MOV, decode_imm_op},
+    [0xc7] = {DECODE_INSTR_MOV, decode_imm_op}
 };
 
-static const struct decode_table double_op_inst[] = {
-    {0x6f, DECODE_INSTR_MOVQ, decode_modrm_reg_op}
+static const struct decode_table decode_table_2op[] = {
+    [0 ... MAX_INSTR_OPCODES] = {DECODE_INSTR_INVALID, decode_invalid_op},
+    [0x6f] = {DECODE_INSTR_MOVQ, decode_modrm_reg_op}
 };
-
-static const struct decode_table invalid_instr = {0x0, DECODE_INSTR_INVALID, decode_invalid_op};
-
-int init_decode_tables(void)
-{
-    for (int i = 0; i < MAX_INSTR_OPCODES; i++) {
-        decode_table_1op[i] = invalid_instr;
-        decode_table_2op[i] = invalid_instr;
-    }
-
-    for (int i = 0; i < ARRAY_SIZE(single_op_inst); i++) {
-        decode_table_1op[single_op_inst[i].opcode] = single_op_inst[i];
-    }
-
-    for (int i = 0; i < ARRAY_SIZE(double_op_inst); i++) {
-        decode_table_2op[double_op_inst[i].opcode] = double_op_inst[i];
-    }
-}
 
 /* Get a word from a guest physical address */
 inline static uint32_t guest_get_phys_word(vm_t *vm, uintptr_t addr)

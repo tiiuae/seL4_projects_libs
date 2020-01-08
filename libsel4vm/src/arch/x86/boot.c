@@ -137,8 +137,7 @@ int vm_init_arch(vm_t *vm)
     if (err) {
         return err;
     }
-    /* Initialise decoding table */
-    init_decode_tables();
+
     /* Bind our interrupt pending callback */
     err = seL4_TCB_BindNotification(simple_get_init_cap(vm->simple, seL4_CapInitThreadTCB), vm->host_endpoint);
     assert(err == seL4_NoError);
