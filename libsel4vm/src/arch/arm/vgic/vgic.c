@@ -344,7 +344,6 @@ static inline int is_active(struct gic_dist_map *gic_dist, int irq)
     return !!(gic_dist->active[IRQ_IDX(irq)] & IRQ_BIT(irq));
 }
 
-static int list_size = 0;
 
 static int
 vgic_vcpu_inject_irq(struct vgic_dist_device* d, vm_vcpu_t *inject_vcpu, struct virq_handle *irq)
