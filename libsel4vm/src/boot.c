@@ -20,6 +20,7 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/boot.h>
 #include <sel4vm/guest_vm_exits.h>
+#include <sel4vm/guest_vm_util.h>
 
 #include "vm_boot.h"
 
@@ -85,4 +86,18 @@ vm_vcpu_t *vm_create_vcpu(vm_t *vm, int priority)
     vm->vcpus[vm->num_vcpus] = vcpu_new;
     vm->num_vcpus++;
     return vcpu_new;
+}
+
+int vm_assign_vcpu_target(vm_vcpu_t *vcpu, int target_cpu) {
+    if (vcpu == NULL) {
+        ZF_LOGE("Failed to assign target cpu - Invalid vcpu");
+        return -1;
+    }
+    vm_vcpu_t *target_vcpu = vm_vcpu_for_target_cpu(vcpu->vm, target_cpu);
+    if (target_vcpu) {
+        ZF_LOGE("Failed to assign target cpu - A VCPU is already assigned to core %d", target_cpu);
+        return -1;
+    }
+    vcpu->target_cpu = target_cpu;
+    return 0;
 }

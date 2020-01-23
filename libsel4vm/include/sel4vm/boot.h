@@ -27,3 +27,10 @@ int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, v
 
 /* Create a VCPU for a given VM */
 vm_vcpu_t *vm_create_vcpu(vm_t *vm, int priority);
+
+/* Assign a vcpu with logical target cpu to run on
+ * @param[in] vcpu          A handle to the VCPU
+ * @param[in] target        Logical target CPU ID
+ * @return                  -1 for error, otherwise 0 for success
+ */
+int vm_assign_vcpu_target(vm_vcpu_t *vcpu, int target_cpu);
