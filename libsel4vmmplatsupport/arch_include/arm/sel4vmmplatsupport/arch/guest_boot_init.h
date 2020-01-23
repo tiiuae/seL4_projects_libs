@@ -27,4 +27,4 @@
  * @param[in] atags     Linux specific IPA of atags. Can also be substituted with dtb address
  * @return              0 on success, otherwise -1 for failure
  */
-int vm_set_bootargs(vm_t *vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags);
+int vcpu_set_bootargs(vm_vcpu_t *vcpu, seL4_Word pc, seL4_Word mach_type, seL4_Word atags);

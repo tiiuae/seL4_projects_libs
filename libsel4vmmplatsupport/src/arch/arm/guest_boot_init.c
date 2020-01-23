@@ -16,17 +16,17 @@
 
 #include "guest_boot_sel4arch.h"
 
-int vm_set_bootargs(vm_t *vm, seL4_Word pc, seL4_Word mach_type, seL4_Word atags)
+int vcpu_set_bootargs(vm_vcpu_t *vcpu, seL4_Word pc, seL4_Word mach_type, seL4_Word atags)
 {
     seL4_UserContext regs;
-    if (!vm) {
-        ZF_LOGE("Failed to set bootargs: NULL VM handle");
+    if (!vcpu) {
+        ZF_LOGE("Failed to set bootargs: NULL VCPU handle");
         return -1;
     }
     sel4arch_set_bootargs(&regs, pc, mach_type, atags);
 
     /* Write VCPU thread registers */
-    int err = vm_set_thread_context(vm->vcpus[BOOT_VCPU], regs);
+    int err = vm_set_thread_context(vcpu, regs);
     if (err) {
         ZF_LOGE("Failed to set VCPU thread context");
     }
