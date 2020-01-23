@@ -1069,12 +1069,13 @@ int vm_install_vgic(vm_t *vm)
     }
     memcpy(vgic_dist, &dev_vgic_dist, sizeof(struct vgic_dist_device));
 
-    vgic->dist = create_vgic_distributor_frame(vm);
-
+    vgic->dist = calloc(1, sizeof(struct gic_dist_map));
     assert(vgic->dist);
     if (vgic->dist == NULL) {
         return -1;
     }
+    vm_memory_reservation_t *vgic_dist_res = vm_reserve_memory_at(vm, GIC_DIST_PADDR, PAGE_SIZE_4K,
+            handle_vgic_dist_fault, (void *)vgic_dist);
     vgic_dist->priv = (void*)vgic;
     vgic_dist_reset(vgic_dist);
 
