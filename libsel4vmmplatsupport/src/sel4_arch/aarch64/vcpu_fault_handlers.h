@@ -19,6 +19,7 @@
 
 #include "vcpu_fault.h"
 #include "sysreg_exception.h"
+#include "smc.h"
 
 int software_breakpoint_exception(vm_vcpu_t *vcpu, uint32_t hsr);
 
@@ -26,5 +27,6 @@ static vcpu_exception_handler_fn vcpu_exception_handlers[] = {
     [0 ... HSR_MAX_EXCEPTION] = unknown_vcpu_exception_handler,
     [HSR_WFx_EXCEPTION] = ignore_exception,
     [HSR_SYSREG_64_EXCEPTION] = sysreg_exception_handler,
-    [HSR_SWBRK_64_EXCEPTION] = software_breakpoint_exception
+    [HSR_SWBRK_64_EXCEPTION] = software_breakpoint_exception,
+    [HSR_SMC_64_EXCEPTION] = handle_smc
 };

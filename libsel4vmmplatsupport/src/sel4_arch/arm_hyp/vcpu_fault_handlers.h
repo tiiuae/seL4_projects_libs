@@ -18,8 +18,10 @@
 #include <sel4vmmplatsupport/arch/guest_vcpu_fault.h>
 
 #include "vcpu_fault.h"
+#include "smc.h"
 
 static vcpu_exception_handler_fn vcpu_exception_handlers[] = {
     [0 ... HSR_MAX_EXCEPTION] = unknown_vcpu_exception_handler,
     [HSR_WFx_EXCEPTION] = ignore_exception,
+    [HSR_SMC_EXCEPTION] = handle_smc,
 };
