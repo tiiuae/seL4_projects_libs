@@ -47,6 +47,10 @@ static inline vm_vcpu_t *vm_find_free_unassigned_vcpu(vm_t *vm)
     return NULL;
 }
 
+static inline bool is_vcpu_online(vm_vcpu_t *vcpu) {
+    return vcpu->vcpu_online;
+}
+
 static inline vspace_t *vm_get_vspace(vm_t *vm)
 {
     return &vm->mem.vm_vspace;
