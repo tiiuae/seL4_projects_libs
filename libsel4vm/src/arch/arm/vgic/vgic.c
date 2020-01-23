@@ -118,18 +118,6 @@
 #define not_active(...)  !is_active(__VA_ARGS__)
 #define not_enabled(...) !is_enabled(__VA_ARGS__)
 
-enum gic_dist_action {
-    ACTION_READONLY,
-    ACTION_PASSTHROUGH,
-    ACTION_ENABLE,
-    ACTION_ENABLE_SET,
-    ACTION_ENABLE_CLR,
-    ACTION_PENDING_SET,
-    ACTION_PENDING_CLR,
-    ACTION_SGI,
-    ACTION_UNKNOWN
-};
-
 struct virq_handle {
     int virq;
     irq_ack_fn_t ack;
@@ -554,53 +542,6 @@ int handle_vgic_maintenance(vm_vcpu_t *vcpu, int idx)
     return 0;
 }
 
-
-static enum gic_dist_action gic_dist_get_action(int offset)
-{
-    /* Handle the fault
-     * The only fields we care about are enable_set/clr
-     * We have 2 options for other registers:
-     *  a) ignore writes and hope the VM acts appropriately
-     *  b) allow write access so the VM thinks there is no problem,
-     *     but do not honour them
-     */
-    if (0x000 <= offset && offset < 0x004) {     /* enable          */
-        return ACTION_ENABLE;
-    } else if (0x080 <= offset && offset < 0x100) { /* Security        */
-        return ACTION_PASSTHROUGH;
-    } else if (0x100 <= offset && offset < 0x180) { /* enable_set      */
-        return ACTION_ENABLE_SET;
-    } else if (0x180 <= offset && offset < 0x200) { /* enable_clr      */
-        return ACTION_ENABLE_CLR;
-    } else if (0x200 <= offset && offset < 0x280) { /* pending_set     */
-        return ACTION_PENDING_SET;
-    } else if (0x280 <= offset && offset < 0x300) { /* pending_clr     */
-        return ACTION_PENDING_CLR;
-    } else if (0x300 <= offset && offset < 0x380) { /* active          */
-        return ACTION_READONLY;
-    } else if (0x400 <= offset && offset < 0x7FC) { /* priority        */
-        return ACTION_READONLY;
-    } else if (0x800 <= offset && offset < 0x8FC) { /* targets         */
-        return ACTION_READONLY;
-    } else if (0xC00 <= offset && offset < 0xD00) { /* config          */
-        return ACTION_READONLY;
-    } else if (0xD00 <= offset && offset < 0xD80) { /* spi config      */
-        return ACTION_READONLY;
-    } else if (0xDD4 <= offset && offset < 0xDD8) { /* legacy_int      */
-        return ACTION_READONLY;
-    } else if (0xDE0 <= offset && offset < 0xDE4) { /* match_d         */
-        return ACTION_READONLY;
-    } else if (0xDE4 <= offset && offset < 0xDE8) { /* enable_d        */
-        return ACTION_READONLY;
-    } else if (0xF00 <= offset && offset < 0xF04) { /* sgi_control     */
-        return ACTION_PASSTHROUGH;
-    } else if (0xF10 <= offset && offset < 0xF10) { /* sgi_pending_clr */
-        return ACTION_SGI;
-    } else {
-        return ACTION_READONLY;
-    }
-    return ACTION_UNKNOWN;
-}
 
 static int
 vgic_dist_enable(struct vgic_dist_device* d, vm_t* vm)
@@ -1138,99 +1079,6 @@ handle_vgic_vcpu_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t f
     /* We shouldn't fault on the vgic vcpu region as it should be mapped in
      * with all rights */
     return FAULT_ERROR;
-}
-
-struct vgic_dist_frame_cookie {
-    vka_object_t frame;
-    cspacepath_t mapped_frame;
-    vm_t *vm;
-    vm_memory_reservation_t *reservation;
-};
-
-static vm_frame_t vgic_dist_frame_iterator(uintptr_t addr, void *cookie) {
-    cspacepath_t return_frame;
-    vm_t *vm;
-    int page_size;
-    vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
-
-    struct vgic_dist_frame_cookie *dist_cookie = (struct vgic_dist_frame_cookie *)cookie;
-    if (!dist_cookie) {
-        return frame_result;
-    }
-    vm = dist_cookie->vm;
-    page_size = seL4_PageBits;
-
-    int ret = vka_cspace_alloc_path(vm->vka, &return_frame);
-    if (ret) {
-        ZF_LOGE("Failed to allocate cspace path from device frame");
-        return frame_result;
-    }
-    ret = vka_cnode_copy(&return_frame, &dist_cookie->mapped_frame, seL4_CanRead);
-    if (ret) {
-        ZF_LOGE("Failed to cnode_copy for device frame");
-        vka_cspace_free_path(vm->vka, return_frame);
-        return frame_result;
-    }
-    frame_result.cptr = return_frame.capPtr;
-    frame_result.rights = seL4_CanRead;
-    frame_result.vaddr = GIC_DIST_PADDR;
-    frame_result.size_bits = page_size;
-    return frame_result;
-}
-
-static void *create_vgic_distributor_frame(vm_t *vm) {
-    int err;
-    struct vgic_dist_frame_cookie *cookie;
-    int page_size = seL4_PageBits;
-    vspace_t *vmm_vspace = &vm->mem.vmm_vspace;
-    ps_io_ops_t *ops = vm->io_ops;
-
-    err = ps_calloc(&ops->malloc_ops, 1, sizeof(struct vgic_dist_frame_cookie), (void **)&cookie);
-    if (err) {
-        ZF_LOGE("Failed to create allocated vm frame: Unable to allocate cookie");
-        return NULL;
-    }
-
-    /* Reserve emulated vgic frame */
-    cookie->reservation = vm_reserve_memory_at(vm, GIC_DIST_PADDR, PAGE_SIZE_4K,
-            handle_vgic_dist_fault, (void *)vgic_dist);
-    if (!cookie->reservation) {
-        ZF_LOGE("Failed to create emulate vgic dist frame");
-        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void *)cookie);
-        return NULL;
-    }
-
-    err = vka_alloc_frame(vm->vka, page_size, &cookie->frame);
-    if (err) {
-        ZF_LOGE("Failed vka_alloc_frame for vgic dist frame");
-        vm_free_reserved_memory(vm, cookie->reservation);
-        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void *)cookie);
-        return NULL;
-    }
-    vka_cspace_make_path(vm->vka, cookie->frame.cptr, &cookie->mapped_frame);
-    void *vgic_dist_addr = vspace_map_pages(vmm_vspace, &cookie->mapped_frame.capPtr,
-                                  NULL, seL4_AllRights, 1, page_size, 0);
-    if (!vgic_dist_addr) {
-        ZF_LOGE("Failed to map vgic dist frame into vmm vspace");
-        vka_free_object(vm->vka, &cookie->frame);
-        vm_free_reserved_memory(vm, cookie->reservation);
-        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void *)cookie);
-        return NULL;
-    }
-
-    cookie->vm = vm;
-
-    /* Map the vgic dist frame */
-    err = vm_map_reservation(vm, cookie->reservation, vgic_dist_frame_iterator, (void *)cookie);
-    if (err) {
-        ZF_LOGE("Failed to map allocated frame into vm");
-        vka_free_object(vm->vka, &cookie->frame);
-        vm_free_reserved_memory(vm, cookie->reservation);
-        ps_free(&ops->malloc_ops, sizeof(struct vgic_dist_frame_cookie), (void *)cookie);
-        return NULL;
-    }
-
-    return vgic_dist_addr;
 }
 
 static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie) {
