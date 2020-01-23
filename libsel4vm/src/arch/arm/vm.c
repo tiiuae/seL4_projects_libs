@@ -23,6 +23,7 @@
 #include <sel4vm/guest_vm_exits.h>
 #include <sel4vm/guest_irq_controller.h>
 #include <sel4vm/sel4_arch/processor.h>
+#include <sel4vm/arch/guest_arm_context.h>
 
 #include "vm.h"
 #include "arm_vm.h"
@@ -175,9 +176,34 @@ static int vcpu_stop(vm_vcpu_t *vcpu)
     return seL4_TCB_Suspend(vm_get_vcpu_tcb(vcpu));
 }
 
-static int vcpu_resume(vm_vcpu_t *vcpu)
+int vcpu_start(vm_vcpu_t *vcpu)
 {
+    int err;
     vcpu->vcpu_online = true;
+    seL4_Word vmpidr_val;
+    seL4_Word vmpidr_reg;
+
+#if CONFIG_MAX_NUM_NODES > 1
+#ifdef CONFIG_ARCH_AARCH64
+    vmpidr_reg = seL4_VCPUReg_VMPIDR_EL2;
+#else
+    vmpidr_reg = seL4_VCPUReg_VMPIDR;
+#endif
+    if (vcpu->vcpu_id == BOOT_VCPU) {
+        /*  VMPIDR Bit Assignments [G8.2.167, Arm Architecture Reference Manual Armv8]
+         * - BIT(24): Performance of PEs (processing element) at the lowest affinity level is very interdependent
+         * - BIT(31): This implementation includes the ARMv7 Multiprocessing Extensions functionality
+         */
+        vmpidr_val = BIT(24) | BIT(31);
+    } else {
+        vmpidr_val = vcpu->target_cpu;
+    }
+    err = vm_set_arm_vcpu_reg(vcpu, vmpidr_reg, vmpidr_val);
+    if (err) {
+        ZF_LOGE("Failed to set VMPIDR register");
+        return -1;
+    }
+#endif
     return seL4_TCB_Resume(vm_get_vcpu_tcb(vcpu));
 }
 
@@ -203,12 +229,6 @@ int vm_run_arch(vm_t *vm)
 {
     int err;
     int ret;
-
-    err = vcpu_resume(vm->vcpus[BOOT_VCPU]);
-    if (err) {
-        ZF_LOGE("Failed to start VM");
-        return -1;
-    }
 
     ret = 1;
     /* Loop, handling events */

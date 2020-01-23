@@ -21,7 +21,6 @@
 
 int vm_run(vm_t *vm)
 {
-    vm->vcpus[BOOT_VCPU]->vcpu_online = true;
     return vm_run_arch(vm);
 }
 

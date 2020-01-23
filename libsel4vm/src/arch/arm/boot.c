@@ -114,18 +114,6 @@ vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu)
     if (seL4_TCB_SetAffinity(vcpu->tcb.tcb.cptr, vcpu->vcpu_id)) {
         err = -1;
     }
-
-    if (vcpu->vcpu_id = BOOT_VCPU) {
-        /*  VMPIDR Bit Assignments [G8.2.167, Arm Architecture Reference Manual Armv8]
-         * - BIT(24): Performance of PEs (processing element) at the lowest affinity level is very interdependent
-         * - BIT(31): This implementation includes the ARMv7 Multiprocessing Extensions functionality
-         */
-#ifdef CONFIG_ARCH_AARCH64
-        err = vm_set_arm_vcpu_reg(vm->vcpus[BOOT_VCPU], seL4_VCPUReg_VMPIDR_EL2, BIT(24) | BIT(31));
-#else
-        err = vm_set_arm_vcpu_reg(vm->vcpus[BOOT_VCPU], seL4_VCPUReg_VMPIDR, BIT(24) | BIT(31));
-#endif
-    }
 #endif /* CONFIG_MAX_NUM_NODES > 1 */
     return err;
 }

@@ -127,6 +127,8 @@ struct vm {
 
 /* Run the VM */
 int vm_run(vm_t *vm);
+/* Start a vcpu */
+int vcpu_start(vm_vcpu_t *vcpu);
 
 /* Unhandled fault callback registration functions */
 int vm_register_unhandled_mem_fault_callback(vm_t *vm, unhandled_mem_fault_callback_fn fault_handler,
