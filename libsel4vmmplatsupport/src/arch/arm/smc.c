@@ -15,6 +15,7 @@
 #include <sel4vm/arch/guest_arm_context.h>
 
 #include "smc.h"
+#include "psci.h"
 
 static smc_call_id_t smc_get_call(uintptr_t func_id)
 {
@@ -76,6 +77,9 @@ int handle_smc(vm_vcpu_t *vcpu, uint32_t hsr)
             ZF_LOGE("Unhandled SMC: OEM service call %lu\n", fn_number);
             break;
         case SMC_CALL_STD_SERVICE:
+            if (fn_number < PSCI_MAX) {
+                return handle_psci(vcpu, fn_number, smc_call_is_32(id));
+            }
             ZF_LOGE("Unhandled SMC: standard service call %lu\n", fn_number);
             break;
         case SMC_CALL_STD_HYP_SERVICE:
