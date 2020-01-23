@@ -220,11 +220,17 @@ int vm_run_arch(vm_t *vm)
 
         tag = seL4_Recv(vm->host_endpoint, &sender_badge);
         label = seL4_MessageInfo_get_label(tag);
-        if (sender_badge == VM_BADGE) {
-            vm_exit_reason = vm_decode_exit(label);
-            ret = arm_exit_handlers[vm_exit_reason](vm->vcpus[BOOT_VCPU]);
-            if (ret == VM_EXIT_HANDLE_ERROR) {
-                vm->run.exit_reason = VM_GUEST_ERROR_EXIT;
+        if (sender_badge >= MIN_VCPU_BADGE && sender_badge <= MAX_VCPU_BADGE) {
+            seL4_Word vcpu_idx = VCPU_BADGE_IDX(sender_badge);
+            if (vcpu_idx >= vm->num_vcpus) {
+                ZF_LOGE("Invalid VCPU index. Exiting");
+                ret = -1;
+            } else {
+                vm_exit_reason = vm_decode_exit(label);
+                ret = arm_exit_handlers[vm_exit_reason](vm->vcpus[vcpu_idx]);
+                if (ret == VM_EXIT_HANDLE_ERROR) {
+                    vm->run.exit_reason = VM_GUEST_ERROR_EXIT;
+                }
             }
         } else {
             if (vm->run.notification_callback) {
