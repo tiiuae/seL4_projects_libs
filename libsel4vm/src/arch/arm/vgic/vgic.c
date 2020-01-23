@@ -56,6 +56,7 @@
 #include <sel4vm/guest_memory.h>
 #include <sel4vm/guest_irq_controller.h>
 
+#include "vgicv2_defs.h"
 #include "vm.h"
 #include "../fault.h"
 
