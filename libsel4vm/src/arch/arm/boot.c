@@ -35,7 +35,8 @@
 int vm_init_arch(vm_t *vm)
 {
     seL4_Word cspace_root_data;
-    cspacepath_t src, dst;
+    cspacepath_t src = {0};
+    cspacepath_t dst = {0};
     vka_t *vka;
     int err;
 
