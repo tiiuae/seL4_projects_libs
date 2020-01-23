@@ -37,6 +37,16 @@ static inline vm_vcpu_t *vm_vcpu_for_target_cpu(vm_t *vm, int target_cpu)
     return NULL;
 }
 
+static inline vm_vcpu_t *vm_find_free_unassigned_vcpu(vm_t *vm)
+{
+    for (int i = 0; i < vm->num_vcpus; i++) {
+        if (vm->vcpus[i]->target_cpu == -1) {
+            return vm->vcpus[i];
+        }
+    }
+    return NULL;
+}
+
 static inline vspace_t *vm_get_vspace(vm_t *vm)
 {
     return &vm->mem.vm_vspace;
