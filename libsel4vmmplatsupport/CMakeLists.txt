@@ -64,6 +64,8 @@ target_link_libraries(
     pci
     ethdrivers
     sel4vm
+    fdt
+    fdtgen
     sel4_autoconf
     sel4vm_Config
     usbdrivers_Config
