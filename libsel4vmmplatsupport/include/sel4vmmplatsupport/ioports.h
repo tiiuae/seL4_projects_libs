@@ -19,12 +19,14 @@ typedef int (*ioport_in_fn)(void *cookie, unsigned int port_no, unsigned int siz
 typedef int (*ioport_out_fn)(void *cookie, unsigned int port_no, unsigned int size, unsigned int value);
 
 typedef enum ioport_type {
-    IOPORT_EMULATED,
+    IOPORT_FREE,
+    IOPORT_ADDR
 } ioport_type_t;
 
 typedef struct ioport_range {
     uint16_t start;
     uint16_t end;
+    uint16_t size;
 } ioport_range_t;
 
 typedef struct ioport_interface {
@@ -39,22 +41,27 @@ typedef struct ioport_interface {
 typedef struct ioport_entry {
     ioport_range_t range;
     ioport_interface_t interface;
-    /* ioport type (Passthrough or emulated)*/
-    ioport_type_t ioport_type;
 } ioport_entry_t;
 
 typedef struct vmm_io_list {
     int num_ioports;
     /* Sorted list of ioport functions */
     ioport_entry_t *ioports;
+    uint16_t alloc_addr;
 } vmm_io_port_list_t;
 
-/* Initialize the io port list manager */
-int vmm_io_port_init(vmm_io_port_list_t **io_list);
+/*
+ * Initialize the io port list manager.
+ * @param io_list Pointer to io_port list handle. This will be allocated and initialised
+ * @param ioport_alloc_addr Base ioport address we can safely bump allocate from (doesn't conflict with other ioports).
+ *                          This is used when registering ioport handlers of type 'IOPORT_FREE'
+ * @return 0 if handler, otherwise -1 for error
+ */
+int vmm_io_port_init(vmm_io_port_list_t **io_list, uint16_t ioport_alloc_addr);
 
 /* Add an io port range for emulation */
 int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t ioport_range,
-                            ioport_interface_t ioport_interface);
+                            ioport_interface_t ioport_interface, ioport_type_t port_type);
 
 /*
  * From a set of registered ioports, emulate an io instruction given a current ioport access.

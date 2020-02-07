@@ -121,15 +121,43 @@ static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_entry_t port)
     return 0;
 }
 
-/* Add an io port range for emulation */
-int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t io_range, ioport_interface_t io_interface)
-{
-    return add_io_port_range(io_list, (ioport_entry_t) {
-        io_range, io_interface, IOPORT_EMULATED
-    });
+static int alloc_free_io_port_range(vmm_io_port_list_t *io_list, ioport_range_t *io_range) {
+    uint16_t free_port_addr = io_list->alloc_addr;
+    if (free_port_addr + io_range->size < free_port_addr) {
+        /* Possible overflow */
+        return -1;
+    }
+    io_list->alloc_addr += io_range->size;
+    io_range->start = free_port_addr;
+    io_range->end = free_port_addr + io_range->size;
+    return 0;
 }
 
-int vmm_io_port_init(vmm_io_port_list_t **io_list)
+static void free_io_port_range(vmm_io_port_list_t *io_list, ioport_range_t *io_range) {
+    io_list->alloc_addr -= io_range->size;
+}
+
+/* Add an io port range for emulation */
+int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t io_range, ioport_interface_t io_interface, ioport_type_t port_type)
+{
+    int err;
+    if (port_type == IOPORT_FREE) {
+         err = alloc_free_io_port_range(io_list, &io_range);
+         if (err) {
+            return -1;
+         }
+    }
+
+    ioport_entry_t entry = (ioport_entry_t){io_range, io_interface};
+    err = add_io_port_range(io_list, entry);
+    if (err) {
+        free_io_port_range(io_list, &io_range);
+        return -1;
+    }
+    return 0;
+}
+
+int vmm_io_port_init(vmm_io_port_list_t **io_list, uint16_t ioport_alloc_addr)
 {
     vmm_io_port_list_t *init_iolist = (vmm_io_port_list_t *)calloc(1, sizeof(vmm_io_port_list_t));
     if (init_iolist == NULL) {
@@ -139,6 +167,7 @@ int vmm_io_port_init(vmm_io_port_list_t **io_list)
 
     init_iolist->num_ioports = 0;
     init_iolist->ioports = NULL;
+    init_iolist->alloc_addr = ioport_alloc_addr;
     *io_list = init_iolist;
     return 0;
 }
