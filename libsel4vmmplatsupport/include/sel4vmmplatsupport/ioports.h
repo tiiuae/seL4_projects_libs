@@ -46,7 +46,7 @@ typedef struct ioport_entry {
 typedef struct vmm_io_list {
     int num_ioports;
     /* Sorted list of ioport functions */
-    ioport_entry_t *ioports;
+    ioport_entry_t **ioports;
     uint16_t alloc_addr;
 } vmm_io_port_list_t;
 
@@ -60,7 +60,7 @@ typedef struct vmm_io_list {
 int vmm_io_port_init(vmm_io_port_list_t **io_list, uint16_t ioport_alloc_addr);
 
 /* Add an io port range for emulation */
-int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t ioport_range,
+ioport_entry_t *vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t ioport_range,
                             ioport_interface_t ioport_interface, ioport_type_t port_type);
 
 /*

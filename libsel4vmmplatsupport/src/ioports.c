@@ -19,7 +19,7 @@
 static int io_port_compare_by_range(const void *pkey, const void *pelem)
 {
     unsigned int key = (unsigned int)pkey;
-    const ioport_entry_t *entry = (const ioport_entry_t *)pelem;
+    const ioport_entry_t *entry = (const ioport_entry_t *)(*(const ioport_entry_t **)pelem);
     const ioport_range_t *elem = &entry->range;
     if (key < elem->start) {
         return -1;
@@ -32,24 +32,24 @@ static int io_port_compare_by_range(const void *pkey, const void *pelem)
 
 static int io_port_compare_by_start(const void *a, const void *b)
 {
-    const ioport_entry_t *a_entry = (const ioport_entry_t *)a;
+    const ioport_entry_t *a_entry = (const ioport_entry_t *)(*(const ioport_entry_t **)a);
     const ioport_range_t *a_range = &a_entry->range;
-    const ioport_entry_t *b_entry = (const ioport_entry_t *)b;
+    const ioport_entry_t *b_entry = (const ioport_entry_t *)(*(const ioport_entry_t **)b);
     const ioport_range_t *b_range = &b_entry->range;
     return a_range->start - b_range->start;
 }
 
-static ioport_entry_t *search_port(vmm_io_port_list_t *io_port, unsigned int port_no)
+static ioport_entry_t **search_port(vmm_io_port_list_t *io_port, unsigned int port_no)
 {
-    return (ioport_entry_t *)bsearch((void *)(uintptr_t)port_no, io_port->ioports, io_port->num_ioports,
-                                     sizeof(ioport_entry_t), io_port_compare_by_range);
+    return (ioport_entry_t **)bsearch((void *)(uintptr_t)port_no, io_port->ioports, io_port->num_ioports,
+                                     sizeof(ioport_entry_t *), io_port_compare_by_range);
 }
 
 /* Debug helper function for port no. */
 static const char *vmm_debug_io_portno_desc(vmm_io_port_list_t *io_port, int port_no)
 {
-    ioport_entry_t *port = search_port(io_port, port_no);
-    return port ? port->interface.desc : "Unknown IO Port";
+    ioport_entry_t **res_port = search_port(io_port, port_no);
+    return res_port ? (*res_port)->interface.desc : "Unknown IO Port";
 }
 
 /* IO execution handler. */
@@ -66,8 +66,8 @@ int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool i
     ZF_LOGI("exit io request: in %d  port no 0x%x (%s) size %d\n",
             is_in, port_no, vmm_debug_io_portno_desc(io_port, port_no), size);
 
-    ioport_entry_t *port = search_port(io_port, port_no);
-    if (!port) {
+    ioport_entry_t **res_port = search_port(io_port, port_no);
+    if (!res_port) {
         static int last_port = -1;
         if (last_port != port_no) {
             ZF_LOGW("exit io request: WARNING - ignoring unsupported ioport 0x%x (%s)\n", port_no,
@@ -76,7 +76,7 @@ int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool i
         }
         return 1;
     }
-
+    ioport_entry_t *port = *res_port;
     int ret = 0;
     if (is_in) {
         ret = port->interface.port_in(port->interface.cookie, port_no, size, data);
@@ -94,7 +94,7 @@ int emulate_io_handler(vmm_io_port_list_t *io_port, unsigned int port_no, bool i
     return 0;
 }
 
-static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_entry_t port)
+static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_entry_t *port)
 {
     if (io_list == NULL) {
         ZF_LOGE("Unable to add port - io port list is uninitalised");
@@ -102,22 +102,22 @@ static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_entry_t port)
     }
     /* ensure this range does not overlap */
     for (int i = 0; i < io_list->num_ioports; i++) {
-        if (io_list->ioports[i].range.end > port.range.start && io_list->ioports[i].range.start < port.range.end) {
+        if (io_list->ioports[i]->range.end > port->range.start && io_list->ioports[i]->range.start < port->range.end) {
             ZF_LOGE("Requested ioport range 0x%x-0x%x for %s overlaps with existing range 0x%x-0x%x for %s",
-                    port.range.start, port.range.end, port.interface.desc ? port.interface.desc : "Unknown IO Port",
-                    io_list->ioports[i].range.start, io_list->ioports[i].range.end,
-                    io_list->ioports[i].interface.desc ? io_list->ioports[i].interface.desc : "Unknown IO Port");
+                    port->range.start, port->range.end, port->interface.desc ? port->interface.desc : "Unknown IO Port",
+                    io_list->ioports[i]->range.start, io_list->ioports[i]->range.end,
+                    io_list->ioports[i]->interface.desc ? io_list->ioports[i]->interface.desc : "Unknown IO Port");
             return -1;
         }
     }
     /* grow the array */
-    io_list->ioports = realloc(io_list->ioports, sizeof(ioport_entry_t) * (io_list->num_ioports + 1));
+    io_list->ioports = realloc(io_list->ioports, sizeof(ioport_entry_t *) * (io_list->num_ioports + 1));
     assert(io_list->ioports);
     /* add the new entry */
     io_list->ioports[io_list->num_ioports] = port;
     io_list->num_ioports++;
     /* sort */
-    qsort(io_list->ioports, io_list->num_ioports, sizeof(ioport_entry_t), io_port_compare_by_start);
+    qsort(io_list->ioports, io_list->num_ioports, sizeof(ioport_entry_t *), io_port_compare_by_start);
     return 0;
 }
 
@@ -138,23 +138,27 @@ static void free_io_port_range(vmm_io_port_list_t *io_list, ioport_range_t *io_r
 }
 
 /* Add an io port range for emulation */
-int vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t io_range, ioport_interface_t io_interface, ioport_type_t port_type)
+ioport_entry_t *vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t io_range, ioport_interface_t io_interface, ioport_type_t port_type)
 {
     int err;
     if (port_type == IOPORT_FREE) {
          err = alloc_free_io_port_range(io_list, &io_range);
          if (err) {
-            return -1;
+            return NULL;
          }
     }
-
-    ioport_entry_t entry = (ioport_entry_t){io_range, io_interface};
+    ioport_entry_t *entry = calloc(1, sizeof(ioport_entry_t));
+    if (!entry) {
+        free_io_port_range(io_list, &io_range);
+        return NULL;
+    }
+    *entry = (ioport_entry_t){io_range, io_interface};
     err = add_io_port_range(io_list, entry);
     if (err) {
         free_io_port_range(io_list, &io_range);
-        return -1;
+        return NULL;
     }
-    return 0;
+    return entry;
 }
 
 int vmm_io_port_init(vmm_io_port_list_t **io_list, uint16_t ioport_alloc_addr)
