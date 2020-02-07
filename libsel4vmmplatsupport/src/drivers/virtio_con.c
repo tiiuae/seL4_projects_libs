@@ -92,28 +92,29 @@ static vmm_pci_entry_t vmm_virtio_console_pci_bar(unsigned int iobase,
     return vmm_pci_create_passthrough_bar_emulation(entry, 1, bars);
 }
 
-
 virtio_con_t *common_make_virtio_con(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
-                                     unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
+                                     ioport_range_t ioport_range, ioport_type_t port_type, unsigned int interrupt_pin, unsigned int interrupt_line,
                                      struct console_passthrough backend)
 {
-    size_t iobase_size_bits = BYTES_TO_SIZE_BITS(iobase_size);
     int err = ps_new_stdlib_malloc_ops(&ops.malloc_ops);
     ZF_LOGF_IF(err, "Failed to get malloc ops");
-
-    vmm_pci_entry_t con_entry = vmm_virtio_console_pci_bar(iobase, iobase_size_bits, interrupt_pin,
-                                                           interrupt_line);
-    vmm_pci_add_entry(pci, con_entry, NULL);
 
     virtio_con_t *con;
     err = ps_calloc(&ops.malloc_ops, 1, sizeof(*con), (void **)&con);
     ZF_LOGF_IF(err, "Failed to allocate virtio con");
 
-    con->iobase = iobase;
-
-    ioport_range_t virtio_io_range = {iobase, iobase + iobase_size};
     ioport_interface_t virtio_io_interface = {con, virtio_con_io_in, virtio_con_io_out, "VIRTIO CON"};
-    vmm_io_port_add_handler(ioport, virtio_io_range, virtio_io_interface);
+    ioport_entry_t *io_entry = vmm_io_port_add_handler(ioport, ioport_range, virtio_io_interface, port_type);
+    if (!io_entry) {
+        ZF_LOGE("Failed to add vmm io port handler");
+        return NULL;
+    }
+
+    size_t iobase_size_bits = BYTES_TO_SIZE_BITS(io_entry->range.size);
+    con->iobase = io_entry->range.start;
+    vmm_pci_entry_t con_entry = vmm_virtio_console_pci_bar(io_entry->range.start, iobase_size_bits, interrupt_pin,
+                                                           interrupt_line);
+    vmm_pci_add_entry(pci, con_entry, NULL);
 
     ps_io_ops_t ioops;
     con->emul_driver_funcs = backend;

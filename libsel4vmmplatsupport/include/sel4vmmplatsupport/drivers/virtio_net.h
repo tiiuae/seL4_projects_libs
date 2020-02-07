@@ -39,8 +39,8 @@ typedef struct virtio_net {
  * @param vm vm handle
  * @param pci PCI library instance to register virtio net device
  * @param ioport IOPort library instance to register virtio net ioport
- * @param iobase starting BAR port for front end emulation to start from
- * @param iosize size of starting BAR port for front end emulation
+ * @param ioport_range BAR port for front end emulation
+ * @param iotype type of ioport i.e. whether to alloc or use given range
  * @param interrupt_pin PCI interrupt pin e.g. INTA = 1, INTB = 2 ,...
  * @param interrupt_line PCI interrupt line for virtio net IRQS
  * @param backend function pointers to backend implementation. Can be initialised by
@@ -49,7 +49,7 @@ typedef struct virtio_net {
  * @return pointer to an initialised virtio_net_t, NULL if error.
  */
 virtio_net_t *common_make_virtio_net(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
-                                     unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
+                                     ioport_range_t ioport_range, ioport_type_t port_type, unsigned int interrupt_pin, unsigned int interrupt_line,
                                      struct raw_iface_funcs backend, bool emulate_bar_access);
 
 /**

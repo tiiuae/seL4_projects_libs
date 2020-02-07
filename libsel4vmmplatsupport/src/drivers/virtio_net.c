@@ -172,26 +172,29 @@ static vmm_pci_entry_t vmm_virtio_net_pci_bar(unsigned int iobase,
 }
 
 virtio_net_t *common_make_virtio_net(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
-                                     unsigned int iobase, size_t iobase_size, unsigned int interrupt_pin, unsigned int interrupt_line,
+                                     ioport_range_t ioport_range, ioport_type_t port_type, unsigned int interrupt_pin, unsigned int interrupt_line,
                                      struct raw_iface_funcs backend, bool emulate_bar_access)
 {
-    size_t iobase_size_bits = BYTES_TO_SIZE_BITS(iobase_size);
     int err = ps_new_stdlib_malloc_ops(&ops.malloc_ops);
     ZF_LOGF_IF(err, "Failed to get malloc ops");
-    /* TODO: Bug with 2 pci devices below here */
-    vmm_pci_entry_t entry = vmm_virtio_net_pci_bar(iobase, iobase_size_bits, interrupt_pin, interrupt_line,
-            emulate_bar_access);
-    vmm_pci_add_entry(pci, entry, NULL);
 
     virtio_net_t *net;
     err = ps_calloc(&ops.malloc_ops, 1, sizeof(*net), (void **)&net);
     ZF_LOGF_IF(err, "Failed to allocate virtio net");
 
-    net->iobase = iobase;
-
-    ioport_range_t virtio_io_range = {iobase, iobase + iobase_size};
     ioport_interface_t virtio_io_interface = {net, virtio_net_io_in, virtio_net_io_out, "VIRTIO PCI NET"};
-    vmm_io_port_add_handler(ioport, virtio_io_range, virtio_io_interface);
+    ioport_entry_t * io_entry = vmm_io_port_add_handler(ioport, ioport_range, virtio_io_interface, port_type);
+    if (!io_entry) {
+        ZF_LOGE("Failed to add vmm io port handler");
+        return NULL;
+    }
+
+    size_t iobase_size_bits = BYTES_TO_SIZE_BITS(io_entry->range.size);
+    net->iobase = io_entry->range.start;
+
+    vmm_pci_entry_t entry = vmm_virtio_net_pci_bar(io_entry->range.start, iobase_size_bits, interrupt_pin, interrupt_line,
+            emulate_bar_access);
+    vmm_pci_add_entry(pci, entry, NULL);
 
     ps_io_ops_t ioops;
     ioops.dma_manager = (ps_dma_man_t) {
