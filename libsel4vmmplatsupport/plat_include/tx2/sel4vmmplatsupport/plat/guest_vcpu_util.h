@@ -10,9 +10,4 @@
  * @TAG(DATA61_BSD)
  */
 
-#pragma once
-
-#include <sel4vm/guest_vm.h>
-#include <sel4vmmplatsupport/arch/guest_vcpu_util.h>
-
-vm_vcpu_t *create_vmm_plat_vcpu(vm_t *vm, int priority);
+#define PLAT_CPU_COMPAT "arm,cortex-a57-64bit\0arm,armv8"

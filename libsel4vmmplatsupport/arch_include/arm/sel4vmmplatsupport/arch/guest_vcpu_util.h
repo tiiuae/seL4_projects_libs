@@ -10,9 +10,6 @@
  * @TAG(DATA61_BSD)
  */
 
-#pragma once
+#include <sel4vmmplatsupport/plat/guest_vcpu_util.h>
 
-#include <sel4vm/guest_vm.h>
-#include <sel4vmmplatsupport/arch/guest_vcpu_util.h>
-
-vm_vcpu_t *create_vmm_plat_vcpu(vm_t *vm, int priority);
+int fdt_generate_plat_vcpu_node(vm_t *vm, void *fdt);
