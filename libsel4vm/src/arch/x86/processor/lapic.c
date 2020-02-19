@@ -878,6 +878,7 @@ memory_fault_result_t apic_fault_callback(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t f
         data = get_vcpu_fault_data(vcpu);
         vm_apic_mmio_write(vcpu, cookie, APIC_DEFAULT_PHYS_BASE - fault_addr, fault_length, data);
     }
+    advance_vcpu_fault(vcpu);
     return FAULT_HANDLED;
 }
 
