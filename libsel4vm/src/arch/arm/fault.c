@@ -270,8 +270,7 @@ static int get_rt(fault_t *f)
     return rt;
 }
 
-fault_t*
-fault_init(vm_vcpu_t* vcpu)
+fault_t *fault_init(vm_vcpu_t *vcpu)
 {
     fault_t *fault;
     seL4_Error err;
@@ -631,18 +630,19 @@ enum fault_width fault_get_width(fault_t *f)
     return f->width;
 }
 
-size_t fault_get_width_size(fault_t *fault) {
+size_t fault_get_width_size(fault_t *fault)
+{
     enum fault_width width = fault_get_width(fault);
     switch (width) {
-        case WIDTH_DOUBLEWORD:
-            return sizeof(long long);
-        case WIDTH_WORD:
-            return sizeof(int);
-        case WIDTH_HALFWORD:
-            return sizeof(short);
-        case WIDTH_BYTE:
-            return sizeof(char);
-        default:
-            return 0;
+    case WIDTH_DOUBLEWORD:
+        return sizeof(long long);
+    case WIDTH_WORD:
+        return sizeof(int);
+    case WIDTH_HALFWORD:
+        return sizeof(short);
+    case WIDTH_BYTE:
+        return sizeof(char);
+    default:
+        return 0;
     }
 }

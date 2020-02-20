@@ -124,7 +124,8 @@ static void vm_update_guest_state_from_fault(vm_vcpu_t *vcpu, seL4_Word *msg)
     MACHINE_STATE_READ(vcpu->vcpu_arch.guest_state->machine.context, context);
 }
 
-int vcpu_start(vm_vcpu_t *vcpu) {
+int vcpu_start(vm_vcpu_t *vcpu)
+{
     vcpu->vcpu_online = true;
 }
 

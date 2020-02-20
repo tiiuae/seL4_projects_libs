@@ -64,40 +64,40 @@ int handle_smc(vm_vcpu_t *vcpu, uint32_t hsr)
     smc_call_id_t service = smc_get_call(id);
 
     switch (service) {
-        case SMC_CALL_ARM_ARCH:
-            ZF_LOGE("Unhandled SMC: arm architecture call %lu\n", fn_number);
-            break;
-        case SMC_CALL_CPU_SERVICE:
-            ZF_LOGE("Unhandled SMC: CPU service call %lu\n", fn_number);
-            break;
-        case SMC_CALL_SIP_SERVICE:
-            ZF_LOGE("Got SiP service call %lu\n", fn_number);
-            break;
-        case SMC_CALL_OEM_SERVICE:
-            ZF_LOGE("Unhandled SMC: OEM service call %lu\n", fn_number);
-            break;
-        case SMC_CALL_STD_SERVICE:
-            if (fn_number < PSCI_MAX) {
-                return handle_psci(vcpu, fn_number, smc_call_is_32(id));
-            }
-            ZF_LOGE("Unhandled SMC: standard service call %lu\n", fn_number);
-            break;
-        case SMC_CALL_STD_HYP_SERVICE:
-            ZF_LOGE("Unhandled SMC: standard hyp service call %lu\n", fn_number);
-            break;
-        case SMC_CALL_VENDOR_HYP_SERVICE:
-            ZF_LOGE("Unhandled SMC: vendor hyp service call %lu\n", fn_number);
-            break;
-        case SMC_CALL_TRUSTED_APP:
-            ZF_LOGE("Unhandled SMC: trusted app call %lu\n", fn_number);
-            break;
-        case SMC_CALL_TRUSTED_OS:
-            ZF_LOGE("Unhandled SMC: trusted os call %lu\n", fn_number);
-            break;
-        default:
-            ZF_LOGE("Unhandle SMC: unknown value service: %lu fn_number: %lu\n",
-                    (unsigned long) service, fn_number);
-            break;
+    case SMC_CALL_ARM_ARCH:
+        ZF_LOGE("Unhandled SMC: arm architecture call %lu\n", fn_number);
+        break;
+    case SMC_CALL_CPU_SERVICE:
+        ZF_LOGE("Unhandled SMC: CPU service call %lu\n", fn_number);
+        break;
+    case SMC_CALL_SIP_SERVICE:
+        ZF_LOGE("Got SiP service call %lu\n", fn_number);
+        break;
+    case SMC_CALL_OEM_SERVICE:
+        ZF_LOGE("Unhandled SMC: OEM service call %lu\n", fn_number);
+        break;
+    case SMC_CALL_STD_SERVICE:
+        if (fn_number < PSCI_MAX) {
+            return handle_psci(vcpu, fn_number, smc_call_is_32(id));
+        }
+        ZF_LOGE("Unhandled SMC: standard service call %lu\n", fn_number);
+        break;
+    case SMC_CALL_STD_HYP_SERVICE:
+        ZF_LOGE("Unhandled SMC: standard hyp service call %lu\n", fn_number);
+        break;
+    case SMC_CALL_VENDOR_HYP_SERVICE:
+        ZF_LOGE("Unhandled SMC: vendor hyp service call %lu\n", fn_number);
+        break;
+    case SMC_CALL_TRUSTED_APP:
+        ZF_LOGE("Unhandled SMC: trusted app call %lu\n", fn_number);
+        break;
+    case SMC_CALL_TRUSTED_OS:
+        ZF_LOGE("Unhandled SMC: trusted os call %lu\n", fn_number);
+        break;
+    default:
+        ZF_LOGE("Unhandle SMC: unknown value service: %lu fn_number: %lu\n",
+                (unsigned long) service, fn_number);
+        break;
     }
     return -1;
 }

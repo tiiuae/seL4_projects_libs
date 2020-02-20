@@ -18,7 +18,8 @@
 #include <sel4vmmplatsupport/arch/guest_vcpu_fault.h>
 #include <sel4vmmplatsupport/arch/irq_defs.h>
 
-static void vppi_event_ack(vm_vcpu_t *vcpu, int irq, void *cookie) {
+static void vppi_event_ack(vm_vcpu_t *vcpu, int irq, void *cookie)
+{
     seL4_Error err = seL4_ARM_VCPU_AckVPPI(vcpu->vcpu.cptr, (seL4_Word)irq);
     if (err) {
         ZF_LOGE("Failed to ACK VPPI: VCPU VPPIAck invocation failed");
@@ -27,7 +28,8 @@ static void vppi_event_ack(vm_vcpu_t *vcpu, int irq, void *cookie) {
 
 static void sgi_ack(vm_vcpu_t *vcpu, int irq, void *cookie) {}
 
-vm_vcpu_t *create_vmm_plat_vcpu(vm_t *vm, int priority) {
+vm_vcpu_t *create_vmm_plat_vcpu(vm_t *vm, int priority)
+{
     int err;
     vm_vcpu_t *vm_vcpu = vm_create_vcpu(vm, priority);
     if (vm_vcpu == NULL) {

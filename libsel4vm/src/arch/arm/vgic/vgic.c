@@ -124,10 +124,10 @@ struct virq_handle {
     void *token;
 };
 
-typedef struct virq_handle* virq_handle_t;
+typedef struct virq_handle *virq_handle_t;
 
 /* Inject interrupt into vcpu */
-static int vgic_vcpu_inject_irq(struct vgic_dist_device* d, vm_vcpu_t *inject_vcpu, struct virq_handle *irq);
+static int vgic_vcpu_inject_irq(struct vgic_dist_device *d, vm_vcpu_t *inject_vcpu, struct virq_handle *irq);
 
 static inline void virq_ack(vm_vcpu_t *vcpu, struct virq_handle *irq)
 {
@@ -198,7 +198,7 @@ struct lr_of {
 
 typedef struct vgic {
 /// Mirrors the vcpu list registers
-    struct virq_handle *irq[CONFIG_MAX_NUM_NODES][MAX_LR_OVERFLOW-1];
+    struct virq_handle *irq[CONFIG_MAX_NUM_NODES][MAX_LR_OVERFLOW - 1];
 /// IRQs that would not fit in the vcpu list registers
     struct lr_of lr_overflow[CONFIG_MAX_NUM_NODES];
 /// Complete set of virtual irqs
@@ -210,13 +210,14 @@ typedef struct vgic {
 
 static struct vgic_dist_device *vgic_dist;
 
-static struct virq_handle* virq_get_sgi_ppi(vgic_t *vgic, vm_vcpu_t *vcpu, int virq)
+static struct virq_handle *virq_get_sgi_ppi(vgic_t *vgic, vm_vcpu_t *vcpu, int virq)
 {
     assert(vcpu->vcpu_id < CONFIG_MAX_NUM_NODES);
     return vgic->sgi_ppi_irq[vcpu->vcpu_id][virq];
 }
 
-static struct virq_handle* virq_find_spi_irq_data(struct vgic* vgic, int virq) {
+static struct virq_handle *virq_find_spi_irq_data(struct vgic *vgic, int virq)
+{
     int i;
     for (i = 0; i < MAX_VIRQS; i++) {
         if (vgic->virqs[i] && vgic->virqs[i]->virq == virq) {
@@ -226,11 +227,12 @@ static struct virq_handle* virq_find_spi_irq_data(struct vgic* vgic, int virq) {
     return NULL;
 }
 
-static struct virq_handle* virq_find_irq_data(struct vgic* vgic, vm_vcpu_t *vcpu, int virq) {
-   if (virq < GIC_SPI_IRQ_MIN)  {
+static struct virq_handle *virq_find_irq_data(struct vgic *vgic, vm_vcpu_t *vcpu, int virq)
+{
+    if (virq < GIC_SPI_IRQ_MIN)  {
         return virq_get_sgi_ppi(vgic, vcpu, virq);
-   }
-   return virq_find_spi_irq_data(vgic, virq);
+    }
+    return virq_find_spi_irq_data(vgic, virq);
 }
 
 static int virq_spi_add(vgic_t *vgic, struct virq_handle *virq_data)
@@ -267,7 +269,7 @@ static int virq_add(vm_vcpu_t *vcpu, vgic_t *vgic, struct virq_handle *virq_data
 static int vgic_virq_init(vgic_t *vgic)
 {
     memset(vgic->virqs, 0, sizeof(vgic->virqs));
-    for(int i = 0; i < CONFIG_MAX_NUM_NODES; i++) {
+    for (int i = 0; i < CONFIG_MAX_NUM_NODES; i++) {
         memset(vgic->irq[i], 0, sizeof(vgic->irq[i]));
         vgic->lr_overflow[i].head = 0;
         vgic->lr_overflow[i].tail = 0;
@@ -286,19 +288,22 @@ static inline void virq_init(virq_handle_t virq, int irq, irq_ack_fn_t ack_fn, v
 }
 
 
-static inline struct vgic* vgic_device_get_vgic(struct vgic_dist_device* d) {
+static inline struct vgic *vgic_device_get_vgic(struct vgic_dist_device *d)
+{
     assert(d);
     assert(d->priv);
     return (vgic_t *)d->priv;
 }
 
-static inline struct gic_dist_map* vgic_priv_get_dist(struct vgic_dist_device* d) {
+static inline struct gic_dist_map *vgic_priv_get_dist(struct vgic_dist_device *d)
+{
     assert(d);
     assert(d->priv);
     return vgic_device_get_vgic(d)->dist;
 }
 
-static inline struct virq_handle** vgic_priv_get_lr(struct vgic_dist_device* d, vm_vcpu_t *vcpu) {
+static inline struct virq_handle **vgic_priv_get_lr(struct vgic_dist_device *d, vm_vcpu_t *vcpu)
+{
     assert(d);
     assert(d->priv);
     return vgic_device_get_vgic(d)->irq[vcpu->vcpu_id];
@@ -491,8 +496,7 @@ static inline void vgic_handle_overflow(vgic_t *vgic, vm_vcpu_t *vcpu)
     vgic_handle_overflow_cpu(vgic, &vgic->lr_overflow[vcpu->vcpu_id], vcpu);
 }
 
-static int
-vgic_vcpu_inject_irq(struct vgic_dist_device* d, vm_vcpu_t *inject_vcpu, struct virq_handle *irq)
+static int vgic_vcpu_inject_irq(struct vgic_dist_device *d, vm_vcpu_t *inject_vcpu, struct virq_handle *irq)
 {
     vgic_t *vgic;
     int err;
@@ -522,8 +526,8 @@ vgic_vcpu_inject_irq(struct vgic_dist_device* d, vm_vcpu_t *inject_vcpu, struct 
 int handle_vgic_maintenance(vm_vcpu_t *vcpu, int idx)
 {
     /* STATE d) */
-    struct gic_dist_map* gic_dist;
-    struct virq_handle** lr;
+    struct gic_dist_map *gic_dist;
+    struct virq_handle **lr;
 
     assert(vgic_dist);
     gic_dist = vgic_priv_get_dist(vgic_dist);
@@ -543,8 +547,7 @@ int handle_vgic_maintenance(vm_vcpu_t *vcpu, int idx)
 }
 
 
-static int
-vgic_dist_enable(struct vgic_dist_device* d, vm_t* vm)
+static int vgic_dist_enable(struct vgic_dist_device *d, vm_t *vm)
 {
     struct gic_dist_map *gic_dist = vgic_priv_get_dist(d);
     DDIST("enabling gic distributer\n");
@@ -552,8 +555,7 @@ vgic_dist_enable(struct vgic_dist_device* d, vm_t* vm)
     return 0;
 }
 
-static int
-vgic_dist_disable(struct vgic_dist_device* d, vm_t* vm)
+static int vgic_dist_disable(struct vgic_dist_device *d, vm_t *vm)
 {
     struct gic_dist_map *gic_dist = vgic_priv_get_dist(d);
     DDIST("disabling gic distributer\n");
@@ -561,8 +563,7 @@ vgic_dist_disable(struct vgic_dist_device* d, vm_t* vm)
     return 0;
 }
 
-static int
-vgic_dist_enable_irq(struct vgic_dist_device* d, vm_vcpu_t* vcpu, int irq)
+static int vgic_dist_enable_irq(struct vgic_dist_device *d, vm_vcpu_t *vcpu, int irq)
 {
     struct gic_dist_map *gic_dist;
     struct virq_handle *virq_data;
@@ -583,8 +584,7 @@ vgic_dist_enable_irq(struct vgic_dist_device* d, vm_vcpu_t* vcpu, int irq)
     return 0;
 }
 
-static int
-vgic_dist_disable_irq(struct vgic_dist_device* d, vm_vcpu_t* vcpu, int irq)
+static int vgic_dist_disable_irq(struct vgic_dist_device *d, vm_vcpu_t *vcpu, int irq)
 {
     /* STATE g) */
     struct gic_dist_map *gic_dist = vgic_priv_get_dist(d);
@@ -595,8 +595,7 @@ vgic_dist_disable_irq(struct vgic_dist_device* d, vm_vcpu_t* vcpu, int irq)
     return 0;
 }
 
-static int
-vgic_dist_set_pending_irq(struct vgic_dist_device* d, vm_vcpu_t* vcpu, int irq)
+static int vgic_dist_set_pending_irq(struct vgic_dist_device *d, vm_vcpu_t *vcpu, int irq)
 {
     /* STATE c) */
     struct gic_dist_map *gic_dist;
@@ -626,8 +625,7 @@ vgic_dist_set_pending_irq(struct vgic_dist_device* d, vm_vcpu_t* vcpu, int irq)
     return 0;
 }
 
-static int
-vgic_dist_clr_pending_irq(struct vgic_dist_device* d, vm_vcpu_t* vcpu, int irq)
+static int vgic_dist_clr_pending_irq(struct vgic_dist_device *d, vm_vcpu_t *vcpu, int irq)
 {
     struct gic_dist_map *gic_dist = vgic_priv_get_dist(d);
     DDIST("clr pending irq %d\n", irq);
@@ -635,14 +633,14 @@ vgic_dist_clr_pending_irq(struct vgic_dist_device* d, vm_vcpu_t* vcpu, int irq)
     return 0;
 }
 
-static memory_fault_result_t
-handle_vgic_dist_read_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
-        void *cookie)
+static memory_fault_result_t handle_vgic_dist_read_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
+                                                         size_t fault_length,
+                                                         void *cookie)
 {
     int err = 0;
-    fault_t* fault = vcpu->vcpu_arch.fault;
-    struct vgic_dist_device* d = (struct vgic_dist_device *)cookie;
-    struct gic_dist_map* gic_dist = vgic_priv_get_dist(d);
+    fault_t *fault = vcpu->vcpu_arch.fault;
+    struct vgic_dist_device *d = (struct vgic_dist_device *)cookie;
+    struct gic_dist_map *gic_dist = vgic_priv_get_dist(d);
     int offset = fault_get_address(fault) - d->pstart;
     int vcpu_id = vcpu->vcpu_id;
     uint32_t reg = 0;
@@ -744,7 +742,7 @@ handle_vgic_dist_read_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, siz
         reg = gic_dist->config[reg_offset];
         break;
     case RANGE32(0xD00, 0xDE4):
-        base_reg = (uintptr_t)&(gic_dist->spi[0]);
+        base_reg = (uintptr_t) & (gic_dist->spi[0]);
         reg_ptr = (uint32_t *)(base_reg + (offset - 0xD00));
         reg = *reg_ptr;
         break;
@@ -769,8 +767,8 @@ handle_vgic_dist_read_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, siz
     case RANGE32(0xF30, 0xFBC):
         /* Reserved */
         break;
-    case RANGE32(0xFC0,0xFFB):
-        base_reg = (uintptr_t)&(gic_dist->periph_id[0]);
+    case RANGE32(0xFC0, 0xFFB):
+        base_reg = (uintptr_t) & (gic_dist->periph_id[0]);
         reg_ptr = (uint32_t *)(base_reg + (offset - 0xFC0));
         reg = *reg_ptr;
         break;
@@ -790,14 +788,14 @@ fault_return:
     return FAULT_HANDLED;
 }
 
-static memory_fault_result_t
-handle_vgic_dist_write_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
-        void *cookie)
+static memory_fault_result_t handle_vgic_dist_write_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
+                                                          size_t fault_length,
+                                                          void *cookie)
 {
     int err = 0;
-    fault_t* fault = vcpu->vcpu_arch.fault;
-    struct vgic_dist_device* d = (struct vgic_dist_device *)cookie;
-    struct gic_dist_map* gic_dist = vgic_priv_get_dist(d);
+    fault_t *fault = vcpu->vcpu_arch.fault;
+    struct vgic_dist_device *d = (struct vgic_dist_device *)cookie;
+    struct gic_dist_map *gic_dist = vgic_priv_get_dist(d);
     int offset = fault_get_address(fault) - d->pstart;
     int vcpu_id = vcpu->vcpu_id;
     uint32_t reg = 0;
@@ -955,7 +953,7 @@ handle_vgic_dist_write_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, si
     case RANGE32(0xF30, 0xFBC):
         /* Reserved */
         break;
-    case RANGE32(0xFC0,0xFFB):
+    case RANGE32(0xFC0, 0xFFB):
         break;
     default:
         ZF_LOGE("Unknown register offset 0x%x\n", offset);
@@ -968,9 +966,9 @@ ignore_fault:
     return FAULT_HANDLED;
 }
 
-static memory_fault_result_t
-handle_vgic_dist_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
-        void *cookie)
+static memory_fault_result_t handle_vgic_dist_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
+                                                    size_t fault_length,
+                                                    void *cookie)
 {
     if (fault_is_read(vcpu->vcpu_arch.fault)) {
         return handle_vgic_dist_read_fault(vm, vcpu, fault_addr, fault_length, cookie);
@@ -978,7 +976,7 @@ handle_vgic_dist_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t f
     return handle_vgic_dist_write_fault(vm, vcpu, fault_addr, fault_length, cookie);
 }
 
-static void vgic_dist_reset(struct vgic_dist_device* d)
+static void vgic_dist_reset(struct vgic_dist_device *d)
 {
     struct gic_dist_map *gic_dist;
     gic_dist = vgic_priv_get_dist(d);
@@ -1036,8 +1034,8 @@ static void vgic_dist_reset(struct vgic_dist_device* d)
 
 int vm_register_irq(vm_vcpu_t *vcpu, int irq, irq_ack_fn_t ack_fn, void *cookie)
 {
-    struct virq_handle* virq_data;
-    struct vgic* vgic;
+    struct virq_handle *virq_data;
+    struct vgic *vgic;
     int err;
 
     vgic = vgic_device_get_vgic(vgic_dist);
@@ -1073,15 +1071,17 @@ int vm_inject_irq(vm_vcpu_t *vcpu, int irq)
     return err;
 }
 
-static memory_fault_result_t
-handle_vgic_vcpu_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
-        void *cookie) {
+static memory_fault_result_t handle_vgic_vcpu_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
+                                                    size_t fault_length,
+                                                    void *cookie)
+{
     /* We shouldn't fault on the vgic vcpu region as it should be mapped in
      * with all rights */
     return FAULT_ERROR;
 }
 
-static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie) {
+static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie)
+{
     int err;
     cspacepath_t frame;
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
@@ -1095,7 +1095,7 @@ static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie) {
     seL4_Word vka_cookie;
     err = vka_utspace_alloc_at(vm->vka, &frame, kobject_get_type(KOBJECT_FRAME, 12), 12, GIC_VCPU_PADDR, &vka_cookie);
     if (err) {
-        err = simple_get_frame_cap(vm->simple, (void*)GIC_VCPU_PADDR, 12, &frame);
+        err = simple_get_frame_cap(vm->simple, (void *)GIC_VCPU_PADDR, 12, &frame);
         if (err) {
             ZF_LOGE("Failed to find device cap for vgic vcpu\n");
             return frame_result;
@@ -1114,8 +1114,8 @@ static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie) {
  */
 int vm_install_vgic(vm_t *vm)
 {
-    struct vgic* vgic;
-    void* addr;
+    struct vgic *vgic;
+    void *addr;
     int err;
 
     vgic = calloc(1, sizeof(*vgic));
@@ -1142,13 +1142,13 @@ int vm_install_vgic(vm_t *vm)
         return -1;
     }
     vm_memory_reservation_t *vgic_dist_res = vm_reserve_memory_at(vm, GIC_DIST_PADDR, PAGE_SIZE_4K,
-            handle_vgic_dist_fault, (void *)vgic_dist);
-    vgic_dist->priv = (void*)vgic;
+                                                                  handle_vgic_dist_fault, (void *)vgic_dist);
+    vgic_dist->priv = (void *)vgic;
     vgic_dist_reset(vgic_dist);
 
     /* Remap VCPU to CPU */
     vm_memory_reservation_t *vgic_vcpu_reservation = vm_reserve_memory_at(vm, GIC_CPU_PADDR,
-            0x1000, handle_vgic_vcpu_fault, NULL);
+                                                                          0x1000, handle_vgic_vcpu_fault, NULL);
     err = vm_map_reservation(vm, vgic_vcpu_reservation, vgic_vcpu_iterator, (void *)vm);
     if (err) {
         free(vgic_dist->priv);
@@ -1158,7 +1158,8 @@ int vm_install_vgic(vm_t *vm)
     return 0;
 }
 
-int vm_vgic_maintenance_handler(vm_vcpu_t *vcpu) {
+int vm_vgic_maintenance_handler(vm_vcpu_t *vcpu)
+{
     int idx;
     int err;
     idx = seL4_GetMR(seL4_UnknownSyscall_ARG0);

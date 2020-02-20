@@ -66,7 +66,7 @@ int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, v
 vm_vcpu_t *vm_create_vcpu(vm_t *vm, int priority)
 {
     int err;
-    if( vm->num_vcpus >= CONFIG_MAX_NUM_NODES) {
+    if (vm->num_vcpus >= CONFIG_MAX_NUM_NODES) {
         ZF_LOGE("Failed to create vcpu, reached maximum number of support vcpus");
         return NULL;
     }
@@ -88,7 +88,8 @@ vm_vcpu_t *vm_create_vcpu(vm_t *vm, int priority)
     return vcpu_new;
 }
 
-int vm_assign_vcpu_target(vm_vcpu_t *vcpu, int target_cpu) {
+int vm_assign_vcpu_target(vm_vcpu_t *vcpu, int target_cpu)
+{
     if (vcpu == NULL) {
         ZF_LOGE("Failed to assign target cpu - Invalid vcpu");
         return -1;
