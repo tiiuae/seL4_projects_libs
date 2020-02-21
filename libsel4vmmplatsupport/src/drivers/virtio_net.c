@@ -183,7 +183,7 @@ virtio_net_t *common_make_virtio_net(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port
     ZF_LOGF_IF(err, "Failed to allocate virtio net");
 
     ioport_interface_t virtio_io_interface = {net, virtio_net_io_in, virtio_net_io_out, "VIRTIO PCI NET"};
-    ioport_entry_t * io_entry = vmm_io_port_add_handler(ioport, ioport_range, virtio_io_interface, port_type);
+    ioport_entry_t *io_entry = vmm_io_port_add_handler(ioport, ioport_range, virtio_io_interface, port_type);
     if (!io_entry) {
         ZF_LOGE("Failed to add vmm io port handler");
         return NULL;
@@ -193,7 +193,7 @@ virtio_net_t *common_make_virtio_net(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port
     net->iobase = io_entry->range.start;
 
     vmm_pci_entry_t entry = vmm_virtio_net_pci_bar(io_entry->range.start, iobase_size_bits, interrupt_pin, interrupt_line,
-            emulate_bar_access);
+                                                   emulate_bar_access);
     vmm_pci_add_entry(pci, entry, NULL);
 
     ps_io_ops_t ioops;

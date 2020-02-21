@@ -61,7 +61,7 @@ int vmm_io_port_init(vmm_io_port_list_t **io_list, uint16_t ioport_alloc_addr);
 
 /* Add an io port range for emulation */
 ioport_entry_t *vmm_io_port_add_handler(vmm_io_port_list_t *io_list, ioport_range_t ioport_range,
-                            ioport_interface_t ioport_interface, ioport_type_t port_type);
+                                        ioport_interface_t ioport_interface, ioport_type_t port_type);
 
 /*
  * From a set of registered ioports, emulate an io instruction given a current ioport access.
