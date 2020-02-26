@@ -27,3 +27,6 @@
 #define PCI_MEM_REGION_ADDR 0x3F000000
 /* PCI memory space size */
 #define PCI_MEM_REGION_SIZE 0x1000000
+
+/* FDT IRQ controller address cells definition */
+#define GIC_ADDRESS_CELLS 0x1

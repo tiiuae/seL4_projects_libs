@@ -59,8 +59,16 @@ struct pci_interrupt_map_mask {
 struct pci_interrupt_map {
     struct pci_interrupt_map_mask pci_mask;
     uint32_t gic_phandle;
+#if GIC_ADDRESS_CELLS == 0x1
+    /* FIXME Ideally we want to extract the address cells value out of the irq controller fdt node */
     uint32_t irq_type;
     uint32_t irq_num;
+#elif GIC_ADDRESS_CELLS == 0x2
+    uint64_t irq_type;
+    uint64_t irq_num;
+#else
+#error "Undefined GIC Address Cells"
+#endif
     uint32_t irq_flags;
 } PACKED;
 
@@ -292,7 +300,11 @@ int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_ph
             irq_map.pci_mask.irq_pin = cpu_to_fdt32(pci_config->interrupt_pin);
             irq_map.gic_phandle = cpu_to_fdt32(gic_phandle);
             irq_map.irq_type = 0;
+#if GIC_ADDRESS_CELLS == 0x1
             irq_map.irq_num = cpu_to_fdt32(pci_config->interrupt_line - 32);
+#else
+            irq_map.irq_num = cpu_to_fdt64(pci_config->interrupt_line - 32);
+#endif
             irq_map.irq_flags = cpu_to_fdt32(0x4);
             FDT_OP(fdt_appendprop(fdt, pci_node, "interrupt-map", &irq_map, sizeof(irq_map)));
             is_irq_map = true;
