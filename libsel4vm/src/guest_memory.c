@@ -19,7 +19,7 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory.h>
 
-#include "guest_memory_map.h"
+#include "guest_memory.h"
 
 typedef enum reservation_type {
     MEM_REGULAR_RES,

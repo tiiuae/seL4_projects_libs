@@ -30,7 +30,7 @@
 
 #include "vm_boot.h"
 #include "guest_vspace.h"
-#include "guest_memory_map.h"
+#include "guest_memory.h"
 #include "guest_state.h"
 #include "vmcs.h"
 #include "processor/decode.h"

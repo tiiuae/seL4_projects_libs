@@ -20,7 +20,7 @@
 #include <sel4vm/guest_ram.h>
 #include <sel4vm/guest_memory.h>
 
-#include "guest_memory_map.h"
+#include "guest_memory.h"
 
 struct guest_mem_touch_params {
     void *data;
