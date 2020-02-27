@@ -142,8 +142,8 @@ void guest_vspace_unmap(vspace_t *vspace, void *vaddr, size_t num_pages, size_t 
 #endif
 }
 
-int vm_guest_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr iospace) {
-    struct sel4utils_alloc_data *data = get_alloc_data(vspace);
+int vm_guest_add_iospace(vm_t *vm, vspace_t *loader, seL4_CPtr iospace) {
+    struct sel4utils_alloc_data *data = get_alloc_data(&vm->mem.vm_vspace);
     guest_vspace_t *guest_vspace = (guest_vspace_t *) data;
 
     assert(!guest_vspace->done_mapping);

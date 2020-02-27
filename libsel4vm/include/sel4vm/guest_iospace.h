@@ -15,5 +15,6 @@
 #include <sel4/sel4.h>
 #include <vspace/vspace.h>
 #include <vka/vka.h>
+#include <sel4vm/guest_vm.h>
 
-int vm_guest_add_iospace(vspace_t *loader, vspace_t *vspace, seL4_CPtr iospace);
+int vm_guest_add_iospace(vm_t *vm, vspace_t *loader, seL4_CPtr iospace);
