@@ -15,5 +15,7 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory.h>
 
+memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t addr, size_t size);
+
 int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
                               memory_map_iterator_fn map_iterator, void *map_cookie);

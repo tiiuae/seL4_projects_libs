@@ -44,16 +44,6 @@ typedef struct vm_memory_reservation vm_memory_reservation_t;
 typedef struct vm_memory_reservation_cookie vm_memory_reservation_cookie_t;
 
 /**
- * Handle a vm memory fault through searching previously created reservations and invoking the appropriate fault callback
- * @param[in] vm                    A handle to the VM
- * @param[in] vcpu                  A handle to the faulting vcpu
- * @param[in] addr                  Faulting address
- * @param[in] size                  Size of the faulting region
- * @return                          Fault handling status code: HANDLED, UNHANDLED, RESTART, ERROR
- */
-memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t addr, size_t size);
-
-/**
  * Reserve a region of the VM's memory at a given base address
  * @param[in] vm                    A handle to the VM
  * @param[in] addr                  Base address of the memory region being reserved

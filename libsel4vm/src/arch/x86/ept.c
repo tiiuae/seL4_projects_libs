@@ -25,6 +25,7 @@
 #include "vmcs.h"
 #include "debug.h"
 #include "processor/decode.h"
+#include "guest_memory.h"
 
 #define EPT_VIOL_READ(qual) ((qual) & BIT(0))
 #define EPT_VIOL_WRITE(qual) ((qual) & BIT(1))

@@ -21,6 +21,7 @@
 #include "vm.h"
 #include "mem_abort.h"
 #include "fault.h"
+#include "guest_memory.h"
 
 static int unhandled_memory_fault(vm_t *vm, vm_vcpu_t *vcpu, fault_t *fault)
 {
