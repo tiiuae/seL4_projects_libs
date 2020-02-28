@@ -18,4 +18,4 @@
     Simple functions for registering handlers,
         calling a handler
 */
-int reg_new_handler(vm_t *vm, vmcall_handler func, int token);
+int vm_reg_new_vmcall_handler(vm_t *vm, vmcall_handler func, int token);

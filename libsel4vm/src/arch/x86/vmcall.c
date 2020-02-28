@@ -32,7 +32,7 @@ static vmcall_handler_t *get_handle(vm_t *vm, int token)
     return NULL;
 }
 
-int reg_new_handler(vm_t *vm, vmcall_handler func, int token)
+int vm_reg_new_vmcall_handler(vm_t *vm, vmcall_handler func, int token)
 {
     unsigned int *hnum = &(vm->arch.vmcall_num_handlers);
     if (get_handle(vm, token) != NULL) {
