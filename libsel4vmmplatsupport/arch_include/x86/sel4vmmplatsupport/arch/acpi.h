@@ -12,6 +12,12 @@
 
 #pragma once
 
+/***
+ * @module acpi.h
+ * The ACPI module provides support for generating ACPI table in a guest x86 VM. This being particularly leveraged
+ * for booting a guest Linux VM.
+ */
+
 #define LOWER_BIOS_START (0xE0000)
 #define LOWER_BIOS_SIZE (0xFFFF)
 
@@ -22,4 +28,10 @@
 
 #include <sel4vm/guest_vm.h>
 
+/***
+ * @function make_guest_acpi_tables(vm)
+ * Creates ACPI table for the guest VM
+ * @param {vm_t *} vm       A handle to the guest VM instance
+ * @return                  0 for success, -1 for error
+ */
 int make_guest_acpi_tables(vm_t *vm);

@@ -12,48 +12,59 @@
 
 #pragma once
 
+/***
+ * @module virtio_net.h
+ * This interface provides the ability to initalise a VMM virtio net driver. This creating a virtio
+ * PCI device in the VM's virtual pci. This can subsequently be accessed as an ethernet interface in the
+ * guest.
+ */
+
 #include <sel4vm/guest_vm.h>
 
 #include <sel4vmmplatsupport/ioports.h>
 #include <sel4vmmplatsupport/drivers/pci.h>
 #include <sel4vmmplatsupport/drivers/virtio_pci_emul.h>
 
-/* Virtio net driver interface */
+/***
+ * @struct virtio_net
+ * Virtio Net Driver Interface
+ * @param {unsigned int} iobase                         IO Port base for Virtio Net device
+ * @param {virtio_emul_t *} emul                        Virtio Ethernet emulation interface: VMM <-> Guest
+ * @param {struct eth_driver *} emul_driver             Backend Ethernet driver interface: VMM <-> Ethernet driver
+ * @param {struct raw_iface_funcs} emul_driver_funcs    Virtio Ethernet emulation functions: VMM <-> Guest
+ * @param {ps_io_ops_t} ioops                           Platform support ioops for dma management
+ */
 typedef struct virtio_net {
-    /* IO Port base for Virtio net device */
     unsigned int iobase;
-    /* Virtio Ethernet emulation interface: VMM <-> Guest */
     virtio_emul_t *emul;
-    /* Backend  Ethernet driver interface: VMM <-> Ethernet driver */
     struct eth_driver *emul_driver;
-    /* Virtio Ethernet emulation functions: VMM <-> Guest */
     struct raw_iface_funcs emul_driver_funcs;
-    /* ioops for dma management */
     ps_io_ops_t ioops;
 } virtio_net_t;
 
-/**
+/***
+ * @function common_make_virtio_net(vm, pci, ioport, ioport_range, port_type, interrupt_pin, interrupt_line, backend, emulate_bar_access)
  * Initialise a new virtio_net device with Base Address Registers (BARs) starting at iobase and backend functions
- *
  * specified by the raw_iface_funcs struct.
- * @param vm vm handle
- * @param pci PCI library instance to register virtio net device
- * @param ioport IOPort library instance to register virtio net ioport
- * @param ioport_range BAR port for front end emulation
- * @param iotype type of ioport i.e. whether to alloc or use given range
- * @param interrupt_pin PCI interrupt pin e.g. INTA = 1, INTB = 2 ,...
- * @param interrupt_line PCI interrupt line for virtio net IRQS
- * @param backend function pointers to backend implementation. Can be initialised by
- *  virtio_net_default_backend for default methods.
- * @param emulate_bar Emulate read and writes accesses to the PCI device Base Address Registers.
- * @return pointer to an initialised virtio_net_t, NULL if error.
+ * @param {vm_t *} vm                       A handle to the VM
+ * @param {vmm_pci_space_t *} pci           PCI library instance to register virtio net device
+ * @param {vmm_io_port_list_t *} ioport     IOPort library instance to register virtio net ioport
+ * @param {ioport_range_t} ioport_range     BAR port for front end emulation
+ * @param {ioport_type_t} port_type         Type of ioport i.e. whether to alloc or use given range
+ * @param {unsigned int} interrupt_pin      PCI interrupt pin e.g. INTA = 1, INTB = 2 ,...
+ * @param {unsigned int} interrupt_line     PCI interrupt line for virtio net IRQS
+ * @param {struct raw_iface_funcs} backend  Function pointers to backend implementation. Can be initialised by
+ *                                          virtio_net_default_backend for default methods.
+ * @param {bool} emulate_bar                Emulate read and writes accesses to the PCI device Base Address Registers.
+ * @return                                  Pointer to an initialised virtio_net_t, NULL if error.
  */
 virtio_net_t *common_make_virtio_net(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port_list_t *ioport,
                                      ioport_range_t ioport_range, ioport_type_t port_type, unsigned int interrupt_pin, unsigned int interrupt_line,
                                      struct raw_iface_funcs backend, bool emulate_bar_access);
 
-/**
-* @return a struct with a default virtio_net backend. It is the responsibility of the caller to
-*  update these function pointers with its own custom backend.
-*/
+/***
+ * @function virtio_net_default_backend()
+ * @return          A struct with a default virtio_net backend. It is the responsibility of the caller to
+ *                  update these function pointers with its own custom backend.
+ */
 struct raw_iface_funcs virtio_net_default_backend(void);
