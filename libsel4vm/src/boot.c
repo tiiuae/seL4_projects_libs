@@ -26,7 +26,7 @@
 
 static int curr_vcpu_index = 0;
 
-int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, vspace_t host_vspace,
+int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, vspace_t host_vspace,
             ps_io_ops_t *io_ops, seL4_CPtr host_endpoint, const char *name)
 {
     int err;
@@ -34,7 +34,6 @@ int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, allocman_t *allocman, v
     /* Initialise vm fields */
     vm->vka = vka;
     vm->simple = host_simple;
-    vm->allocman = allocman;
     vm->io_ops = io_ops;
     vm->mem.vmm_vspace = host_vspace;
     vm->host_endpoint = host_endpoint;

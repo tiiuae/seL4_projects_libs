@@ -19,6 +19,7 @@
 #include <elf/elf.h>
 #include <vka/capops.h>
 #include <cpio/cpio.h>
+#include <sel4utils/sel4_zf_logif.h>
 
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory.h>

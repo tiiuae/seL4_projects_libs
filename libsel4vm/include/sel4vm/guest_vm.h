@@ -17,7 +17,7 @@
 #include <vka/vka.h>
 #include <simple/simple.h>
 #include <vspace/vspace.h>
-#include <allocman/allocman.h>
+#include <platsupport/io.h>
 
 #include <sel4vm/arch/guest_vm_arch.h>
 #include <sel4vm/guest_memory.h>
@@ -118,7 +118,6 @@ struct vm {
     vka_t *vka;
     ps_io_ops_t *io_ops;
     simple_t *simple;
-    allocman_t *allocman;
     /* Debugging & Identification */
     char *vm_name;
     unsigned int vm_id;
