@@ -35,13 +35,6 @@ void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRight
  */
 void *create_device_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t rights,
                                       memory_fault_callback_fn fault_callback, void *fault_cookie);
-/**
- * Map a guest reservation backed with untyped allocman frames
- * @param[in] vm                    A handle to the VM
- * @param[in] reservation           Pointer to reservation object being mapped
- * @return                          -1 on failure otherwise 0 for success
- */
-int map_ut_allocman_reservation(vm_t *vm, vm_memory_reservation_t *reservation);
 
 /**
  * Map a guest reservation backed with untyped frames allocated from a base paddr

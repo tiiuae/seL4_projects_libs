@@ -119,38 +119,6 @@ static vm_frame_t ut_alloc_iterator(uintptr_t addr, void *cookie)
     return frame_result;
 }
 
-static vm_frame_t ut_allocman_iterator(uintptr_t addr, void *cookie)
-{
-    int ret;
-    int error;
-    vka_object_t object;
-    vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
-    vm_t *vm = (vm_t *)cookie;
-    if (!vm) {
-        return frame_result;
-    }
-    int page_size = seL4_PageBits;
-    uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
-    cspacepath_t path;
-    error = vka_cspace_alloc_path(vm->vka, &path);
-    if (error) {
-        ZF_LOGE("Failed to allocate path");
-        return frame_result;
-    }
-    seL4_Word alloc_cookie = allocman_utspace_alloc(vm->allocman, page_size,
-                                                    kobject_get_type(KOBJECT_FRAME, page_size), &path, true, &ret);
-    if (error) {
-        ZF_LOGE("Failed to allocate page");
-        vka_cspace_free_path(vm->vka, path);
-        return frame_result;
-    }
-    frame_result.cptr = path.capPtr;
-    frame_result.rights = seL4_AllRights;
-    frame_result.vaddr = frame_start;
-    frame_result.size_bits = page_size;
-    return frame_result;
-}
-
 static vm_frame_t maybe_device_alloc_iterator(uintptr_t addr, void *cookie)
 {
     int ret;
@@ -361,11 +329,6 @@ int map_ut_alloc_reservation_with_base_paddr(vm_t *vm, uintptr_t paddr, vm_memor
     cookie->with_paddr = true;
     cookie->reservation = reservation;
     return vm_map_reservation(vm, reservation, ut_alloc_iterator, (void *)cookie);
-}
-
-int map_ut_allocman_reservation(vm_t *vm, vm_memory_reservation_t *reservation)
-{
-    return vm_map_reservation(vm, reservation, ut_allocman_iterator, (void *)vm);
 }
 
 int map_frame_alloc_reservation(vm_t *vm, vm_memory_reservation_t *reservation)
