@@ -38,9 +38,9 @@ typedef struct guest_vspace {
     guest_iospace_t **iospaces;
 } guest_vspace_t;
 
-static int
-guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_CapRights_t rights,
-        int cacheable, size_t size_bits) {
+static int guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_CapRights_t rights,
+                            int cacheable, size_t size_bits)
+{
     int error;
     /* perform the guest mapping */
     error = guest_vspace_map_page_arch(vspace, cap, vaddr, rights, cacheable, size_bits);
@@ -53,7 +53,7 @@ guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_CapRights_t 
     /* this type cast works because the alloc data was at the start of the struct
      * so it has the same address.
      * This conversion is guaranteed to work by the C standard */
-    guest_vspace_t *guest_vspace = (guest_vspace_t*) data;
+    guest_vspace_t *guest_vspace = (guest_vspace_t *) data;
     /* set the mapping bit */
     guest_vspace->done_mapping = 1;
     cspacepath_t orig_path;
@@ -109,7 +109,7 @@ void guest_vspace_unmap(vspace_t *vspace, void *vaddr, size_t num_pages, size_t 
      * necessarily host-virtually contiguous. */
     size_t page_size = BIT(size_bits);
     for (int i = 0; i < num_pages; i++) {
-        void *page_vaddr = (void*)(vaddr + i * page_size);
+        void *page_vaddr = (void *)(vaddr + i * page_size);
         /* Unmap the vaddr from each iospace, freeing the cslots used to store the
          * copy of the frame cap. */
         for (int i = 0; i < guest_vspace->num_iospaces; i++) {
@@ -142,7 +142,8 @@ void guest_vspace_unmap(vspace_t *vspace, void *vaddr, size_t num_pages, size_t 
 #endif
 }
 
-int vm_guest_add_iospace(vm_t *vm, vspace_t *loader, seL4_CPtr iospace) {
+int vm_guest_add_iospace(vm_t *vm, vspace_t *loader, seL4_CPtr iospace)
+{
     struct sel4utils_alloc_data *data = get_alloc_data(&vm->mem.vm_vspace);
     guest_vspace_t *guest_vspace = (guest_vspace_t *) data;
 
@@ -156,7 +157,7 @@ int vm_guest_add_iospace(vm_t *vm, vspace_t *loader, seL4_CPtr iospace) {
     guest_iospace_t *guest_iospace = guest_vspace->iospaces[guest_vspace->num_iospaces];
     guest_iospace->iospace = iospace;
     int error = sel4utils_get_empty_vspace(loader, &guest_iospace->iospace_vspace, &guest_iospace->iospace_vspace_data,
-                                     guest_vspace->vspace_data.vka, seL4_CapNull, NULL, NULL);
+                                           guest_vspace->vspace_data.vka, seL4_CapNull, NULL, NULL);
     if (error) {
         ZF_LOGE("Failed to allocate vspace for new iospace");
         return error;
@@ -166,7 +167,8 @@ int vm_guest_add_iospace(vm_t *vm, vspace_t *loader, seL4_CPtr iospace) {
     return 0;
 }
 
-int vm_init_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, vka_t *vka, seL4_CPtr page_directory) {
+int vm_init_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, vka_t *vka, seL4_CPtr page_directory)
+{
     int error;
     guest_vspace_t *vspace = calloc(1, sizeof(*vspace));
     if (!vspace) {
@@ -177,7 +179,8 @@ int vm_init_guest_vspace(vspace_t *loader, vspace_t *vmm, vspace_t *new_vspace, 
     vspace->num_iospaces = 0;
     vspace->iospaces = malloc(0);
     assert(vspace->iospaces);
-    error = sel4utils_get_empty_vspace_with_map(loader, new_vspace, &vspace->vspace_data, vka, page_directory, NULL, NULL, guest_vspace_map);
+    error = sel4utils_get_empty_vspace_with_map(loader, new_vspace, &vspace->vspace_data, vka, page_directory, NULL, NULL,
+                                                guest_vspace_map);
     if (error) {
         ZF_LOGE("Failed to create guest vspace");
         return error;
