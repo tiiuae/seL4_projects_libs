@@ -102,7 +102,7 @@ static int add_io_port_range(vmm_io_port_list_t *io_list, ioport_entry_t *port)
     }
     /* ensure this range does not overlap */
     for (int i = 0; i < io_list->num_ioports; i++) {
-        if (io_list->ioports[i]->range.end > port->range.start && io_list->ioports[i]->range.start < port->range.end) {
+        if (io_list->ioports[i]->range.end >= port->range.start && io_list->ioports[i]->range.start <= port->range.end) {
             ZF_LOGE("Requested ioport range 0x%x-0x%x for %s overlaps with existing range 0x%x-0x%x for %s",
                     port->range.start, port->range.end, port->interface.desc ? port->interface.desc : "Unknown IO Port",
                     io_list->ioports[i]->range.start, io_list->ioports[i]->range.end,
@@ -130,7 +130,7 @@ static int alloc_free_io_port_range(vmm_io_port_list_t *io_list, ioport_range_t 
     }
     io_list->alloc_addr += io_range->size;
     io_range->start = free_port_addr;
-    io_range->end = free_port_addr + io_range->size;
+    io_range->end = free_port_addr + io_range->size - 1;
     return 0;
 }
 
