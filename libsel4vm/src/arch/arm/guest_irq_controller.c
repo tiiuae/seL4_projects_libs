@@ -12,11 +12,19 @@
 
 #include "vgic/vgic.h"
 
-int vm_create_default_irq_controller(vm_t *vm)
+int vm_create_default_irq_controller(vm_t *vm, struct vm_irq_controller_params *params)
 {
     if (!vm) {
         ZF_LOGE("Failed to initialise default irq controller: Invalid vm");
         return -1;
     }
-    return vm_install_vgic(vm);
+
+    switch (params->version) {
+        case VM_GIC_V2:
+            return vm_install_vgic_v2(vm, params);
+        case VM_GIC_V3:
+            ZF_LOGE("Gic v3 not implemented yet");
+            /* return vm_install_vgic_v3(vm, params); */
+    }
+    return -1;
 }

@@ -76,34 +76,6 @@
 #define DDIST(...) do{}while(0)
 #endif
 
-
-/* FIXME these should be defined in a way that is friendlier to extension. */
-#if defined(CONFIG_PLAT_EXYNOS5)
-#define GIC_PADDR   0x10480000
-#elif defined(CONFIG_PLAT_TK1) || defined(CONFIG_PLAT_TX1)
-#define GIC_PADDR   0x50040000
-#elif defined(CONFIG_PLAT_TX2)
-#define GIC_PADDR   0x03880000
-#elif defined(CONFIG_PLAT_QEMU_ARM_VIRT)
-#define GIC_PADDR   0x8000000
-#elif defined(CONFIG_PLAT_ODROIDC2)
-#define GIC_PADDR   0xc4300000
-#else
-#error "Unsupported platform for GIC"
-#endif
-
-#ifdef CONFIG_PLAT_QEMU_ARM_VIRT
-#define GIC_DIST_PADDR       (GIC_PADDR)
-#define GIC_CPU_PADDR        (GIC_PADDR + 0x00010000)
-#define GIC_VCPU_CNTR_PADDR  (GIC_PADDR + 0x00030000)
-#define GIC_VCPU_PADDR       (GIC_PADDR + 0x00040000)
-#else
-#define GIC_DIST_PADDR       (GIC_PADDR + 0x1000)
-#define GIC_CPU_PADDR        (GIC_PADDR + 0x2000)
-#define GIC_VCPU_CNTR_PADDR  (GIC_PADDR + 0x4000)
-#define GIC_VCPU_PADDR       (GIC_PADDR + 0x6000)
-#endif
-
 #define MAX_VIRQS   200
 #define NUM_SGI_VIRQS   16
 #define NUM_PPI_VIRQS   16
@@ -1082,12 +1054,19 @@ static memory_fault_result_t handle_vgic_vcpu_fault(vm_t *vm, vm_vcpu_t *vcpu, u
     return FAULT_ERROR;
 }
 
-static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie)
+struct vgic_vcpu_iterator_cookie {
+    vm_t *vm;
+    struct vm_irq_controller_params *params;
+};
+
+static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *data)
 {
     int err;
     cspacepath_t frame;
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
-    vm_t *vm = (vm_t *)cookie;
+    struct vgic_vcpu_iterator_cookie *cookie = data;
+    vm_t *vm = cookie->vm;
+    struct vm_irq_controller_params *params = cookie->params;
 
     err = vka_cspace_alloc_path(vm->vka, &frame);
     if (err) {
@@ -1095,9 +1074,9 @@ static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie)
         return frame_result;
     }
     seL4_Word vka_cookie;
-    err = vka_utspace_alloc_at(vm->vka, &frame, kobject_get_type(KOBJECT_FRAME, 12), 12, GIC_VCPU_PADDR, &vka_cookie);
+    err = vka_utspace_alloc_at(vm->vka, &frame, kobject_get_type(KOBJECT_FRAME, 12), 12, params->gic_vcpu_paddr, &vka_cookie);
     if (err) {
-        err = simple_get_frame_cap(vm->simple, (void *)GIC_VCPU_PADDR, 12, &frame);
+        err = simple_get_frame_cap(vm->simple, (void *)params->gic_vcpu_paddr, 12, &frame);
         if (err) {
             ZF_LOGE("Failed to find device cap for vgic vcpu\n");
             return frame_result;
@@ -1105,7 +1084,7 @@ static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie)
     }
     frame_result.cptr = frame.capPtr;
     frame_result.rights = seL4_AllRights;
-    frame_result.vaddr = GIC_CPU_PADDR;
+    frame_result.vaddr = params->gic_cpu_paddr;
     frame_result.size_bits = seL4_PageBits;
     return frame_result;
 }
@@ -1114,11 +1093,12 @@ static vm_frame_t vgic_vcpu_iterator(uintptr_t addr, void *cookie)
  * 1) completely virtual the distributor
  * 2) remap vcpu to cpu. Full access
  */
-int vm_install_vgic(vm_t *vm)
+int vm_install_vgic_v2(vm_t *vm, struct vm_irq_controller_params *params)
 {
     struct vgic *vgic;
     void *addr;
     int err;
+    struct vgic_vcpu_iterator_cookie cookie = {vm, params};
 
     vgic = calloc(1, sizeof(*vgic));
     if (!vgic) {
@@ -1136,22 +1116,24 @@ int vm_install_vgic(vm_t *vm)
     if (!vgic_dist) {
         return -1;
     }
-    memcpy(vgic_dist, &dev_vgic_dist, sizeof(struct vgic_dist_device));
+    vgic_dist->pstart = params->gic_dist_paddr;
+    vgic_dist->size = 0x1000;
+    vgic_dist->priv = NULL;
 
     vgic->dist = calloc(1, sizeof(struct gic_dist_map));
     assert(vgic->dist);
     if (vgic->dist == NULL) {
         return -1;
     }
-    vm_memory_reservation_t *vgic_dist_res = vm_reserve_memory_at(vm, GIC_DIST_PADDR, PAGE_SIZE_4K,
+    vm_memory_reservation_t *vgic_dist_res = vm_reserve_memory_at(vm, params->gic_dist_paddr, PAGE_SIZE_4K,
                                                                   handle_vgic_dist_fault, (void *)vgic_dist);
     vgic_dist->priv = (void *)vgic;
     vgic_dist_reset(vgic_dist);
 
     /* Remap VCPU to CPU */
-    vm_memory_reservation_t *vgic_vcpu_reservation = vm_reserve_memory_at(vm, GIC_CPU_PADDR,
+    vm_memory_reservation_t *vgic_vcpu_reservation = vm_reserve_memory_at(vm, params->gic_cpu_paddr,
                                                                           0x1000, handle_vgic_vcpu_fault, NULL);
-    err = vm_map_reservation(vm, vgic_vcpu_reservation, vgic_vcpu_iterator, (void *)vm);
+    err = vm_map_reservation(vm, vgic_vcpu_reservation, vgic_vcpu_iterator, &cookie);
     if (err) {
         free(vgic_dist->priv);
         return -1;
@@ -1176,9 +1158,3 @@ int vm_vgic_maintenance_handler(vm_vcpu_t *vcpu)
     }
     return VM_EXIT_HANDLED;
 }
-
-const struct vgic_dist_device dev_vgic_dist = {
-    .pstart = GIC_DIST_PADDR,
-    .size = 0x1000,
-    .priv = NULL,
-};

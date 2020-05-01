@@ -14,6 +14,20 @@
 
 #include <sel4vm/guest_vm.h>
 
+enum vm_gic_version {
+    VM_GIC_V2,
+    VM_GIC_V3
+};
+
+struct vm_irq_controller_params {
+    uintptr_t gic_paddr;
+    uintptr_t gic_dist_paddr;
+    uintptr_t gic_cpu_paddr;
+    uintptr_t gic_vcpu_cntr_paddr;
+    uintptr_t gic_vcpu_paddr;
+    enum vm_gic_version version;
+};
+
 /***
  * @module guest_irq_controller.h
  * The libsel4vm IRQ controller interface provides a base abstraction around initialising a guest VM irq controller
@@ -61,4 +75,4 @@ int vm_register_irq(vm_vcpu_t *vcpu, int irq, irq_ack_fn_t ack_fn, void *cookie)
  * @param {vm_t *} vm   Handle to the VM
  * @return              0 on success, otherwise -1 for error
  */
-int vm_create_default_irq_controller(vm_t *vm);
+int vm_create_default_irq_controller(vm_t *vm, struct vm_irq_controller_params *params);

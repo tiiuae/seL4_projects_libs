@@ -11,3 +11,9 @@
  */
 
 #pragma once
+
+#define GIC_PADDR   0x50040000
+#define GIC_DIST_PADDR       (GIC_PADDR + 0x1000)
+#define GIC_CPU_PADDR        (GIC_PADDR + 0x2000)
+#define GIC_VCPU_CNTR_PADDR  (GIC_PADDR + 0x4000)
+#define GIC_VCPU_PADDR       (GIC_PADDR + 0x6000)
