@@ -31,11 +31,6 @@
 
 #define MAX_NUM_CONNECTIONS 32
 
-/* Side-note: A whole page for a single event register may be a
- * bit wasteful however since allocation is done at a page granularity
- * and we want to keep our PCI resources page aligned, we will allocate
- * a page for the event bar */
-#define EVENT_BAR_SIZE PAGE_SIZE
 #define EVENT_BAR_EMIT_REGISTER 0x0
 #define EVENT_BAR_EMIT_REGISTER_INDEX 0
 #define EVENT_BAR_CONSUME_EVENT_REGISTER 0x4
@@ -92,7 +87,10 @@ static int construct_connection_bar(vm_t *vm, struct connection_info *info, int 
             {
                 .mem_type = PREFETCH_MEM,
                 .address = info[conn_idx].event_address,
-                .size_bits = BYTES_TO_SIZE_BITS(EVENT_BAR_SIZE)
+                /* if size_bits isn't the same for all resources then Linux tries
+                   to remap the resources which the vmm driver doesn't support.
+                 */
+                .size_bits = info[conn_idx].dataport_size_bits
             },
             {
                 .mem_type = PREFETCH_MEM,
@@ -269,13 +267,17 @@ static int initialise_connections(vm_t *vm, uintptr_t connection_base_addr, cros
     int err;
     uintptr_t connection_curr_addr = connection_base_addr;
     for (int i = 0; i < num_connections; i++) {
+        /* We need to round everything up to the largest sized resource to prevent
+         * Linux from remapping the devices, which the vpci device can't emulate.
+         */
+        crossvm_dataport_handle_t *dataport = connections[i].dataport;
+        uintptr_t dataport_size = dataport->size;
         err = reserve_event_bar(vm, connection_curr_addr, &info[i]);
         if (err) {
             ZF_LOGE("Failed to create event bar (id:%d)", i);
             return -1;
         }
-        connection_curr_addr += PAGE_SIZE;
-        crossvm_dataport_handle_t *dataport = connections[i].dataport;
+        connection_curr_addr += dataport_size;
         err = reserve_dataport_memory(vm, dataport, connection_curr_addr, &info[i]);
         if (err) {
             ZF_LOGE("Failed to create dataport bar (id %d)", i);
@@ -289,7 +291,7 @@ static int initialise_connections(vm_t *vm, uintptr_t connection_base_addr, cros
             return -1;
         }
         info[i].connection = connections[i];
-        connection_curr_addr += dataport->size;
+        connection_curr_addr += dataport_size;
     }
     return 0;
 }
