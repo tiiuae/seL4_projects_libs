@@ -13,10 +13,44 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_irq_controller.h>
 
-struct vgic_dist_device {
-    uintptr_t pstart;
-    size_t size;
-    void *priv;
+#include "vgicv2_defs.h"
+
+#define MAX_LR_OVERFLOW 64
+#define MAX_VIRQS   200
+#define NUM_SGI_VIRQS   16
+#define NUM_PPI_VIRQS   16
+#define GIC_SPI_IRQ_MIN      NUM_SGI_VIRQS + NUM_PPI_VIRQS
+
+
+struct virq_handle {
+    int virq;
+    irq_ack_fn_t ack;
+    void *token;
+};
+
+struct lr_of {
+    struct virq_handle irqs[MAX_LR_OVERFLOW]; /* circular buffer */
+    size_t head;
+    size_t tail;
+    bool full;
+};
+
+struct vgic_device {
+    enum vm_gic_version version;
+
+    /* Mirrors the vcpu list registers */
+    struct virq_handle *irq[CONFIG_MAX_NUM_NODES][MAX_LR_OVERFLOW - 1];
+    /* IRQs that would not fit in the vcpu list registers */
+    struct lr_of lr_overflow[CONFIG_MAX_NUM_NODES];
+    /* Complete set of virtual irqs */
+    struct virq_handle *sgi_ppi_irq[CONFIG_MAX_NUM_NODES][NUM_SGI_VIRQS + NUM_PPI_VIRQS];
+    struct virq_handle *virqs[MAX_VIRQS];
+
+    /* Virtual distributer registers */
+    union {
+        struct vgic_v2_registers reg_v2;
+        /* struct vgic_v3_registers reg_v3; */
+    };
 };
 
 int vm_install_vgic_v2(vm_t *vm, struct vm_irq_controller_params *params);

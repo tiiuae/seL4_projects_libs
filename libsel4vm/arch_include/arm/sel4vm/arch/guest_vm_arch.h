@@ -29,7 +29,9 @@ typedef int (*unhandled_vcpu_fault_callback_fn)(vm_vcpu_t *vcpu, uint32_t hsr, v
 #define VM_FAULT_EP_SLOT       1
 #define VM_CSPACE_SLOT         VM_FAULT_EP_SLOT + CONFIG_MAX_NUM_NODES
 
-struct vm_arch {};
+struct vm_arch {
+    void *vgic;
+};
 
 /***
  * @struct vm_vcpu_arch
