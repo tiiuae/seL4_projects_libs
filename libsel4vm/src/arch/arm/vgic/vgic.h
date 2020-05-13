@@ -14,6 +14,9 @@
 #include <sel4vm/guest_irq_controller.h>
 
 #include "vgicv2_defs.h"
+/* #include "vgicv3_defs.h" */
+
+#pragma once
 
 #define MAX_LR_OVERFLOW 64
 #define MAX_VIRQS   200
