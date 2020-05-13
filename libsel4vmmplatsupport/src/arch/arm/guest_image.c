@@ -164,11 +164,24 @@ static int load_image(vm_t *vm, const char *image_name, uintptr_t load_addr,  si
         ZF_LOGE("Error: Unable to find image \'%s\'", image_name);
         return -1;
     }
-    char buf[PAGE_SIZE_4K] = {0};
+
+    /* Try and load the image 1MiB at a time. Reduce the size by half if
+     * there isn't enough memory available.  The total loading time may be
+     * faster if a larger buffer is used as it allows for more batching.
+     */
+    size_t read_size = BIT(20);
+    char *buf = malloc(read_size);
+    while (buf == NULL) {
+        read_size /= 2;
+        if (read_size < 4096) {
+            ZF_LOGE("Not enough memory for copy buffer");
+        }
+        buf = malloc(read_size);
+    }
     size_t offset = 0;
     while (1) {
         /* Load the image */
-        len = read(fd, buf, sizeof(buf));
+        len = read(fd, buf, read_size);
         if (!len) {
             break;
         }
@@ -181,6 +194,7 @@ static int load_image(vm_t *vm, const char *image_name, uintptr_t load_addr,  si
         }
         offset += len;
     }
+    free(buf);
     *resulting_image_size = offset;
     close(fd);
     return 0;
