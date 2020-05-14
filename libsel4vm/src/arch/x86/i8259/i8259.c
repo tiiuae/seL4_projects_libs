@@ -285,7 +285,7 @@ static void pic_reset(vm_t *vm, struct i8259_state *s)
 
     for (irq = 0; irq < PIC_NUM_PINS / 2; irq++) {
         if (edge_irr & (1 << irq)) {
-            pic_clear_isr(vm->vcpus[BOOT_VCPU], s, irq);
+            pic_clear_isr(vm, s, irq);
         }
     }
 }
@@ -308,7 +308,7 @@ static void pic_ioport_write(vm_vcpu_t *vcpu, struct i8259_state *s, unsigned in
                 printf("PIC: level sensitive irq not supported\n");
             }
             /* Reset the machine state and pending IRQS. */
-            pic_reset(vcpu, s);
+            pic_reset(vcpu->vm, s);
 
         } else if (val & 0x08) {
             /* OCW 3 */
@@ -441,7 +441,7 @@ static unsigned int pic_ioport_read(vm_vcpu_t *vcpu, struct i8259_state *s, unsi
 
     /* Poll for the highest priority IRQ. */
     if (s->poll) {
-        ret = pic_poll_read(vcpu, s, addr);
+        ret = pic_poll_read(vcpu->vm, s, addr);
         s->poll = 0;
 
     } else {

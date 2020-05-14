@@ -28,7 +28,7 @@
 
 static int io_port_compare_by_range(const void *pkey, const void *pelem)
 {
-    unsigned int key = (unsigned int)pkey;
+    unsigned int key = (unsigned int)(uintptr_t)pkey;
     const vm_ioport_entry_t *entry = (const vm_ioport_entry_t *)pelem;
     const vm_ioport_range_t *elem = &entry->range;
     if (key < elem->start) {
