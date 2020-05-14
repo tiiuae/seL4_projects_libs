@@ -29,7 +29,6 @@
 #include <stdlib.h>
 #include <usb/usb_host.h>
 #include <usb/usb.h>
-#include <dma/dma.h>
 
 #include <string.h>
 

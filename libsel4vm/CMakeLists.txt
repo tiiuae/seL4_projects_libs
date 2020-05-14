@@ -77,7 +77,6 @@ target_link_libraries(
     sel4utils
     sel4vka
     sel4vspace
-    sel4dma
     platsupport
     sel4_autoconf
     sel4vm_Config
