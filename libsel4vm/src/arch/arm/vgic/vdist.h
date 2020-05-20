@@ -1,98 +1,86 @@
 #pragma once
 
-#include "virq.h"
-#include "vgic_common.h"
-
-#define _REG_V(v) reg_v##v
-#define _GET_VGIC_DIST(vgic, v) struct vgic_v##v##_dist_map *gic_dist = &(vgic)->_REG_V(v).distributor
-
-#ifdef GIC_V2
-#define GET_VGIC_DIST(vgic) _GET_VGIC_DIST(vgic, 2)
-#else
-#define GET_VGIC_DIST(vgic) _GET_VGIC_DIST(vgic, 3)
-#endif
-
 #ifdef DEBUG_DIST
 #define DDIST(...) do{ printf("VDIST: "); printf(__VA_ARGS__); }while(0)
 #else
 #define DDIST(...) do{}while(0)
 #endif
 
-static int vgic_dist_enable(struct vgic_device *vgic, vm_t *vm)
-{
-    GET_VGIC_DIST(vgic);
-    DDIST("enabling gic distributer\n");
-    gic_dist->enable = 1;
-    return 0;
-}
+/* Memory map for GIC distributer */
+struct vgic_dist_map {
+    uint32_t enable;                                    /* 0x000 */
+    uint32_t ic_type;                                   /* 0x004 */
+    uint32_t dist_ident;                                /* 0x008 */
+    uint32_t res1[29];                                  /* [0x00C, 0x080) */
 
-static int vgic_dist_disable(struct vgic_device *vgic, vm_t *vm)
-{
-    GET_VGIC_DIST(vgic);
-    DDIST("disabling gic distributer\n");
-    gic_dist->enable = 0;
-    return 0;
-}
+    uint32_t irq_group[32];                             /* [0x080, 0x100) */
 
-static int vgic_dist_enable_irq(struct vgic_device *vgic, vm_vcpu_t *vcpu, int irq)
-{
-    GET_VGIC_DIST(vgic);
-    struct virq_handle *virq_data;
-    DDIST("enabling irq %d\n", irq);
-    set_enable(gic_dist, irq, true, vcpu->vcpu_id);
-    virq_data = virq_find_irq_data(vgic, vcpu, irq);
-    if (virq_data) {
-        /* STATE b) */
-        if (not_pending(gic_dist, virq_data->virq, vcpu->vcpu_id)) {
-            virq_ack(vcpu, virq_data);
-        }
-    } else {
-        DDIST("enabled irq %d has no handle", irq);
-    }
-    return 0;
-}
+    uint32_t enable_set[32];                            /* [0x100, 0x180) */
+    uint32_t enable_clr[32];                            /* [0x180, 0x200) */
+    uint32_t pending_set[32];                           /* [0x200, 0x280) */
+    uint32_t pending_clr[32];                           /* [0x280, 0x300) */
+    uint32_t active[32];                                /* [0x300, 0x380) */
+    uint32_t active_clr[32];                            /* [0x380, 0x400) */
 
-static int vgic_dist_disable_irq(struct vgic_device *vgic, vm_vcpu_t *vcpu, int irq)
-{
-    /* STATE g) */
-    GET_VGIC_DIST(vgic);
-    if (irq >= 16) {
-        DDIST("disabling irq %d\n", irq);
-        set_enable(gic_dist, irq, false, vcpu->vcpu_id);
-    }
-    return 0;
-}
+    uint32_t priority[255];                             /* [0x400, 0x7FC) */
+    uint32_t res3;                                      /* 0x7FC */
 
-static int vgic_dist_set_pending_irq(struct vgic_device *vgic, vm_vcpu_t *vcpu, int irq)
-{
-    /* STATE c) */
-    GET_VGIC_DIST(vgic);
-    struct virq_handle *virq_data;
+    uint32_t targets[255];                              /* [0x800, 0xBFC) */
+    uint32_t res4;                                      /* 0xBFC */
 
-    virq_data = virq_find_irq_data(vgic, vcpu, irq);
-    /* If it is enables, inject the IRQ */
-    if (virq_data && gic_dist->enable && is_enabled(gic_dist, irq, vcpu->vcpu_id)) {
-        int err;
-        DDIST("Pending set: Inject IRQ from pending set (%d)\n", irq);
+    uint32_t config[64];                                /* [0xC00, 0xD00) */
 
-        set_pending(gic_dist, virq_data->virq, true, vcpu->vcpu_id);
-        err = vgic_vcpu_inject_irq(vgic, vcpu, virq_data);
-        assert(!err);
+    uint32_t spi[32];                                   /* [0xD00, 0xD80) */
+    uint32_t res5[20];                                  /* [0xD80, 0xDD0) */
+    uint32_t res6;                                      /* 0xDD0 */
+    uint32_t legacy_int;                                /* 0xDD4 */
+    uint32_t res7[2];                                   /* [0xDD8, 0xDE0) */
+    uint32_t match_d;                                   /* 0xDE0 */
+    uint32_t enable_d;                                  /* 0xDE4 */
+    uint32_t res8[70];                                  /* [0xDE8, 0xF00) */
 
-        return err;
-    } else {
-        /* No further action */
-        DDIST("IRQ not enabled (%d) on vcpu %d\n", irq, vcpu->vcpu_id);
-        return -1;
-    }
+    uint32_t sgi_control;                               /* 0xF00 */
+    uint32_t res9[3];                                   /* [0xF04, 0xF10) */
 
-    return 0;
-}
+    uint32_t _sgi_pending_clr[4];                       /* [0xF10, 0xF20) */
+    uint32_t _sgi_pending_set[4];                       /* [0xF20, 0xF30) */
+    uint32_t res10[40];                                 /* [0xF30, 0xFC0) */
 
-static int vgic_dist_clr_pending_irq(struct vgic_device *vgic, vm_vcpu_t *vcpu, int irq)
-{
-    GET_VGIC_DIST(vgic);
-    DDIST("clr pending irq %d\n", irq);
-    set_pending(gic_dist, irq, false, vcpu->vcpu_id);
-    return 0;
-}
+    uint32_t periph_id[12];                             /* [0xFC0, 0xFF0) */
+    uint32_t component_id[4];                           /* [0xFF0, 0xFFF] */
+
+    uint32_t irq_group0[CONFIG_MAX_NUM_NODES];
+    uint32_t enable_set0[CONFIG_MAX_NUM_NODES];
+    uint32_t enable_clr0[CONFIG_MAX_NUM_NODES];
+    uint32_t pending_set0[CONFIG_MAX_NUM_NODES];
+    uint32_t pending_clr0[CONFIG_MAX_NUM_NODES];
+    uint32_t active0[CONFIG_MAX_NUM_NODES];
+    uint32_t active_clr0[CONFIG_MAX_NUM_NODES];
+    uint32_t priority0[CONFIG_MAX_NUM_NODES][8];
+    uint32_t targets0[CONFIG_MAX_NUM_NODES][8];
+    uint32_t sgi_pending_clr[CONFIG_MAX_NUM_NODES][4];
+    uint32_t sgi_pending_set[CONFIG_MAX_NUM_NODES][4];
+};
+
+enum gic_dist_action {
+    ACTION_SGI_IRQ_GROUP = 0,
+    ACTION_SGI_ENABLE_SET,
+    ACTION_SGI_ENABLE_CLR,
+    ACTION_SGI_PENDING_SET,
+    ACTION_SGI_PENDING_CLR,
+    ACTION_SGI_ACTIVE,
+    ACTION_SGI_ACTIVE_CLR,
+    ACTION_SGI_PRIORITY,
+    ACTION_SGI_TARGETS,
+    ACTION_NUM_SGI_ACTIONS,
+
+    ACTION_ENABLE,
+    ACTION_ENABLE_SET,
+    ACTION_ENABLE_CLR,
+    ACTION_PENDING_SET,
+    ACTION_PENDING_CLR,
+    ACTION_SGI_CTRL,
+
+    ACTION_READONLY,
+    ACTION_PASSTHROUGH
+};
