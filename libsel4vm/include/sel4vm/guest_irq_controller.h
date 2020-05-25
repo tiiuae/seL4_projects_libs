@@ -21,10 +21,21 @@ enum vm_gic_version {
 
 struct vm_irq_controller_params {
     uintptr_t gic_paddr;
+
     uintptr_t gic_dist_paddr;
+    uintptr_t gic_rdist_paddr;
+    uintptr_t gic_rdist_sgi_ppi_paddr;
+    size_t gic_dist_size;
+    size_t gic_rdist_size;
+    size_t gic_rdist_sgi_ppi_size;
+
     uintptr_t gic_cpu_paddr;
     uintptr_t gic_vcpu_cntr_paddr;
     uintptr_t gic_vcpu_paddr;
+    size_t gic_cpu_size;
+    size_t gic_vcpu_cntr_size;
+    size_t gic_vcpu_size;
+
     enum vm_gic_version version;
 };
 

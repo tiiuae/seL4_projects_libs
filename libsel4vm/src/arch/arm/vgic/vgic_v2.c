@@ -72,7 +72,7 @@
 #define DIRQ(...) do{}while(0)
 #endif
 
-int handle_vgic_maintenance(vm_vcpu_t *vcpu, int idx)
+int handle_vgic_v2_maintenance(vm_vcpu_t *vcpu, int idx)
 {
     /* STATE d) */
     struct vgic_device *vgic = vcpu->vm->arch.vgic;
@@ -93,29 +93,7 @@ int handle_vgic_maintenance(vm_vcpu_t *vcpu, int idx)
     return 0;
 }
 
-int vm_register_irq(vm_vcpu_t *vcpu, int irq, irq_ack_fn_t ack_fn, void *cookie)
-{
-    struct virq_handle *virq_data;
-    struct vgic_device *vgic;
-    int err;
-
-    vgic = vcpu->vm->arch.vgic;
-    assert(vgic);
-
-    virq_data = calloc(1, sizeof(*virq_data));
-    if (!virq_data) {
-        return -1;
-    }
-    virq_init(virq_data, irq, ack_fn, cookie);
-    err = virq_add(vcpu, vgic, virq_data);
-    if (err) {
-        free(virq_data);
-        return -1;
-    }
-    return 0;
-}
-
-int vm_inject_irq(vm_vcpu_t *vcpu, int irq)
+int vm_v2_inject_irq(vm_vcpu_t *vcpu, int irq)
 {
     struct vgic_device *vgic = vcpu->vm->arch.vgic;
     // vm->lock();
@@ -205,24 +183,7 @@ int vm_install_vgic_v2(vm_t *vm, struct vm_irq_controller_params *params)
         return -1;
     }
 
-    vgic_dist_reset(&vgic->distributor);
+    vgic_dist_v2_reset(&vgic->distributor);
     vm->arch.vgic = vgic;
     return 0;
-}
-
-int vm_vgic_maintenance_handler(vm_vcpu_t *vcpu)
-{
-    int idx;
-    int err;
-    idx = seL4_GetMR(seL4_UnknownSyscall_ARG0);
-    /* Currently not handling spurious IRQs */
-    assert(idx >= 0);
-
-    err = handle_vgic_maintenance(vcpu, idx);
-    if (!err) {
-        seL4_MessageInfo_t reply;
-        reply = seL4_MessageInfo_new(0, 0, 0, 0);
-        seL4_Reply(reply);
-    }
-    return VM_EXIT_HANDLED;
 }

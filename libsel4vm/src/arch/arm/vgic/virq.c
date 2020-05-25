@@ -115,7 +115,18 @@ int vgic_vcpu_inject_irq(struct vgic_device *vgic, vm_vcpu_t *inject_vcpu, struc
             break;
         }
     }
-    err = seL4_ARM_VCPU_InjectIRQ(vcpu, irq->virq, 0, 0, i);
+
+    switch (vgic->version) {
+        case VM_GIC_V2:
+            err = seL4_ARM_VCPU_InjectIRQ(vcpu, irq->virq, 0, 0, i);
+            break;
+        case VM_GIC_V3:
+            err = seL4_ARM_VCPU_InjectIRQ(vcpu, irq->virq, 0, 1, i);
+            break;
+        default:
+            return -1;
+    }
+
     assert((i < 4) || err);
     if (!err) {
         /* Shadow */

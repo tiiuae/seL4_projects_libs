@@ -136,13 +136,7 @@ memory_fault_result_t handle_vgic_dist_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
                 return advance_fault(fault);
             case ACTION_ENABLE:
                 data = fault_get_data(fault);
-                if (data == GIC_ENABLE) {
-                    dist->enable = 1;
-                } else if (data == 0) {
-                    dist->enable = 0;
-                } else {
-                    ZF_LOGF("Unknown enable register encoding");
-                }
+                dist->enable = !!data;
                 return advance_fault(fault);
             case ACTION_ENABLE_SET:
                 data &= ~(*reg);
@@ -186,7 +180,7 @@ memory_fault_result_t handle_vgic_dist_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
     }
 }
 
-void vgic_dist_reset(struct vgic_dist_map *gic_dist)
+void vgic_dist_v2_reset(struct vgic_dist_map *gic_dist)
 {
     memset(gic_dist, 0, sizeof(*gic_dist));
     gic_dist->ic_type         = 0x0000fce7; /* RO */
@@ -237,4 +231,29 @@ void vgic_dist_reset(struct vgic_dist_map *gic_dist)
     gic_dist->component_id[1] = 0x000000f0; /* RO */
     gic_dist->component_id[2] = 0x00000005; /* RO */
     gic_dist->component_id[3] = 0x000000b1; /* RO */
+}
+
+void vgic_dist_v3_reset(struct vgic_dist_map *gic_dist)
+{
+    memset(gic_dist, 0, sizeof(*gic_dist));
+
+    gic_dist->ic_type         = 0x7B04B0; /* RO */
+    gic_dist->dist_ident      = 0x1043B ; /* RO */
+
+    for (int i = 0; i < CONFIG_MAX_NUM_NODES; i++) {
+        gic_dist->enable_set0[i]   = 0x0000ffff; /* 16bit RO */
+        gic_dist->enable_clr0[i]   = 0x0000ffff; /* 16bit RO */
+    }
+
+    gic_dist->config[0]        = 0xaaaaaaaa; /* RO */
+
+    gic_dist->pidrn[0]         = 0x44;     /* RO */
+    gic_dist->pidrn[4]         = 0x92;     /* RO */
+    gic_dist->pidrn[5]         = 0xB4;     /* RO */
+    gic_dist->pidrn[6]         = 0x3B;     /* RO */
+
+    gic_dist->cidrn[0]         = 0x0D;     /* RO */
+    gic_dist->cidrn[1]         = 0xF0;     /* RO */
+    gic_dist->cidrn[2]         = 0x05;     /* RO */
+    gic_dist->cidrn[3]         = 0xB1;     /* RO */
 }
