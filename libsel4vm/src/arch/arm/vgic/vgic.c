@@ -86,6 +86,8 @@
 #define GIC_PADDR   0x03880000
 #elif defined(CONFIG_PLAT_QEMU_ARM_VIRT)
 #define GIC_PADDR   0x8000000
+#elif defined(CONFIG_PLAT_ODROIDC2)
+#define GIC_PADDR   0xc4300000
 #else
 #error "Unsupported platform for GIC"
 #endif
