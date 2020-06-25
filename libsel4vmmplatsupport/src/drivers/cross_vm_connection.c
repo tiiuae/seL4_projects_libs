@@ -35,6 +35,8 @@
 #define EVENT_BAR_EMIT_REGISTER_INDEX 0
 #define EVENT_BAR_CONSUME_EVENT_REGISTER 0x4
 #define EVENT_BAR_CONSUME_EVENT_REGISTER_INDEX 1
+#define EVENT_BAR_DEVICE_NAME_REGISTER 0x8
+#define EVENT_BAR_DEVICE_NAME_MAX_LEN 50
 
 struct connection_info {
     uintptr_t event_address;
@@ -291,6 +293,12 @@ static int initialise_connections(vm_t *vm, uintptr_t connection_base_addr, cros
             return -1;
         }
         info[i].connection = connections[i];
+        if (connections[i].connection_name == NULL) {
+            connections[i].connection_name = "connector";
+        }
+        strncpy(info[i].event_registers + EVENT_BAR_DEVICE_NAME_REGISTER, connections[i].connection_name,
+                EVENT_BAR_DEVICE_NAME_MAX_LEN);
+
         connection_curr_addr += dataport_size;
     }
     return 0;

@@ -55,6 +55,7 @@ typedef struct crossvm_handle {
     crossvm_dataport_handle_t *dataport;
     emit_fn emit_fn;
     seL4_Word consume_id;
+    const char *connection_name;
 } crossvm_handle_t;
 
 /***
