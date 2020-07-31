@@ -8,23 +8,19 @@
  * @TAG(DORNERWORKS_BSD)
  */
 
-#include <sel4arm-vmm/plat/device_map.h>
-#include <sel4arm-vmm/devices.h>
+#include <sel4vmmplatsupport/plat/device_map.h>
+#include <sel4vmmplatsupport/device.h>
 
 const struct device dev_uart0 = {
-    .devid = DEV_UART0,
     .name = "uart0",
     .pstart = UART0_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
     .priv = NULL
 };
 
 const struct device dev_uart1 = {
-    .devid = DEV_UART1,
     .name = "uart1",
     .pstart = UART1_PADDR,
     .size = 0x1000,
-    .handle_page_fault = NULL,
     .priv = NULL
 };
