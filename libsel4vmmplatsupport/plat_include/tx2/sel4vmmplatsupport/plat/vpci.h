@@ -24,7 +24,7 @@
 /* Size of PCI IO space  */
 #define PCI_IO_REGION_SIZE 0x10000
 /* PCI memory space */
-#define PCI_MEM_REGION_ADDR 0x3EF000000
+#define PCI_MEM_REGION_ADDR 0x3EF000000ull
 /* PCI memory space size */
 #define PCI_MEM_REGION_SIZE 0x1000000
 

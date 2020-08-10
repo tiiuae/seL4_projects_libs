@@ -80,7 +80,7 @@ struct pci_cfg_data {
 static void pci_cfg_read_fault(struct device *d, vm_t *vm, vm_vcpu_t *vcpu, vmm_pci_address_t pci_addr,
                                uint8_t offset, vmm_pci_entry_t *dev)
 {
-    seL4_Word data = 0;
+    uint32_t data = 0;
     int err = 0;
 
     err = dev->ioread((void *)dev->cookie, offset, get_vcpu_fault_size(vcpu), &data);
@@ -280,7 +280,7 @@ int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_ph
     struct pci_fdt_address pci_mem_range_addr;
     pci_mem_range_addr.hi = cpu_to_fdt32(PCI_RANGE_MEM32 << 24);
     pci_mem_range_addr.mid = cpu_to_fdt32(PCI_MEM_REGION_ADDR >> 32);
-    pci_mem_range_addr.low = cpu_to_fdt32(PCI_MEM_REGION_ADDR);
+    pci_mem_range_addr.low = cpu_to_fdt32((uint32_t)PCI_MEM_REGION_ADDR);
     FDT_OP(fdt_appendprop(fdt, pci_node, "ranges", &pci_mem_range_addr, sizeof(pci_mem_range_addr)));
     FDT_OP(append_prop_with_cells(fdt, pci_node, PCI_MEM_REGION_ADDR, address_cells, "ranges"));
     FDT_OP(fdt_appendprop_u64(fdt, pci_node, "ranges", PCI_MEM_REGION_SIZE));
