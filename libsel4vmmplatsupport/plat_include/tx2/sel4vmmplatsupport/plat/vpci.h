@@ -16,15 +16,15 @@
  */
 
 /* PCI host bridge configration space */
-#define PCI_CFG_REGION_ADDR 0x3EE000000
+#define PCI_CFG_REGION_ADDR 0x3E000000
 /* PCI host bridge IO space */
-#define PCI_IO_REGION_ADDR 0x3ED000000
+#define PCI_IO_REGION_ADDR 0x3D000000
 /* Size of PCI configuration space */
 #define PCI_CFG_REGION_SIZE 0x1000000
 /* Size of PCI IO space  */
 #define PCI_IO_REGION_SIZE 0x10000
 /* PCI memory space */
-#define PCI_MEM_REGION_ADDR 0x3EF000000ull
+#define PCI_MEM_REGION_ADDR 0x3F000000
 /* PCI memory space size */
 #define PCI_MEM_REGION_SIZE 0x1000000
 
