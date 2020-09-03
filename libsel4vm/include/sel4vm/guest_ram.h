@@ -102,6 +102,19 @@ uintptr_t vm_ram_register(vm_t *vm, size_t bytes);
 int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped);
 
 /***
+ * @function vm_ram_register_at(vm, start, bytes, untyped)
+ * Reserve a region of memory for RAM in the guest VM at a starting guest physical address with a custom memory iterator
+ * @param {vm_t *} vm                           A handle to the VM that ram needs to be allocated for
+ * @param {uintptr_t} start                     Starting guest physical address of the ram region being allocated
+ * @param {size_t} size                         The size of the RAM region to be allocated
+ * @param {memory_map_iterator_fn} map_iterator Iterator function
+ * @param {void *} cookie                       Iterator cookie
+ * @return                      0 on success, -1 on error
+ */
+int vm_ram_register_at_custom_iterator(vm_t *vm, uintptr_t start, size_t bytes, memory_map_iterator_fn map_iterator,
+                                       void *cookie);
+
+/***
  * @function vm_ram_mark_allocated(vm, start, bytes)
  * Mark a registered region of RAM as allocated
  * @param {vm_t *} vm               A handle to the VM

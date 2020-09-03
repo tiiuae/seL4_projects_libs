@@ -375,6 +375,32 @@ int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped)
     return 0;
 }
 
+int vm_ram_register_at_custom_iterator(vm_t *vm, uintptr_t start, size_t bytes, memory_map_iterator_fn map_iterator,
+                                       void *cookie)
+{
+    vm_memory_reservation_t *ram_reservation;
+    int err;
+
+    ram_reservation = vm_reserve_memory_at(vm, start, bytes, default_ram_fault_callback,
+                                           NULL);
+    if (!ram_reservation) {
+        ZF_LOGE("Unable to reserve ram region at addr 0x%x of size 0x%x", start, bytes);
+        return -1;
+    }
+    err = map_vm_memory_reservation(vm, ram_reservation, map_iterator, cookie);
+    if (err) {
+        ZF_LOGE("failed to map vm memory reservation to dataport\n");
+        return -1;
+    }
+    err = expand_guest_ram_region(vm, start, bytes);
+    if (err) {
+        ZF_LOGE("Failed to register new ram region");
+        vm_free_reserved_memory(vm, ram_reservation);
+        return -1;
+    }
+    return 0;
+}
+
 void vm_ram_free(vm_t *vm, uintptr_t start, size_t bytes)
 {
     return;
