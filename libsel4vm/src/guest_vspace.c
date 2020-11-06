@@ -48,7 +48,7 @@ static int guest_vspace_map(vspace_t *vspace, seL4_CPtr cap, void *vaddr, seL4_C
         return error;
     }
 
-#if defined(CONFIG_ARM_SMMU) || defined(CONFIG_IOMMU)
+#if defined(CONFIG_TK1_SMMU) || defined(CONFIG_IOMMU)
     struct sel4utils_alloc_data *data = get_alloc_data(vspace);
     /* this type cast works because the alloc data was at the start of the struct
      * so it has the same address.
