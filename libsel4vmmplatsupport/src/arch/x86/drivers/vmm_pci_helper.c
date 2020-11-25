@@ -39,6 +39,11 @@ int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t 
                 ZF_LOGE("Failed to reserve PCI bar %p size %zu", (void *)(uintptr_t)cfg->base_addr[i], size);
                 return -1;
             }
+            /* Make sure that the address is naturally aligned to its size */
+            if (addr % size) {
+                ZF_LOGE("Guest PCI bar address %p is not aligned to size %zu", addr, size);
+                return -1;
+            }
             int err = map_ut_alloc_reservation_with_base_paddr(vm, (uintptr_t)cfg->base_addr[i], reservation);
             if (err) {
                 ZF_LOGE("Failed to map PCI bar %p size %zu", (void *)(uintptr_t)cfg->base_addr[i], size);
