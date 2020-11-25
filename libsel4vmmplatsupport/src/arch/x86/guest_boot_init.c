@@ -94,7 +94,7 @@ static void make_guest_screen_info(vm_t *vm, struct screen_info *info)
             ZF_LOGE("Failed to map vbe protected mode interface for VESA frame buffer. Disabling");
         } else {
             fbuffer_size = vmm_plat_vesa_fbuffer_size(&vbeinfo.vbeModeInfoBlock);
-            vm_memory_reservation_t *reservation = vm_reserve_anon_memory(vm, fbuffer_size,
+            vm_memory_reservation_t *reservation = vm_reserve_anon_memory(vm, fbuffer_size, 0x1000,
                                                                           default_error_fault_callback, NULL, &base);
             if (!reservation) {
                 ZF_LOGE("Failed to reserve base pointer for VESA frame buffer. Disabling");

@@ -184,7 +184,7 @@ static int add_memory_reservation_node(vm_t *vm, uintptr_t addr, size_t size, re
     return 0;
 }
 
-static anon_region_t *find_allocable_anon_region(vm_t *vm, size_t size)
+static anon_region_t *find_allocable_anon_region(vm_t *vm, size_t size, size_t align)
 {
     res_tree *anon_tree;
     res_tree *anon_node;
@@ -198,7 +198,8 @@ static anon_region_t *find_allocable_anon_region(vm_t *vm, size_t size)
     for (anon_node = sglib_res_tree_it_init_inorder(&it, anon_tree); anon_node != NULL;
          anon_node = sglib_res_tree_it_next(&it)) {
         anon_region_t *curr_region = (anon_region_t *)anon_node->data;
-        size_t free_area_size = curr_region->size - (curr_region->alloc_addr - curr_region->addr);
+        uintptr_t allocable_addr = ROUND_UP(curr_region->alloc_addr, (uintptr_t) align);
+        size_t free_area_size = curr_region->size - (allocable_addr - curr_region->addr);
         if (size <= free_area_size) {
             ret_region = curr_region;
             break;
@@ -381,7 +382,7 @@ int vm_memory_make_anon(vm_t *vm, uintptr_t addr, size_t size)
     return 0;
 }
 
-vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size,
+vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size, size_t align,
                                                 memory_fault_callback_fn fault_callback, void *cookie, uintptr_t *addr)
 {
     int err;
@@ -394,13 +395,13 @@ vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size,
         return NULL;
     }
 
-    allocable_region = find_allocable_anon_region(vm, ROUND_UP(size, BIT(seL4_PageBits)));
+    allocable_region = find_allocable_anon_region(vm, ROUND_UP(size, BIT(seL4_PageBits)), align);
     if (!allocable_region) {
         ZF_LOGE("Failed to reserve anon memory: No anonymous memory available to cater reservation size");
         return NULL;
     }
 
-    reservation_addr = allocable_region->alloc_addr;
+    reservation_addr = ROUND_UP(allocable_region->alloc_addr, (uintptr_t) align);
 
     /* Make a sub-reservation token. */
     new_reservation = allocate_vm_reservation(vm, reservation_addr, size, allocable_region->vspace_reservation);
@@ -422,7 +423,7 @@ vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size,
     allocable_region->reservations = extended_reservations;
 
     allocable_region->reservations[allocable_region->num_reservations] = new_reservation;
-    allocable_region->alloc_addr += ROUND_UP(size, BIT(seL4_PageBits));
+    allocable_region->alloc_addr = reservation_addr + ROUND_UP(size, BIT(seL4_PageBits));
     allocable_region->num_reservations += 1;
 
     *addr = reservation_addr;

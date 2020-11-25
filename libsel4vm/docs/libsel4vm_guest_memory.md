@@ -59,7 +59,7 @@ Reserve a region of the VM's memory at a given base address
 
 Back to [interface description](#module-guest_memoryh).
 
-### Function `vm_reserve_anon_memory(vm, size, fault_callback, cookie, addr)`
+### Function `vm_reserve_anon_memory(vm, size, align, fault_callback, cookie, addr)`
 
 Reserve an anonymous region of the VM's memory. This uses memory previously made anonymous
 through the `vm_memory_make_anon` function.
@@ -68,6 +68,7 @@ through the `vm_memory_make_anon` function.
 
 - `vm {vm_t *}`: A handle to the VM
 - `size {size_t}`: Size of the anoymous emory region being reserved
+- `align {size_t}`: Requested alignment of the memory region
 - `fault_callback {memory_fault_callback_fn}`: Callback function that will be invoked if memory region is faulted on
 - `cookie {void *}`: User cookie to pass onto to callback
 - `addr {uintptr_t *}`: Pointer that will be set with the base address of the reserved anonymous region

@@ -88,17 +88,18 @@ vm_memory_reservation_t *vm_reserve_memory_at(vm_t *vm, uintptr_t addr, size_t s
                                               memory_fault_callback_fn fault_callback, void *cookie);
 
 /***
- * @function vm_reserve_anon_memory(vm, size, fault_callback, cookie, addr)
+ * @function vm_reserve_anon_memory(vm, size, align, fault_callback, cookie, addr)
  * Reserve an anonymous region of the VM's memory. This uses memory previously made anonymous
  * through the `vm_memory_make_anon` function.
  * @param {vm_t *} vm                                       A handle to the VM
  * @param {size_t} size                                     Size of the anoymous emory region being reserved
+ * @param {size_t} align                                    Requested alignment of the memory region
  * @param {memory_fault_callback_fn} fault_callback         Callback function that will be invoked if memory region is faulted on
  * @param {void *} cookie                                   User cookie to pass onto to callback
  * @param {uintptr_t *} addr                                Pointer that will be set with the base address of the reserved anonymous region
  * @return                                                  NULL on failure otherwise a pointer to a reservation object representing the reserved region
  */
-vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size,
+vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size, size_t align,
                                                 memory_fault_callback_fn fault_callback, void *cookie, uintptr_t *addr);
 
 /*** vm_memory_make_anon(vm, addr, size)

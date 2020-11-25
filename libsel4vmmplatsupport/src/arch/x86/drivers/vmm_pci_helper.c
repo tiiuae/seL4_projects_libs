@@ -33,7 +33,8 @@ int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t 
         if (cfg->base_addr_space[i] == PCI_BASE_ADDRESS_SPACE_MEMORY) {
             /* Need to map into the VMM. Make sure it is aligned */
             uintptr_t addr;
-            vm_memory_reservation_t *reservation = vm_reserve_anon_memory(vm, size, default_error_fault_callback, NULL,
+            vm_memory_reservation_t *reservation = vm_reserve_anon_memory(vm, size, size,
+                                                                          default_error_fault_callback, NULL,
                                                                           &addr);
             if (!reservation) {
                 ZF_LOGE("Failed to reserve PCI bar %p size %zu", (void *)(uintptr_t)cfg->base_addr[i], size);
