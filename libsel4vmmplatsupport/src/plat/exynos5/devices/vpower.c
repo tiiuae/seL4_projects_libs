@@ -29,11 +29,11 @@ struct power_priv {
 };
 
 
-static memory_fault_result_t
-handle_vpower_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
+static memory_fault_result_t handle_vpower_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                                 void *cookie)
 {
     struct device *dev = (struct device *)cookie;
-    struct power_priv* power_data = (struct power_priv*)dev->priv;
+    struct power_priv *power_data = (struct power_priv *)dev->priv;
     volatile uint32_t *reg;
     int vm_offset, offset, reg_offset;
     int bank;
@@ -45,11 +45,11 @@ handle_vpower_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t faul
     reg_offset = offset & ~MASK(2);
 
     /* Handle the fault */
-    reg = (volatile uint32_t*)(power_data->regs[bank] + offset);
+    reg = (volatile uint32_t *)(power_data->regs[bank] + offset);
     if (is_vcpu_read_fault(vcpu)) {
         set_vcpu_fault_data(vcpu, *reg);
         ZF_LOGD("[%s] pc0x%x| r0x%x:0x%x\n", dev->name, get_vcpu_fault_ip(vcpu),
-             fault_addr, get_vcpu_fault_data(vcpu));
+                fault_addr, get_vcpu_fault_data(vcpu));
     } else {
         if (bank == PWR_SWRST_BANK && reg_offset == PWR_SWRST_OFFSET) {
             if (get_vcpu_fault_data(vcpu)) {
@@ -82,8 +82,8 @@ handle_vpower_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t faul
 
         } else {
             ZF_LOGD("[%s] pc 0x%x| access violation writing 0x%x to 0x%x\n",
-                 dev->name, get_vcpu_fault_ip(vcpu), get_vcpu_fault_data(vcpu),
-                 fault_addr);
+                    dev->name, get_vcpu_fault_ip(vcpu), get_vcpu_fault_data(vcpu),
+                    fault_addr);
         }
     }
     advance_vcpu_fault(vcpu);
@@ -132,7 +132,7 @@ int vm_install_vpower(vm_t *vm, vm_power_cb shutdown_cb, void *shutdown_token,
 
     d->priv = power_data;
     vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d->pstart, d->size,
-            handle_vpower_fault, (void *)d);
+                                                                handle_vpower_fault, (void *)d);
     if (!reservation) {
         free(d);
         free(power_data);

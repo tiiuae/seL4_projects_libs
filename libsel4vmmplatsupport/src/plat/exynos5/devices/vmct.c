@@ -40,8 +40,8 @@ static inline struct vmct_priv *vmct_get_priv(void *priv)
 }
 
 
-static memory_fault_result_t
-handle_vmct_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
+static memory_fault_result_t handle_vmct_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                               void *cookie)
 {
     struct vmct_priv *mct_priv;
     int offset;
@@ -146,7 +146,7 @@ int vm_install_vmct(vm_t *vm)
     }
     d->priv = vmct_data;
     vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d->pstart, d->size,
-            handle_vmct_fault, (void *)d);
+                                                                handle_vmct_fault, (void *)d);
     if (!reservation) {
         free(d);
         free(vmct_data);

@@ -26,25 +26,24 @@ struct sdhc_priv {
     /* The VM associated with this device */
     vm_t *vm;
     /* Physical registers of the SDHC */
-    void* regs;
+    void *regs;
     /* Residual for 64 bit atomic access to FIFO */
     uint32_t a64;
 };
 
-static memory_fault_result_t
-handle_sdhc_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
-                  void *cookie)
+static memory_fault_result_t handle_sdhc_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                               void *cookie)
 {
     struct device *d = (struct device *)cookie;
-    struct sdhc_priv* sdhc_data = (struct sdhc_priv*)d->priv;
+    struct sdhc_priv *sdhc_data = (struct sdhc_priv *)d->priv;
     volatile uint32_t *reg;
     int offset;
 
     /* Gather fault information */
     offset = fault_addr - d->pstart;
-    reg = (uint32_t*)(sdhc_data->regs + offset);
+    reg = (uint32_t *)(sdhc_data->regs + offset);
     /* Handle the fault */
-    reg = (volatile uint32_t*)(sdhc_data->regs + offset);
+    reg = (volatile uint32_t *)(sdhc_data->regs + offset);
     if (is_vcpu_read_fault(vcpu)) {
         if (fault_length == sizeof(uint64_t)) {
             if (offset & 0x4) {
@@ -53,7 +52,7 @@ handle_sdhc_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_
             } else {
                 /* Aligned access: Read in and store residual */
                 uint64_t v;
-                v = *(volatile uint64_t*)reg;
+                v = *(volatile uint64_t *)reg;
                 set_vcpu_fault_data(vcpu, v);
                 sdhc_data->a64 = v >> 32;
             }
@@ -76,7 +75,7 @@ handle_sdhc_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_
                     /* Unaligned acces: store data and residual */
                     uint64_t v;
                     v = ((uint64_t)get_vcpu_fault_data(vcpu) << 32) | sdhc_data->a64;
-                    *(volatile uint64_t*)reg = v;
+                    *(volatile uint64_t *)reg = v;
                 } else {
                     /* Aligned access: record residual */
                     sdhc_data->a64 = get_vcpu_fault_data(vcpu);
@@ -138,7 +137,7 @@ static int vm_install_nodma_sdhc(vm_t *vm, int idx)
     }
     sdhc_data->vm = vm;
     sdhc_data->regs = create_device_reservation_frame(vm, d->pstart, seL4_CanRead,
-                                                       handle_sdhc_fault, (void *)d);
+                                                      handle_sdhc_fault, (void *)d);
     if (sdhc_data->regs == NULL) {
         assert(sdhc_data->regs);
         return -1;

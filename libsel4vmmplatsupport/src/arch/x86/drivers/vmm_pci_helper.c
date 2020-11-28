@@ -34,14 +34,14 @@ int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t 
             /* Need to map into the VMM. Make sure it is aligned */
             uintptr_t addr;
             vm_memory_reservation_t *reservation = vm_reserve_anon_memory(vm, size, default_error_fault_callback, NULL,
-                    &addr);
+                                                                          &addr);
             if (!reservation) {
-                ZF_LOGE("Failed to reserve PCI bar %p size %zu", (void*)(uintptr_t)cfg->base_addr[i], size);
+                ZF_LOGE("Failed to reserve PCI bar %p size %zu", (void *)(uintptr_t)cfg->base_addr[i], size);
                 return -1;
             }
             int err = map_ut_alloc_reservation_with_base_paddr(vm, (uintptr_t)cfg->base_addr[i], reservation);
             if (err) {
-                ZF_LOGE("Failed to map PCI bar %p size %zu", (void*)(uintptr_t)cfg->base_addr[i], size);
+                ZF_LOGE("Failed to map PCI bar %p size %zu", (void *)(uintptr_t)cfg->base_addr[i], size);
                 return -1;
             }
             bars[bar].address = addr;
@@ -64,7 +64,8 @@ int vmm_pci_helper_map_bars(vm_t *vm, libpci_device_iocfg_t *cfg, vmm_pci_bar_t 
     return bar;
 }
 
-ioport_fault_result_t vmm_pci_io_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size, unsigned int *result)
+ioport_fault_result_t vmm_pci_io_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size,
+                                         unsigned int *result)
 {
     vmm_pci_space_t *self = (vmm_pci_space_t *)cookie;
     uint8_t offset;
@@ -114,7 +115,8 @@ ioport_fault_result_t vmm_pci_io_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned
     return IO_FAULT_HANDLED;
 }
 
-ioport_fault_result_t vmm_pci_io_port_out(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size, unsigned int value)
+ioport_fault_result_t vmm_pci_io_port_out(vm_vcpu_t *vcpu, void *cookie, unsigned int port_no, unsigned int size,
+                                          unsigned int value)
 {
     vmm_pci_space_t *self = (vmm_pci_space_t *)cookie;
     uint8_t offset;

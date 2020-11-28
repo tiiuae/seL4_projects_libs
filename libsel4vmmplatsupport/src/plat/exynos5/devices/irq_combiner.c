@@ -132,18 +132,17 @@ int vmm_register_combiner_irq(int group, int idx, combiner_irq_handler_fn cb, vo
     return 0;
 }
 
-static memory_fault_result_t
-vcombiner_fault(vm_t* vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
-        void *cookie)
+static memory_fault_result_t vcombiner_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                             void *cookie)
 {
     int err;
     memory_fault_result_t ret;
-    struct virq_combiner* vcombiner;
+    struct virq_combiner *vcombiner;
     int offset;
     int gidx;
     uint32_t mask;
     uint32_t *reg;
-    struct device* d;
+    struct device *d;
 
     d = (struct device *)cookie;
     assert(d->priv);
@@ -151,7 +150,7 @@ vcombiner_fault(vm_t* vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_le
     vcombiner = vcombiner_priv_get_vcombiner(d->priv);
     mask = get_vcpu_fault_data_mask(vcpu);
     offset = fault_addr - d->pstart;
-    reg = (uint32_t*)( (uintptr_t)vcombiner->vregs + offset );
+    reg = (uint32_t *)((uintptr_t)vcombiner->vregs + offset);
     gidx = offset / sizeof(struct combiner_gmap);
     assert(offset >= 0 && offset < sizeof(*vcombiner->vregs));
 
@@ -220,8 +219,8 @@ const struct device dev_irq_combiner = {
 int vm_install_vcombiner(vm_t *vm)
 {
     struct device *combiner;
-    struct virq_combiner* vcombiner;
-    void* addr;
+    struct virq_combiner *vcombiner;
+    void *addr;
     int err;
 
     err = irq_combiner_init(IRQ_COMBINER0, vm->io_ops, &_combiner.pcombiner);
@@ -248,7 +247,7 @@ int vm_install_vcombiner(vm_t *vm)
         return -1;
     }
     memset(addr, 0, 0x1000);
-    vcombiner->vregs = (struct irq_combiner_map*)addr;
-    combiner->priv = (void*)vcombiner;
+    vcombiner->vregs = (struct irq_combiner_map *)addr;
+    combiner->priv = (void *)vcombiner;
     return 0;
 }

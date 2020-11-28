@@ -73,7 +73,7 @@ typedef struct fault fault_t;
  * @param[in] vm    The VM that the fault structure should be bound to
  * @return          An initialised fault structure handle or NULL on failure
  */
-fault_t* fault_init(vm_vcpu_t* vcpu);
+fault_t *fault_init(vm_vcpu_t *vcpu);
 
 /**
  * Populate an initialised fault structure with fault data obtained from
@@ -203,7 +203,7 @@ enum fault_width fault_get_width(fault_t *f);
  * @param[in] fault  A handle to the fault
  * @return           The access width size of the fault
  */
-size_t fault_get_width_size(fault_t* f);
+size_t fault_get_width_size(fault_t *f);
 
 /**
  * Get the context of a fault

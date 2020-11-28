@@ -97,8 +97,8 @@ static void vuart_putchar(struct device *d, char c)
     }
 }
 
-static memory_fault_result_t
-handle_vuart_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
+static memory_fault_result_t handle_vuart_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                                void *cookie)
 {
     uint32_t *reg;
     int offset;
@@ -108,7 +108,7 @@ handle_vuart_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault
 
     /* Gather fault information */
     offset = fault_addr - dev->pstart;
-    reg = (uint32_t*)(vuart_priv_get_regs(dev) + offset);
+    reg = (uint32_t *)(vuart_priv_get_regs(dev) + offset);
     mask = get_vcpu_fault_data_mask(vcpu);
     /* Handle the fault */
     if (offset < 0 || UART_SIZE <= offset) {
@@ -194,7 +194,7 @@ int vm_install_vconsole(vm_t *vm)
     }
 
     vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, d->pstart, d->size,
-            handle_vuart_fault, (void *)d);
+                                                                handle_vuart_fault, (void *)d);
     if (!reservation) {
         return -1;
     }

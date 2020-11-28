@@ -27,6 +27,6 @@ extern const struct device dev_apb_misc;
 extern const struct device dev_fuse;
 extern const struct device dev_gpios;
 
-typedef int (*vm_power_cb)(vm_t* vm, void* token);
-int vm_install_vpower(vm_t* vm, vm_power_cb shutdown_cb, void* shutdown_token,
-                      vm_power_cb reboot_cb, void* reboot_token);
+typedef int (*vm_power_cb)(vm_t *vm, void *token);
+int vm_install_vpower(vm_t *vm, vm_power_cb shutdown_cb, void *shutdown_token,
+                      vm_power_cb reboot_cb, void *reboot_token);

@@ -8,4 +8,4 @@
 
 #include <sel4vm/guest_vm.h>
 
-int vm_install_vsysreg(vm_t* vm);
+int vm_install_vsysreg(vm_t *vm);

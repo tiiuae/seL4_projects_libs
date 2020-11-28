@@ -239,9 +239,8 @@ static void vm_vusb_cancel(vusb_device_t *vusb, uint32_t surb_idx)
     }
 }
 
-static memory_fault_result_t
-handle_vusb_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
-                  void *cookie)
+static memory_fault_result_t handle_vusb_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                               void *cookie)
 {
     vusb_device_t *vusb;
     usb_ctrl_regs_t *ctrl_regs;
@@ -254,7 +253,7 @@ handle_vusb_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_
     offset = fault_addr - d->pstart - 0x1000;
     vusb = device_to_vusb_dev_data(d);
     ctrl_regs = vusb->ctrl_regs;
-    reg = (uint32_t*)((void*)ctrl_regs + (offset & ~0x3));
+    reg = (uint32_t *)((void *)ctrl_regs + (offset & ~0x3));
     if (is_vcpu_read_fault(vcpu)) {
         if (reg != &ctrl_regs->status) {
             set_vcpu_fault_data(vcpu, *reg);
@@ -272,7 +271,7 @@ handle_vusb_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_
         } else if (reg == &ctrl_regs->cancel_transaction) {
             /* Manual notification */
             vm_vusb_cancel(vusb, get_vcpu_fault_data(vcpu));
-        } else if ((void*)reg >= (void*)&ctrl_regs->req) {
+        } else if ((void *)reg >= (void *)&ctrl_regs->req) {
             /* Fill out the root hub USB request */
             *reg = emulate_vcpu_fault(vcpu, *reg);
         }
@@ -396,7 +395,7 @@ void vm_vusb_notify(vusb_device_t *vusb)
 vusb_device_t *vm_install_vusb(vm_t *vm, usb_host_t *hcd, uintptr_t pbase, int virq,
                                seL4_CPtr vmm_ncap, seL4_CPtr vm_ncap, int badge)
 {
-    vusb_device_t* vusb;
+    vusb_device_t *vusb;
     struct device *d;
     struct endpoint ep;
     int err;

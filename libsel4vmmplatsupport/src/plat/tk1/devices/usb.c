@@ -35,8 +35,9 @@ static int usb_vm_reboot_hook(vm_t *vm, void *token)
 }
 
 
-static memory_fault_result_t
-handle_usb_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie) {
+static memory_fault_result_t handle_usb_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                              void *cookie)
+{
     ZF_LOGE("Fault occured on passthrough usb device");
     return FAULT_ERROR;
 }

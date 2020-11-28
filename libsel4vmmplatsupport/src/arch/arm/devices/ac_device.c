@@ -18,17 +18,17 @@ struct gac_device_priv {
     enum vacdev_action action;
 };
 
-static memory_fault_result_t
-handle_gac_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length, void *cookie)
+static memory_fault_result_t handle_gac_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
+                                              void *cookie)
 {
     struct device *dev = (struct device *)cookie;
-    struct gac_device_priv* gac_device_priv = (struct gac_device_priv*)dev->priv;
+    struct gac_device_priv *gac_device_priv = (struct gac_device_priv *)dev->priv;
     volatile uintptr_t *reg;
     int offset;
 
     /* Gather fault information */
     offset = fault_addr - dev->pstart;
-    reg = (volatile seL4_Word*)(gac_device_priv->regs + offset);
+    reg = (volatile seL4_Word *)(gac_device_priv->regs + offset);
 
     if (is_vcpu_read_fault(vcpu)) {
         set_vcpu_fault_data(vcpu, *reg);
@@ -46,7 +46,7 @@ handle_gac_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_l
             case VACDEV_REPORT_ONLY:
                 printf("[ac/%s] pc %p | access violation: bits %p @ %p\n",
                        dev->name, (void *) get_vcpu_fault_ip(vcpu),
-                       (void *) ((result ^ *reg) & ~mask),
+                       (void *)((result ^ *reg) & ~mask),
                        (void *) fault_addr);
             default:
                 break;
@@ -74,9 +74,9 @@ handle_gac_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_l
 int vm_install_generic_ac_device(vm_t *vm, const struct device *d, void *mask,
                                  size_t mask_size, enum vacdev_action action)
 {
-    struct gac_device_priv* gac_device_priv;
+    struct gac_device_priv *gac_device_priv;
     struct device *dev;
-    vspace_t* vmm_vspace;
+    vspace_t *vmm_vspace;
     vmm_vspace = &vm->mem.vmm_vspace;
     int err;
 
@@ -109,7 +109,7 @@ int vm_install_generic_ac_device(vm_t *vm, const struct device *d, void *mask,
     dev->priv = gac_device_priv;
 
     vm_memory_reservation_t *reservation = vm_reserve_memory_at(vm, dev->pstart, dev->size,
-            handle_gac_fault, (void *)dev);
+                                                                handle_gac_fault, (void *)dev);
     if (!reservation) {
         free(dev);
         free(gac_device_priv);
