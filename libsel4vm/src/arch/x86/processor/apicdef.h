@@ -1,4 +1,5 @@
-/* @TAG(CUSTOM) *//* Taken from Linux kernel 3.18 */
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright Linux
 
 /*  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
