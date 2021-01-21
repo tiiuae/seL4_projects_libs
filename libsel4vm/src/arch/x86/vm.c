@@ -91,14 +91,14 @@ static int handle_vm_exit(vm_vcpu_t *vcpu)
     return ret;
 }
 
-static void vm_update_guest_state_from_interrupt(vm_vcpu_t *vcpu, seL4_Word *msg)
+static void vm_update_guest_state_from_interrupt(volatile vm_vcpu_t *vcpu, volatile seL4_Word *msg)
 {
     vcpu->vcpu_arch.guest_state->machine.eip = msg[SEL4_VMENTER_CALL_EIP_MR];
     vcpu->vcpu_arch.guest_state->machine.control_ppc = msg[SEL4_VMENTER_CALL_CONTROL_PPC_MR];
     vcpu->vcpu_arch.guest_state->machine.control_entry = msg[SEL4_VMENTER_CALL_CONTROL_ENTRY_MR];
 }
 
-static void vm_update_guest_state_from_fault(vm_vcpu_t *vcpu, seL4_Word *msg)
+static void vm_update_guest_state_from_fault(volatile vm_vcpu_t *vcpu, volatile seL4_Word *msg)
 {
     assert(vcpu->vcpu_arch.guest_state->exit.in_exit);
 
