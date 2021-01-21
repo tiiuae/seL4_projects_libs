@@ -28,7 +28,7 @@
 #include "debug.h"
 #include "vmexit.h"
 
-static vm_exit_handler_fn_t x86_exit_handlers[] = {
+static vm_exit_handler_fn_t x86_exit_handlers[VM_EXIT_REASON_NUM] = {
     [EXIT_REASON_PENDING_INTERRUPT] = vm_pending_interrupt_handler,
     [EXIT_REASON_CPUID] = vm_cpuid_handler,
     [EXIT_REASON_MSR_READ] = vm_rdmsr_handler,
@@ -63,6 +63,13 @@ static int handle_vm_exit(vm_vcpu_t *vcpu)
     int reason = vm_guest_exit_get_reason(vcpu->vcpu_arch.guest_state);
     if (reason == -1) {
         ZF_LOGF("Kernel failed to perform vmlaunch or vmresume, we have no recourse");
+    }
+
+    if (reason < 0 || VM_EXIT_REASON_NUM <= reason) {
+        printf("VM_FATAL_ERROR ::: vm exit reason 0x%x out of range.\n", reason);
+        vm_print_guest_context(vcpu);
+        vcpu->vcpu_online = false;
+        return -1;
     }
 
     if (!x86_exit_handlers[reason]) {
