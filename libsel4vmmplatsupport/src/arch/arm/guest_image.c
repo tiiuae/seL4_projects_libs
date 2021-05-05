@@ -212,7 +212,13 @@ static void *load_guest_kernel_image(vm_t *vm, const char *kernel_image_name, ui
             || config_set(CONFIG_PLAT_ODROIDC2)) {
             /* This is likely an aarch64/aarch32 linux difference */
             load_addr = load_base_addr + 0x80000;
-        } else {
+        } else if( config_set(CONFIG_PLAT_BCM2711)) {
+        
+            // TODO: 64-bit kernel built for RPi4 wants to be aligned at 2M boundary,
+            // see if this is an universal case for other Aarch64 platforms
+            load_addr = load_base_addr + 0x200000;
+        }
+        else {
             load_addr = load_base_addr + 0x8000;
         }
         break;
