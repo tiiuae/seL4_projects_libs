@@ -125,7 +125,8 @@ struct virq_handle {
 typedef struct virq_handle *virq_handle_t;
 
 /* Inject interrupt into vcpu */
-static int vgic_vcpu_inject_irq(struct vgic_dist_device *d, vm_vcpu_t *inject_vcpu, struct virq_handle *irq);
+static int vgic_vcpu_inject_irq(struct vgic_dist_device *d, vm_vcpu_t *inject_vcpu, struct virq_handle *irq,
+                                bool omit_head);
 
 static inline void virq_ack(vm_vcpu_t *vcpu, struct virq_handle *irq)
 {
@@ -452,8 +453,24 @@ static inline int is_active(struct gic_dist_map *gic_dist, int irq, int vcpu_id)
     return is_spi_active(gic_dist, irq, vcpu_id);
 }
 
-static inline int vgic_add_overflow_cpu(struct lr_of *lr_overflow, struct virq_handle *irq)
+static inline int vgic_irq_queued(struct lr_of *lr_overflow, int virq, bool omit_head)
 {
+    for (size_t i = lr_overflow->head; i != lr_overflow->tail; i = LR_OF_NEXT(i)) {
+        if (omit_head && i == lr_overflow->head)
+            continue;
+        if (lr_overflow->irqs[i].virq == virq)
+            return 1;
+    }
+
+    return 0;
+}
+
+static inline int vgic_add_overflow_cpu(struct lr_of *lr_overflow, struct virq_handle *irq,
+                                        bool omit_head)
+{
+    if (vgic_irq_queued(lr_overflow, irq->virq, omit_head))
+	return 0;
+
     /* Add to overflow list */
     int idx = lr_overflow->tail;
     if (unlikely(lr_overflow->full)) {
@@ -469,9 +486,10 @@ static inline int vgic_add_overflow_cpu(struct lr_of *lr_overflow, struct virq_h
     return 0;
 }
 
-static inline int vgic_add_overflow(vgic_t *vgic, struct virq_handle *irq, vm_vcpu_t *vcpu)
+static inline int vgic_add_overflow(vgic_t *vgic, struct virq_handle *irq, vm_vcpu_t *vcpu,
+                                    bool omit_head)
 {
-    return vgic_add_overflow_cpu(&vgic->lr_overflow[vcpu->vcpu_id], irq);
+    return vgic_add_overflow_cpu(&vgic->lr_overflow[vcpu->vcpu_id], irq, omit_head);
 }
 
 static inline void vgic_handle_overflow_cpu(vgic_t *vgic, struct lr_of *lr_overflow, vm_vcpu_t *vcpu)
@@ -480,7 +498,7 @@ static inline void vgic_handle_overflow_cpu(vgic_t *vgic, struct lr_of *lr_overf
      * not want to process any new overflow irqs */
     size_t tail = lr_overflow->tail;
     for (size_t i = lr_overflow->head; i != tail; i = LR_OF_NEXT(i)) {
-        if (vgic_vcpu_inject_irq(vgic_dist, vcpu, &lr_overflow->irqs[i]) == 0) {
+        if (vgic_vcpu_inject_irq(vgic_dist, vcpu, &lr_overflow->irqs[i], true) == 0) {
             lr_overflow->head = LR_OF_NEXT(i);
             lr_overflow->full = (lr_overflow->head == LR_OF_NEXT(lr_overflow->tail));
         } else {
@@ -494,7 +512,8 @@ static inline void vgic_handle_overflow(vgic_t *vgic, vm_vcpu_t *vcpu)
     vgic_handle_overflow_cpu(vgic, &vgic->lr_overflow[vcpu->vcpu_id], vcpu);
 }
 
-static int vgic_vcpu_inject_irq(struct vgic_dist_device *d, vm_vcpu_t *inject_vcpu, struct virq_handle *irq)
+static int vgic_vcpu_inject_irq(struct vgic_dist_device *d, vm_vcpu_t *inject_vcpu, struct virq_handle *irq,
+                                bool omit_head)
 {
     vgic_t *vgic;
     int err;
@@ -517,7 +536,7 @@ static int vgic_vcpu_inject_irq(struct vgic_dist_device *d, vm_vcpu_t *inject_vc
         return err;
     } else {
         /* Add to overflow list */
-        return vgic_add_overflow(vgic, irq, inject_vcpu);
+        return vgic_add_overflow(vgic, irq, inject_vcpu, omit_head);
     }
 }
 
@@ -610,7 +629,7 @@ static int vgic_dist_set_pending_irq(struct vgic_dist_device *d, vm_vcpu_t *vcpu
         DDIST("Pending set: Inject IRQ from pending set (%d)\n", irq);
 
         set_pending(gic_dist, virq_data->virq, true, vcpu->vcpu_id);
-        err = vgic_vcpu_inject_irq(d, vcpu, virq_data);
+        err = vgic_vcpu_inject_irq(d, vcpu, virq_data, false);
         assert(!err);
 
         return err;
