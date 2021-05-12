@@ -10,7 +10,6 @@
 #include <string.h>
 #include <platsupport/io.h>
 #include <ethdrivers/raw.h>
-#include <satadrivers/raw.h>
 #include <sel4vmmplatsupport/drivers/virtio_pci_console.h>
 #include <sel4vm/guest_vm.h>
 #include <ethdrivers/virtio/virtio_ring.h>
@@ -24,7 +23,6 @@
 typedef enum virtio_pci_devices {
     VIRTIO_NET,
     VIRTIO_CONSOLE,
-    VIRTIO_BLOCK,
 } virtio_pci_devices_t;
 
 typedef struct v_queue {
@@ -68,5 +66,3 @@ uint16_t ring_avail(virtio_emul_t *emul, struct vring *vring, uint16_t idx);
 void *net_virtio_emul_init(virtio_emul_t *emul, ps_io_ops_t io_ops, ethif_driver_init driver, void *config);
 
 void *console_virtio_emul_init(virtio_emul_t *emul, ps_io_ops_t io_ops, console_driver_init driver, void *config);
-
-void *block_virtio_emul_init(virtio_emul_t *emul, ps_io_ops_t io_ops, diskif_driver_init driver, void *config);
