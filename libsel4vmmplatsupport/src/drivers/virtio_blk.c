@@ -84,6 +84,45 @@ static void malloc_dma_cache_op(void *cookie, void *addr, size_t size, dma_cache
     ZF_LOGF("not implemented");
 }
 
+static int emul_raw_xfer(struct disk_driver *driver, uint8_t direction, uint64_t sector, uint32_t len,
+                         uintptr_t guest_buf_phys)
+{
+    ZF_LOGF("not implemented");
+}
+
+static void emul_raw_handle_irq(struct disk_driver *driver, int irq)
+{
+    ZF_LOGF("not implemented");
+}
+
+static void emul_raw_poll(struct disk_driver *driver)
+{
+    ZF_LOGF("not implemented");
+}
+
+static void emul_low_level_init(struct disk_driver *driver, struct virtio_blk_config *cfg)
+{
+    ZF_LOGF("not implemented");
+}
+
+static void emul_print_state(struct disk_driver *driver)
+{
+    ZF_LOGF("not implemented");
+}
+
+static raw_diskiface_funcs_t emul_driver_funcs = {
+    .raw_xfer = emul_raw_xfer,
+    .raw_handleIRQ = emul_raw_handle_irq,
+    .raw_poll = emul_raw_poll,
+    .print_state = emul_print_state,
+    .low_level_init = emul_low_level_init
+};
+
+raw_diskiface_funcs_t virtio_blk_default_backend(void)
+{
+    return emul_driver_funcs;
+}
+
 static vmm_pci_entry_t vmm_virtio_blk_pci_bar(unsigned int iobase, size_t iobase_size_bits,
                                               unsigned int interrupt_pin, unsigned int interrupt_line,
                                               bool emulate_bar_access)
@@ -171,43 +210,4 @@ virtio_blk_t *common_make_virtio_blk(vm_t *vm, vmm_pci_space_t *pci, vmm_io_port
 
     assert(blk->emul);
     return blk;
-}
-
-static int emul_raw_xfer(struct disk_driver *driver, uint8_t direction, uint64_t sector, uint32_t len,
-                         uintptr_t guest_buf_phys)
-{
-    ZF_LOGF("not implemented");
-}
-
-static void emul_raw_handle_irq(struct disk_driver *driver, int irq)
-{
-    ZF_LOGF("not implemented");
-}
-
-static void emul_raw_poll(struct disk_driver *driver)
-{
-    ZF_LOGF("not implemented");
-}
-
-static void emul_low_level_init(struct disk_driver *driver, struct virtio_blk_config *cfg)
-{
-    ZF_LOGF("not implemented");
-}
-
-static void emul_print_state(struct disk_driver *driver)
-{
-    ZF_LOGF("not implemented");
-}
-
-static raw_diskiface_funcs_t emul_driver_funcs = {
-    .raw_xfer = emul_raw_xfer,
-    .raw_handleIRQ = emul_raw_handle_irq,
-    .raw_poll = emul_raw_poll,
-    .print_state = emul_print_state,
-    .low_level_init = emul_low_level_init
-};
-
-raw_diskiface_funcs_t virtio_blk_default_backend(void)
-{
-    return emul_driver_funcs;
 }
