@@ -27,9 +27,10 @@
 /* Size of PCI IO space  */
 #define PCI_IO_REGION_SIZE 0x10000      // 64kB
 /* PCI memory space */
-#define PCI_MEM_REGION_ADDR 0x102000000ull // 0x602000000ull // 0xf2000000ull
+#define PCI_MEM_REGION_ADDR 0x02000000 // 0x602000000ull // 0xf2000000ull
 /* PCI memory space size */
 #define PCI_MEM_REGION_SIZE 0x1000000   // 16MB
 
 /* FDT IRQ controller address cells definition */
 #define GIC_ADDRESS_CELLS 0x1
+
