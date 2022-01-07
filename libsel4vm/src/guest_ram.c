@@ -25,6 +25,19 @@ struct guest_mem_touch_params {
     ram_touch_callback_fn touch_fn;
 };
 
+/* weak definition to break dependency to tii-sel4-vm */
+const int __attribute__((weak)) guest_large_pages = false;
+
+uintptr_t __attribute__((weak)) ram_base(void)
+{
+    return 0;
+}
+
+size_t __attribute__((weak)) ram_size(void)
+{
+    return 0;
+}
+
 static int push_guest_ram_region(vm_mem_t *guest_memory, uintptr_t start, size_t size, int allocated)
 {
     int last_region = guest_memory->num_ram_regions;
@@ -161,14 +174,21 @@ int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn to
     access_cookie.data = cookie;
     access_cookie.vm = vm;
     for (current_addr = addr; current_addr < end_addr; current_addr = next_addr) {
+        int sz = seL4_PageBits;
         uintptr_t current_aligned = PAGE_ALIGN_4K(current_addr);
         uintptr_t next_page_start = current_aligned + PAGE_SIZE_4K;
+        if (guest_large_pages && current_addr >= ram_base() &&
+            current_addr - ram_base() < ram_size()) {
+            sz = seL4_LargePageBits;
+            current_aligned = PAGE_ALIGN_2M(current_addr);
+            next_page_start = current_aligned + PAGE_SIZE_2M;
+        }
         next_addr = MIN(end_addr, next_page_start);
         access_cookie.size = next_addr - current_addr;
         access_cookie.offset = current_addr - addr;
         access_cookie.current_addr = current_addr;
         int result = vspace_access_page_with_callback(&vm->mem.vm_vspace, &vm->mem.vmm_vspace, (void *)current_aligned,
-                                                      seL4_PageBits, seL4_AllRights, 1, touch_access_callback, &access_cookie);
+                                                      sz, seL4_AllRights, 1, touch_access_callback, &access_cookie);
         if (result) {
             return result;
         }
