@@ -36,6 +36,9 @@ int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
  * @param {vmm_pci_space_t *}       PCI library instance to generate fdt node
  * @param {void *} fdt              FDT blob to append generated device node
  * @param {int} gic_phandle         Phandle of IRQ controller to generate a correct interrupt map property
+ * @param {int} interrupt_pin       Interrupt pin used for all devices
+ * @param {int} interrupt_line      Interrupt line used for all devices
  * @return                          0 for success, -1 for error
  */
-int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_phandle);
+int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_phandle,
+                           int interrupt_pin, int interrupt_line);

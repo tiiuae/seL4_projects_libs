@@ -17,7 +17,7 @@ virtual pci device.
 
 > [`vm_install_vpci(vm, io_port, pci)`](#function-vm_install_vpcivm-io_port-pci)
 
-> [`fdt_generate_vpci_node(vm, pci, fdt, gic_phandle)`](#function-fdt_generate_vpci_nodevm-pci-fdt-gic_phandle)
+> [`fdt_generate_vpci_node(vm, pci, fdt, gic_phandle, interrupt_pin, interrupt_line)`](#function-fdt_generate_vpci_nodevm-pci-fdt-gic_phandle-interrupt_pin-interrupt_line)
 
 
 ## Functions
@@ -40,10 +40,11 @@ The interface `vpci.h` defines the following functions.
 
 Back to [interface description](#module-vpcih).
 
-### Function `fdt_generate_vpci_node(vm, pci, fdt, gic_phandle)`
+### Function `fdt_generate_vpci_node(vm, pci, fdt, gic_phandle, interrupt_pin, interrupt_line)`
 
 Generate a PCI device node for a given fdt. This taking into account
-the virtual PCI device configuration space.
+the virtual PCI device configuration space. Note that currently both the same interrupt pin and
+line are used for all the devices in the PCI bus. For virtio devices this suffices for now.
 
 **Parameters:**
 
@@ -51,6 +52,8 @@ the virtual PCI device configuration space.
 - `PCI {vmm_pci_space_t *}`: library instance to generate fdt node
 - `fdt {void *}`: FDT blob to append generated device node
 - `gic_phandle {int}`: Phandle of IRQ controller to generate a correct interrupt map property
+- `interrupt_pin {int}`: Interrupt pin used for all devices
+- `interrupt_line {int}`: Interrupt line used for all devices
 
 **Returns:**
 

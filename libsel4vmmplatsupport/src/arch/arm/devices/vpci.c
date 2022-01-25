@@ -71,13 +71,12 @@ struct pci_cfg_data {
     vmm_pci_space_t *pci;
 };
 
-static void pci_cfg_read_fault(struct device *d, vm_t *vm, vm_vcpu_t *vcpu, vmm_pci_address_t pci_addr,
-                               uint8_t offset, vmm_pci_entry_t *dev)
+static void pci_cfg_read_fault(vm_vcpu_t *vcpu, uint8_t offset, size_t len, vmm_pci_entry_t *dev)
 {
     uint32_t data = 0;
     int err = 0;
 
-    err = dev->ioread((void *)dev->cookie, offset, get_vcpu_fault_size(vcpu), &data);
+    err = dev->ioread((void *)dev->cookie, offset, len, &data);
     if (err) {
         ZF_LOGE("Failure performing read from PCI CFG device");
     }
@@ -86,27 +85,16 @@ static void pci_cfg_read_fault(struct device *d, vm_t *vm, vm_vcpu_t *vcpu, vmm_
     set_vcpu_fault_data(vcpu, data << s);
 }
 
-static void pci_cfg_write_fault(struct device *d, vm_t *vm, vm_vcpu_t *vcpu, vmm_pci_address_t pci_addr,
-                                uint8_t offset, vmm_pci_entry_t *dev)
+static void pci_cfg_write_fault(vm_vcpu_t *vcpu, uint8_t offset, size_t len, vmm_pci_entry_t *dev)
 {
     uint32_t mask;
     uint32_t value;
-    uint8_t bar;
     int err;
 
-    bar = (offset - PCI_BAR_OFFSET(0)) / sizeof(uint32_t);
     mask = get_vcpu_fault_data_mask(vcpu);
     value = get_vcpu_fault_data(vcpu) & mask;
-    pci_bar_emulation_t *bar_emul = dev->cookie;
-    /* Linux will mask the PCI bar expecting its next read to be the size of the bar.
-    * To handle this we write the bars size to pci header such that the kernels next read will
-    * be the size. */
-    if (bar < 6 && value == PCI_CFG_BAR_MASK) {
-        uint32_t bar_size =  BIT((bar_emul->bars[bar].size_bits));
-        err = dev->iowrite((void *)dev->cookie, offset, sizeof(bar_size), bar_size);
-    } else {
-        err = dev->iowrite((void *)dev->cookie, offset, sizeof(value), value);
-    }
+
+    err = dev->iowrite((void *)dev->cookie, offset, len, value);
     if (err) {
         ZF_LOGE("Failure writing to PCI CFG device");
     }
@@ -135,9 +123,9 @@ static memory_fault_result_t pci_cfg_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, ui
     }
 
     if (is_vcpu_read_fault(vcpu)) {
-        pci_cfg_read_fault(dev, vm, vcpu, pci_addr, offset, pci_dev);
+        pci_cfg_read_fault(vcpu, offset, fault_length, pci_dev);
     } else {
-        pci_cfg_write_fault(dev, vm, vcpu, pci_addr, offset, pci_dev);
+        pci_cfg_write_fault(vcpu, offset, fault_length, pci_dev);
     }
 
     advance_vcpu_fault(vcpu);
@@ -235,7 +223,8 @@ static int append_prop_with_cells(void *fdt, int offset,  uint64_t val, int num_
     return err;
 }
 
-int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_phandle)
+int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_phandle,
+                           int interrupt_pin, int interrupt_line)
 {
     int err;
     int root_offset = fdt_path_offset(fdt, "/");
@@ -284,20 +273,17 @@ int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_ph
     /* The first device is always the bridge (which doesn't need to be recorded in the ranges) */
     for (int i = 1; i < 32; i++) {
         if (pci->bus0[i][0]) {
-            pci_bar_emulation_t *bar_emul = (pci_bar_emulation_t *)(pci->bus0[i][0])->cookie;
-            vmm_pci_entry_t entry = bar_emul->passthrough;
-            vmm_pci_device_def_t *pci_config = (vmm_pci_device_def_t *)entry.cookie;
             struct pci_interrupt_map irq_map;
             irq_map.pci_mask.pci_addr.hi  = cpu_to_fdt32(i << PCI_ADDR_DEV_SHIFT);
             irq_map.pci_mask.pci_addr.mid  = 0;
             irq_map.pci_mask.pci_addr.low  = 0;
-            irq_map.pci_mask.irq_pin = cpu_to_fdt32(pci_config->interrupt_pin);
+            irq_map.pci_mask.irq_pin = cpu_to_fdt32(interrupt_pin);
             irq_map.gic_phandle = cpu_to_fdt32(gic_phandle);
             irq_map.irq_type = 0;
 #if GIC_ADDRESS_CELLS == 0x1
-            irq_map.irq_num = cpu_to_fdt32(pci_config->interrupt_line - 32);
+            irq_map.irq_num = cpu_to_fdt32(interrupt_line - 32);
 #else
-            irq_map.irq_num = cpu_to_fdt64(pci_config->interrupt_line - 32);
+            irq_map.irq_num = cpu_to_fdt64(interrupt_line - 32);
 #endif
             irq_map.irq_flags = cpu_to_fdt32(0x4);
             FDT_OP(fdt_appendprop(fdt, pci_node, "interrupt-map", &irq_map, sizeof(irq_map)));
