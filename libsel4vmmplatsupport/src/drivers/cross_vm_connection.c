@@ -191,7 +191,7 @@ static int reserve_dataport_memory(vm_t *vm, crossvm_dataport_handle_t *dataport
     unsigned int num_frames = dataport->num_frames;
     seL4_CPtr *frames = dataport->frames;
 
-    printf("PRINT DATAPORT ADDR: %p \n", dataport_address);
+    printf("DATAPORT ADDR: %p \n", dataport_address);
 
     vm_memory_reservation_t *dataport_reservation = vm_reserve_memory_at(vm, dataport_address, size,
                                                                          default_error_fault_callback,
@@ -300,42 +300,6 @@ static int initialise_connections(vm_t *vm, uintptr_t connection_base_addr, cros
     return 0;
 }
 
-static int initialise_connections_personalized(vm_t *vm, uintptr_t connection_base_addr, crossvm_handle_t *connections,
-                                  int num_connections, struct connection_info *info, int connection_irq)
-{
-    int err;
-    uintptr_t connection_curr_addr = connection_base_addr;
-    for (int i = 0; i < num_connections; i++) {
-        /* We need to round everything up to the largest sized resource to prevent
-         * Linux from remapping the devices, which the vpci device can't emulate.
-         */
-        crossvm_dataport_handle_t *dataport = connections[i].dataport;
-        uintptr_t dataport_size = dataport->size;
-        connection_curr_addr += dataport_size;
-        err = reserve_dataport_memory(vm, dataport, connection_curr_addr, &info[i]);
-        if (err) {
-            ZF_LOGE("Failed to create dataport bar (id %d)", i);
-            return -1;
-        }
-        /* Register a callback event consuming (if we have one) */
-        info[i].connection_irq = connection_irq;
-        err = register_consume_event(vm, &connections[i], &info[i]);
-        if (err) {
-            ZF_LOGE("Failed to register connections consume event");
-            return -1;
-        }
-        info[i].connection = connections[i];
-        if (connections[i].connection_name == NULL) {
-            connections[i].connection_name = "connector";
-        }
-        strncpy(info[i].event_registers + EVENT_BAR_DEVICE_NAME_REGISTER, connections[i].connection_name,
-                EVENT_BAR_DEVICE_NAME_MAX_LEN);
-
-        connection_curr_addr += dataport_size;
-    }
-    return 0;
-}
-
 int cross_vm_connections_init_common(vm_t *vm, uintptr_t connection_base_addr, crossvm_handle_t *connections,
                                      int num_connections, vmm_pci_space_t *pci, alloc_free_interrupt_fn alloc_irq)
 {
@@ -354,23 +318,6 @@ int cross_vm_connections_init_common(vm_t *vm, uintptr_t connection_base_addr, c
     err = construct_connection_bar(vm, info, num_connections, pci);
     if (err) {
         ZF_LOGE("Failed to construct pci device for dataports");
-        return -1;
-    }
-    total_connections = num_connections;
-    return 0;
-}
-
-int cross_vm_connections_init_common_personalized(vm_t *vm, uintptr_t connection_base_addr, crossvm_handle_t *connections,
-                                                  int num_connections, alloc_free_interrupt_fn alloc_irq){
-
-    if (num_connections > MAX_NUM_CONNECTIONS) {
-        ZF_LOGE("Unable to register more than %d dataports", MAX_NUM_CONNECTIONS);
-        return -1;
-    }
-    int connection_irq = alloc_irq();
-    int err = initialise_connections_personalized(vm, connection_base_addr, connections, num_connections, info, connection_irq);
-    if (err) {
-        ZF_LOGE("Failed to reserve memory for dataports");
         return -1;
     }
     total_connections = num_connections;
