@@ -41,19 +41,6 @@ typedef int (*ram_touch_callback_fn)(vm_t *vm, uintptr_t guest_addr, void *vmm_v
 int vm_guest_ram_read_callback(vm_t *vm, uintptr_t guest_addr, void *vaddr, size_t size, size_t offset, void *buf);
 
 /***
- * @function personalized_vm_guest_ram_read_callback(vm, guest_addr, vaddr, size, offset, buf)
- * Common guest ram touch callback for reading from a guest address into a user supplied buffer
- * @param {vm_t *} vm               A handle to the VM
- * @param {uintptr_t} guest_addr    Guest physical address to read from
- * @param {void *} vmm_vaddr        Virtual address in hosts (vmm) vspace corresponding with the 'guest_addr'
- * @param {size_t} size             Size of region being currently accessed
- * @param {size_t} offset           Current offset from the base guest physical address supplied to 'vm_ram_touch'
- * @param {void *} cookie           User supplied buffer to store read data into
- * @return                          0 on success, -1 on error
- */
-int personalized_vm_guest_ram_read_callback(vm_t *vm, uintptr_t guest_addr, void *vaddr, size_t size, size_t offset, void *buf);
-
-/***
  * @function vm_guest_ram_write_callback(vm, guest_addr, vaddr, size, offset, buf)
  * Common guest ram touch callback for writing a user supplied buffer into a guest address
  * @param {vm_t *} vm               A handle to the VM
@@ -67,19 +54,6 @@ int personalized_vm_guest_ram_read_callback(vm_t *vm, uintptr_t guest_addr, void
 int vm_guest_ram_write_callback(vm_t *vm, uintptr_t guest_addr, void *vaddr, size_t size, size_t offset, void *buf);
 
 /***
- * @function personalized_vm_guest_ram_write_callback(vm, guest_addr, vaddr, size, offset, buf)
- * Common guest ram touch callback for writing a user supplied buffer into a guest address
- * @param {vm_t *} vm               A handle to the VM
- * @param {uintptr_t} guest_addr    Guest physical address to write to
- * @param {void *} vmm_vaddr        Virtual address in hosts (vmm) vspace corresponding with the 'guest_addr'
- * @param {size_t} size             Size of region being currently accessed
- * @param {size_t} offset           Current offset from the base guest physical address supplied to 'vm_ram_touch'
- * @param {void *} cookie           User supplied buffer to write data from
- * @return                          0 on success, -1 on error
- */
-int personalized_vm_guest_ram_write_callback(vm_t *vm, uintptr_t guest_addr, void *vaddr, size_t size, size_t offset, void *buf);
-
-/***
  * @function vm_ram_touch(vm, addr, size, touch_callback, cookie)
  * Touch a series of pages in the guest vm and invoke a callback for each page accessed
  * @param {vm_t *} vm                       A handle to the VM
@@ -90,6 +64,18 @@ int personalized_vm_guest_ram_write_callback(vm_t *vm, uintptr_t guest_addr, voi
  * @return                                  0 on success, -1 on error
  */
 int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn touch_callback, void *cookie);
+
+/***
+ * @function clean_vm_ram_touch(vm, addr, size, touch_callback, cookie)
+ * Cleaner version of vm_ram_touch - with no is_ram_region test
+ * @param {vm_t *} vm                       A handle to the VM
+ * @param {uintptr_t} addr                  Address to access in the guest vm
+ * @param {size_t} size                     Size of memory region to access
+ * @param {ram_touch_callback_fn} callback  Callback to invoke on each page access
+ * @param {void *} cookie                   User data to pass onto callback
+ * @return                                  0 on success, -1 on error
+ */
+int clean_vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn touch_callback, void *cookie);
 
 /***
  * @function vm_ram_find_largest_free_region(vm, addr, size)

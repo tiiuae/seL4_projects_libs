@@ -131,28 +131,8 @@ int vm_guest_ram_read_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t siz
     return 0;
 }
 
-int personalized_vm_guest_ram_read_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf)
-{
-    printf("PRINT vaddr: %p \n", vaddr);
-    printf("PRINT addr: %p \n", addr);
-    printf("PRINT buf: %s \n", buf);
-
-    memcpy(buf, vaddr, size);
-    return 0;
-}
-
 int vm_guest_ram_write_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf)
 {
-    memcpy(vaddr, buf, size);
-    return 0;
-}
-
-int personalized_vm_guest_ram_write_callback(vm_t *vm, uintptr_t addr, void *vaddr, size_t size, size_t offset, void *buf)
-{
-    printf("PRINT vaddr: %p \n", vaddr);
-    printf("PRINT addr: %p \n", addr);
-    printf("PRINT buf: %s \n", buf);
-    
     memcpy(vaddr, buf, size);
     return 0;
 }
@@ -207,10 +187,7 @@ int clean_vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback
     access_cookie.data = cookie;
     access_cookie.vm = vm;
     for (current_addr = addr; current_addr < end_addr; current_addr = next_addr) {
-        //printf("PRINT ADDR: %p \n", current_addr);
         uintptr_t current_aligned = PAGE_ALIGN_4K(current_addr);
-        //printf("PRINT current_aligned ADDR: %p \n", current_aligned);
-        //printf("PRINT access_cookie.data: %s \n", access_cookie.data);
         uintptr_t next_page_start = current_aligned + PAGE_SIZE_4K;
         next_addr = MIN(end_addr, next_page_start);
         access_cookie.size = next_addr - current_addr;

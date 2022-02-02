@@ -191,8 +191,6 @@ static int reserve_dataport_memory(vm_t *vm, crossvm_dataport_handle_t *dataport
     unsigned int num_frames = dataport->num_frames;
     seL4_CPtr *frames = dataport->frames;
 
-    printf("DATAPORT ADDR: %p \n", dataport_address);
-
     vm_memory_reservation_t *dataport_reservation = vm_reserve_memory_at(vm, dataport_address, size,
                                                                          default_error_fault_callback,
                                                                          NULL);
