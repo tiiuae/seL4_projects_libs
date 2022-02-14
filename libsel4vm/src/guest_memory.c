@@ -479,6 +479,21 @@ int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
         }
         current_addr += BIT(reservation_frame.size_bits);
     }
+
+    if (reservation_size > 0x1000) {
+        // Larger than 1 4K frame
+
+        ZF_LOGV("Mapped memory reservation (range 0x%lx...0x%lx, size 0x%lx) to guest VM vspace", 
+        reservation_addr,
+        (reservation_addr + reservation_size),
+        reservation_size);
+    } else {
+
+        ZF_LOGV("Mapped memory reservation (addr 0x%lx, size 0x%lx) to guest VM vspace", 
+        reservation_addr,
+        reservation_size);
+    }
+    
     vm_reservation->memory_map_iterator = NULL;
     vm_reservation->memory_iterator_cookie = NULL;
     vm_reservation->is_mapped = true;
