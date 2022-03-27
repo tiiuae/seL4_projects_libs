@@ -210,6 +210,8 @@ typedef struct vgic {
 
 static struct vgic_dist_device *vgic_dist;
 
+static int retrigger_if_needed(vm_vcpu_t *vcpu, int irq);
+
 static struct virq_handle *virq_get_sgi_ppi(vgic_t *vgic, vm_vcpu_t *vcpu, int virq)
 {
     assert(vcpu->vcpu_id < CONFIG_MAX_NUM_NODES);
@@ -318,13 +320,19 @@ static inline void set_spi_pending(struct gic_dist_map *gic_dist, int irq, int v
     }
 }
 
-static inline void set_pending(struct gic_dist_map *gic_dist, int irq, int value, int vcpu_id)
+static inline void set_pending(struct gic_dist_map *gic_dist, int irq, int value, vm_vcpu_t *vcpu)
 {
     if (irq < GIC_SPI_IRQ_MIN) {
-        set_sgi_ppi_pending(gic_dist, irq, value, vcpu_id);
+        set_sgi_ppi_pending(gic_dist, irq, value, vcpu->vcpu_id);
         return;
     }
-    set_spi_pending(gic_dist, irq, value, vcpu_id);
+    set_spi_pending(gic_dist, irq, value, vcpu->vcpu_id);
+    if (!value) {
+        int err = retrigger_if_needed(vcpu, irq);
+        if (err) {
+            ZF_LOGE("Failure retriggering IRQ %d (error %d)", irq, err);
+        }
+    }
 }
 
 static inline bool is_sgi_ppi_pending(struct gic_dist_map *gic_dist, int irq, int vcpu_id)
@@ -467,6 +475,22 @@ static inline struct virq_handle *vgic_irq_dequeue(vgic_t *vgic, vm_vcpu_t *vcpu
     return virq;
 }
 
+static void vgic_irq_remove(vgic_t *vgic, vm_vcpu_t *vcpu, int irq)
+{
+    struct irq_queue *q = &vgic->irq_queue[vcpu->vcpu_id];
+
+    size_t tail = q->head;
+    for (size_t head = q->head; head != q->tail; head = IRQ_QUEUE_NEXT(head)) {
+        if (q->irqs[head]->virq == irq) {
+            continue;
+        }
+        q->irqs[tail] = q->irqs[head];
+        tail = IRQ_QUEUE_NEXT(tail);
+    }
+
+    q->tail = tail;
+}
+
 static int vgic_find_empty_list_reg(vgic_t *vgic, vm_vcpu_t *vcpu)
 {
     for (int i = 0; i < NUM_LIST_REGS; i++) {
@@ -502,7 +526,7 @@ int handle_vgic_maintenance(vm_vcpu_t *vcpu, int idx)
 
     /* Clear pending */
     DIRQ("Maintenance IRQ %d\n", lr_shadow[idx]->virq);
-    set_pending(gic_dist, lr_shadow[idx]->virq, false, vcpu->vcpu_id);
+    set_pending(gic_dist, lr_shadow[idx]->virq, false, vcpu);
     virq_ack(vcpu, lr_shadow[idx]);
     lr_shadow[idx] = NULL;
 
@@ -578,7 +602,7 @@ static int vgic_dist_set_pending_irq(struct vgic_dist_device *d, vm_vcpu_t *vcpu
     }
 
     DDIST("Pending set: Inject IRQ from pending set (%d)\n", irq);
-    set_pending(gic_dist, virq_data->virq, true, vcpu->vcpu_id);
+    set_pending(gic_dist, virq_data->virq, true, vcpu);
 
     /* Enqueueing an IRQ and dequeueing it right after makes little sense
      * now, but in the future this is needed to support IRQ priorities.
@@ -607,9 +631,11 @@ static int vgic_dist_set_pending_irq(struct vgic_dist_device *d, vm_vcpu_t *vcpu
 static int vgic_dist_clr_pending_irq(struct vgic_dist_device *d, vm_vcpu_t *vcpu, int irq)
 {
     struct gic_dist_map *gic_dist = vgic_priv_get_dist(d);
+    vgic_t *vgic = vgic_device_get_vgic(d);
     DDIST("clr pending irq %d\n", irq);
-    set_pending(gic_dist, irq, false, vcpu->vcpu_id);
-    /* TODO: remove from IRQ queue and list registers as well */
+    vgic_irq_remove(vgic, vcpu, irq);
+    set_pending(gic_dist, irq, false, vcpu);
+    /* TODO: remove from list registers as well */
     return 0;
 }
 
@@ -1030,6 +1056,57 @@ int vm_register_irq(vm_vcpu_t *vcpu, int irq, irq_ack_fn_t ack_fn, void *cookie)
     }
 
     return 0;
+}
+
+static char irq_ext[512];
+
+static int retrigger_if_needed(vm_vcpu_t *vcpu, int irq)
+{
+    if (!irq_ext[irq]) {
+	    return 0;
+    }
+
+    struct gic_dist_map *gic_dist = vgic_priv_get_dist(vgic_dist);
+    vgic_t *vgic = vgic_device_get_vgic(vgic_dist);
+
+    int err = vgic_dist_set_pending_irq(vgic_dist, vcpu, irq);
+    if (err) {
+        ZF_LOGE("Failure retriggering irq %d\n", irq);
+    }
+
+    return err;
+}
+
+int irq_ext_modify(vm_vcpu_t *vcpu, unsigned int source, unsigned int irq, bool set)
+{
+    assert(source < 8);
+    assert(irq < 512);
+    if (!!(irq_ext[irq] & (1 << source)) == !!set) {
+        return 0;
+    }
+    if (set) {
+        irq_ext[irq] |= 1 << source;
+    } else {
+        irq_ext[irq] &= ~(1 << source);
+    }
+    if (irq_ext[irq] & ~(1 << source)) {
+        /* other sources active, this change does not have any effect */
+        return 0;
+    }
+
+    int err;
+    if (set) {
+        err = vgic_dist_set_pending_irq(vgic_dist, vcpu, irq);
+    } else {
+        err = vgic_dist_clr_pending_irq(vgic_dist, vcpu, irq);
+    }
+
+    if (err) {
+        ZF_LOGE("Failure %s pending IRQ %u from external source %u (error %d)",
+                set ? "setting" : "clearing", irq, source, err);
+    }
+
+    return err;
 }
 
 int vm_inject_irq(vm_vcpu_t *vcpu, int irq)
