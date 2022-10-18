@@ -4,6 +4,13 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <autoconf.h>
+#include <sel4vm/gen_config.h>
+
+#ifdef CONFIG_LIBSEL4_VM_CAMKES_MEMORY_DEBUG
+#define ZF_LOG_LEVEL ZF_LOG_VERBOSE
+#endif
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -259,6 +266,15 @@ static vm_frame_t ram_alloc_iterator(uintptr_t addr, void *cookie)
         ZF_LOGE("Failed to allocate frame for address 0x%"PRIxPTR, addr);
         return frame_result;
     }
+#ifdef CONFIG_LIBSEL4_VM_CAMKES_MEMORY_DEBUG
+    ZF_LOGV("Allocated frame, cptr = 0x%lx, ut = 0x%lx, size = 0x%lx, vaddr = %p, paddr = %p",
+        object.cptr,
+        object.ut,
+        BIT(page_size),
+        (void *)frame_start,
+        (void *)vka_utspace_paddr(vm->vka, object.ut, object.type, object.size_bits)
+    );
+#endif
     frame_result.cptr = object.cptr;
     frame_result.rights = seL4_AllRights;
     frame_result.vaddr = frame_start;
@@ -292,6 +308,14 @@ static vm_frame_t ram_ut_alloc_iterator(uintptr_t addr, void *cookie)
         vka_cspace_free_path(vm->vka, path);
         return frame_result;
     }
+#ifdef CONFIG_LIBSEL4_VM_CAMKES_MEMORY_DEBUG
+    ZF_LOGV("Allocated frame, cptr = 0x%lx, size = 0x%lx, vaddr = %p, paddr = %p",
+        path.capPtr,
+        BIT(page_size),
+        (void *)frame_start,
+        (void *)frame_start
+    );
+#endif
     frame_result.cptr = path.capPtr;
     frame_result.rights = seL4_AllRights;
     frame_result.vaddr = frame_start;
