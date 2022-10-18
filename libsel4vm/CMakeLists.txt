@@ -46,6 +46,14 @@ config_option(
     OFF
 )
 
+config_option(
+    LibSel4VMCamkesMemoryDebug 
+    LIBSEL4_VM_CAMKES_MEMORY_DEBUG
+    "Include additional debug printing to aid debugging of CAmkES stage-2 memory mapping"
+    DEFAULT
+    OFF
+)
+
 mark_as_advanced(LibSel4VMDeferMemoryMap LibSel4VMVMXTimerDebug
     LibSel4VMVMXTimerTimeout LibSel4VMAlignLPHack)
 
