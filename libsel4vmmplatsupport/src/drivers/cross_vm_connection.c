@@ -45,6 +45,7 @@ struct dataport_iterator_cookie {
     seL4_CPtr *dataport_frames;
     uintptr_t dataport_start;
     size_t dataport_size;
+    size_t dataport_pagesize;
     vm_t *vm;
 };
 
@@ -161,15 +162,15 @@ static vm_frame_t dataport_memory_iterator(uintptr_t addr, void *cookie)
     vm_t *vm = dataport_cookie->vm;
     uintptr_t dataport_start = dataport_cookie->dataport_start;
     size_t dataport_size = dataport_cookie->dataport_size;
-    int page_size = seL4_LargePageBits;
+    int page_size = dataport_cookie->dataport_pagesize;
 
-    uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
+    uintptr_t frame_start = PAGE_ALIGN(addr, SIZE_BITS_TO_BYTES(page_size));
     if (frame_start <  dataport_start ||
         frame_start > dataport_start + dataport_size) {
         ZF_LOGE("Error: Not Dataport region");
         return frame_result;
     }
-    int page_idx = (frame_start - dataport_start) / BIT(page_size);
+    int page_idx = (frame_start - dataport_start) / SIZE_BITS_TO_BYTES(page_size);
     frame_result.cptr = dataport_frames[page_idx];
     frame_result.rights = seL4_AllRights;
     frame_result.vaddr = frame_start;
@@ -197,6 +198,7 @@ static int reserve_dataport_memory(vm_t *vm, crossvm_dataport_handle_t *dataport
     dataport_cookie->dataport_frames = frames;
     dataport_cookie->dataport_start = dataport_address;
     dataport_cookie->dataport_size = size;
+    dataport_cookie->dataport_pagesize = dataport->page_size;
     err = vm_map_reservation(vm, dataport_reservation, dataport_memory_iterator, (void *)dataport_cookie);
     if (err) {
         ZF_LOGE("Failed to map dataport memory");

@@ -28,11 +28,13 @@ typedef int (*alloc_free_interrupt_fn)(void);
  * @struct crossvm_dataport_handle
  * Datastructure representing a dataport of a crossvm connection
  * @param {size_t} size         The size of the crossvm dataport
+ * @param {size_t} page_size    The page size of dataport frames
  * @param {int} num_frames      Total number of frames in the `frames` member
  * @param {seL4_CPtr *} frames  The set of frames backing the dataport
  */
 typedef struct crossvm_dataport_handle {
     size_t size;
+    size_t page_size;
     unsigned int num_frames;
     seL4_CPtr *frames;
 } crossvm_dataport_handle_t;
