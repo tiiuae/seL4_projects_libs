@@ -323,7 +323,7 @@ uintptr_t vm_ram_register(vm_t *vm, size_t bytes)
     int err;
     uintptr_t base_addr;
 
-    ram_reservation = vm_reserve_anon_memory(vm, bytes, 0x1000, default_ram_fault_callback, NULL, &base_addr);
+    ram_reservation = vm_reserve_anon_memory(vm, bytes, SIZE_BITS_TO_BYTES(seL4_PageBits), default_ram_fault_callback, NULL, &base_addr);
     if (!ram_reservation) {
         ZF_LOGE("Unable to reserve ram region of size 0x%zx", bytes);
         return 0;
