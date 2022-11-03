@@ -176,7 +176,7 @@ void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRight
     }
 
     /* Reserve emulated vm frame */
-    cookie->reservation = vm_reserve_memory_at(vm, addr, PAGE_SIZE_4K,
+    cookie->reservation = vm_reserve_memory_at(vm, addr, SIZE_BITS_TO_BYTES(page_size),
                                                alloc_fault_callback, (void *)alloc_fault_cookie);
     if (!cookie->reservation) {
         ZF_LOGE("Failed to create allocated vm frame: Unable to reservate emulated frame");
