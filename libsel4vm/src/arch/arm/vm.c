@@ -210,6 +210,20 @@ int vm_register_unhandled_vcpu_fault_callback(vm_vcpu_t *vcpu, unhandled_vcpu_fa
 
 }
 
+/* Ugly hack to give Linux scheduler a chance to execute every now
+ * and then on the listening vCPU. Timer (perhaps programmed by
+ * guest?) would be better.
+ */
+static void vm_heartbeat(vm_t *vm)
+{
+    static int cntr = 0;
+    if (((cntr++) & 15) != 0) {
+        return;
+    }
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
+    seL4_NBSend(vm->guest_endpoint, tag);
+}
+
 int vm_run_arch(vm_t *vm)
 {
     int err;
@@ -231,6 +245,7 @@ int vm_run_arch(vm_t *vm)
                 ZF_LOGE("Invalid VCPU index. Exiting");
                 ret = -1;
             } else {
+                vm_heartbeat(vm);
                 vm_exit_reason = vm_decode_exit(label);
                 ret = arm_exit_handlers[vm_exit_reason](vm->vcpus[vcpu_idx]);
                 if (ret == VM_EXIT_HANDLE_ERROR) {

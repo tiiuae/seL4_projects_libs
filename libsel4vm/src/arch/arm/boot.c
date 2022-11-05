@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#define ZF_LOG_LEVEL ZF_LOG_INFO
+
 #include <autoconf.h>
 
 #include <string.h>
@@ -63,6 +65,8 @@ int vm_init_arch(vm_t *vm)
     return err;
 }
 
+seL4_CPtr guest_ep_cptr;
+
 int vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu)
 {
     int err;
@@ -71,6 +75,23 @@ int vm_create_vcpu_arch(vm_t *vm, vm_vcpu_t *vcpu)
     cspacepath_t dst = {0};
 
     seL4_Word badge = VCPU_BADGE_CREATE((seL4_Word)vcpu->vcpu_id);
+
+#if 1
+    /* Last vCPU is used to interface to seL4 natively */
+    if (vcpu->vcpu_id) {
+      /* Copy guest endpoint to VM cspace */
+      ZF_LOGI("creating guest EP");
+      vka_cspace_make_path(vm->vka, vm->guest_endpoint, &src);
+      dst.root = vm->cspace.cspace_obj.cptr;
+      dst.capPtr = VM_GUEST_EP_SLOT;
+      dst.capDepth = VM_CSPACE_SIZE_BITS;
+      err = vka_cnode_copy(&dst, &src, seL4_AllRights);
+      assert(!err);
+
+      guest_ep_cptr = dst.capPtr;
+      ZF_LOGI("guest EP cap is %lu\n", guest_ep_cptr);
+    }
+#endif
 
     /* Badge the endpoint */
     vka_cspace_make_path(vm->vka, vm->host_endpoint, &src);

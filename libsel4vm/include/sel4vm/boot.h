@@ -35,7 +35,8 @@
  * @return                              0 on success, otherwise -1 for error
  */
 int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, vspace_t host_vspace,
-            ps_io_ops_t *io_ops, seL4_CPtr host_endpoint, const char *name);
+            ps_io_ops_t *io_ops, seL4_CPtr host_endpoint,
+            seL4_CPtr guest_endpoint, const char *name);
 
 /***
  * @function vm_create_vcpu(vm, priority)

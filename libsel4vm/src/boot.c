@@ -21,7 +21,7 @@
 static int curr_vcpu_index = 0;
 
 int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, vspace_t host_vspace,
-            ps_io_ops_t *io_ops, seL4_CPtr host_endpoint, const char *name)
+            ps_io_ops_t *io_ops, seL4_CPtr host_endpoint, seL4_CPtr guest_endpoint, const char *name)
 {
     int err;
     bzero(vm, sizeof(vm_t));
@@ -31,6 +31,7 @@ int vm_init(vm_t *vm, vka_t *vka, simple_t *host_simple, vspace_t host_vspace,
     vm->io_ops = io_ops;
     vm->mem.vmm_vspace = host_vspace;
     vm->host_endpoint = host_endpoint;
+    vm->guest_endpoint = guest_endpoint;
     vm->vm_name = strndup(name, strlen(name));
     vm->run.exit_reason = VM_GUEST_UNKNOWN_EXIT;
     /* Initialise ram region */
