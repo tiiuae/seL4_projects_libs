@@ -159,12 +159,11 @@ static vm_frame_t frame_alloc_iterator(uintptr_t addr, void *cookie)
     return frame_result;
 }
 
-void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t rights,
+void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, size_t frame_size_bits, seL4_CapRights_t rights,
                                          memory_fault_callback_fn alloc_fault_callback, void *alloc_fault_cookie)
 {
     int err;
     struct device_frame_cookie *cookie;
-    int page_size = seL4_PageBits;
     void *alloc_addr;
     vspace_t *vmm_vspace = &vm->mem.vmm_vspace;
     ps_io_ops_t *ops = vm->io_ops;
@@ -176,7 +175,7 @@ void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRight
     }
 
     /* Reserve emulated vm frame */
-    cookie->reservation = vm_reserve_memory_at(vm, addr, SIZE_BITS_TO_BYTES(page_size),
+    cookie->reservation = vm_reserve_memory_at(vm, addr, SIZE_BITS_TO_BYTES(frame_size_bits),
                                                alloc_fault_callback, (void *)alloc_fault_cookie);
     if (!cookie->reservation) {
         ZF_LOGE("Failed to create allocated vm frame: Unable to reservate emulated frame");
@@ -184,7 +183,7 @@ void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRight
         return NULL;
     }
 
-    err = vka_alloc_frame(vm->vka, page_size, &cookie->frame);
+    err = vka_alloc_frame(vm->vka, frame_size_bits, &cookie->frame);
     if (err) {
         ZF_LOGE("Failed vka_alloc_frame for allocated device frame");
         vm_free_reserved_memory(vm, cookie->reservation);
@@ -193,7 +192,7 @@ void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRight
     }
     vka_cspace_make_path(vm->vka, cookie->frame.cptr, &cookie->mapped_frame);
     alloc_addr = vspace_map_pages(vmm_vspace, &cookie->mapped_frame.capPtr,
-                                  NULL, seL4_AllRights, 1, page_size, 0);
+                                  NULL, seL4_AllRights, 1, frame_size_bits, 0);
     if (!alloc_addr) {
         ZF_LOGE("Failed to map allocated frame into vmm vspace");
         vka_free_object(vm->vka, &cookie->frame);

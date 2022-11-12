@@ -130,7 +130,7 @@ static memory_fault_result_t handle_event_bar_fault(vm_t *vm, vm_vcpu_t *vcpu, u
     return FAULT_HANDLED;
 }
 
-static int reserve_event_bar(vm_t *vm, uintptr_t event_bar_address, struct connection_info *info)
+static int reserve_event_bar(vm_t *vm, uintptr_t event_bar_address, size_t event_bar_size_bits, struct connection_info *info)
 {
     struct device *event_bar = calloc(1, sizeof(struct device));
     if (!event_bar) {
@@ -140,15 +140,20 @@ static int reserve_event_bar(vm_t *vm, uintptr_t event_bar_address, struct conne
     event_bar->pstart = event_bar_address;
     event_bar->priv = (void *)info;
 
-    info->event_registers = create_allocated_reservation_frame(vm, event_bar_address, seL4_CanRead,
-                                                               handle_event_bar_fault, event_bar);
+    info->event_registers = create_allocated_reservation_frame(vm, 
+                                                                event_bar_address,
+                                                                event_bar_size_bits, 
+                                                                seL4_CanRead,
+                                                                handle_event_bar_fault,
+                                                                event_bar);
     if (info->event_registers == NULL) {
         ZF_LOGE("Failed to map emulated event bar space");
         return -1;
     }
     /* Zero out memory */
-    memset(info->event_registers, 0, PAGE_SIZE);
+    memset(info->event_registers, 0, event_bar_size_bits);
     info->event_address = event_bar_address;
+    info->dataport_size_bits = event_bar_size_bits;
     return 0;
 }
 
@@ -264,17 +269,24 @@ static int initialise_connections(vm_t *vm, uintptr_t connection_base_addr, cros
          */
         crossvm_dataport_handle_t *dataport = connections[i].dataport;
         uintptr_t dataport_size = dataport->size;
-        err = reserve_event_bar(vm, connection_curr_addr, &info[i]);
+        size_t dataport_size_bits = dataport->page_size_bits;
+
+        err = reserve_event_bar(vm, connection_curr_addr, dataport_size_bits, &info[i]);
         if (err) {
             ZF_LOGE("Failed to create event bar (id:%d)", i);
             return -1;
         }
+        ZF_LOGI("Reserved event bar (%i): (event_address = 0x%"PRIxPTR"), (dataport_size_bits = %i)", info->event_address, info->dataport_size_bits);
+
         connection_curr_addr += dataport_size;
         err = reserve_dataport_memory(vm, dataport, connection_curr_addr, &info[i]);
         if (err) {
             ZF_LOGE("Failed to create dataport bar (id %d)", i);
             return -1;
         }
+
+        ZF_LOGI("Reserved dataport memory (%i): (connection_curr_addr = 0x%"PRIxPTR"), (dataport_size = %zu)", connection_curr_addr, (size_t)dataport_size);
+
         /* Register a callback event consuming (if we have one) */
         info[i].connection_irq = connection_irq;
         err = register_consume_event(vm, &connections[i], &info[i]);
@@ -304,6 +316,18 @@ int cross_vm_connections_init_common(vm_t *vm, uintptr_t connection_base_addr, c
         return -1;
     }
     int connection_irq = alloc_irq();
+    ZF_LOGI("Initializing crossvm connections: (vm = %p), \n\
+                                               (connection_base_addr = 0x%"PRIxPTR"), \n\
+                                               (connections = %p), \n\
+                                               (num_connections = %i), \n\
+                                               (pci = %p), \n\
+                                               (connection_irq = %i)",
+                                               (void *)vm,
+                                               connection_base_addr,
+                                               (void *)connections,
+                                               num_connections,
+                                               (void *)pci,
+                                               connection_irq);
     int err = initialise_connections(vm, connection_base_addr, connections, num_connections, info, connection_irq);
     if (err) {
         ZF_LOGE("Failed to reserve memory for dataports");

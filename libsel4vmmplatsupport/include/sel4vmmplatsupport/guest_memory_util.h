@@ -18,12 +18,13 @@
  * Create and map a reservation for a vka allocated frame. The allocated frame is mapped in both the vm and vmm vspace
  * @param {vm_t *} vm                                       A handle to the VM
  * @param {uintptr_t} addr                                  Address of emulated frame
+ * @param {size_t} frame_size_bits                          Size of emulated frame in bits
  * @param {seL4_CapRights_t} rights                         Rights for mapping the allocated frame into the vm's vspace
  * @param {memory_fault_callback_fn} alloc_fault_callback   Fault callback for allocated frame
  * @param {void *} alloc_fault_cookie                       Cookie for fault callback
  * @return                                                  Address of allocated frame in vmm vspace
  */
-void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, seL4_CapRights_t rights,
+void *create_allocated_reservation_frame(vm_t *vm, uintptr_t addr, size_t frame_size_bits, seL4_CapRights_t rights,
                                          memory_fault_callback_fn alloc_fault_callback, void *alloc_fault_cookie);
 /***
  * @function create_device_reservation_frame(vm, addr, rights, fault_callback, fault_cookie)
