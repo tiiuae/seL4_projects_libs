@@ -134,3 +134,31 @@ uintptr_t vm_ram_allocate(vm_t *vm, size_t bytes);
  * @param {size_t} size         The size of the RAM region to be free'd
  */
 void vm_ram_free(vm_t *vm, uintptr_t start, size_t bytes);
+
+/***
+ * @function vm_guest_ram_write(vm, guest_addr, vmm_buffer, size)
+ * Common Write a user supplied buffer into a guest address
+ * @param {vm_t *} vm               A handle to the VM
+ * @param {uintptr_t} guest_addr    Guest physical address to write to
+ * @param {void *} vmm_buffer       User supplied buffer to write data from (as in vmm vspace)
+ * @param {size_t} size             Size of region being currently accessed
+ * @return                          0 on success, -1 on error
+ */
+static inline int vm_guest_ram_write(vm_t *vm, uintptr_t address, void *vmm_buffer, size_t size)
+{
+    return vm_ram_touch(vm, address, size, vm_guest_ram_write_callback, vmm_buffer);
+}
+
+/***
+ * @function vm_guest_ram_read(vm, guest_addr, vmm_buffer, size)
+ * Read from a guest address into a user supplied buffer
+ * @param {vm_t *} vm               A handle to the VM
+ * @param {uintptr_t} guest_addr    Guest physical address to read from
+ * @param {void *} vmm_buffer       User supplied buffer to store read data into (as in vmm vspace)
+ * @param {size_t} size             Size of region being currently accessed
+ * @return                          0 on success, -1 on error
+ */
+static inline int vm_guest_ram_read(vm_t *vm, uintptr_t address, void *vmm_buffer, size_t size)
+{
+    return vm_ram_touch(vm, address, size, vm_guest_ram_read_callback, vmm_buffer);
+}
