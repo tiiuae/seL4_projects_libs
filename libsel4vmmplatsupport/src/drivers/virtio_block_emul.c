@@ -4,10 +4,9 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include <sel4vm/guest_ram.h>
 #include <sel4vmmplatsupport/drivers/virtio_pci_emul.h>
 #include <stdbool.h>
-
-#include "virtio_emul_helpers.h"
 
 #define BUF_SIZE 8192
 #define MAX_DATA_BUF_SIZE 4096
@@ -82,7 +81,7 @@ static void handle_virtio_blk_request(virtio_emul_t *emul)
             desc = ring_desc(emul, vring, desc_idx);
             /* truncate packets that are too large */
             uint32_t this_len = MIN(BUF_SIZE - len, desc.len);
-            vm_guest_read_mem(emul->vm, vaddr + len, (uintptr_t) desc.addr, this_len);
+            vm_guest_ram_read(emul->vm, (uintptr_t)desc.addr, vaddr + len, this_len);
             /* Save off the descriptor addresses so we can write back to the VM */
             desc_addrs[i] = desc.addr;
             /* The second descriptor (index 1) is the data buffer.
@@ -123,15 +122,15 @@ static void handle_virtio_blk_request(virtio_emul_t *emul)
             *(uint8_t *)req_status_start = VIRTIO_BLK_S_OK;
             if (VIRTIO_BLK_T_IN == hdr.type) {
                 /* We assume descriptor address at index 1 is the buffer */
-                vm_guest_write_mem(emul->vm, vaddr + sizeof(struct virtio_blk_outhdr), desc_addrs[1], buf_len);
+                vm_guest_ram_write(emul->vm, desc_addrs[1], vaddr + sizeof(struct virtio_blk_outhdr), buf_len);
             }
             /* We assume descriptor address at index 2 is the status of the IO cmd*/
-            vm_guest_write_mem(emul->vm, vaddr + sizeof(struct virtio_blk_outhdr) + buf_len, desc_addrs[2], 1);
+            vm_guest_ram_write(emul->vm, desc_addrs[2], vaddr + sizeof(struct virtio_blk_outhdr) + buf_len, 1);
             complete_virtio_blk_request(emul, cookie);
             break;
         case VIRTIO_BLK_XFER_FAILED:
             *(uint8_t *)req_status_start = VIRTIO_BLK_S_IOERR;
-            vm_guest_write_mem(emul->vm, vaddr + sizeof(struct virtio_blk_outhdr) + buf_len, desc_addrs[2], 1);
+            vm_guest_ram_write(emul->vm, desc_addrs[2], vaddr + sizeof(struct virtio_blk_outhdr) + buf_len, 1);
             complete_virtio_blk_request(emul, cookie);
             break;
         }

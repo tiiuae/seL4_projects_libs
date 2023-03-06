@@ -123,8 +123,7 @@ inline static uint32_t guest_get_phys_word(vm_t *vm, uintptr_t addr)
 {
     uint32_t val;
 
-    vm_ram_touch(vm, addr, sizeof(uint32_t),
-                 vm_guest_ram_read_callback, &val);
+    vm_guest_ram_read(vm, addr, &val, sizeof(val));
 
     return val;
 }
@@ -166,8 +165,7 @@ int vm_fetch_instruction(vm_vcpu_t *vcpu, uint32_t eip, uintptr_t cr3,
     }
 
     /* Fetch instruction */
-    vm_ram_touch(vcpu->vm, instr_phys, len,
-                 vm_guest_ram_read_callback, buf);
+    vm_guest_ram_read(vcpu->vm, instr_phys, buf, len);
 
     return 0;
 }
@@ -300,10 +298,8 @@ uintptr_t vm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                     instr += 2;
 
                     /* Limit is first 2 bytes, base is next 4 bytes */
-                    vm_ram_touch(vcpu->vm, mem,
-                                 2, vm_guest_ram_read_callback, &limit);
-                    vm_ram_touch(vcpu->vm, mem + 2,
-                                 4, vm_guest_ram_read_callback, &base);
+                    vm_guest_ram_read(vcpu->vm, mem, &limit, 2);
+                    vm_guest_ram_read(vcpu->vm, mem + 2, &base, 4);
                     ZF_LOGD("lidtl %p\n", (void *)mem);
 
                     vm_guest_state_set_idt_base(gs, base);
@@ -316,10 +312,8 @@ uintptr_t vm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                     instr += 2;
 
                     /* Limit is first 2 bytes, base is next 4 bytes */
-                    vm_ram_touch(vcpu->vm, mem,
-                                 2, vm_guest_ram_read_callback, &limit);
-                    vm_ram_touch(vcpu->vm, mem + 2,
-                                 4, vm_guest_ram_read_callback, &base);
+                    vm_guest_ram_read(vcpu->vm, mem, &limit, 2);
+                    vm_guest_ram_read(vcpu->vm, mem + 2, &base, 4);
                     ZF_LOGD("lgdtl %p; base = %x, limit = %x\n", (void *)mem,
                             base, limit);
 
@@ -373,8 +367,7 @@ uintptr_t vm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                 mem += *segment * SEG_MULT;
                 ZF_LOGD("mov %p, eax\n", (void *)mem);
                 uint32_t eax;
-                vm_ram_touch(vcpu->vm, mem,
-                             4, vm_guest_ram_read_callback, &eax);
+                vm_guest_ram_read(vcpu->mem, mem, &eax, sizeof(eax));
                 vm_set_thread_context_reg(vcpu, VCPU_CONTEXT_EAX, eax);
                 break;
             case 0xc7:
@@ -395,8 +388,7 @@ uintptr_t vm_emulate_realmode(vm_vcpu_t *vcpu, uint8_t *instr_buf,
                     }
                     instr += size;
                     ZF_LOGD("mov $0x%x, %p\n", lit, (void *)mem);
-                    vm_ram_touch(vcpu->vm, mem,
-                                 size, vm_guest_ram_write_callback, &lit);
+                    vm_guest_ram_write(vcpu->vm, mem, &lit, size);
                 }
                 break;
             case 0xba:

@@ -3,9 +3,8 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
+#include <sel4vm/guest_ram.h>
 #include <sel4vmmplatsupport/drivers/virtio_pci_emul.h>
-
-#include "virtio_emul_helpers.h"
 
 /* Temporary buffer used during TX */
 static char buf[VIRTIO_VSOCK_CAMKES_MTU];
@@ -43,7 +42,7 @@ static void emul_vsock_rx_complete(virtio_emul_t *emul, char *buf, unsigned int 
             uint32_t copy;
             copy = len - buf_written;
             copy = MIN(copy, desc.len - desc_written);
-            vm_guest_write_mem(emul->vm, buf + buf_written, (uintptr_t)desc.addr + desc_written, copy);
+            vm_guest_ram_write(emul->vm, (uintptr_t)desc.addr + desc_written, buf + buf_written, copy);
             /* update amounts */
             tot_written += copy;
             desc_written += copy;
@@ -118,7 +117,7 @@ static void emul_vsock_notify_tx(virtio_emul_t *emul)
 
             /* truncate packets that are too large */
             uint32_t this_len = MIN(VIRTIO_VSOCK_CAMKES_MTU - len, desc.len);
-            vm_guest_read_mem(emul->vm, buf + len, (uintptr_t)desc.addr, this_len);
+            vm_guest_ram_read(emul->vm, (uintptr_t)desc.addr, buf + len, this_len);
             len += this_len;
             desc_idx = desc.next;
         } while (desc.flags & VRING_DESC_F_NEXT && len < VIRTIO_VSOCK_CAMKES_MTU);

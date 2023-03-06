@@ -74,7 +74,7 @@ static int maybe_fetch_fault_instruction(fault_t *f)
     if ((f->content & CONTENT_INST) == 0) {
         seL4_Word inst = 0;
         /* Fetch the instruction */
-        if (vm_ram_touch(f->vcpu->vm, f->ip, 4, vm_guest_ram_read_callback, &inst)) {
+        if (vm_guest_ram_read(f->vcpu->vm, f->ip, &inst, 4)) {
             return -1;
         }
         /* Fixup the instruction */

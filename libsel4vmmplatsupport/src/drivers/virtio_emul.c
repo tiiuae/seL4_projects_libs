@@ -4,38 +4,37 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <sel4vm/guest_ram.h>
 #include <sel4vmmplatsupport/drivers/virtio_pci_emul.h>
-
-#include "virtio_emul_helpers.h"
 
 uint16_t ring_avail_idx(virtio_emul_t *emul, struct vring *vring)
 {
     uint16_t idx;
-    vm_guest_read_mem(emul->vm, &idx, (uintptr_t)&vring->avail->idx, sizeof(vring->avail->idx));
+    vm_guest_ram_read(emul->vm, (uintptr_t)&vring->avail->idx, &idx, sizeof(vring->avail->idx));
     return idx;
 }
 
 uint16_t ring_avail(virtio_emul_t *emul, struct vring *vring, uint16_t idx)
 {
     uint16_t elem;
-    vm_guest_read_mem(emul->vm, &elem, (uintptr_t) & (vring->avail->ring[idx % vring->num]), sizeof(elem));
+    vm_guest_ram_read(emul->vm, (uintptr_t)&(vring->avail->ring[idx % vring->num]), &elem, sizeof(elem));
     return elem;
 }
 
 struct vring_desc ring_desc(virtio_emul_t *emul, struct vring *vring, uint16_t idx)
 {
     struct vring_desc desc;
-    vm_guest_read_mem(emul->vm, &desc, (uintptr_t) & (vring->desc[idx]), sizeof(desc));
+    vm_guest_ram_read(emul->vm, (uintptr_t)&(vring->desc[idx]), &desc, sizeof(desc));
     return desc;
 }
 
 void ring_used_add(virtio_emul_t *emul, struct vring *vring, struct vring_used_elem elem)
 {
     uint16_t guest_idx;
-    vm_guest_read_mem(emul->vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
-    vm_guest_write_mem(emul->vm, &elem, (uintptr_t)&vring->used->ring[guest_idx % vring->num], sizeof(elem));
+    vm_guest_ram_read(emul->vm, (uintptr_t)&vring->used->idx, &guest_idx, sizeof(vring->used->idx));
+    vm_guest_ram_write(emul->vm, (uintptr_t)&vring->used->ring[guest_idx % vring->num], &elem, sizeof(elem));
     guest_idx++;
-    vm_guest_write_mem(emul->vm, &guest_idx, (uintptr_t)&vring->used->idx, sizeof(vring->used->idx));
+    vm_guest_ram_write(emul->vm, (uintptr_t)&vring->used->idx, &guest_idx, sizeof(vring->used->idx));
 }
 
 static int emul_io_in(virtio_emul_t *emul, unsigned int offset, unsigned int size, unsigned int *result)

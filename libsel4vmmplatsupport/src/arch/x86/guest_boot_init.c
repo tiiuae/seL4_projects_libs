@@ -228,7 +228,7 @@ static int make_guest_boot_info(vm_t *vm, uintptr_t guest_cmd_addr, size_t guest
     } else {
         boot_info.hdr.version = 0x0202;
     }
-    int err = vm_ram_touch(vm, addr, sizeof(boot_info), vm_guest_ram_write_callback, &boot_info);
+    int err = vm_guest_ram_write(vm, addr, &boot_info, sizeof(boot_info));
     if (err) {
         ZF_LOGE("Failed to populalte guest boot info region");
         return -1;

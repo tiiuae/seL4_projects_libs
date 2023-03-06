@@ -4,10 +4,9 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <sel4vm/guest_ram.h>
 #include <sel4vmmplatsupport/drivers/virtio_pci_emul.h>
 #include <stdbool.h>
-
-#include "virtio_emul_helpers.h"
 
 /**
  * The buffer size here should match BUFSIZE in vm/components/Init/src/virtio_con.c
@@ -72,7 +71,7 @@ static void emul_con_rx_complete(virtio_emul_t *emul, int queue, char *buf, uint
             uint32_t copy;
             copy = MIN(len - buf_written, VUART_BUFLEN - current_head);
             copy = MIN(copy, desc.len - desc_written);
-            vm_guest_write_mem(emul->vm, buf + current_head, (uintptr_t)desc.addr + desc_written, copy);
+            vm_guest_ram_write(emul->vm, (uintptr_t)desc.addr + desc_written, buf + current_head, copy);
 
             /* update amounts */
             desc_written += copy;
@@ -220,7 +219,7 @@ static void emul_con_notify_tx(virtio_emul_t *emul)
         do {
             desc = ring_desc(emul, vring, desc_idx);
 
-            vm_guest_read_mem(emul->vm, buf + len, (uintptr_t)desc.addr, desc.len);
+            vm_guest_ram_read(emul->vm, (uintptr_t)desc.addr, buf + len, desc.len);
             len += desc.len;
             desc_idx = desc.next;
         } while (desc.flags & VRING_DESC_F_NEXT);
