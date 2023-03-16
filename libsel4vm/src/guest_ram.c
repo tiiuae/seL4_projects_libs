@@ -32,6 +32,11 @@ struct guest_mem_touch_params {
     ram_touch_callback_fn touch_fn;
 };
 
+/* weak definition to break dependency to tii-sel4-vm */
+const int __attribute__((weak)) guest_large_pages = false;
+extern const unsigned long ram_base;
+extern const unsigned long ram_size;
+
 static int push_guest_ram_region(vm_mem_t *guest_memory, uintptr_t start, size_t size, int allocated)
 {
     int last_region = guest_memory->num_ram_regions;
@@ -168,20 +173,15 @@ int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn to
     access_cookie.data = cookie;
     access_cookie.vm = vm;
     for (current_addr = addr; current_addr < end_addr; current_addr = next_addr) {
-	int sz = seL4_PageBits;
-
+        int sz = seL4_PageBits;
         uintptr_t current_aligned = PAGE_ALIGN_4K(current_addr);
         uintptr_t next_page_start = current_aligned + PAGE_SIZE_4K;
-
-#ifdef CONFIG_LIB_VM_ALIGN_LP_HACK
-        /* user-VM resides at 0x48000000 - 0x4fffffff */
-        if (current_addr >= 0x48000000 && current_addr < 0x50000000) {
+        if (guest_large_pages && current_addr >= ram_base &&
+            current_addr - ram_base < ram_size) {
             sz = seL4_LargePageBits;
             current_aligned = PAGE_ALIGN_2M(current_addr);
             next_page_start = current_aligned + PAGE_SIZE_2M;
         }
-#endif
-
         next_addr = MIN(end_addr, next_page_start);
         access_cookie.size = next_addr - current_addr;
         access_cookie.offset = current_addr - addr;
