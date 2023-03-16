@@ -39,14 +39,6 @@ config_string(
 )
 
 config_option(
-    LibSel4VMAlignLPHack
-    LIB_VM_ALIGN_LP_HACK
-    "Temporary hack to have 2M aligned access to guest memory"
-    DEFAULT
-    OFF
-)
-
-config_option(
     LibSel4VMCamkesMemoryDebug 
     LIBSEL4_VM_CAMKES_MEMORY_DEBUG
     "Include additional debug printing to aid debugging of CAmkES stage-2 memory mapping"
@@ -54,8 +46,7 @@ config_option(
     OFF
 )
 
-mark_as_advanced(LibSel4VMDeferMemoryMap LibSel4VMVMXTimerDebug
-    LibSel4VMVMXTimerTimeout LibSel4VMAlignLPHack)
+mark_as_advanced(LibSel4VMDeferMemoryMap LibSel4VMVMXTimerDebug LibSel4VMVMXTimerTimeout)
 
 add_config_library(sel4vm "${configure_string}")
 
