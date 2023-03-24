@@ -48,6 +48,9 @@ struct dataport_iterator_cookie {
     vm_t *vm;
 };
 
+/* weak definition to break dependency to tii-sel4-vm */
+const int __attribute__((weak)) cross_connector_large_pages = false;
+
 struct connection_info info[MAX_NUM_CONNECTIONS];
 int total_connections;
 
@@ -161,7 +164,7 @@ static vm_frame_t dataport_memory_iterator(uintptr_t addr, void *cookie)
     vm_t *vm = dataport_cookie->vm;
     uintptr_t dataport_start = dataport_cookie->dataport_start;
     size_t dataport_size = dataport_cookie->dataport_size;
-    int page_size = seL4_PageBits;
+    int page_size = cross_connector_large_pages ? seL4_LargePageBits : seL4_PageBits;
 
     uintptr_t frame_start = ROUND_DOWN(addr, BIT(page_size));
     if (frame_start <  dataport_start ||
