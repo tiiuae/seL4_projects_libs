@@ -48,7 +48,7 @@ struct dataport_iterator_cookie {
     vm_t *vm;
 };
 
-/* weak definition to break dependency to tii-sel4-vm */
+/* weak definition to break dependency to tii-camkes-vm */
 const int __attribute__((weak)) cross_connector_large_pages = false;
 
 struct connection_info info[MAX_NUM_CONNECTIONS];
