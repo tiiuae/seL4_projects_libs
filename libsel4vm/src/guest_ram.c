@@ -25,7 +25,7 @@ struct guest_mem_touch_params {
     ram_touch_callback_fn touch_fn;
 };
 
-/* weak definition to break dependency to tii-sel4-vm */
+/* weak definition to break dependency to tii-camkes-vm */
 const int __attribute__((weak)) guest_large_pages = false;
 
 uintptr_t __attribute__((weak)) ram_base(void)
