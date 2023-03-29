@@ -4,12 +4,6 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include <sel4vm/gen_config.h>
-
-#ifdef CONFIG_LIBSEL4_VM_CAMKES_MEMORY_DEBUG
-#define ZF_LOG_LEVEL ZF_LOG_VERBOSE
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -469,10 +463,6 @@ int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
     uintptr_t reservation_addr = vm_reservation->addr;
     size_t reservation_size = vm_reservation->size;
     uintptr_t current_addr = vm_reservation->addr;
-
-#ifdef CONFIG_LIBSEL4_VM_CAMKES_MEMORY_DEBUG
-    ZF_LOGV("Mapping VM reservation, size = 0x%lx, reservation_addr = %p", reservation_size, (void *)reservation_addr);
-#endif
 
     while (current_addr < reservation_addr + reservation_size) {
         vm_frame_t reservation_frame = map_iterator(current_addr, map_cookie);
