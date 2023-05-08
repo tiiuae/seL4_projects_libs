@@ -27,8 +27,16 @@ struct guest_mem_touch_params {
 
 /* weak definition to break dependency to tii-camkes-vm */
 const int __attribute__((weak)) guest_large_pages = false;
-extern const unsigned long ram_base;
-extern const unsigned long ram_size;
+
+uintptr_t __attribute__((weak)) ram_base(void)
+{
+    return 0;
+}
+
+size_t __attribute__((weak)) ram_size(void)
+{
+    return 0;
+}
 
 static int push_guest_ram_region(vm_mem_t *guest_memory, uintptr_t start, size_t size, int allocated)
 {
@@ -169,8 +177,8 @@ int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn to
         int sz = seL4_PageBits;
         uintptr_t current_aligned = PAGE_ALIGN_4K(current_addr);
         uintptr_t next_page_start = current_aligned + PAGE_SIZE_4K;
-        if (guest_large_pages && current_addr >= ram_base &&
-            current_addr - ram_base < ram_size) {
+        if (guest_large_pages && current_addr >= ram_base() &&
+            current_addr - ram_base() < ram_size()) {
             sz = seL4_LargePageBits;
             current_aligned = PAGE_ALIGN_2M(current_addr);
             next_page_start = current_aligned + PAGE_SIZE_2M;
