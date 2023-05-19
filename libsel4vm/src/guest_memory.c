@@ -263,7 +263,7 @@ static vm_memory_reservation_t *find_anon_reservation_by_addr(uintptr_t addr, si
 
     for (int i = 0; i < num_anon_reservations; i++) {
         vm_memory_reservation_t *curr_res = reservations[i];
-        if (curr_res->addr <= addr && curr_res->addr + curr_res->size >= addr + size) {
+        if (is_subregion(curr_res->addr, curr_res->size, addr, size)) {
             return curr_res;
         }
     }
@@ -282,7 +282,7 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
         return FAULT_UNHANDLED;
     }
 
-    if ((reservation_node->addr + size) > (reservation_node->addr + reservation_node->size)) {
+    if (!is_subregion(reservation_node->addr, reservation_node->size, addr, size)) {
         ZF_LOGE("Failed to handle memory fault: Invalid fault region");
         return FAULT_ERROR;
     }
