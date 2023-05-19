@@ -107,9 +107,10 @@ static bool is_ram_region(vm_t *vm, uintptr_t addr, size_t size)
 {
     vm_mem_t *guest_memory = &vm->mem;
     for (int i = 0; i < guest_memory->num_ram_regions; i++) {
-        if (guest_memory->ram_regions[i].start <= addr &&
-            guest_memory->ram_regions[i].start + guest_memory->ram_regions[i].size >= addr + size) {
-            /* We are within a ram region*/
+        if (is_subregion(guest_memory->ram_regions[i].start,
+                         guest_memory->ram_regions[i].size,
+                         addr, size)) {
+            /* We are within RAM region */
             return true;
         }
     }
@@ -208,8 +209,9 @@ void vm_ram_mark_allocated(vm_t *vm, uintptr_t start, size_t bytes)
     int i;
     int region = -1;
     for (i = 0; i < guest_memory->num_ram_regions; i++) {
-        if (guest_memory->ram_regions[i].start <= start &&
-            guest_memory->ram_regions[i].start + guest_memory->ram_regions[i].size >= start + bytes) {
+        if (is_subregion(guest_memory->ram_regions[i].start,
+                         guest_memory->ram_regions[i].size,
+                         start, bytes)) {
             region = i;
             break;
         }
