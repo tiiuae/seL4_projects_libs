@@ -69,19 +69,18 @@ struct frames_map_iterator_cookie {
 
 static inline int reservation_node_cmp(res_tree *x, res_tree *y)
 {
-    if (x->addr < y->addr) {
-        if (x->addr + x->size > y->addr) {
-            /* The two regions intersect */
-            return 0;
-        } else {
-            return -1;
-        }
+    if (x->addr < y->addr && y->addr - x->addr >= x->size) {
+        /* x is before y */
+        return -1;
     }
-    if (x->addr < y->addr + y->size) {
-        /* The two regions intersect */
-        return 0;
+
+    if (x->addr > y->addr && x->addr - y->addr >= y->size) {
+        /* y is before x */
+        return 1;
     }
-    return 1;
+
+    /* regions intersect */
+    return 0;
 }
 
 SGLIB_DEFINE_RBTREE_PROTOTYPES(res_tree, left, right, color_field, reservation_node_cmp);
