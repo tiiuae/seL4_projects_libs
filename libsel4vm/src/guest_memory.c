@@ -285,12 +285,12 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
     vm_memory_reservation_t *fault_reservation;
 
     if (!reservation_node) {
-        ZF_LOGW("Unable to find reservation for addr: 0x%x, memory fault left unhandled", addr);
+        ZF_LOGW("Fault unhandled, no reservation for 0x%"PRIxPTR, addr);
         return FAULT_UNHANDLED;
     }
 
     if (!is_subregion(reservation_node->addr, reservation_node->size, addr, size)) {
-        ZF_LOGE("Failed to handle memory fault: Invalid fault region");
+        ZF_LOGE("Invalid fault region %zu bytes at 0x%"PRIxPTR, size, addr);
         return FAULT_ERROR;
     }
 
@@ -300,7 +300,7 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
         fault_reservation = find_anon_reservation_by_addr(addr, size,
                                                           (anon_region_t *)reservation_node->data);
         if (!fault_reservation) {
-            ZF_LOGW("Unable to find anoymous reservation for addr: 0x%x, memory fault left unhandled", addr);
+            ZF_LOGW("Fault unhandled, no reservation for 0x%"PRIxPTR, addr);
             return FAULT_UNHANDLED;
         }
     }
@@ -310,7 +310,8 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
         err = map_vm_memory_reservation(vm, fault_reservation,
                                         fault_reservation->memory_map_iterator, fault_reservation->memory_iterator_cookie);
         if (err) {
-            ZF_LOGE("Unable to handle memory fault: Failed to map memory");
+            ZF_LOGE("Mapping fault region %zu bytes at 0x%"PRIxPTR" failed (%d)",
+                    size, addr, err);
             return FAULT_ERROR;
         }
         return FAULT_RESTART;
@@ -504,13 +505,13 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
 {
     int err;
     if (!vm) {
-        ZF_LOGE("Failed to map vm reservation: Invalid NULL VM handle given");
+        ZF_LOGE("null vm");
         return -1;
     } else if (!reservation) {
-        ZF_LOGE("Failed to map vm reservation: Invalid NULL reservation given");
+        ZF_LOGE("null reservation");
         return -1;
     } else if (!map_iterator) {
-        ZF_LOGE("Failed to map vm reservation: Invalid map iterator given");
+        ZF_LOGE("null map iterator");
         return -1;
     }
 
@@ -521,7 +522,7 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
         /* We remove the iterator after attempting the mapping (regardless of success or fail)
          * If failed its left to the caller to update the memory map iterator */
         if (err) {
-            ZF_LOGE("Failed to map vm reservation: Error when mapping into VM's vspace");
+            ZF_LOGE("Error mapping into VM's vspace (%d)", err);
             return -1;
         }
     }
