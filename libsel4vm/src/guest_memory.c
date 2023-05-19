@@ -70,14 +70,14 @@ struct frames_map_iterator_cookie {
 static inline int reservation_node_cmp(res_tree *x, res_tree *y)
 {
     if (x->addr < y->addr) {
-        if (x->addr + x->size > y->addr) {
+        if (y->addr - x->addr < x->size) {
             /* The two regions intersect */
             return 0;
         } else {
             return -1;
         }
     }
-    if (x->addr < y->addr + y->size) {
+    if (x->addr - y->addr < y->size) {
         /* The two regions intersect */
         return 0;
     }
@@ -478,7 +478,7 @@ int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
     size_t reservation_size = vm_reservation->size;
     uintptr_t current_addr = vm_reservation->addr;
 
-    while (current_addr < reservation_addr + reservation_size) {
+    while (current_addr - reservation_addr < reservation_size) {
         vm_frame_t reservation_frame = map_iterator(current_addr, map_cookie);
         if (reservation_frame.cptr == seL4_CapNull) {
             ZF_LOGE("Failed to get frame for reservation address 0x%lx", current_addr);
