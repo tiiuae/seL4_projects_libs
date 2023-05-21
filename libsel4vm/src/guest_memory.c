@@ -215,7 +215,7 @@ static anon_region_t *find_allocable_anon_region(vm_t *vm, size_t size, size_t a
     return ret_region;
 }
 
-static void free_vm_reservation(vm_t *vm, vm_memory_reservation_t *reservation)
+static void vm_reservation_free(vm_t *vm, vm_memory_reservation_t *reservation)
 {
     if (!vm || !reservation) {
         return;
@@ -224,7 +224,7 @@ static void free_vm_reservation(vm_t *vm, vm_memory_reservation_t *reservation)
     ps_free(&ops->malloc_ops, sizeof(vm_memory_reservation_t), reservation);
 }
 
-static vm_memory_reservation_t *allocate_vm_reservation(vm_t *vm, uintptr_t addr, size_t size,
+static vm_memory_reservation_t *vm_reservation_allocate(vm_t *vm, uintptr_t addr, size_t size,
                                                         reservation_t vspace_reservation)
 {
     int err;
@@ -345,7 +345,7 @@ vm_memory_reservation_t *vm_reserve_memory_at(vm_t *vm, uintptr_t addr, size_t s
                 addr, size);
         return NULL;
     }
-    new_reservation = allocate_vm_reservation(vm, addr, size, vspace_reservation);
+    new_reservation = vm_reservation_allocate(vm, addr, size, vspace_reservation);
     if (!new_reservation) {
         ZF_LOGE("Failed to reserve vm memory: Unable to allocate new vm reservation");
         vspace_free_reservation(&vm->mem.vm_vspace, vspace_reservation);
@@ -359,7 +359,7 @@ vm_memory_reservation_t *vm_reserve_memory_at(vm_t *vm, uintptr_t addr, size_t s
     if (err) {
         ZF_LOGE("Failed to reserve vm memory: Unable to add vm memory reservation to list");
         vspace_free_reservation(&vm->mem.vm_vspace, vspace_reservation);
-        free_vm_reservation(vm, new_reservation);
+        vm_reservation_free(vm, new_reservation);
         return NULL;
     }
     return new_reservation;
@@ -420,7 +420,7 @@ vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size, size_t al
     reservation_addr = ROUND_UP(allocable_region->alloc_addr, (uintptr_t) align);
 
     /* Make a sub-reservation token. */
-    new_reservation = allocate_vm_reservation(vm, reservation_addr, size, allocable_region->vspace_reservation);
+    new_reservation = vm_reservation_allocate(vm, reservation_addr, size, allocable_region->vspace_reservation);
     if (!new_reservation) {
         ZF_LOGE("Failed to reserve vm memory: Unable to allocate new vm reservation");
         return NULL;
@@ -433,7 +433,7 @@ vm_memory_reservation_t *vm_reserve_anon_memory(vm_t *vm, size_t size, size_t al
     vm_memory_reservation_t **extended_reservations = realloc(allocable_region->reservations,
                                                               sizeof(vm_memory_reservation_t *) * (allocable_region->num_reservations + 1));
     if (!extended_reservations) {
-        free_vm_reservation(vm, new_reservation);
+        vm_reservation_free(vm, new_reservation);
         return NULL;
     }
     allocable_region->reservations = extended_reservations;
@@ -468,7 +468,7 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation)
         vspace_unmap_pages(&vm->mem.vm_vspace, (void *)reservation->addr, num_pages, page_size, vm->vka);
     }
     vspace_free_reservation(&vm->mem.vm_vspace, reservation->vspace_reservation);
-    free_vm_reservation(vm, reservation);
+    vm_reservation_free(vm, reservation);
     return 0;
 }
 
