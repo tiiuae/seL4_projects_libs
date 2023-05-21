@@ -477,6 +477,19 @@ int vm_map_reservation_immediate(vm_t *vm,
                                  memory_map_iterator_fn map_iterator,
                                  void *map_cookie)
 {
+    if (!vm) {
+        ZF_LOGE("null vm");
+        return -1;
+    }
+    if (!reservation) {
+        ZF_LOGE("null reservation");
+        return -1;
+    }
+    if (!map_iterator) {
+        ZF_LOGE("null map iterator");
+        return -1;
+    }
+
     int err;
     uintptr_t reservation_addr = vm_reservation->addr;
     size_t reservation_size = vm_reservation->size;
