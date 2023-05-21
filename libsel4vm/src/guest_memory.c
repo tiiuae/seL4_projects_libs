@@ -506,29 +506,33 @@ int vm_map_reservation_immediate(vm_t *vm,
 int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
                        memory_map_iterator_fn map_iterator, void *cookie)
 {
-    int err;
     if (!vm) {
         ZF_LOGE("null vm");
         return -1;
-    } else if (!reservation) {
+    }
+    if (!reservation) {
         ZF_LOGE("null reservation");
         return -1;
-    } else if (!map_iterator) {
+    }
+    if (!map_iterator) {
         ZF_LOGE("null map iterator");
         return -1;
     }
 
+    /* We remove the iterator after mapping attempt, regardless of success or
+     * failure. If failed it is left to the caller to update the memory map
+     * iterator.
+     */
     reservation->memory_map_iterator = map_iterator;
     reservation->memory_iterator_cookie = cookie;
-    if (!config_set(CONFIG_LIB_SEL4VM_DEFER_MEMORY_MAP)) {
-        err = vm_map_reservation_immediate(vm, reservation, map_iterator,
-                                           cookie);
-        /* We remove the iterator after attempting the mapping (regardless of success or fail)
-         * If failed its left to the caller to update the memory map iterator */
-        if (err) {
-            ZF_LOGE("Error mapping into VM's vspace (%d)", err);
-            return -1;
-        }
+    if (config_set(CONFIG_LIB_SEL4VM_DEFER_MEMORY_MAP)) {
+        return 0;
+    }
+
+    int err = vm_map_reservation_immediate(vm, reservation, map_iterator, cookie);
+    if (err) {
+        ZF_LOGE("vm_map_reservation_immediate() failed (%d)", err);
+        return -1;
     }
 
     return 0;
