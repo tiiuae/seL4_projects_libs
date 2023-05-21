@@ -307,8 +307,9 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
 
     if (!fault_reservation->is_mapped && fault_reservation->memory_map_iterator) {
         /* Deferred mapping */
-        err = map_vm_memory_reservation(vm, fault_reservation,
-                                        fault_reservation->memory_map_iterator, fault_reservation->memory_iterator_cookie);
+        err = vm_map_reservation_immediate(vm, fault_reservation,
+                                           fault_reservation->memory_map_iterator,
+                                           fault_reservation->memory_iterator_cookie);
         if (err) {
             ZF_LOGE("Mapping fault region %zu bytes at 0x%"PRIxPTR" failed (%d)",
                     size, addr, err);
@@ -471,8 +472,10 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation)
     return 0;
 }
 
-int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
-                              memory_map_iterator_fn map_iterator, void *map_cookie)
+int vm_map_reservation_immediate(vm_t *vm,
+                                 vm_memory_reservation_t *vm_reservation,
+                                 memory_map_iterator_fn map_iterator,
+                                 void *map_cookie)
 {
     int err;
     uintptr_t reservation_addr = vm_reservation->addr;
@@ -518,7 +521,8 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
     reservation->memory_map_iterator = map_iterator;
     reservation->memory_iterator_cookie = cookie;
     if (!config_set(CONFIG_LIB_SEL4VM_DEFER_MEMORY_MAP)) {
-        err = map_vm_memory_reservation(vm, reservation, map_iterator, cookie);
+        err = vm_map_reservation_immediate(vm, reservation, map_iterator,
+                                           cookie);
         /* We remove the iterator after attempting the mapping (regardless of success or fail)
          * If failed its left to the caller to update the memory map iterator */
         if (err) {

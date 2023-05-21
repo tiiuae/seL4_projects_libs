@@ -27,5 +27,7 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
  * @param {void *} map_cookie                           Cookie to pass onto map iterator
  * @return                                              0 on success, -1 on error
  */
-int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
-                              memory_map_iterator_fn map_iterator, void *map_cookie);
+int vm_map_reservation_immediate(vm_t *vm,
+                                 vm_memory_reservation_t *vm_reservation,
+                                 memory_map_iterator_fn map_iterator,
+                                 void *map_cookie);

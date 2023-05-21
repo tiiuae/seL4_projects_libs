@@ -332,7 +332,8 @@ uintptr_t vm_ram_register(vm_t *vm, size_t bytes)
         return 0;
     }
 
-    int err = map_vm_memory_reservation(vm, ram_reservation, ram_alloc_iterator, (void *)vm);
+    int err = vm_map_reservation_immediate(vm, ram_reservation,
+                                           ram_alloc_iterator, (void *)vm);
     if (err) {
         vm_free_reserved_memory(vm, ram_reservation);
         return 0;
@@ -366,7 +367,8 @@ int vm_ram_register_at_custom_iterator(vm_t *vm, uintptr_t start, size_t bytes, 
         ZF_LOGE("Unable to reserve ram region at addr 0x%"PRIxPTR" of size 0x%zx", start, bytes);
         return -1;
     }
-    err = map_vm_memory_reservation(vm, ram_reservation, map_iterator, cookie);
+    err = vm_map_reservation_immediate(vm, ram_reservation, map_iterator,
+                                       cookie);
     if (err) {
         ZF_LOGE("Failed to map memory reservation %zu bytes at 0x%"PRIxPTR" (%d)",
                 bytes, start, err);

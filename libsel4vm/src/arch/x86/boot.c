@@ -87,7 +87,8 @@ static int make_guest_page_dir(vm_t *vm)
         ZF_LOGE("Failed to reserve page for initial guest pd");
         return -1;
     }
-    int err = map_vm_memory_reservation(vm, pd_reservation, pd_alloc_iterator, (void *)vm);
+    int err = vm_map_reservation_immediate(vm, pd_reservation,
+                                           pd_alloc_iterator, (void *)vm);
     if (err) {
         ZF_LOGE("Failed to map page for initial guest pd");
     }
