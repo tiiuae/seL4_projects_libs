@@ -188,6 +188,12 @@ static int reserve_dataport_memory(vm_t *vm, crossvm_dataport_handle_t *dataport
     vm_memory_reservation_t *dataport_reservation = vm_reserve_memory_at(vm, dataport_address, size,
                                                                          default_error_fault_callback,
                                                                          NULL);
+    if (!dataport_reservation) {
+        ZF_LOGE("Cannot reserve %zu bytes at 0x%"PRIxPTR, size,
+                dataport_address);
+        return -1;
+    }
+
     struct dataport_iterator_cookie *dataport_cookie = malloc(sizeof(struct dataport_iterator_cookie));
     if (!dataport_cookie) {
         ZF_LOGE("Failed to allocate dataport iterator cookie");
