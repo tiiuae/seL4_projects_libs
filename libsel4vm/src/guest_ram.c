@@ -355,6 +355,34 @@ int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped)
                                               vm);
 }
 
+int vm_ram_register_at_frames(vm_t *vm, uintptr_t start, size_t bytes,
+                              seL4_CPtr *frames, size_t num_frames,
+                              size_t frame_size_bits)
+{
+    if (!IS_ALIGNED(start, frame_size_bits)) {
+        ZF_LOGE("start 0x%"PRIxPTR" not bit size (%zu) aligned", start,
+                frame_size_bits);
+        return -1;
+    }
+
+    if (bytes != num_frames * BIT(frame_size_bits)) {
+        ZF_LOGE("Size %zu not equal to size of frames %zu",
+                bytes, num_frames * BIT(frame_size_bits));
+        return -1;
+    }
+
+    struct frames_iterator_cookie cookie = {
+        .frames = frames,
+        .num_frames = num_frames,
+        .frame_size_bits = frame_size_bits,
+        .base = start,
+    };
+
+    return vm_ram_register_at_custom_iterator(vm, start, bytes,
+                                              frames_memory_iterator,
+                                              &cookie);
+}
+
 int vm_ram_register_at_custom_iterator(vm_t *vm, uintptr_t start, size_t bytes, memory_map_iterator_fn map_iterator,
                                        void *cookie)
 {

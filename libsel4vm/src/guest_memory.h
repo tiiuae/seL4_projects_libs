@@ -9,6 +9,15 @@
 #include <sel4vm/guest_vm.h>
 #include <sel4vm/guest_memory.h>
 
+struct frames_map_iterator_cookie {
+    seL4_CPtr *frames;
+    size_t num_frames;
+    size_t frame_size_bits;
+    uintptr_t start;
+};
+
+vm_frame_t frames_memory_iterator(uintptr_t page_start, void *cookie);
+
 /**
  * Handle a vm memory fault through searching previously created reservations and invoking the appropriate fault callback
  * @param {vm_t *} vm               A handle to the VM

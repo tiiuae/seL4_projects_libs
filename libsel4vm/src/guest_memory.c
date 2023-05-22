@@ -551,7 +551,7 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
     return 0;
 }
 
-static vm_frame_t frames_map_memory_iterator(uintptr_t page_start, void *cookie)
+vm_frame_t frames_map_memory_iterator(uintptr_t page_start, void *cookie)
 {
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
     struct frames_map_iterator_cookie *it = cookie;

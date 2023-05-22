@@ -95,6 +95,10 @@ uintptr_t vm_ram_register(vm_t *vm, size_t bytes);
  */
 int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped);
 
+int vm_ram_register_at_frames(vm_t *vm, uintptr_t start, size_t bytes,
+                              seL4_CPtr *frames, size_t num_frames,
+                              size_t frame_size_bits);
+
 /***
  * @function vm_ram_register_at(vm, start, bytes, untyped)
  * Reserve a region of memory for RAM in the guest VM at a starting guest physical address with a custom memory iterator
