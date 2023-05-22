@@ -48,8 +48,8 @@ struct dataport_iterator_cookie {
     vm_t *vm;
 };
 
-struct connection_info info[MAX_NUM_CONNECTIONS];
-int total_connections;
+static struct connection_info info[MAX_NUM_CONNECTIONS];
+static int total_connections;
 
 static int construct_connection_bar(vm_t *vm, struct connection_info *info, int num_connections, vmm_pci_space_t *pci)
 {
