@@ -301,8 +301,6 @@ static int initialise_connections(vm_t *vm, uintptr_t connection_base_addr, cros
 int cross_vm_connections_init_common(vm_t *vm, uintptr_t connection_base_addr, crossvm_handle_t *connections,
                                      int num_connections, vmm_pci_space_t *pci, alloc_free_interrupt_fn alloc_irq)
 {
-    uintptr_t guest_paddr = 0;
-    size_t guest_size = 0;
     if (num_connections > MAX_NUM_CONNECTIONS) {
         ZF_LOGE("Unable to register more than %d dataports", MAX_NUM_CONNECTIONS);
         return -1;
