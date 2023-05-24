@@ -467,30 +467,42 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation)
 int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
                               memory_map_iterator_fn map_iterator, void *map_cookie)
 {
-    int err;
-    uintptr_t reservation_addr = vm_reservation->addr;
-    size_t reservation_size = vm_reservation->size;
     uintptr_t current_addr = vm_reservation->addr;
+    size_t bytes_left = vm_reservation->size;
 
-    while (current_addr < reservation_addr + reservation_size) {
+    while (bytes_left) {
         vm_frame_t reservation_frame = map_iterator(current_addr, map_cookie);
+
         if (reservation_frame.cptr == seL4_CapNull) {
-            ZF_LOGE("Failed to get frame for reservation address 0x%lx", current_addr);
+            ZF_LOGE("Failed to get frame for reservation address 0x%"PRIxPTR, current_addr);
             break;
         }
+
+        if (bytes_left < BIT(reservation_frame.size_bits)) {
+            ZF_LOGE("Mapping frame of size %zu to 0x%"PRIxPTR "overflows reservation %zu bytes at 0x%"PRIxPTR,
+                    BIT(reservation_frame.size_bits), current_addr,
+                    vm_reservation->size, vm_reservation->addr);
+            break;
+        }
+
         int ret = vspace_deferred_rights_map_pages_at_vaddr(&vm->mem.vm_vspace, &reservation_frame.cptr, NULL,
                                                             (void *)reservation_frame.vaddr, 1, reservation_frame.size_bits,
                                                             reservation_frame.rights, vm_reservation->vspace_reservation);
         if (ret) {
             ZF_LOGE("Failed to map address 0x%"PRIxPTR" into guest vm vspace", reservation_frame.vaddr);
-            return -1;
+            break;
         }
+
+        /* No underflow here: bytes_left >= frame size, see check above */
+        bytes_left -= BIT(reservation_frame.size_bits);
         current_addr += BIT(reservation_frame.size_bits);
     }
+
     vm_reservation->memory_map_iterator = NULL;
     vm_reservation->memory_iterator_cookie = NULL;
-    vm_reservation->is_mapped = true;
-    return 0;
+    vm_reservation->is_mapped = (bytes_left == 0);
+
+    return vm_reservation->is_mapped ? 0 : -1;
 }
 
 int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
