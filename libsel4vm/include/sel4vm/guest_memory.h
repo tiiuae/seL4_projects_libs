@@ -157,6 +157,8 @@ int vm_map_reservation_frames(vm_t *vm, vm_memory_reservation_t *reservation,
  */
 void vm_get_reservation_memory_region(vm_memory_reservation_t *reservation, uintptr_t *addr, size_t *size);
 
+size_t vm_reservation_page_size_bits(vm_memory_reservation_t *reservation);
+
 /***
  * @function vm_memory_init(vm)
  * Initialise a VM's memory management interface

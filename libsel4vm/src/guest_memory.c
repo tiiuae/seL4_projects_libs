@@ -26,6 +26,8 @@ struct vm_memory_reservation {
     uintptr_t addr;
     /* Size of memory region */
     size_t size;
+    /* Page size */
+    size_t page_size_bits;
     /* Callback to be invoked if memory region is faulted on*/
     memory_fault_callback_fn fault_callback;
     /* Iterator to be invoked for performing a map on the reservation region */
@@ -238,6 +240,7 @@ static vm_memory_reservation_t *allocate_vm_reservation(vm_t *vm, uintptr_t addr
     new_reservation->addr = addr;
     new_reservation->size = size;
     new_reservation->is_mapped = false;
+    new_reservation->page_size_bits = 0;
     new_reservation->vspace_reservation = vspace_reservation;
     return new_reservation;
 }
@@ -270,31 +273,37 @@ static vm_memory_reservation_t *find_anon_reservation_by_addr(uintptr_t addr, si
     return NULL;
 }
 
+vm_memory_reservation_t *vm_reservation_find_by_addr(vm_t *vm, uintptr_t addr, size_t size)
+{
+    res_tree *node = find_memory_reservation_by_addr(vm, addr);
+
+    if (!node) {
+        ZF_LOGW("No reservation for addr 0x%"PRIxPTR, addr);
+        return NULL;
+    }
+
+
+    if (node->res_type == MEM_ANON_RES) {
+        return find_anon_reservation_by_addr(addr, size,
+                                             (anon_region_t *)node->data);
+    }
+
+    /* regular memory reservation */
+    return (vm_memory_reservation_t *)node->data;
+}
+
 memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t addr, size_t size)
 {
     int err;
-    res_tree *reservation_node = find_memory_reservation_by_addr(vm, addr);
-    vm_memory_reservation_t *fault_reservation;
-
-    if (!reservation_node) {
-        ZF_LOGW("Unable to find reservation for addr: 0x%x, memory fault left unhandled", addr);
+    vm_memory_reservation_t *fault_reservation = vm_reservation_find_by_addr(vm, addr, size);
+    if (!fault_reservation) {
+        ZF_LOGW("No reservation for addr 0x%"PRIxPTR", fault unhandled", addr);
         return FAULT_UNHANDLED;
     }
 
-    if (!is_subregion(reservation_node->addr, reservation_node->size, addr, size)) {
+    if (!is_subregion(fault_reservation->addr, fault_reservation->size, addr, size)) {
         ZF_LOGE("Failed to handle memory fault: Invalid fault region");
         return FAULT_ERROR;
-    }
-
-    if (reservation_node->res_type == MEM_REGULAR_RES) {
-        fault_reservation = (vm_memory_reservation_t *)reservation_node->data;
-    } else {
-        fault_reservation = find_anon_reservation_by_addr(addr, size,
-                                                          (anon_region_t *)reservation_node->data);
-        if (!fault_reservation) {
-            ZF_LOGW("Unable to find anoymous reservation for addr: 0x%x, memory fault left unhandled", addr);
-            return FAULT_UNHANDLED;
-        }
     }
 
     if (!fault_reservation->is_mapped && fault_reservation->memory_map_iterator) {
@@ -309,6 +318,7 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
     }
 
     if (!fault_reservation->fault_callback) {
+	ZF_LOGE("Fault callback not defined");
         return FAULT_ERROR;
     }
 
@@ -467,6 +477,7 @@ int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
 {
     uintptr_t current_addr = vm_reservation->addr;
     size_t bytes_left = vm_reservation->size;
+    size_t page_size_bits = 0;
 
     while (bytes_left) {
         vm_frame_t reservation_frame = map_iterator(current_addr, map_cookie);
@@ -481,6 +492,15 @@ int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
                     BIT(reservation_frame.size_bits), current_addr,
                     vm_reservation->size, vm_reservation->addr);
             break;
+        }
+
+        if (page_size_bits != reservation_frame.size_bits) {
+            if (!page_size_bits) {
+                page_size_bits = reservation_frame.size_bits;
+            } else {
+                ZF_LOGE("Mixed page sizes within reservation not supported");
+                break;
+            }
         }
 
         int ret = vspace_deferred_rights_map_pages_at_vaddr(&vm->mem.vm_vspace, &reservation_frame.cptr, NULL,
@@ -499,6 +519,7 @@ int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
     vm_reservation->memory_map_iterator = NULL;
     vm_reservation->memory_iterator_cookie = NULL;
     vm_reservation->is_mapped = (bytes_left == 0);
+    vm_reservation->page_size_bits = page_size_bits;
 
     return vm_reservation->is_mapped ? 0 : -1;
 }
@@ -570,6 +591,14 @@ void vm_get_reservation_memory_region(vm_memory_reservation_t *reservation, uint
 {
     *addr = reservation->addr;
     *size = reservation->size;
+}
+
+size_t vm_reservation_page_size_bits(vm_memory_reservation_t *reservation)
+{
+    if (!reservation || !reservation->page_size_bits) {
+        return seL4_PageBits;
+    }
+    return reservation->page_size_bits;
 }
 
 int vm_memory_init(vm_t *vm)

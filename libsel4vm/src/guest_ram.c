@@ -148,6 +148,17 @@ static int touch_access_callback(void *access_addr, void *vaddr, void *cookie)
                                  guest_touch->size, guest_touch->offset, guest_touch->data);
 }
 
+static inline size_t vm_page_size_bits_by_addr(vm_t *vm, uintptr_t addr)
+{
+    vm_memory_reservation_t *reservation = vm_reservation_find_by_addr(vm, addr, 1);
+
+    if (!reservation) {
+	    return seL4_PageBits;
+    }
+
+    return vm_reservation_page_size_bits(reservation);
+}
+
 int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn touch_callback, void *cookie)
 {
     struct guest_mem_touch_params access_cookie;
@@ -162,14 +173,15 @@ int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn to
     access_cookie.data = cookie;
     access_cookie.vm = vm;
     for (current_addr = addr; current_addr < end_addr; current_addr = next_addr) {
-        uintptr_t current_aligned = PAGE_ALIGN_4K(current_addr);
-        uintptr_t next_page_start = current_aligned + PAGE_SIZE_4K;
+        size_t size_bits = vm_page_size_bits_by_addr(vm, current_addr);
+        uintptr_t current_aligned = PAGE_ALIGN(current_addr, BIT(size_bits));
+        uintptr_t next_page_start = current_aligned + BIT(size_bits);
         next_addr = MIN(end_addr, next_page_start);
         access_cookie.size = next_addr - current_addr;
         access_cookie.offset = current_addr - addr;
         access_cookie.current_addr = current_addr;
         int result = vspace_access_page_with_callback(&vm->mem.vm_vspace, &vm->mem.vmm_vspace, (void *)current_aligned,
-                                                      seL4_PageBits, seL4_AllRights, 1, touch_access_callback, &access_cookie);
+                                                      size_bits, seL4_AllRights, 1, touch_access_callback, &access_cookie);
         if (result) {
             return result;
         }

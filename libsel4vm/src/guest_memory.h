@@ -24,6 +24,8 @@ static inline bool is_subregion(uintptr_t start, size_t size,
            (subreg_start - start <= size - subreg_size);
 }
 
+vm_memory_reservation_t *vm_reservation_find_by_addr(vm_t *vm, uintptr_t addr, size_t size);
+
 /**
  * Handle a vm memory fault through searching previously created reservations and invoking the appropriate fault callback
  * @param {vm_t *} vm               A handle to the VM
