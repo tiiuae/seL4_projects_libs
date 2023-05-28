@@ -44,7 +44,6 @@ int vm_install_passthrough_device(vm_t *vm, const struct device *device)
     int err;
     d = *device;
     for (paddr = d.pstart; paddr - d.pstart < d.size; paddr += 0x1000) {
-        void *addr;
         vm_memory_reservation_t *reservation;
         reservation = vm_reserve_memory_at(vm, paddr, 0x1000, passthrough_device_fault, NULL);
         if (!reservation) {

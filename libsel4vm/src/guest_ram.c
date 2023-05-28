@@ -270,7 +270,6 @@ static vm_frame_t ram_ut_alloc_iterator(uintptr_t addr, void *cookie)
 {
     int ret;
     int error;
-    vka_object_t object;
     vm_frame_t frame_result = { seL4_CapNull, seL4_NoRights, 0, 0 };
     vm_t *vm = (vm_t *)cookie;
     if (!vm) {
