@@ -179,7 +179,6 @@ struct device dev_vpci_cfg_io = {
 
 int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
 {
-
     ps_io_ops_t *ops = vm->io_ops;
     struct pci_cfg_data *cfg_data;
     int err = ps_calloc(&ops->malloc_ops, 1, sizeof(struct pci_cfg_data), (void **)&cfg_data);
@@ -210,7 +209,6 @@ int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
 
 int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_phandle)
 {
-    int err;
     int root_offset = fdt_path_offset(fdt, "/");
     int address_cells = fdt_address_cells(fdt, root_offset);
     int size_cells = fdt_size_cells(fdt, root_offset);
