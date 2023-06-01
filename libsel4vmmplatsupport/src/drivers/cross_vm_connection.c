@@ -215,23 +215,39 @@ static int register_consume_event(vm_t *vm, crossvm_handle_t *connection, struct
     return 0;
 }
 
+static size_t get_pci_bar_size(crossvm_handle_t *connections, size_t num_connections)
+{
+    size_t max_dataport_size = 0;
+
+    /* We need to round everything up to the largest sized resource to prevent
+     * Linux from remapping the devices, which the vpci device can't emulate.
+     */
+    for (int i = 0; i < num_connections; i++) {
+        crossvm_dataport_handle_t *dataport = connections[i].dataport;
+        size_t dataport_size = dataport->num_frames * BIT(dataport->frame_size_bits);
+        if (max_dataport_size < dataport_size) {
+            max_dataport_size = dataport_size;
+        }
+    }
+
+    return max_dataport_size;
+}
+
 static int initialise_connections(vm_t *vm, uintptr_t connection_base_addr, crossvm_handle_t *connections,
                                   int num_connections, struct connection_info *info, int connection_irq)
 {
     int err;
     uintptr_t connection_curr_addr = connection_base_addr;
+    size_t pci_bar_size = get_pci_bar_size(connections, num_connections);
+
     for (int i = 0; i < num_connections; i++) {
-        /* We need to round everything up to the largest sized resource to prevent
-         * Linux from remapping the devices, which the vpci device can't emulate.
-         */
         crossvm_dataport_handle_t *dataport = connections[i].dataport;
-        size_t dataport_size = dataport->num_frames * BIT(dataport->frame_size_bits);
         err = reserve_event_bar(vm, connection_curr_addr, &info[i]);
         if (err) {
             ZF_LOGE("Failed to create event bar (id:%d)", i);
             return -1;
         }
-        connection_curr_addr += dataport_size;
+        connection_curr_addr += pci_bar_size;
         err = reserve_dataport_memory(vm, dataport, connection_curr_addr, &info[i]);
         if (err) {
             ZF_LOGE("Failed to create dataport bar (id %d)", i);
@@ -251,8 +267,9 @@ static int initialise_connections(vm_t *vm, uintptr_t connection_base_addr, cros
         strncpy(info[i].event_registers + EVENT_BAR_DEVICE_NAME_REGISTER, connections[i].connection_name,
                 EVENT_BAR_DEVICE_NAME_MAX_LEN);
 
-        connection_curr_addr += dataport_size;
+        connection_curr_addr += pci_bar_size;
     }
+
     return 0;
 }
 
