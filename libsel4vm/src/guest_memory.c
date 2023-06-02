@@ -22,6 +22,8 @@ typedef enum reservation_type {
 
 /* VM Memory reservation object: Represents a reservation in the guest VM's memory */
 struct vm_memory_reservation {
+    /* VM to which this reservation belongs */
+    vm_t *vm;
     /* Base address of reserved memory region */
     uintptr_t addr;
     /* Size of memory region */
@@ -247,6 +249,7 @@ static vm_memory_reservation_t *allocate_vm_reservation(vm_t *vm, uintptr_t addr
         return NULL;
     }
 
+    new_reservation->vm = vm;
     new_reservation->addr = addr;
     new_reservation->size = size;
     new_reservation->is_mapped = false;
@@ -254,7 +257,7 @@ static vm_memory_reservation_t *allocate_vm_reservation(vm_t *vm, uintptr_t addr
     return new_reservation;
 }
 
-static vm_memory_reservation_t *find_anon_reservation_by_addr(uintptr_t addr, size_t size,
+static vm_memory_reservation_t *find_anon_reservation_by_addr(uintptr_t addr,
                                                               anon_region_t *anon_region)
 {
     int num_anon_reservations;
@@ -274,7 +277,7 @@ static vm_memory_reservation_t *find_anon_reservation_by_addr(uintptr_t addr, si
 
     for (int i = 0; i < num_anon_reservations; i++) {
         vm_memory_reservation_t *curr_res = reservations[i];
-        if (is_subregion(curr_res->addr, curr_res->size, addr, size)) {
+        if (is_subregion(curr_res->addr, curr_res->size, addr, 1)) {
             return curr_res;
         }
     }
@@ -282,34 +285,38 @@ static vm_memory_reservation_t *find_anon_reservation_by_addr(uintptr_t addr, si
     return NULL;
 }
 
+vm_memory_reservation_t *vm_reservation_find_by_addr(vm_t *vm, uintptr_t addr)
+{
+    res_tree *node = find_memory_reservation_by_addr(vm, addr);
+
+    if (!node) {
+        ZF_LOGW("No reservation for addr 0x%"PRIxPTR, addr);
+        return NULL;
+    }
+
+    if (node->res_type == MEM_REGULAR_RES) {
+        return (vm_memory_reservation_t *)node->data;
+    }
+
+    return find_anon_reservation_by_addr(addr, (anon_region_t *)node->data);
+}
+
 memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t addr, size_t size)
 {
     int err;
-    res_tree *reservation_node = find_memory_reservation_by_addr(vm, addr);
-    vm_memory_reservation_t *fault_reservation;
-
-    if (!reservation_node) {
-        ZF_LOGW("Unable to find reservation for addr: 0x%x, memory fault left unhandled", addr);
+    vm_memory_reservation_t *fault_reservation = vm_reservation_find_by_addr(vm, addr);
+    if (!fault_reservation) {
+        ZF_LOGW("No reservation at 0x%"PRIxPTR", fault unhandled", addr);
         return FAULT_UNHANDLED;
     }
 
-    if (!is_subregion(reservation_node->addr, reservation_node->size, addr, size)) {
+    if (!is_subregion(fault_reservation->addr, fault_reservation->size, addr, size)) {
         ZF_LOGE("Failed to handle memory fault: Invalid fault region");
         return FAULT_ERROR;
     }
 
-    if (reservation_node->res_type == MEM_REGULAR_RES) {
-        fault_reservation = (vm_memory_reservation_t *)reservation_node->data;
-    } else {
-        fault_reservation = find_anon_reservation_by_addr(addr, size,
-                                                          (anon_region_t *)reservation_node->data);
-        if (!fault_reservation) {
-            ZF_LOGW("Unable to find anoymous reservation for addr: 0x%x, memory fault left unhandled", addr);
-            return FAULT_UNHANDLED;
-        }
-    }
-
-    if (!fault_reservation->is_mapped && fault_reservation->memory_map_iterator) {
+    if (!vm_reservation_is_mapped(fault_reservation) &&
+        vm_reservation_is_mappable(fault_reservation)) {
         /* Deferred mapping */
         err = map_vm_memory_reservation(vm, fault_reservation,
                                         fault_reservation->memory_map_iterator, fault_reservation->memory_iterator_cookie);
@@ -465,7 +472,7 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation)
     }
 
     remove_memory_reservation_node(vm, reservation->addr, reservation->size, reservation->res_type);
-    if (reservation->is_mapped) {
+    if (vm_reservation_is_mapped(reservation)) {
         int page_size = seL4_PageBits;
         int num_pages = ROUND_UP(reservation->size, BIT(page_size)) >> page_size;
         vspace_unmap_pages(&vm->mem.vm_vspace, (void *)reservation->addr, num_pages, page_size, vm->vka);
@@ -475,9 +482,33 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation)
     return 0;
 }
 
+int vm_reservation_free(vm_memory_reservation_t *reservation)
+{
+    return vm_free_reserved_memory(reservation->vm, reservation);
+}
+
 int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
                               memory_map_iterator_fn map_iterator, void *map_cookie)
 {
+    if (!vm_reservation) {
+        ZF_LOGE("null vm_reservation");
+        return -1;
+    }
+
+    if (vm != vm_reservation->vm) {
+        ZF_LOGE("vm_reservation does not belong to vm");
+        return -1;
+    }
+
+    if (vm_reservation_is_mapped(vm_reservation)) {
+        return 0;
+    }
+
+    if (!map_iterator) {
+        ZF_LOGE("null map_iterator");
+        return -1;
+    }
+
     uintptr_t current_addr = vm_reservation->addr;
     size_t bytes_left = vm_reservation->size;
 
@@ -513,7 +544,14 @@ int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
     vm_reservation->memory_iterator_cookie = NULL;
     vm_reservation->is_mapped = (bytes_left == 0);
 
-    return vm_reservation->is_mapped ? 0 : -1;
+    return vm_reservation_is_mapped(vm_reservation) ? 0 : -1;
+}
+
+int vm_reservation_map(vm_memory_reservation_t *reservation)
+{
+    return map_vm_memory_reservation(reservation->vm, reservation,
+                                     reservation->memory_map_iterator,
+                                     reservation->memory_iterator_cookie);
 }
 
 int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
@@ -534,7 +572,7 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
     reservation->memory_map_iterator = map_iterator;
     reservation->memory_iterator_cookie = cookie;
     if (!config_set(CONFIG_LIB_SEL4VM_DEFER_MEMORY_MAP)) {
-        err = map_vm_memory_reservation(vm, reservation, map_iterator, cookie);
+        err = vm_reservation_map(reservation);
         /* We remove the iterator after attempting the mapping (regardless of success or fail)
          * If failed its left to the caller to update the memory map iterator */
         if (err) {
@@ -544,6 +582,13 @@ int vm_map_reservation(vm_t *vm, vm_memory_reservation_t *reservation,
     }
 
     return 0;
+}
+
+int vm_reservation_map_lazy(vm_memory_reservation_t *reservation,
+                            memory_map_iterator_fn map_iterator,
+                            void *cookie)
+{
+    return vm_map_reservation(reservation->vm, reservation, map_iterator, cookie);
 }
 
 static vm_frame_t frames_map_memory_iterator(uintptr_t page_start, void *cookie)
@@ -583,6 +628,32 @@ void vm_get_reservation_memory_region(vm_memory_reservation_t *reservation, uint
 {
     *addr = reservation->addr;
     *size = reservation->size;
+}
+
+uintptr_t vm_reservation_addr(vm_memory_reservation_t *reservation)
+{
+    return reservation->addr;
+}
+
+size_t vm_reservation_size(vm_memory_reservation_t *reservation)
+{
+    return reservation->size;
+}
+
+vm_mem_t *vm_reservation_guest_memory(vm_memory_reservation_t *reservation)
+{
+    return &reservation->vm->mem;
+}
+
+bool vm_reservation_is_mapped(vm_memory_reservation_t *reservation)
+{
+    return vm_reservation_page_size_bits(reservation) != 0;
+}
+
+bool vm_reservation_is_mappable(vm_memory_reservation_t *reservation)
+{
+    return vm_reservation_is_mapped(reservation) ||
+           reservation->memory_map_iterator != NULL;
 }
 
 int vm_memory_init(vm_t *vm)

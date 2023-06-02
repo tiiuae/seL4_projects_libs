@@ -123,6 +123,14 @@ int vm_memory_make_anon(vm_t *vm, uintptr_t addr, size_t size);
 int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation);
 
 /***
+ * @function vm_reservation_free(reservation)
+ * Free memory reservation from the VM
+ * @param {vm_memory_reservation_t *} reservation       Pointer to the reservation being free'd
+ * @return                                              -1 on failure otherwise 0 for success
+ */
+int vm_reservation_free(vm_memory_reservation_t *reservation);
+
+/***
  * @function vm_map_reservation(vm, reservation, map_iterator, cookie)
  * Map a reservation into the VM's virtual address space
  * @param {vm_t *} vm                                   A handle to the VM
@@ -156,6 +164,46 @@ int vm_map_reservation_frames(vm_t *vm, vm_memory_reservation_t *reservation,
  * @param {size_t *} size                                   Pointer that will be set with the size of reservation
  */
 void vm_get_reservation_memory_region(vm_memory_reservation_t *reservation, uintptr_t *addr, size_t *size);
+
+/***
+ * @function vm_reservation_addr(reservation)
+ * Get reservation address
+ * @param {vm_memory_reservation_t *} reservation           Pointer to reservation object
+ * @return                                                  Address of reservation
+ */
+uintptr_t vm_reservation_addr(vm_memory_reservation_t *reservation);
+
+/***
+ * @function vm_reservation_size(reservation)
+ * Get reservation size
+ * @param {vm_memory_reservation_t *} reservation           Pointer to reservation object
+ * @return                                                  Size of reservation
+ */
+size_t vm_reservation_size(vm_memory_reservation_t *reservation);
+
+/***
+ * @function vm_reservation_page_size_bits(reservation)
+ * Get size of pages in bits mapped on the reservation
+ * @param {vm_memory_reservation_t *} reservation           Pointer to reservation object
+ * @return                                                  Size of pages in bits, 0 if not mapped yet
+ */
+size_t vm_reservation_page_size_bits(vm_memory_reservation_t *reservation);
+
+/***
+ * @function vm_reservation_is_mapped(reservation)
+ * Check if reservation is mapped
+ * @param {vm_memory_reservation_t *} reservation       Pointer to reservation object
+ * @return                                              True if reservation is mapped, false otherwise
+ */
+bool vm_reservation_is_mapped(vm_memory_reservation_t *reservation);
+
+/***
+ * @function vm_reservation_is_mappable(reservation)
+ * Check if reservation is mappable (already mapped is considered mappable too)
+ * @param {vm_memory_reservation_t *} reservation       Pointer to reservation object
+ * @return                                              True if reservation is mappable, false otherwise
+ */
+bool vm_reservation_is_mappable(vm_memory_reservation_t *reservation);
 
 /***
  * @function vm_memory_init(vm)

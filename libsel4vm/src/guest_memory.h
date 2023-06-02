@@ -25,6 +25,42 @@ static inline bool is_subregion(uintptr_t start, size_t size,
 }
 
 /**
+ * Find reservation based on address
+ * @param {vm_t *} vm               A handle to the VM
+ * @param {uintptr_t} addr          Address to be searched for
+ * @return                          Reservation containing given address, NULL if not found
+ */
+vm_memory_reservation_t *vm_reservation_find_by_addr(vm_t *vm, uintptr_t addr);
+
+/**
+ * Return guest memory info struct for reservation
+ * @param {vm_memory_reservation_t *} reservation    A handle to reservation
+ * @return                                           Guest memory info struct for reservation
+ */
+vm_mem_t *vm_reservation_guest_memory(vm_memory_reservation_t *reservation);
+
+/***
+ * @function vm_reservation_map(reservation)
+ * Map a reservation immediately into the VM's virtual address space -- note that
+ * the map iterator and its cookie must be set with vm_reservation_map_lazy() before
+ * calling this.
+ * @param {vm_memory_reservation_t *} reservation       Pointer to reservation object being mapped
+ * @return                                              -1 on failure otherwise 0 for success
+ */
+int vm_reservation_map(vm_memory_reservation_t *reservation);
+
+/***
+ * @function vm_reservation_map_lazy(reservation)
+ * Create a request for deferred mapping of reservation into the VM's virtual address space.
+ * If deferred mapping is disabled, mapping happens immediately before returning.
+ * @param {vm_memory_reservation_t *} reservation       Pointer to reservation object being mapped
+ * @return                                              -1 on failure otherwise 0 for success
+ */
+int vm_reservation_map_lazy(vm_memory_reservation_t *reservation,
+                            memory_map_iterator_fn map_iterator,
+                            void *cookie);
+
+/**
  * Handle a vm memory fault through searching previously created reservations and invoking the appropriate fault callback
  * @param {vm_t *} vm               A handle to the VM
  * @param {vm_vcpu_t *} vcpu        A handle to the faulting vcpu
