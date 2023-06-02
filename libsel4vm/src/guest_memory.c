@@ -226,6 +226,18 @@ static void free_vm_reservation(vm_t *vm, vm_memory_reservation_t *reservation)
 static vm_memory_reservation_t *allocate_vm_reservation(vm_t *vm, uintptr_t addr, size_t size,
                                                         reservation_t vspace_reservation)
 {
+    if (!size) {
+        ZF_LOGE("Attempt to allocate empty reservation at 0x%"PRIxPTR, addr);
+        return NULL;
+    }
+
+    uintptr_t next_addr = addr + size;
+    if (next_addr < addr && !next_addr) {
+        ZF_LOGE("Reservation of %zu bytes at 0x%"PRIxPTR" overflows", addr,
+                size);
+        return NULL;
+    }
+
     int err;
     ps_io_ops_t *ops = vm->io_ops;
     vm_memory_reservation_t *new_reservation;
