@@ -163,6 +163,13 @@ int vm_ram_touch(vm_t *vm, uintptr_t addr, size_t size, ram_touch_callback_fn to
     access_cookie.vm = vm;
     for (current_addr = addr; current_addr < end_addr; current_addr = next_addr) {
         vm_memory_reservation_t *reservation = vm_reservation_find_by_addr(vm, current_addr);
+
+        int err = vm_reservation_map(reservation);
+        if (err) {
+            ZF_LOGE("Cannot make reservation mapped (%d)", err);
+            return -1;
+        }
+
         size_t size_bits = vm_reservation_page_size_bits(reservation);
         uintptr_t current_aligned = PAGE_ALIGN(current_addr, BIT(size_bits));
         uintptr_t next_page_start = current_aligned + BIT(size_bits);
@@ -302,11 +309,6 @@ static vm_frame_t ram_ut_alloc_iterator(uintptr_t addr, void *cookie)
     return frame_result;
 }
 
-/* vm_ram_register() family of functions map the reservation immediately,
- * bypassing the deferred mapping functionality. This allows us to allocate,
- * touch and manipulate VM RAM before any faults on the region.
- */
-
 uintptr_t vm_ram_register(vm_t *vm, size_t bytes)
 {
     vm_memory_reservation_t *ram_reservation;
@@ -320,7 +322,7 @@ uintptr_t vm_ram_register(vm_t *vm, size_t bytes)
         ZF_LOGE("Unable to reserve ram region of size 0x%zx", bytes);
         return 0;
     }
-    err = map_vm_memory_reservation(vm, ram_reservation, ram_alloc_iterator, vm);
+    err = vm_map_reservation(vm, ram_reservation, ram_alloc_iterator, vm);
     if (err) {
         ZF_LOGE("Failed to map reservation %zu bytes at 0x%"PRIxPTR, bytes, base_addr);
         vm_free_reserved_memory(vm, ram_reservation);
@@ -355,7 +357,7 @@ int vm_ram_register_at_custom_iterator(vm_t *vm, uintptr_t start, size_t bytes, 
         ZF_LOGE("Unable to reserve ram region at addr 0x%"PRIxPTR" of size 0x%zx", start, bytes);
         return -1;
     }
-    err = map_vm_memory_reservation(vm, ram_reservation, map_iterator, cookie);
+    err = vm_map_reservation(vm, ram_reservation, map_iterator, cookie);
     if (err) {
         ZF_LOGE("Failed to map reservation %zu bytes at 0x%"PRIxPTR, bytes, start);
         return -1;
