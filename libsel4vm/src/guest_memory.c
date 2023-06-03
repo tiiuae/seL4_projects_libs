@@ -310,6 +310,7 @@ memory_fault_result_t vm_memory_handle_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_
     }
 
     if (!fault_reservation->fault_callback) {
+        ZF_LOGE("Fault callback not defined at 0x%"PRIxPTR, addr);
         return FAULT_ERROR;
     }
 
