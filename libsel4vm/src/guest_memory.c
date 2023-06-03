@@ -28,12 +28,12 @@ struct vm_memory_reservation {
     uintptr_t addr;
     /* Size of memory region */
     size_t size;
+    /* Bits in page size of memory region */
+    size_t page_size_bits;
     /* Callback to be invoked if memory region is faulted on*/
     memory_fault_callback_fn fault_callback;
     /* Iterator to be invoked for performing a map on the reservation region */
     memory_map_iterator_fn memory_map_iterator;
-    /* If the reservation is pending to be mapped into the vm's address space */
-    bool is_mapped;
     /* Cookies to pass onto callback and iterator functions */
     void *fault_callback_cookie;
     void *memory_iterator_cookie;
@@ -252,7 +252,7 @@ static vm_memory_reservation_t *allocate_vm_reservation(vm_t *vm, uintptr_t addr
     new_reservation->vm = vm;
     new_reservation->addr = addr;
     new_reservation->size = size;
-    new_reservation->is_mapped = false;
+    new_reservation->page_size_bits = 0;
     new_reservation->vspace_reservation = vspace_reservation;
     return new_reservation;
 }
@@ -473,7 +473,7 @@ int vm_free_reserved_memory(vm_t *vm, vm_memory_reservation_t *reservation)
 
     remove_memory_reservation_node(vm, reservation->addr, reservation->size, reservation->res_type);
     if (vm_reservation_is_mapped(reservation)) {
-        int page_size = seL4_PageBits;
+        size_t page_size = vm_reservation_page_size_bits(reservation);
         int num_pages = ROUND_UP(reservation->size, BIT(page_size)) >> page_size;
         vspace_unmap_pages(&vm->mem.vm_vspace, (void *)reservation->addr, num_pages, page_size, vm->vka);
     }
@@ -511,6 +511,7 @@ int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
 
     uintptr_t current_addr = vm_reservation->addr;
     size_t bytes_left = vm_reservation->size;
+    size_t page_size_bits = 0;
 
     while (bytes_left) {
         vm_frame_t reservation_frame = map_iterator(current_addr, map_cookie);
@@ -525,6 +526,15 @@ int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
                     BIT(reservation_frame.size_bits), current_addr,
                     vm_reservation->size, vm_reservation->addr);
             break;
+        }
+
+        if (page_size_bits != reservation_frame.size_bits) {
+            if (!page_size_bits) {
+                page_size_bits = reservation_frame.size_bits;
+            } else {
+                ZF_LOGE("Mixed page sizes within reservation not supported");
+                break;
+            }
         }
 
         int ret = vspace_deferred_rights_map_pages_at_vaddr(&vm->mem.vm_vspace, &reservation_frame.cptr, NULL,
@@ -542,7 +552,9 @@ int map_vm_memory_reservation(vm_t *vm, vm_memory_reservation_t *vm_reservation,
 
     vm_reservation->memory_map_iterator = NULL;
     vm_reservation->memory_iterator_cookie = NULL;
-    vm_reservation->is_mapped = (bytes_left == 0);
+    if (!bytes_left) {
+        vm_reservation->page_size_bits = page_size_bits;
+    }
 
     return vm_reservation_is_mapped(vm_reservation) ? 0 : -1;
 }
@@ -643,6 +655,11 @@ size_t vm_reservation_size(vm_memory_reservation_t *reservation)
 vm_mem_t *vm_reservation_guest_memory(vm_memory_reservation_t *reservation)
 {
     return &reservation->vm->mem;
+}
+
+size_t vm_reservation_page_size_bits(vm_memory_reservation_t *reservation)
+{
+    return reservation ? reservation->page_size_bits : 0;
 }
 
 bool vm_reservation_is_mapped(vm_memory_reservation_t *reservation)
