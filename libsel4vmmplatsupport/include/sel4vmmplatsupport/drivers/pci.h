@@ -27,7 +27,7 @@ typedef struct vmm_pci_address {
     uint8_t fun;
 } vmm_pci_address_t;
 
-/* Functions for accessing the pci config space */
+/* Functions for accessing the PCI config space */
 typedef struct vmm_pci_config {
     void *cookie;
     uint8_t (*ioread8)(void *cookie, vmm_pci_address_t addr, unsigned int offset);
@@ -40,7 +40,7 @@ typedef struct vmm_pci_config {
 
 /***
  * @struct vmm_pci_entry
- * Abstracts the virtual PCI device. This is is inserted into the virtual PCI configuration space
+ * Abstracts the virtual PCI device. This is inserted into the virtual PCI configuration space
  * @param {void *} cookie                                                           User supplied cookie to pass onto callback functions
  * @param {int *(void *cookie, int offset, int size, uint32_t *result)} ioread      Configuration space read callback
  * @param {int *(void *cookie, int offset, int size, uint32_t value)} iowrite       Configuration space write callback
@@ -52,7 +52,7 @@ typedef struct vmm_pci_entry {
 } vmm_pci_entry_t;
 
 /***
- * @struct vmm_pci_sapce
+ * @struct vmm_pci_space
  * Represents a single host virtual PCI space
  * @param {vmm_pci_entry_t *} bus       The PCI bus, representing 32 devices, each of which has 8 functions
                                         This only supports one bus at the moment.
@@ -83,8 +83,8 @@ int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_add
 
 /***
  * @function make_addr_reg_from_config(conf, addr, reg)
- * Convert config to pci address
- * @param {uint32_t} conf                   Configuration value to convert to pci address
+ * Convert config to PCI address
+ * @param {uint32_t} conf                   Configuration value to convert to PCI address
  * @param {vmm_pci_address_t *} addr        Resulting PCI address
  * @param {uint8_t *} reg                   Resulting register value
  */
@@ -95,6 +95,6 @@ void make_addr_reg_from_config(uint32_t conf, vmm_pci_address_t *addr, uint8_t *
  * Find PCI device given a PCI address (Bus/Dev/Func)
  * @param {vmm_pci_space_t *} self      PCI space handle
  * @param {vmm_pci_address_t} addr      PCI address of device
- * @return                              NULL on error, otherwise pointer to registered pci entry
+ * @return                              NULL on error, otherwise pointer to registered PCI entry
  */
 vmm_pci_entry_t *find_device(vmm_pci_space_t *self, vmm_pci_address_t addr);
