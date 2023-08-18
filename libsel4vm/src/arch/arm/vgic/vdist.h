@@ -525,9 +525,25 @@ static memory_fault_result_t vgic_dist_reg_write(vm_t *vm, vm_vcpu_t *vcpu,
     case RANGE32(0xBFC, 0xBFC):
         /* Reserved */
         break;
-    case RANGE32(GIC_DIST_ICFGR0, GIC_DIST_ICFGRN):
-        /* Not supported */
+    case RANGE32(GIC_DIST_ICFGR0, GIC_DIST_ICFGR0 + 0x4):
+        /* All SGIs are edge triggered, thus ICFGR0 read-only. Setting
+         * configuration for PPIs is IMPLEMENTATION DEFINED, so ignore writes
+         * to ICFGR1. */
         break;
+    case RANGE32(GIC_DIST_ICFGR0 + 0x8, GIC_DIST_ICFGRN): {
+        uint32_t config_mask = 0xAAAAAAAA;
+        uint32_t before;
+
+        reg_offset = GIC_DIST_REGN(offset, GIC_DIST_ICFGR0);
+        before = gic_dist->config[reg_offset];
+        emulate_reg_write_access(&gic_dist->config[reg_offset], fault);
+
+        /* Allow changes only to Int_config[1] */
+        gic_dist->config[reg_offset] &= config_mask;
+        /* Retain Int_config[0] */
+        gic_dist->config[reg_offset] |= (before & ~config_mask);
+        break;
+    }
     case RANGE32(0xD00, 0xDE4):
         break;
     case RANGE32(0xDE8, 0xEFC):
