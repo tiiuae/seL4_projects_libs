@@ -26,6 +26,7 @@
 #define IRQ_IDX(irq) ((irq) / 32)
 #define IRQ_BIT(irq) (1U << ((irq) % 32))
 
+void vgic_irq_ack(vgic_t *vgic, vm_vcpu_t *vcpu, virq_handle_t irq);
 
 static inline void set_sgi_ppi_pending(struct gic_dist_map *gic_dist, int irq, bool set_pending, int vcpu_id)
 {
@@ -172,7 +173,7 @@ static void vgic_dist_enable_irq(vgic_t *vgic, vm_vcpu_t *vcpu, int irq)
     if (virq_data) {
         /* STATE b) */
         if (!is_pending(vgic->dist, virq_data->virq, vcpu->vcpu_id)) {
-            virq_ack(vcpu, virq_data);
+            vgic_irq_ack(vgic, vcpu, virq_data);
         }
     } else {
         DDIST("enabled irq %d has no handle\n", irq);
@@ -252,6 +253,16 @@ static int vgic_dist_clr_pending_irq(vgic_t *vgic, vm_vcpu_t *vcpu, int irq)
     set_pending(vgic->dist, irq, false, vcpu->vcpu_id);
     /* TODO: remove from IRQ queue and list registers as well */
     return 0;
+}
+
+static int vgic_dist_is_edge_triggered(vgic_t *vgic, int irq)
+{
+    assert(vgic);
+    assert(vgic->dist);
+    uint32_t mask = 0x2 << ((irq % 16) * 2);
+    uint32_t reg_offset = (irq / 16);
+
+    return !!(vgic->dist->config[reg_offset] & mask);
 }
 
 static memory_fault_result_t vgic_dist_reg_read(vm_t *vm, vm_vcpu_t *vcpu,
