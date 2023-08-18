@@ -32,6 +32,7 @@
 
 struct virq_handle {
     int virq;
+    int level;
     irq_ack_fn_t ack;
     void *token;
 };
@@ -154,6 +155,7 @@ static inline int virq_add(vm_vcpu_t *vcpu, vgic_t *vgic, struct virq_handle *vi
 static inline void virq_init(virq_handle_t virq, int irq, irq_ack_fn_t ack_fn, void *token)
 {
     virq->virq = irq;
+    virq->level = 0;
     virq->token = token;
     virq->ack = ack_fn;
 }
