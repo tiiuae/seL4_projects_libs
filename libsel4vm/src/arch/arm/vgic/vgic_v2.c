@@ -194,6 +194,20 @@ int vm_inject_irq(vm_vcpu_t *vcpu, int irq)
     return err;
 }
 
+int vm_vgic_irq_get_trigger(vm_vcpu_t *vcpu, int irq)
+{
+    struct vgic *vgic = vgic_dist->vgic;
+    assert(vgic);
+    assert(vcpu);
+
+    if (!virq_find_irq_data(vgic, vcpu, irq)) {
+	ZF_LOGE("failed to find data for irq %d", irq);
+	return -1;
+    }
+
+    return vgic_dist_read_trigger(vgic, vcpu, irq);
+}
+
 static memory_fault_result_t handle_vgic_vcpu_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
                                                     size_t fault_length,
                                                     void *cookie)

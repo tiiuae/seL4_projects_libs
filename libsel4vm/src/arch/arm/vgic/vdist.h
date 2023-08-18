@@ -617,3 +617,14 @@ static memory_fault_result_t handle_vgic_dist_fault(vm_t *vm, vm_vcpu_t *vcpu, u
     return fault_is_read(fault) ? vgic_dist_reg_read(vm, vcpu, vgic, offset)
            : vgic_dist_reg_write(vm, vcpu, vgic, offset);
 }
+
+/* 0 = level, 1 = edge */
+static int vgic_dist_read_trigger(vgic_t *vgic, vm_vcpu_t *vcpu, int irq)
+{
+    assert(vgic);
+    assert(vgic->dist);
+    uint32_t mask = 0x2 << ((irq % 16) * 2);
+    uint32_t reg_offset = (irq / 16);
+
+    return !!(vgic->dist->config[reg_offset] & mask);
+}
