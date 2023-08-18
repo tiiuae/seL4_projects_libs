@@ -525,8 +525,15 @@ static memory_fault_result_t vgic_dist_reg_write(vm_t *vm, vm_vcpu_t *vcpu,
     case RANGE32(0xBFC, 0xBFC):
         /* Reserved */
         break;
-    case RANGE32(GIC_DIST_ICFGR0, GIC_DIST_ICFGRN):
-        /* Not supported */
+    case RANGE32(GIC_DIST_ICFGR0, GIC_DIST_ICFGR0 + 0x4):
+        /* ICFGR0/1 read-only */
+        break;
+    case RANGE32(GIC_DIST_ICFGR0 + 0x8, GIC_DIST_ICFGRN):
+        reg_offset = GIC_DIST_REGN(offset, GIC_DIST_ICFGR0);
+        data = fault_get_data(fault);
+        data &= mask;
+        /* Allow changes only to Int_config[1] (edge/level triggered) */
+        gic_dist->config[reg_offset] = (gic_dist->config[reg_offset] & 0x55555555) | data;
         break;
     case RANGE32(0xD00, 0xDE4):
         break;
