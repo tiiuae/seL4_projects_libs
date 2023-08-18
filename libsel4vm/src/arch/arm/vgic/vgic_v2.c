@@ -68,6 +68,34 @@ static inline struct gic_dist_map *vgic_priv_get_dist(struct vgic_dist_device *d
     return d->vgic->dist;
 }
 
+static int vgic_handle_level(vgic_t *vgic, vm_vcpu_t *vcpu, virq_handle_t irq)
+{
+    if (!irq->level) {
+        return 0;
+    }
+
+    /* Re-inject IRQ for level triggered irq emulation, otherwise clear level */
+    if (!vgic_dist_is_edge_triggered(vgic, irq->virq)) {
+        return vm_inject_irq(vcpu, irq->virq);
+    }
+
+    irq->level = 0;
+    return 0;
+}
+
+void vgic_irq_ack(vgic_t *vgic, vm_vcpu_t *vcpu, virq_handle_t irq)
+{
+    assert(vgic);
+    assert(vcpu);
+    assert(irq);
+
+    virq_ack(vcpu, irq);
+
+    /* Handle level triggered irq emulation */
+    if (vgic_handle_level(vgic, vcpu, irq)) {
+        ZF_LOGE("Error handling irq level for virq %d", irq->virq);
+    }
+}
 
 int handle_vgic_maintenance(vm_vcpu_t *vcpu, int idx)
 {
@@ -86,7 +114,7 @@ int handle_vgic_maintenance(vm_vcpu_t *vcpu, int idx)
     /* Clear pending */
     DIRQ("Maintenance IRQ %d\n", lr_virq->virq);
     set_pending(gic_dist, lr_virq->virq, false, vcpu->vcpu_id);
-    virq_ack(vcpu, lr_virq);
+    vgic_irq_ack(vgic, vcpu, lr_virq);
 
     /* Check the overflow list for pending IRQs */
     struct virq_handle *virq = vgic_irq_dequeue(vgic, vcpu);
@@ -192,6 +220,31 @@ int vm_inject_irq(vm_vcpu_t *vcpu, int irq)
     // vm->unlock();
 
     return err;
+}
+
+int vm_set_irq_level(vm_vcpu_t *vcpu, int irq, int irq_level)
+{
+    virq_handle_t virq;
+    bool changed;
+    struct vgic *vgic = vgic_dist->vgic;
+    assert(vgic);
+    assert(vcpu);
+    irq_level = !!irq_level;
+
+    virq = virq_find_irq_data(vgic, vcpu, irq);
+    if (!virq) {
+        ZF_LOGE("failed to find data for irq %d", irq);
+        return -1;
+    }
+
+    changed = (virq->level != irq_level);
+    virq->level = irq_level;
+
+    if (virq->level && changed) {
+        return vm_inject_irq(vcpu, irq);
+    }
+
+    return 0;
 }
 
 static memory_fault_result_t handle_vgic_vcpu_fault(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr,
