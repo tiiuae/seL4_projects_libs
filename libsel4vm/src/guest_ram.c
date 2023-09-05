@@ -86,12 +86,16 @@ static void collapse_guest_ram_regions(vm_mem_t *guest_memory)
     }
 }
 
-static int expand_guest_ram_region(vm_t *vm, uintptr_t start, size_t bytes)
+static int expand_guest_ram_region(vm_memory_reservation_t *reservation)
 {
-    int err;
-    vm_mem_t *guest_memory = &vm->mem;
+    uintptr_t start;
+    size_t bytes;
+
+    vm_get_reservation_memory_region(reservation, &start, &bytes);
+
+    vm_mem_t *guest_memory = vm_reservation_guest_memory(reservation);
     /* blindly put a new region at the end */
-    err = push_guest_ram_region(guest_memory, start, bytes, 0);
+    int err = push_guest_ram_region(guest_memory, start, bytes, 0);
     if (err) {
         ZF_LOGE("Failed to expand guest ram region");
         return err;
@@ -309,10 +313,9 @@ static vm_frame_t ram_ut_alloc_iterator(uintptr_t addr, void *cookie)
     return frame_result;
 }
 
-uintptr_t vm_ram_register(vm_t *vm, size_t bytes)
+vm_memory_reservation_t *vm_ram_reserve(vm_t *vm, size_t bytes)
 {
     vm_memory_reservation_t *ram_reservation;
-    int err;
     uintptr_t base_addr;
 
     ram_reservation = vm_reserve_anon_memory(vm, bytes, BIT(seL4_PageBits),
@@ -320,22 +323,59 @@ uintptr_t vm_ram_register(vm_t *vm, size_t bytes)
                                              &base_addr);
     if (!ram_reservation) {
         ZF_LOGE("Unable to reserve ram region of size 0x%zx", bytes);
-        return 0;
+        return NULL;
     }
-    err = vm_map_reservation(vm, ram_reservation, ram_alloc_iterator, vm);
-    if (err) {
-        ZF_LOGE("Failed to map reservation %zu bytes at 0x%"PRIxPTR, bytes, base_addr);
-        vm_free_reserved_memory(vm, ram_reservation);
-        return 0;
-    }
-    err = expand_guest_ram_region(vm, base_addr, bytes);
+
+    int err = expand_guest_ram_region(ram_reservation);
     if (err) {
         ZF_LOGE("Failed to register new ram region");
-        vm_free_reserved_memory(vm, ram_reservation);
+        vm_reservation_free(ram_reservation);
+        return NULL;
+    }
+
+    return ram_reservation;
+}
+
+vm_memory_reservation_t *vm_ram_reserve_at(vm_t *vm, uintptr_t start, size_t bytes)
+{
+    vm_memory_reservation_t *ram_reservation;
+
+    ram_reservation = vm_reserve_memory_at(vm, start, bytes,
+                                           default_ram_fault_callback, NULL);
+    if (!ram_reservation) {
+        ZF_LOGE("Unable to reserve ram region at addr 0x%"PRIxPTR" of size 0x%zx",
+                start, bytes);
+        return NULL;
+    }
+
+    int err = expand_guest_ram_region(ram_reservation);
+    if (err) {
+        ZF_LOGE("Failed to register new ram region");
+        vm_reservation_free(ram_reservation);
+        return NULL;
+    }
+
+    return ram_reservation;
+}
+
+uintptr_t vm_ram_register(vm_t *vm, size_t bytes)
+{
+    vm_memory_reservation_t *ram_reservation;
+
+    ram_reservation = vm_ram_reserve(vm, bytes);
+    if (!ram_reservation) {
+        ZF_LOGE("vm_ram_reserve() failed");
         return 0;
     }
 
-    return base_addr;
+    int err = vm_reservation_map_lazy(ram_reservation, ram_alloc_iterator, vm);
+    if (err) {
+        ZF_LOGE("vm_reservation_map_lazy() failed: %d", err);
+        vm_reservation_free(ram_reservation);
+        return 0;
+    }
+
+    return vm_reservation_addr(ram_reservation);
 }
 
 int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped)
@@ -345,29 +385,25 @@ int vm_ram_register_at(vm_t *vm, uintptr_t start, size_t bytes, bool untyped)
                                               vm);
 }
 
-int vm_ram_register_at_custom_iterator(vm_t *vm, uintptr_t start, size_t bytes, memory_map_iterator_fn map_iterator,
+int vm_ram_register_at_custom_iterator(vm_t *vm, uintptr_t start, size_t bytes,
+                                       memory_map_iterator_fn map_iterator,
                                        void *cookie)
 {
     vm_memory_reservation_t *ram_reservation;
-    int err;
 
-    ram_reservation = vm_reserve_memory_at(vm, start, bytes, default_ram_fault_callback,
-                                           NULL);
+    ram_reservation = vm_ram_reserve_at(vm, start, bytes);
     if (!ram_reservation) {
-        ZF_LOGE("Unable to reserve ram region at addr 0x%"PRIxPTR" of size 0x%zx", start, bytes);
+        ZF_LOGE("vm_ram_reserve_at() failed");
         return -1;
     }
-    err = vm_map_reservation(vm, ram_reservation, map_iterator, cookie);
+
+    int err = vm_reservation_map_lazy(ram_reservation, map_iterator, cookie);
     if (err) {
-        ZF_LOGE("Failed to map reservation %zu bytes at 0x%"PRIxPTR, bytes, start);
+        ZF_LOGE("vm_reservation_map_lazy() failed: %d", err);
+        vm_reservation_free(ram_reservation);
         return -1;
     }
-    err = expand_guest_ram_region(vm, start, bytes);
-    if (err) {
-        ZF_LOGE("Failed to register new ram region");
-        vm_free_reserved_memory(vm, ram_reservation);
-        return -1;
-    }
+
     return 0;
 }
 

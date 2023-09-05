@@ -136,6 +136,25 @@ uintptr_t vm_ram_allocate(vm_t *vm, size_t bytes);
 void vm_ram_free(vm_t *vm, uintptr_t start, size_t bytes);
 
 /***
+ * @function vm_ram_reserve(vm, bytes)
+ * Reserve a region of memory for guest RAM
+ * @param {vm_t *} vm           A handle to the VM
+ * @param {size_t} bytes        The size of the RAM region to be allocated
+ * @return                      NULL on failure otherwise a pointer to a reservation object
+ */
+vm_memory_reservation_t *vm_ram_reserve(vm_t *vm, size_t bytes);
+
+/***
+ * @function vm_ram_reserve_at(vm, start, bytes)
+ * Reserve a region of memory for guest RAM at a specific guest physical address
+ * @param {vm_t *} vm           A handle to the VM
+ * @param {uintptr_t} start     Starting guest physical address of RAM region being allocated
+ * @param {size_t} size         The size of the RAM region to be allocated
+ * @return                      NULL on failure otherwise a pointer to a reservation object
+ */
+vm_memory_reservation_t *vm_ram_reserve_at(vm_t *vm, uintptr_t start, size_t bytes);
+
+/***
  * @function is_ram_region(vm, addr, size)
  * Test whether given region is a guest RAM region
  * @param {vm_t *} vm           A handle to the VM
