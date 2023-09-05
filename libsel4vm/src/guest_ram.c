@@ -103,7 +103,7 @@ static int expand_guest_ram_region(vm_t *vm, uintptr_t start, size_t bytes)
     return 0;
 }
 
-static bool is_ram_region(vm_t *vm, uintptr_t addr, size_t size)
+bool is_ram_region(vm_t *vm, uintptr_t addr, size_t size)
 {
     vm_mem_t *guest_memory = &vm->mem;
     for (int i = 0; i < guest_memory->num_ram_regions; i++) {

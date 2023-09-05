@@ -134,3 +134,13 @@ uintptr_t vm_ram_allocate(vm_t *vm, size_t bytes);
  * @param {size_t} size         The size of the RAM region to be free'd
  */
 void vm_ram_free(vm_t *vm, uintptr_t start, size_t bytes);
+
+/***
+ * @function is_ram_region(vm, addr, size)
+ * Test whether given region is a guest RAM region
+ * @param {vm_t *} vm           A handle to the VM
+ * @param {uintptr_t} addr      Address of supposed RAM region
+ * @param {size_t} size         Size of supposed RAM region
+ * @return                      True if given region fits completely in guest RAM, false otherwise
+ */
+bool is_ram_region(vm_t *vm, uintptr_t addr, size_t size);
