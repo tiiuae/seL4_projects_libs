@@ -28,6 +28,10 @@
  */
 int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci);
 
+int fdt_prepopulate_vpci_node(vm_t *vm, void *fdt);
+int fdt_generate_vpci_interrupt_map(vm_t *vm, vmm_pci_space_t *pci, void *fdt,
+                                    int gic_phandle);
+
 /***
  * @function fdt_generate_vpci_node(vm, pci, fdt, gic_phandle)
  * Generate a PCI device node for a given fdt. This taking into account
