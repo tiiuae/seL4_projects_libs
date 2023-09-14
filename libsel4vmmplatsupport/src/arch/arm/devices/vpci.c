@@ -207,7 +207,7 @@ int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
     return 0;
 }
 
-int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_phandle)
+int fdt_generate_vpci_node_start(vm_t *vm, void *fdt)
 {
     int root_offset = fdt_path_offset(fdt, "/");
     int address_cells = fdt_address_cells(fdt, root_offset);
@@ -250,6 +250,17 @@ int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_ph
     FDT_OP(fdt_appendprop_uint(fdt, pci_node, "ranges", PCI_MEM_REGION_ADDR, address_cells));
     FDT_OP(fdt_appendprop_u64(fdt, pci_node, "ranges", PCI_MEM_REGION_SIZE));
 
+    return 0;
+}
+
+int fdt_generate_vpci_node_finish(vm_t *vm, vmm_pci_space_t *pci, void *fdt,
+                                  int gic_phandle)
+{
+    int pci_node = fdt_path_offset(fdt, "/pci");
+    if (pci_node < 0) {
+        return pci_node;
+    }
+
     /* PCI IRQ map */
     bool is_irq_map = false;
     /* The first device is always the bridge (which doesn't need to be recorded in the ranges) */
@@ -291,6 +302,24 @@ int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_ph
         irq_mask.pci_addr.low = 0;
         irq_mask.irq_pin = cpu_to_fdt32(0x7);
         FDT_OP(fdt_appendprop(fdt, pci_node, "interrupt-map-mask", &irq_mask, sizeof(irq_mask)));
+    }
+
+    return 0;
+}
+
+int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt,
+                           int gic_phandle)
+{
+    int err = fdt_generate_vpci_node_start(vm, fdt);
+    if (err) {
+        ZF_LOGE("fdt_generate_vpci_node_start() failed (%d)", err);
+        return -1;
+    }
+
+    err = fdt_generate_vpci_node_finish(vm, pci, fdt, gic_phandle);
+    if (err) {
+        ZF_LOGE("fdt_generate_vpci_node_finish() failed (%d)", err);
+        return -1;
     }
 
     return 0;

@@ -29,9 +29,29 @@
 int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci);
 
 /***
+ * @function fdt_generate_vpci_node_start(vm, fdt)
+ * Start generating the PCI device node for a given fdt.
+ * @param {vm_t *} vm               A handle to the VM
+ * @param {void *} fdt              FDT blob to append generated device node
+ * @return                          0 for success, -1 for error
+ */
+int fdt_generate_vpci_node_start(vm_t *vm, void *fdt);
+
+/***
+ * Finish generating the PCI device node for a given fdt.
+ * @function fdt_generate_vpci_node_finish(vm, pci, fdt, gic_phandle)
+ * @param {vm_t *} vm               A handle to the VM
+ * @param {vmm_pci_space_t *}       PCI library instance to generate fdt node
+ * @param {void *} fdt              FDT blob to append generated device node
+ * @param {int} gic_phandle         Phandle of IRQ controller to generate a correct interrupt map property
+ * @return                          0 for success, -1 for error
+ */
+int fdt_generate_vpci_node_finish(vm_t *vm, vmm_pci_space_t *pci, void *fdt,
+                                  int gic_phandle);
+
+/***
  * @function fdt_generate_vpci_node(vm, pci, fdt, gic_phandle)
- * Generate a PCI device node for a given fdt. This taking into account
- * the virtual PCI device configuration space.
+ * Generate a PCI device node for a given fdt.
  * @param {vm_t *} vm               A handle to the VM
  * @param {vmm_pci_space_t *}       PCI library instance to generate fdt node
  * @param {void *} fdt              FDT blob to append generated device node
