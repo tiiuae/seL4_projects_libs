@@ -34,6 +34,7 @@
 
 #define PCI_RANGE_IO 1
 #define PCI_RANGE_MEM32 2
+#define PCI_RANGE_MEM64 3
 
 #define PCI_ADDR_FUNC_SHIFT 8
 #define PCI_ADDR_DEV_SHIFT 11
@@ -77,10 +78,15 @@ static inline void set_fault_data(vm_vcpu_t *vcpu, uint32_t data)
     set_vcpu_fault_data(vcpu, data << s);
 }
 
-static void pci_cfg_read_fault(vm_vcpu_t *vcpu, uint8_t offset, size_t len, vmm_pci_entry_t *dev)
+static void pci_cfg_read_fault(vm_vcpu_t *vcpu, uint32_t offset, size_t len, uint32_t limit, vmm_pci_entry_t *dev)
 {
     uint32_t data = 0;
     int err = 0;
+
+    if (offset >= limit) {
+        set_fault_data(vcpu, ~0);
+        return;
+    }
 
     err = dev->ioread((void *)dev->cookie, offset, len, &data);
     if (err) {
@@ -91,11 +97,15 @@ static void pci_cfg_read_fault(vm_vcpu_t *vcpu, uint8_t offset, size_t len, vmm_
     set_fault_data(vcpu, data);
 }
 
-static void pci_cfg_write_fault(vm_vcpu_t *vcpu, uint8_t offset, size_t len, vmm_pci_entry_t *dev)
+static void pci_cfg_write_fault(vm_vcpu_t *vcpu, uint32_t offset, size_t len, uint32_t limit, vmm_pci_entry_t *dev)
 {
     uint32_t mask;
     uint32_t value;
     int err;
+
+    if (offset >= limit) {
+        return;
+    }
 
     seL4_Word s = (get_vcpu_fault_address(vcpu) & 0x3) * 8;
     mask = get_vcpu_fault_data_mask(vcpu) >> s;
@@ -110,15 +120,16 @@ static void pci_cfg_write_fault(vm_vcpu_t *vcpu, uint8_t offset, size_t len, vmm
 static memory_fault_result_t pci_cfg_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, uintptr_t fault_addr, size_t fault_length,
                                                    void *cookie)
 {
-    uint8_t offset;
+    uint32_t offset;
     vmm_pci_address_t pci_addr;
     struct device *dev = (struct device *)cookie;
     struct pci_cfg_data *cfg_data = (struct pci_cfg_data *)dev->priv;
     vmm_pci_space_t *pci = cfg_data->pci;
+    uint32_t limit = vmm_pci_config_size(pci);
 
     fault_addr -= PCI_CFG_REGION_ADDR;
 
-    make_addr_reg_from_config(fault_addr, &pci_addr, &offset);
+    make_addr_reg_from_config(pci, fault_addr, &pci_addr, &offset);
 
     vmm_pci_entry_t *pci_dev = find_device(pci, pci_addr);
     if (!pci_dev) {
@@ -133,9 +144,9 @@ static memory_fault_result_t pci_cfg_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, ui
     }
 
     if (is_vcpu_read_fault(vcpu)) {
-        pci_cfg_read_fault(vcpu, offset, fault_length, pci_dev);
+        pci_cfg_read_fault(vcpu, offset, fault_length, limit, pci_dev);
     } else {
-        pci_cfg_write_fault(vcpu, offset, fault_length, pci_dev);
+        pci_cfg_write_fault(vcpu, offset, fault_length, limit, pci_dev);
     }
 
     advance_vcpu_fault(vcpu);
@@ -232,7 +243,11 @@ int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_ph
     FDT_OP(fdt_appendprop_u32(fdt, pci_node, "#address-cells", 0x3));
     FDT_OP(fdt_appendprop_u32(fdt, pci_node, "#size-cells", 0x2));
     FDT_OP(fdt_appendprop_u32(fdt, pci_node, "#interrupt-cells", 0x1));
-    FDT_OP(fdt_appendprop_string(fdt, pci_node, "compatible", "pci-host-cam-generic"));
+    if (vmm_pci_is_ecam(pci)) {
+        FDT_OP(fdt_appendprop_string(fdt, pci_node, "compatible", "pci-host-ecam-generic"));
+    } else {
+        FDT_OP(fdt_appendprop_string(fdt, pci_node, "compatible", "pci-host-cam-generic"));
+    }
     FDT_OP(fdt_appendprop_string(fdt, pci_node, "device_type", "pci"));
     FDT_OP(fdt_appendprop(fdt, pci_node, "dma-coherent", NULL, 0));
     FDT_OP(fdt_appendprop_u32(fdt, pci_node, "bus-range", 0x0));
@@ -253,7 +268,11 @@ int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_ph
 
     /* PCI Mem Region Range */
     struct pci_fdt_address pci_mem_range_addr;
-    pci_mem_range_addr.hi = cpu_to_fdt32(PCI_RANGE_MEM32 << 24);
+    if (vmm_pci_is_ecam(pci)) {
+        pci_mem_range_addr.hi = cpu_to_fdt32(PCI_RANGE_MEM64 << 24);
+    } else {
+        pci_mem_range_addr.hi = cpu_to_fdt32(PCI_RANGE_MEM32 << 24);
+    }
     pci_mem_range_addr.mid = cpu_to_fdt32(PCI_MEM_REGION_ADDR >> 32);
     pci_mem_range_addr.low = cpu_to_fdt32((uint32_t)PCI_MEM_REGION_ADDR);
     FDT_OP(fdt_appendprop(fdt, pci_node, "ranges", &pci_mem_range_addr, sizeof(pci_mem_range_addr)));

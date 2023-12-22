@@ -13,6 +13,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /***
  * @struct vmm_pci_address
@@ -52,6 +53,15 @@ typedef struct vmm_pci_entry {
 } vmm_pci_entry_t;
 
 /***
+ * @enum vmm_pci_flags
+ * Flags for PCI bus bus
+ */
+typedef enum vmm_pci_flags {
+    /* PCIe extended configuration space is used */
+    PCI_BUS_ECAM = (1 << 0),
+} vmm_pci_flags_t;
+
+/***
  * @struct vmm_pci_space
  * Represents a single host virtual PCI space
  * @param {vmm_pci_entry_t *} bus       The PCI bus, representing 32 devices, each of which has 8 functions
@@ -61,15 +71,17 @@ typedef struct vmm_pci_entry {
 typedef struct vmm_pci_space {
     vmm_pci_entry_t *bus0[32][8];
     uint32_t conf_port_addr;
+    vmm_pci_flags_t flags;
 } vmm_pci_space_t;
 
 /***
  * @function vmm_pci_init(space)
  * Initialize PCI space
  * @param {vmm_pci_space_t **} space    Pointer to PCI space being initialised
+ * @param {vmm_pci_flags_t} flags       Flags for PCI bus
  * @return                              0 on success, -1 on error
  */
-int vmm_pci_init(vmm_pci_space_t **space);
+int vmm_pci_init(vmm_pci_space_t **space, vmm_pci_flags_t flags);
 
 /***
  * @function vmm_pci_add_entry(space, entry, addr)
@@ -82,13 +94,31 @@ int vmm_pci_init(vmm_pci_space_t **space);
 int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_address_t *addr);
 
 /***
- * @function make_addr_reg_from_config(conf, addr, reg)
- * Convert config to PCI address
+ * @function make_addr_reg_from_config(vmm_pci_space_t *space, conf, addr, reg)
+ * Convert config to PCI configuration space address
+ * @param {vmm_pci_space_t *} space         PCI space handle
  * @param {uint32_t} conf                   Configuration value to convert to PCI address
  * @param {vmm_pci_address_t *} addr        Resulting PCI address
- * @param {uint8_t *} reg                   Resulting register value
+ * @param {uint32_t *} reg                  Resulting register value
  */
-void make_addr_reg_from_config(uint32_t conf, vmm_pci_address_t *addr, uint8_t *reg);
+void make_addr_reg_from_config(vmm_pci_space_t *space, uint32_t conf,
+                               vmm_pci_address_t *addr, uint32_t *reg);
+
+/***
+ * @function vmm_pci_config_size(space)
+ * Get size of the PCI configuration space
+ * @param {vmm_pci_space_t *} space     PCI space handle
+ * @return                              Size of the PCI configuration space
+ */
+uint32_t vmm_pci_config_size(vmm_pci_space_t *space);
+
+/***
+ * @function vmm_pci_is_ecam(space)
+ * Query whether Enhanced Configuration Access Mechanism (ECAM) is being used
+ * @param {vmm_pci_space_t *} space     PCI space handle
+ * @return                              True if ECAM, otherwise false
+ */
+bool vmm_pci_is_ecam(vmm_pci_space_t *pci);
 
 /***
  * @function find_device(self, addr)

@@ -22,7 +22,7 @@
 #define NUM_DEVICES 32
 #define NUM_FUNCTIONS 8
 
-int vmm_pci_init(vmm_pci_space_t **space)
+int vmm_pci_init(vmm_pci_space_t **space, vmm_pci_flags_t flags)
 {
     vmm_pci_space_t *pci_space = (vmm_pci_space_t *)calloc(1, sizeof(vmm_pci_space_t));
     if (!pci_space) {
@@ -36,6 +36,7 @@ int vmm_pci_init(vmm_pci_space_t **space)
         }
     }
     pci_space->conf_port_addr = 0;
+    pci_space->flags = flags;
     /* Define the initial PCI bridge */
     vmm_pci_device_def_t *bridge = calloc(1, sizeof(*bridge));
     if (!bridge) {
@@ -72,12 +73,42 @@ int vmm_pci_add_entry(vmm_pci_space_t *space, vmm_pci_entry_t entry, vmm_pci_add
     return -1;
 }
 
-void make_addr_reg_from_config(uint32_t conf, vmm_pci_address_t *addr, uint8_t *reg)
+static void vmm_pci_cam_address(uint32_t conf, vmm_pci_address_t *addr, uint32_t *reg)
 {
     addr->bus = (conf >> 16) & MASK(8);
     addr->dev = (conf >> 11) & MASK(5);
     addr->fun = (conf >> 8) & MASK(3);
     *reg = conf & MASK(8);
+}
+
+static void vmm_pci_ecam_address(uint32_t conf, vmm_pci_address_t *addr, uint32_t *reg)
+{
+    addr->bus = (conf >> 20) & MASK(8);
+    addr->dev = (conf >> 15) & MASK(5);
+    addr->fun = (conf >> 12) & MASK(3);
+    *reg = conf & MASK(12);
+}
+
+void make_addr_reg_from_config(vmm_pci_space_t *space, uint32_t conf, vmm_pci_address_t *addr, uint32_t *reg)
+{
+    if (space->flags & PCI_BUS_ECAM) {
+        return vmm_pci_ecam_address(conf, addr, reg);
+    }
+    return vmm_pci_cam_address(conf, addr, reg);
+}
+
+uint32_t vmm_pci_config_size(vmm_pci_space_t *space)
+{
+    if (space->flags & PCI_BUS_ECAM) {
+        return 0x1000;
+    }
+
+    return 0x100;
+}
+
+bool vmm_pci_is_ecam(vmm_pci_space_t *space)
+{
+    return !!(space->flags & PCI_BUS_ECAM);
 }
 
 vmm_pci_entry_t *find_device(vmm_pci_space_t *self, vmm_pci_address_t addr)

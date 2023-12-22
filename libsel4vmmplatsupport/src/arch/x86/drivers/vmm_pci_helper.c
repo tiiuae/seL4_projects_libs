@@ -89,8 +89,8 @@ ioport_fault_result_t vmm_pci_io_port_in(vm_vcpu_t *vcpu, void *cookie, unsigned
 
     /* construct a pci address from the current value in the config port */
     vmm_pci_address_t addr;
-    uint8_t reg;
-    make_addr_reg_from_config(self->conf_port_addr, &addr, &reg);
+    uint32_t reg;
+    make_addr_reg_from_config(self, self->conf_port_addr, &addr, &reg);
     reg += offset;
 
     /* Check if this device exists */
@@ -141,8 +141,8 @@ ioport_fault_result_t vmm_pci_io_port_out(vm_vcpu_t *vcpu, void *cookie, unsigne
 
     /* construct a pci address from the current value in the config port */
     vmm_pci_address_t addr;
-    uint8_t reg;
-    make_addr_reg_from_config(self->conf_port_addr, &addr, &reg);
+    uint32_t reg;
+    make_addr_reg_from_config(self, self->conf_port_addr, &addr, &reg);
     reg += offset;
 
     /* Check if this device exists */
