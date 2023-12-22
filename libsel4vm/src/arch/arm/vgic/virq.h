@@ -120,7 +120,10 @@ static inline struct virq_handle *virq_find_irq_data(struct vgic *vgic, vm_vcpu_
 static inline int virq_spi_add(vgic_t *vgic, struct virq_handle *virq_data)
 {
     for (int i = 0; i < ARRAY_SIZE(vgic->vspis); i++) {
-        if (vgic->vspis[i] == NULL) {
+        if (vgic->vspis[i] && vgic->vspis[i]->virq == virq_data->virq) {
+            ZF_LOGE("IRQ %d already registered", virq_data->virq);
+            return -1;
+        } else if (vgic->vspis[i] == NULL) {
             vgic->vspis[i] = virq_data;
             return 0;
         }
