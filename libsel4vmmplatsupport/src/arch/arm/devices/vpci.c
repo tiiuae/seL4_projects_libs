@@ -71,6 +71,12 @@ struct pci_cfg_data {
     vmm_pci_space_t *pci;
 };
 
+static inline void set_fault_data(vm_vcpu_t *vcpu, uint32_t data)
+{
+    seL4_Word s = (get_vcpu_fault_address(vcpu) & 0x3) * 8;
+    set_vcpu_fault_data(vcpu, data << s);
+}
+
 static void pci_cfg_read_fault(vm_vcpu_t *vcpu, uint8_t offset, size_t len, vmm_pci_entry_t *dev)
 {
     uint32_t data = 0;
@@ -79,10 +85,10 @@ static void pci_cfg_read_fault(vm_vcpu_t *vcpu, uint8_t offset, size_t len, vmm_
     err = dev->ioread((void *)dev->cookie, offset, len, &data);
     if (err) {
         ZF_LOGE("Failure performing read from PCI CFG device");
+        data = ~0;
     }
 
-    seL4_Word s = (get_vcpu_fault_address(vcpu) & 0x3) * 8;
-    set_vcpu_fault_data(vcpu, data << s);
+    set_fault_data(vcpu, data);
 }
 
 static void pci_cfg_write_fault(vm_vcpu_t *vcpu, uint8_t offset, size_t len, vmm_pci_entry_t *dev)
@@ -113,12 +119,15 @@ static memory_fault_result_t pci_cfg_fault_handler(vm_t *vm, vm_vcpu_t *vcpu, ui
     fault_addr -= PCI_CFG_REGION_ADDR;
 
     make_addr_reg_from_config(fault_addr, &pci_addr, &offset);
-    pci_addr.fun = 0;
 
     vmm_pci_entry_t *pci_dev = find_device(pci, pci_addr);
     if (!pci_dev) {
         ZF_LOGW("Failed to find pci device B:%d D:%d F:%d", pci_addr.bus, pci_addr.dev, pci_addr.fun);
         /* No device found */
+        if (is_vcpu_read_fault(vcpu)) {
+            set_fault_data(vcpu, ~0);
+        }
+
         advance_vcpu_fault(vcpu);
         return FAULT_HANDLED;
     }
