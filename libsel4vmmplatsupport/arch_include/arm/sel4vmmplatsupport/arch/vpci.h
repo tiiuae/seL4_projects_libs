@@ -29,13 +29,14 @@
 int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci);
 
 /***
- * @function fdt_generate_vpci_node(vm, pci, fdt, gic_phandle)
+ * @function fdt_generate_vpci_node(vm, pci, fdt, gic_phandle, msi_phandle)
  * Generate a PCI device node for a given fdt. This taking into account
  * the virtual PCI device configuration space.
  * @param {vm_t *} vm               A handle to the VM
  * @param {vmm_pci_space_t *}       PCI library instance to generate fdt node
  * @param {void *} fdt              FDT blob to append generated device node
  * @param {int} gic_phandle         Phandle of IRQ controller to generate a correct interrupt map property
+ * @param {int} msi_phandle         Phandle of MSI parent controller to generate a msi-parent property
  * @return                          0 for success, -1 for error
  */
-int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_phandle);
+int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_phandle, int msi_phandle);

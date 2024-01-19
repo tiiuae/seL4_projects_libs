@@ -228,7 +228,7 @@ int vm_install_vpci(vm_t *vm, vmm_io_port_list_t *io_port, vmm_pci_space_t *pci)
     return 0;
 }
 
-int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_phandle)
+int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_phandle, int msi_phandle)
 {
     int root_offset = fdt_path_offset(fdt, "/");
     int address_cells = fdt_address_cells(fdt, root_offset);
@@ -320,6 +320,10 @@ int fdt_generate_vpci_node(vm_t *vm, vmm_pci_space_t *pci, void *fdt, int gic_ph
         irq_mask.pci_addr.low = 0;
         irq_mask.irq_pin = cpu_to_fdt32(0x7);
         FDT_OP(fdt_appendprop(fdt, pci_node, "interrupt-map-mask", &irq_mask, sizeof(irq_mask)));
+    }
+
+    if (msi_phandle > 0) {
+        FDT_OP(fdt_appendprop_u32(fdt, pci_node, "msi-parent", msi_phandle));
     }
 
     return 0;
