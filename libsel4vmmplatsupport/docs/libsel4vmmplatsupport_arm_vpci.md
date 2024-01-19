@@ -17,7 +17,7 @@ virtual pci device.
 
 > [`vm_install_vpci(vm, io_port, pci)`](#function-vm_install_vpcivm-io_port-pci)
 
-> [`fdt_generate_vpci_node(vm, pci, fdt, gic_phandle)`](#function-fdt_generate_vpci_nodevm-pci-fdt-gic_phandle)
+> [`fdt_generate_vpci_node(vm, pci, fdt, gic_phandle)`](#function-fdt_generate_vpci_nodevm-pci-fdt-gic_phandle-msi_phandle)
 
 
 ## Functions
@@ -40,7 +40,7 @@ The interface `vpci.h` defines the following functions.
 
 Back to [interface description](#module-vpcih).
 
-### Function `fdt_generate_vpci_node(vm, pci, fdt, gic_phandle)`
+### Function `fdt_generate_vpci_node(vm, pci, fdt, gic_phandle, msi_phandle)`
 
 Generate a PCI device node for a given fdt. This taking into account
 the virtual PCI device configuration space.
@@ -51,6 +51,7 @@ the virtual PCI device configuration space.
 - `PCI {vmm_pci_space_t *}`: library instance to generate fdt node
 - `fdt {void *}`: FDT blob to append generated device node
 - `gic_phandle {int}`: Phandle of IRQ controller to generate a correct interrupt map property
+- `msi_phandle {int}`: Phandle of MSI controller to generate a msi-parent property
 
 **Returns:**
 
